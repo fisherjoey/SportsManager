@@ -1,0 +1,1 @@
+	/Users/admin/Desktop/Sports Management App/CLAUDE.md
