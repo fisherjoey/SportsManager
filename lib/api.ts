@@ -72,10 +72,18 @@ class ApiClient {
 
   // Auth endpoints
   async login(email: string, password: string) {
-    return this.request<{ token: string; user: any }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    console.log('Login attempt:', { email, baseURL: this.baseURL });
+    try {
+      const result = await this.request<{ token: string; user: any }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      console.log('Login successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   }
 
   async register(userData: any) {
