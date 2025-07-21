@@ -49,11 +49,19 @@ router.get('/', async (req, res) => {
     const { status, level, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
     
     let query = db('games')
-      .select('games.*')
-      .leftJoin('game_assignments', 'games.id', 'game_assignments.game_id')
-      .leftJoin('users', 'game_assignments.user_id', 'users.id')
-      .leftJoin('positions', 'game_assignments.position_id', 'positions.id')
-      .groupBy('games.id')
+      .select(
+        'games.*',
+        'home_teams.name as home_team_name',
+        'away_teams.name as away_team_name',
+        'leagues.organization',
+        'leagues.age_group',
+        'leagues.gender',
+        'leagues.division',
+        'leagues.season'
+      )
+      .leftJoin('teams as home_teams', 'games.home_team_id', 'home_teams.id')
+      .leftJoin('teams as away_teams', 'games.away_team_id', 'away_teams.id')
+      .leftJoin('leagues', 'games.league_id', 'leagues.id')
       .orderBy('games.game_date', 'asc');
 
     if (status) {
@@ -90,10 +98,35 @@ router.get('/', async (req, res) => {
         .select('users.name as referee_name', 'positions.name as position_name', 'game_assignments.status')
         .where('game_assignments.game_id', game.id);
       
+      // Get home and away team details with league info
+      const homeTeam = await db('teams')
+        .join('leagues', 'teams.league_id', 'leagues.id')
+        .select('teams.*', 'leagues.organization', 'leagues.age_group', 'leagues.gender')
+        .where('teams.id', game.home_team_id)
+        .first();
+        
+      const awayTeam = await db('teams')
+        .join('leagues', 'teams.league_id', 'leagues.id')
+        .select('teams.*', 'leagues.organization', 'leagues.age_group', 'leagues.gender')
+        .where('teams.id', game.away_team_id)
+        .first();
+      
       return {
         id: game.id,
-        homeTeam: JSON.parse(game.home_team || '{}'),
-        awayTeam: JSON.parse(game.away_team || '{}'),
+        homeTeam: homeTeam ? {
+          organization: homeTeam.organization,
+          ageGroup: homeTeam.age_group,
+          gender: homeTeam.gender,
+          rank: homeTeam.rank,
+          name: homeTeam.name
+        } : {},
+        awayTeam: awayTeam ? {
+          organization: awayTeam.organization,
+          ageGroup: awayTeam.age_group,
+          gender: awayTeam.gender,
+          rank: awayTeam.rank,
+          name: awayTeam.name
+        } : {},
         date: game.game_date,
         time: game.game_time,
         location: game.location,
