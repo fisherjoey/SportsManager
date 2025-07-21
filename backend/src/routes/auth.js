@@ -184,7 +184,7 @@ router.post('/register', async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db('users')
-      .select('id', 'email', 'role', 'created_at')
+      .select('*') // Select all fields to ensure we have everything we need
       .where('id', req.user.userId)
       .first();
 
@@ -192,7 +192,14 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    let userData = user;
+    let userData = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      created_at: user.created_at,
+      updated_at: user.updated_at
+    };
 
     if (user.role === 'referee' || user.role === 'admin') {
       // Include referee fields if they exist (they're in the users table now)
