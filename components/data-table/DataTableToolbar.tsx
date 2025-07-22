@@ -35,6 +35,11 @@ export function DataTableToolbar<TData>({
 
   // Apply date filter to table
   React.useEffect(() => {
+    // Check if date column exists before trying to access it
+    const columns = table.getAllColumns()
+    const hasDateColumn = columns.some(col => col.id === "date")
+    if (!hasDateColumn) return
+    
     const dateColumn = table.getColumn("date")
     if (!dateColumn) return
 
