@@ -13,7 +13,9 @@ export interface Game {
   homeTeam: Team
   awayTeam: Team
   date: string
-  time: string
+  time?: string
+  startTime?: string
+  endTime?: string
   location: string
   postalCode?: string
   level: string
@@ -73,6 +75,21 @@ export interface SearchableColumn<TData> {
   placeholder?: string
 }
 
+export interface Referee {
+  id: string
+  name: string
+  email: string
+  phone: string
+  level: "Recreational" | "Competitive" | "Elite"
+  certificationLevel?: string
+  location: string
+  certifications: string[]
+  preferredPositions: string[]
+  maxDistance: number
+  isAvailable: boolean
+}
+
 export type GameLevel = "Recreational" | "Competitive" | "Elite"
 export type GameStatus = "unassigned" | "assigned" | "up-for-grabs" | "completed"
 export type AssignmentStatus = "pending" | "accepted" | "declined"
+export type RefereeLevel = "Recreational" | "Competitive" | "Elite"

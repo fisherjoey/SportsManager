@@ -107,8 +107,7 @@ export function CalendarView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Calendar</h2>
+      <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
             <ChevronLeft className="h-4 w-4" />

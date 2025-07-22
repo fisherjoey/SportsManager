@@ -29,6 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { DateRangeFilter } from "@/components/data-table/DateRangeFilter"
 
 interface DataTableColumnHeaderAdvancedProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -36,7 +37,9 @@ interface DataTableColumnHeaderAdvancedProps<TData, TValue>
   title: string
   searchable?: boolean
   filterable?: boolean
-  filterOptions?: { label: string; value: string }[]
+  filterOptions?: { label: string; value: string; id?: string }[]
+  filterSections?: { title: string; options: { label: string; value: string; id?: string }[] }[]
+  dateRangeFilter?: boolean // New prop for date range filtering
 }
 
 export function DataTableColumnHeaderAdvanced<TData, TValue>({
@@ -46,26 +49,39 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
   searchable = true,
   filterable = true,
   filterOptions = [],
+  filterSections = [],
+  dateRangeFilter = false,
 }: DataTableColumnHeaderAdvancedProps<TData, TValue>) {
   const [searchValue, setSearchValue] = React.useState(
     (column.getFilterValue() as string) || ""
   )
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+  
+  // Date range filter state
+  const [startDate, setStartDate] = React.useState<Date | undefined>()
+  const [endDate, setEndDate] = React.useState<Date | undefined>()
 
   // Generate filter options from column data if not provided
   const facets = column.getFacetedUniqueValues()
   const autoFilterOptions = React.useMemo(() => {
     if (filterOptions.length > 0) return filterOptions
+    if (filterSections.length > 0) return [] // Don't auto-generate when sections are provided
     
     return Array.from(facets?.entries() || [])
       .filter(([value]) => value != null && value !== undefined)
+      .filter(([value]) => {
+        // Skip objects that would become [object Object]
+        const stringValue = String(value)
+        return stringValue !== '[object Object]' && stringValue !== 'undefined' && stringValue !== 'null'
+      })
       .sort(([a], [b]) => String(a).localeCompare(String(b)))
-      .map(([value, count]) => ({
+      .map(([value, count], index) => ({
         label: `${value} (${count})`,
         value: String(value),
+        id: `${String(value)}-${index}` // Add unique id for key prop
       }))
-  }, [facets, filterOptions])
+  }, [facets, filterOptions, filterSections])
 
   const selectedValues = new Set(
     Array.isArray(column.getFilterValue()) 
@@ -92,14 +108,41 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
     column.setFilterValue(filterArray.length ? filterArray : undefined)
   }
 
+  // Date range filter handlers
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date)
+    updateDateRangeFilter(date, endDate)
+  }
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    setEndDate(date)
+    updateDateRangeFilter(startDate, date)
+  }
+
+  const updateDateRangeFilter = (start: Date | undefined, end: Date | undefined) => {
+    if (start || end) {
+      column.setFilterValue({ startDate: start, endDate: end })
+    } else {
+      column.setFilterValue(undefined)
+    }
+  }
+
+  const clearDateRangeFilter = () => {
+    setStartDate(undefined)
+    setEndDate(undefined)
+    updateDateRangeFilter(undefined, undefined)
+  }
+
   const clearAllFilters = () => {
     setSearchValue("")
+    setStartDate(undefined)
+    setEndDate(undefined)
     column.setFilterValue(undefined)
     setIsSearchOpen(false)
     setIsFilterOpen(false)
   }
 
-  const hasActiveFilters = searchValue || selectedValues.size > 0
+  const hasActiveFilters = searchValue || selectedValues.size > 0 || startDate || endDate
   const sortDirection = column.getIsSorted()
 
   return (
@@ -150,7 +193,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                   <Filter className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[200px] p-0" align="start">
+              <PopoverContent className={cn("p-0", dateRangeFilter ? "w-[280px]" : "w-[200px]")} align="start">
                 <div className="p-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Filter {title}</span>
@@ -158,40 +201,84 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={clearAllFilters}
+                        onClick={dateRangeFilter ? clearDateRangeFilter : clearAllFilters}
                         className="h-6 px-2 text-xs"
                       >
                         Clear
                       </Button>
                     )}
                   </div>
-                  <div className="space-y-1 max-h-[200px] overflow-auto">
-                    {autoFilterOptions.length > 0 ? autoFilterOptions.map((option) => {
-                      const isSelected = selectedValues.has(option.value)
-                      return (
-                        <div
-                          key={option.value}
-                          className={cn(
-                            "flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent",
-                            isSelected && "bg-accent"
-                          )}
-                          onClick={() => handleFilterToggle(option.value)}
-                        >
-                          <div className={cn(
-                            "h-4 w-4 rounded border",
-                            isSelected ? "bg-primary border-primary" : "border-muted-foreground"
-                          )}>
-                            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                  
+                  {dateRangeFilter ? (
+                    <DateRangeFilter
+                      startDate={startDate}
+                      endDate={endDate}
+                      onStartDateChange={handleStartDateChange}
+                      onEndDateChange={handleEndDateChange}
+                      onClear={clearDateRangeFilter}
+                    />
+                  ) : filterSections.length > 0 ? (
+                    <div className="space-y-3 max-h-[300px] overflow-auto">
+                      {filterSections.map((section, sectionIndex) => (
+                        <div key={`section-${sectionIndex}`} className="space-y-1">
+                          <div className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted/50 rounded">
+                            {section.title}
                           </div>
-                          <span className="text-sm">{option.label}</span>
+                          <div className="grid grid-cols-1 gap-1">
+                            {section.options.map((option) => {
+                              const isSelected = selectedValues.has(option.value)
+                              return (
+                                <div
+                                  key={option.id || option.value}
+                                  className={cn(
+                                    "flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent",
+                                    isSelected && "bg-accent"
+                                  )}
+                                  onClick={() => handleFilterToggle(option.value)}
+                                >
+                                  <div className={cn(
+                                    "h-4 w-4 rounded border",
+                                    isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+                                  )}>
+                                    {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                                  </div>
+                                  <span className="text-sm">{option.label}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
                         </div>
-                      )
-                    }) : (
-                      <div className="text-sm text-muted-foreground p-2">
-                        No filter options available
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-[200px] overflow-auto">
+                      {autoFilterOptions.length > 0 ? autoFilterOptions.map((option) => {
+                        const isSelected = selectedValues.has(option.value)
+                        return (
+                          <div
+                            key={option.id || option.value}
+                            className={cn(
+                              "flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent",
+                              isSelected && "bg-accent"
+                            )}
+                            onClick={() => handleFilterToggle(option.value)}
+                          >
+                            <div className={cn(
+                              "h-4 w-4 rounded border",
+                              isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+                            )}>
+                              {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                            <span className="text-sm">{option.label}</span>
+                          </div>
+                        )
+                      }) : (
+                        <div className="text-sm text-muted-foreground p-2">
+                          No filter options available
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

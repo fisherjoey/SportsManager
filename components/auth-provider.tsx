@@ -10,6 +10,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   updateProfile: (updates: Partial<User>) => Promise<void>
+  hasRole: (role: string) => boolean
+  hasAnyRole: (...roles: string[]) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -76,8 +78,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const hasRole = (role: string): boolean => {
+    if (!user) return false
+    
+    // Check new roles array first, fallback to legacy role field
+    const userRoles = user.roles || [user.role]
+    
+    // Admin always has access
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    return userRoles.includes(role)
+  }
+
+  const hasAnyRole = (...roles: string[]): boolean => {
+    if (!user) return false
+    
+    // Check new roles array first, fallback to legacy role field
+    const userRoles = user.roles || [user.role]
+    
+    // Admin always has access
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    return roles.some(role => userRoles.includes(role))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, updateProfile, hasRole, hasAnyRole }}>
       {children}
     </AuthContext.Provider>
   )

@@ -33,11 +33,28 @@ interface GameMobileCardProps {
   game: Game
   isSelected?: boolean
   onSelect?: (selected: boolean) => void
+  onAssignReferee?: (game: Game) => void
 }
 
-export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardProps) {
-  const assignments = game.assignments || []
-  const refsNeeded = game.refs_needed || 2
+export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: GameMobileCardProps) {
+  // Handle both data structures - new (homeTeam/awayTeam) and old (home_team_name/away_team_name)
+  const homeTeamName = typeof game.homeTeam === 'object' 
+    ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+    : game.homeTeam || (game as any).home_team_name
+  
+  const awayTeamName = typeof game.awayTeam === 'object'
+    ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+    : game.awayTeam || (game as any).away_team_name
+
+  const gameDate = game.date || (game as any).game_date
+  const gameTime = game.startTime && game.endTime 
+    ? `${game.startTime} - ${game.endTime}` 
+    : game.time || (game as any).game_time
+  const gameLocation = game.location
+  const postalCode = game.postalCode || (game as any).postal_code
+  
+  const assignments = (game as any).assignments || ((game as any).assignedReferees?.map((name: string) => ({ referee_name: name, position_name: 'Referee' }))) || []
+  const refsNeeded = game.refsNeeded || (game as any).refs_needed || 2
   const assignedCount = assignments.length
 
   // Determine status
@@ -63,8 +80,8 @@ export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardPro
     StatusIcon = AlertCircle
   }
 
-  const payRate = parseFloat(game.pay_rate)
-  const multiplier = parseFloat(game.wage_multiplier)
+  const payRate = parseFloat(game.payRate || (game as any).pay_rate || "0")
+  const multiplier = parseFloat(game.wageMultiplier || (game as any).wage_multiplier || "1")
   const finalAmount = payRate * multiplier
 
   const levelColors = {
@@ -91,7 +108,7 @@ export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardPro
               )}
               <div className="flex-1">
                 <h3 className="font-semibold text-lg leading-tight">
-                  {game.home_team_name} <span className="text-muted-foreground">vs</span> {game.away_team_name}
+                  {homeTeamName} <span className="text-muted-foreground">vs</span> {awayTeamName}
                 </h3>
               </div>
             </div>
@@ -111,7 +128,7 @@ export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardPro
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {canAssign && (
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAssignReferee?.(game)}>
                     <Users className="mr-2 h-4 w-4" />
                     Assign Referee
                   </DropdownMenuItem>
@@ -136,19 +153,19 @@ export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardPro
           {/* Date and time */}
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="mr-2 h-4 w-4" />
-            <span>{new Date(game.game_date).toLocaleDateString()}</span>
+            <span>{new Date(gameDate).toLocaleDateString()}</span>
             <span className="mx-2">•</span>
-            <span>{game.game_time}</span>
+            <span>{gameTime}</span>
           </div>
 
           {/* Location */}
           <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="mr-2 h-4 w-4" />
-            <span className="truncate">{game.location}</span>
-            {game.postal_code && (
+            <span className="truncate">{gameLocation}</span>
+            {postalCode && (
               <>
                 <span className="mx-2">•</span>
-                <span>{game.postal_code}</span>
+                <span>{postalCode}</span>
               </>
             )}
           </div>
@@ -194,7 +211,7 @@ export function GameMobileCard({ game, isSelected, onSelect }: GameMobileCardPro
                   <span className="text-sm text-muted-foreground ml-1">None assigned</span>
                 ) : (
                   <div className="mt-1 space-y-1">
-                    {assignments.map((assignment, idx) => (
+                    {assignments.map((assignment: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between">
                         <span className="text-sm">{assignment.referee_name}</span>
                         <Badge variant="outline" className="text-xs">

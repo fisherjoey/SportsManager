@@ -11,6 +11,11 @@ const assignmentRoutes = require('./routes/assignments');
 const invitationRoutes = require('./routes/invitations');
 const refereeLevelRoutes = require('./routes/referee-levels');
 const selfAssignmentRoutes = require('./routes/self-assignment');
+const roleRoutes = require('./routes/roles');
+const availabilityRoutes = require('./routes/availability');
+const leagueRoutes = require('./routes/leagues');
+const teamRoutes = require('./routes/teams');
+const tournamentRoutes = require('./routes/tournaments');
 
 const app = express();
 
@@ -40,6 +45,11 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/referee-levels', refereeLevelRoutes);
 app.use('/api/self-assignment', selfAssignmentRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/leagues', leagueRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/tournaments', tournamentRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

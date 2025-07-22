@@ -48,8 +48,7 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
+      <div className="flex items-center justify-end">
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           Create Game
@@ -82,7 +81,7 @@ export function DashboardOverview() {
                 <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">
-                      {game.homeTeam} vs {game.awayTeam}
+                      {game.homeTeam.organization} {game.homeTeam.ageGroup} {game.homeTeam.gender} vs {game.awayTeam.organization} {game.awayTeam.ageGroup} {game.awayTeam.gender}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(game.date).toLocaleDateString()} at {game.time}
@@ -110,7 +109,7 @@ export function DashboardOverview() {
                 <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg border-red-200">
                   <div>
                     <p className="font-medium">
-                      {game.homeTeam} vs {game.awayTeam}
+                      {game.homeTeam.organization} {game.homeTeam.ageGroup} {game.homeTeam.gender} vs {game.awayTeam.organization} {game.awayTeam.ageGroup} {game.awayTeam.gender}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(game.date).toLocaleDateString()} at {game.time}

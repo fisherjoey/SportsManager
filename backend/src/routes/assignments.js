@@ -4,6 +4,7 @@ const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
+const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 
 const assignmentSchema = Joi.object({
   game_id: Joi.string().required(),
@@ -227,6 +228,56 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Referee has a time conflict with another game' });
     }
 
+    // Check availability windows for the game time
+    const availabilityWindows = await db('referee_availability')
+      .where('referee_id', value.user_id)
+      .where('date', game.game_date);
+
+    // Calculate game end time (assuming 2-hour duration if not specified)
+    const gameStartTime = game.game_time;
+    const gameEndTime = game.end_time || (() => {
+      const [hours, minutes] = gameStartTime.split(':').map(Number);
+      const endHours = (hours + 2) % 24;
+      return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    })();
+
+    // Check for availability conflicts
+    let availabilityWarning = null;
+    if (availabilityWindows.length > 0) {
+      const gameTime = { start: gameStartTime, end: gameEndTime };
+      const hasConflict = hasSchedulingConflict(availabilityWindows, gameTime);
+      
+      if (hasConflict) {
+        // Find the conflicting window for details
+        const conflictingWindow = availabilityWindows.find(window => {
+          if (!window.is_available && checkTimeOverlap(window, { start_time: gameStartTime, end_time: gameEndTime })) {
+            return true;
+          }
+          return false;
+        });
+        
+        if (conflictingWindow) {
+          const conflictReason = conflictingWindow.reason ? ` (${conflictingWindow.reason})` : '';
+          return res.status(409).json({ 
+            error: `Referee is unavailable during game time: ${conflictingWindow.start_time}-${conflictingWindow.end_time}${conflictReason}` 
+          });
+        }
+      }
+      
+      // Check if referee has marked availability for this time (positive indicator)
+      const hasAvailabilityWindow = availabilityWindows.some(window => 
+        window.is_available && 
+        gameStartTime >= window.start_time && 
+        gameEndTime <= window.end_time
+      );
+      
+      if (!hasAvailabilityWindow) {
+        availabilityWarning = 'Note: Referee has not specifically marked availability for this game time';
+      }
+    } else {
+      availabilityWarning = 'Note: Referee has not set any availability windows for this date';
+    }
+
     // Calculate final wage using referee's base wage and game multiplier
     const finalWage = calculateFinalWage(referee.wage_per_game, game.wage_multiplier);
     const wageBreakdown = getWageBreakdown(referee.wage_per_game, game.wage_multiplier, game.wage_multiplier_reason);
@@ -267,8 +318,14 @@ router.post('/', async (req, res) => {
       }
     };
     
-    if (levelWarning) {
-      response.warning = levelWarning;
+    // Combine warnings
+    const warnings = [];
+    if (levelWarning) warnings.push(levelWarning);
+    if (availabilityWarning) warnings.push(availabilityWarning);
+    
+    if (warnings.length > 0) {
+      response.warnings = warnings;
+      response.warning = warnings.join('; '); // For backward compatibility
     }
     
     res.status(201).json(response);
@@ -459,11 +516,19 @@ router.get('/available-referees/:game_id', async (req, res) => {
     const gameDate = new Date(game.game_date).toISOString().split('T')[0];
     const gameTime = game.game_time;
 
-    // Get all available referees who:
+    // Calculate game end time (assuming 2-hour duration if not specified)
+    const gameStartTime = game.game_time;
+    const gameEndTime = game.end_time || (() => {
+      const [hours, minutes] = gameStartTime.split(':').map(Number);
+      const endHours = (hours + 2) % 24;
+      return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    })();
+
+    // Get all potentially available referees who:
     // 1. Are generally available (is_available = true)
     // 2. Are not already assigned to another game at the same time
     // 3. Have role = 'referee'
-    const availableReferees = await db('users')
+    const potentialReferees = await db('users')
       .where('role', 'referee')
       .where('is_available', true)
       .whereNotExists(function() {
@@ -477,7 +542,92 @@ router.get('/available-referees/:game_id', async (req, res) => {
       })
       .select('*');
 
-    res.json(availableReferees);
+    // Get availability windows for all potential referees
+    const refereeIds = potentialReferees.map(ref => ref.id);
+    const availabilityWindows = await db('referee_availability')
+      .whereIn('referee_id', refereeIds)
+      .where('date', game.game_date);
+
+    // Group availability by referee
+    const availabilityByReferee = {};
+    availabilityWindows.forEach(window => {
+      if (!availabilityByReferee[window.referee_id]) {
+        availabilityByReferee[window.referee_id] = [];
+      }
+      availabilityByReferee[window.referee_id].push(window);
+    });
+
+    // Add availability data to referees and calculate availability scores
+    const refereesWithAvailability = potentialReferees.map(referee => ({
+      ...referee,
+      availability: availabilityByReferee[referee.id] || []
+    }));
+
+    // Use the availability utility to find and score available referees
+    const gameTimeWindow = { start: gameStartTime, end: gameEndTime };
+    const availableReferees = findAvailableReferees(refereesWithAvailability, gameTimeWindow);
+
+    // Transform the response to include availability status
+    const enhancedReferees = availableReferees.map(referee => {
+      const windows = availabilityByReferee[referee.id] || [];
+      
+      // Check availability status
+      let availabilityStatus = 'unknown';
+      let availabilityNote = 'No availability windows set';
+      
+      if (windows.length > 0) {
+        const hasConflict = hasSchedulingConflict(windows, gameTimeWindow);
+        if (hasConflict) {
+          availabilityStatus = 'conflict';
+          const conflictWindow = windows.find(w => 
+            !w.is_available && checkTimeOverlap(w, { start_time: gameStartTime, end_time: gameEndTime })
+          );
+          availabilityNote = conflictWindow ? 
+            `Unavailable: ${conflictWindow.start_time}-${conflictWindow.end_time}${conflictWindow.reason ? ` (${conflictWindow.reason})` : ''}` :
+            'Has scheduling conflict';
+        } else {
+          const hasPositiveAvailability = windows.some(w => 
+            w.is_available && 
+            gameStartTime >= w.start_time && 
+            gameEndTime <= w.end_time
+          );
+          
+          if (hasPositiveAvailability) {
+            availabilityStatus = 'available';
+            availabilityNote = 'Specifically available for this time';
+          } else {
+            availabilityStatus = 'not_specified';
+            availabilityNote = 'No specific availability set for this time';
+          }
+        }
+      }
+
+      return {
+        ...referee,
+        availabilityScore: referee.availabilityScore || 0,
+        availabilityStatus,
+        availabilityNote,
+        availabilityWindows: windows
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        referees: enhancedReferees,
+        gameTime: {
+          date: game.game_date,
+          startTime: gameStartTime,
+          endTime: gameEndTime
+        },
+        summary: {
+          total: enhancedReferees.length,
+          available: enhancedReferees.filter(r => r.availabilityStatus === 'available').length,
+          notSpecified: enhancedReferees.filter(r => r.availabilityStatus === 'not_specified').length,
+          unknown: enhancedReferees.filter(r => r.availabilityStatus === 'unknown').length
+        }
+      }
+    });
   } catch (error) {
     console.error('Error fetching available referees:', error);
     res.status(500).json({ error: 'Failed to fetch available referees' });

@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Users, Calendar, MapPin, Trophy, DollarSign } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Users, Calendar, MapPin, Trophy, DollarSign, Edit2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,10 +13,143 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState } from "react"
 import { Game, Team } from "../types"
 import { DataTableColumnHeaderAdvanced } from "./DataTableColumnHeaderAdvanced"
 
-export const gameColumns: ColumnDef<Game>[] = [
+interface GameColumnActions {
+  onAssignReferee?: (game: Game) => void
+  onEditGame?: (gameId: string, field: string, value: any) => void
+  onEditGameDialog?: (game: Game) => void
+}
+
+// Inline editable text component
+function EditableText({ 
+  value, 
+  onSave, 
+  placeholder = "Click to edit",
+  className = ""
+}: {
+  value: string
+  onSave: (newValue: string) => void
+  placeholder?: string
+  className?: string
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(value)
+
+  const handleSave = () => {
+    if (editValue !== value) {
+      onSave(editValue)
+    }
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setEditValue(value)
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <Input
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSave()
+          if (e.key === 'Escape') handleCancel()
+        }}
+        autoFocus
+        className={`h-8 ${className}`}
+      />
+    )
+  }
+
+  return (
+    <div 
+      className={`cursor-pointer hover:bg-muted/50 rounded px-2 py-1 group ${className}`}
+      onClick={() => setIsEditing(true)}
+    >
+      <span className="truncate">{value || placeholder}</span>
+      <Edit2 className="inline ml-1 h-3 w-3 opacity-0 group-hover:opacity-50" />
+    </div>
+  )
+}
+
+// Inline editable select component
+function EditableSelect({ 
+  value, 
+  options,
+  onSave, 
+  className = "",
+  displayValue,
+  badgeVariant,
+  badgeClassName
+}: {
+  value: string
+  options: { label: string; value: string }[]
+  onSave: (newValue: string) => void
+  className?: string
+  displayValue?: string
+  badgeVariant?: "default" | "secondary" | "destructive" | "outline"
+  badgeClassName?: string
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+
+  const handleSave = (newValue: string) => {
+    if (newValue !== value) {
+      onSave(newValue)
+    }
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <Select value={value} onValueChange={handleSave} onOpenChange={(open) => !open && setIsEditing(false)}>
+        <SelectTrigger className={`h-8 ${className}`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+
+  const displayText = displayValue || options.find(opt => opt.value === value)?.label || value
+
+  if (badgeVariant) {
+    return (
+      <Badge 
+        variant={badgeVariant}
+        className={`cursor-pointer hover:opacity-80 group ${badgeClassName || ""}`}
+        onClick={() => setIsEditing(true)}
+      >
+        <span className="truncate">{displayText}</span>
+        <Edit2 className="inline ml-1 h-3 w-3 opacity-0 group-hover:opacity-50" />
+      </Badge>
+    )
+  }
+
+  return (
+    <div 
+      className={`cursor-pointer hover:bg-muted/50 rounded px-2 py-1 group ${className}`}
+      onClick={() => setIsEditing(true)}
+    >
+      <span className="truncate">{displayText}</span>
+      <Edit2 className="inline ml-1 h-3 w-3 opacity-0 group-hover:opacity-50" />
+    </div>
+  )
+}
+
+export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -44,7 +177,7 @@ export const gameColumns: ColumnDef<Game>[] = [
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
-        title="Game Number" 
+        title="Game #" 
         searchable={true}
         filterable={false}
       />
@@ -66,11 +199,21 @@ export const gameColumns: ColumnDef<Game>[] = [
         column={column} 
         title="Home Team" 
         searchable={true}
-        filterable={true}
+        filterable={false}
       />
     ),
     cell: ({ row }) => {
       const homeTeam = row.getValue("homeTeam") as Team
+      
+      // Handle missing team data
+      if (!homeTeam || !homeTeam.organization) {
+        return (
+          <div className="font-medium text-muted-foreground">
+            <div className="truncate">No team data</div>
+          </div>
+        )
+      }
+      
       const teamName = `${homeTeam.organization} ${homeTeam.ageGroup} ${homeTeam.gender} ${homeTeam.rank}`
       
       return (
@@ -82,11 +225,6 @@ export const gameColumns: ColumnDef<Game>[] = [
         </div>
       )
     },
-    filterFn: (row, id, value) => {
-      const team = row.getValue(id) as Team
-      const teamName = `${team.organization} ${team.ageGroup} ${team.gender} ${team.rank}`
-      return value.some((v: string) => teamName.toLowerCase().includes(v.toLowerCase()))
-    },
   },
   {
     accessorKey: "awayTeam",
@@ -96,11 +234,21 @@ export const gameColumns: ColumnDef<Game>[] = [
         column={column} 
         title="Away Team" 
         searchable={true}
-        filterable={true}
+        filterable={false}
       />
     ),
     cell: ({ row }) => {
       const awayTeam = row.getValue("awayTeam") as Team
+      
+      // Handle missing team data
+      if (!awayTeam || !awayTeam.organization) {
+        return (
+          <div className="font-medium text-muted-foreground">
+            <div className="truncate">No team data</div>
+          </div>
+        )
+      }
+      
       const teamName = `${awayTeam.organization} ${awayTeam.ageGroup} ${awayTeam.gender} ${awayTeam.rank}`
       
       return (
@@ -112,11 +260,6 @@ export const gameColumns: ColumnDef<Game>[] = [
         </div>
       )
     },
-    filterFn: (row, id, value) => {
-      const team = row.getValue(id) as Team
-      const teamName = `${team.organization} ${team.ageGroup} ${team.gender} ${team.rank}`
-      return value.some((v: string) => teamName.toLowerCase().includes(v.toLowerCase()))
-    },
   },
   {
     accessorKey: "date",
@@ -127,11 +270,14 @@ export const gameColumns: ColumnDef<Game>[] = [
         title="Date & Time" 
         searchable={false}
         filterable={true}
+        dateRangeFilter={true}
       />
     ),
     cell: ({ row }) => {
       const date = new Date(row.getValue("date"))
-      const time = row.original.time
+      const time = row.original.startTime && row.original.endTime 
+        ? `${row.original.startTime} - ${row.original.endTime}` 
+        : row.original.time
       
       return (
         <div className="space-y-1">
@@ -188,16 +334,26 @@ export const gameColumns: ColumnDef<Game>[] = [
     cell: ({ row }) => {
       const location = row.getValue("location") as string
       const postalCode = row.original.postalCode
+      const game = row.original
       
       return (
         <div className="space-y-1">
           <div className="flex items-center text-sm">
             <MapPin className="mr-1 h-3 w-3 text-muted-foreground" />
-            <span className="truncate">{location}</span>
+            <EditableText
+              value={location}
+              onSave={(newValue) => actions?.onEditGame?.(game.id, "location", newValue)}
+              placeholder="Enter location"
+              className="flex-1"
+            />
           </div>
           {postalCode && (
             <div className="text-xs text-muted-foreground">
-              {postalCode}
+              <EditableText
+                value={postalCode}
+                onSave={(newValue) => actions?.onEditGame?.(game.id, "postalCode", newValue)}
+                placeholder="Postal code"
+              />
             </div>
           )}
         </div>
@@ -212,10 +368,22 @@ export const gameColumns: ColumnDef<Game>[] = [
         title="Level" 
         searchable={false}
         filterable={true}
+        filterOptions={[
+          { label: "Recreational", value: "Recreational", id: "level-recreational" },
+          { label: "Competitive", value: "Competitive", id: "level-competitive" },
+          { label: "Elite", value: "Elite", id: "level-elite" },
+        ]}
       />
     ),
     cell: ({ row }) => {
       const level = row.getValue("level") as string
+      const game = row.original
+      
+      const levelOptions = [
+        { label: "Recreational", value: "Recreational" },
+        { label: "Competitive", value: "Competitive" },
+        { label: "Elite", value: "Elite" },
+      ]
       
       const levelColors = {
         "Recreational": "bg-green-100 text-green-800 border-green-200",
@@ -226,17 +394,19 @@ export const gameColumns: ColumnDef<Game>[] = [
       return (
         <div className="flex items-center">
           <Trophy className="mr-1 h-3 w-3 text-muted-foreground" />
-          <Badge 
-            variant="outline" 
-            className={levelColors[level as keyof typeof levelColors] || ""}
-          >
-            {level}
-          </Badge>
+          <EditableSelect
+            value={level}
+            options={levelOptions}
+            onSave={(newValue) => actions?.onEditGame?.(game.id, "level", newValue)}
+            badgeVariant="outline"
+            badgeClassName={levelColors[level as keyof typeof levelColors] || ""}
+          />
         </div>
       )
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+      const level = row.getValue(id) as string
+      return Array.isArray(value) ? value.includes(level) : value === level
     },
   },
   {
@@ -248,6 +418,32 @@ export const gameColumns: ColumnDef<Game>[] = [
         title="Division" 
         searchable={false}
         filterable={true}
+        filterSections={[
+          {
+            title: "Age",
+            options: [
+              { label: "U11", value: "U11", id: "age-u11" },
+              { label: "U13", value: "U13", id: "age-u13" },
+              { label: "U15", value: "U15", id: "age-u15" },
+              { label: "U18", value: "U18", id: "age-u18" },
+            ]
+          },
+          {
+            title: "Division #",
+            options: [
+              { label: "Division 1", value: "Division 1", id: "div-1" },
+              { label: "Division 2", value: "Division 2", id: "div-2" },
+              { label: "Division 3", value: "Division 3", id: "div-3" },
+            ]
+          },
+          {
+            title: "Gender",
+            options: [
+              { label: "Boys Teams", value: "Boys", id: "gender-boys" },
+              { label: "Girls Teams", value: "Girls", id: "gender-girls" },
+            ]
+          }
+        ]}
       />
     ),
     cell: ({ row }) => {
@@ -263,7 +459,27 @@ export const gameColumns: ColumnDef<Game>[] = [
       )
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+      const division = row.getValue(id) as string
+      const homeTeam = row.original.homeTeam
+      const awayTeam = row.original.awayTeam
+      
+      // Group filters by category
+      const ageFilters = value.filter((v: string) => ['U11', 'U13', 'U15', 'U18'].includes(v))
+      const divisionFilters = value.filter((v: string) => v.includes('Division'))
+      const genderFilters = value.filter((v: string) => ['Boys', 'Girls'].includes(v))
+      
+      // Within each category: OR logic (any match)
+      // Between categories: AND logic (all categories must match)
+      
+      let ageMatch = ageFilters.length === 0 ? true : ageFilters.some((age: string) => division.includes(age))
+      let divisionMatch = divisionFilters.length === 0 ? true : divisionFilters.some((div: string) => division.includes(div))
+      let genderMatch = genderFilters.length === 0 ? true : genderFilters.some((gender: string) => {
+        if (gender === "Boys") return homeTeam?.gender === "Boys" || awayTeam?.gender === "Boys"
+        if (gender === "Girls") return homeTeam?.gender === "Girls" || awayTeam?.gender === "Girls"
+        return false
+      })
+      
+      return ageMatch && divisionMatch && genderMatch
     },
   },
   {
@@ -305,24 +521,34 @@ export const gameColumns: ColumnDef<Game>[] = [
     cell: ({ row }) => {
       const multiplier = parseFloat(row.original.wageMultiplier || "1.0")
       const reason = row.original.wageMultiplierReason
+      const game = row.original
+      
+      const multiplierOptions = [
+        { label: "Standard (1.0x)", value: "1.0" },
+        { label: "Time and Half (1.5x)", value: "1.5" },
+        { label: "Double Time (2.0x)", value: "2.0" },
+        { label: "Holiday Rate (2.5x)", value: "2.5" },
+        { label: "Reduced (0.8x)", value: "0.8" },
+      ]
       
       return (
         <div className="space-y-1">
           <div className="flex items-center font-medium">
             <DollarSign className="mr-1 h-3 w-3 text-muted-foreground" />
-            {multiplier === 1.0 ? (
-              <span className="text-muted-foreground">Standard</span>
-            ) : multiplier > 1.0 ? (
-              <span className="text-green-600">+{((multiplier - 1) * 100).toFixed(0)}%</span>
-            ) : (
-              <span className="text-red-600">{((multiplier - 1) * 100).toFixed(0)}%</span>
-            )}
+            <EditableSelect
+              value={multiplier.toString()}
+              options={multiplierOptions}
+              onSave={(newValue) => actions?.onEditGame?.(game.id, "wageMultiplier", newValue)}
+              className="min-w-[80px]"
+            />
           </div>
-          {reason && (
-            <div className="text-xs text-muted-foreground truncate max-w-[100px]">
-              {reason}
-            </div>
-          )}
+          <div className="text-xs text-muted-foreground truncate max-w-[100px]">
+            <EditableText
+              value={reason || ""}
+              onSave={(newValue) => actions?.onEditGame?.(game.id, "wageMultiplierReason", newValue)}
+              placeholder="Add reason..."
+            />
+          </div>
         </div>
       )
     },
@@ -352,8 +578,9 @@ export const gameColumns: ColumnDef<Game>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string
       const assignments = row.original.assignments || []
-      const refsNeeded = row.original.refs_needed || 2
-      const assignedCount = assignments.length
+      const assignedReferees = row.original.assignedReferees || []
+      const refsNeeded = row.original.refsNeeded || row.original.refs_needed || 2
+      const assignedCount = Math.max(assignments.length, assignedReferees.length)
 
       // Determine the actual status based on assignments
       let displayStatus = status
@@ -384,8 +611,8 @@ export const gameColumns: ColumnDef<Game>[] = [
     },
   },
   {
-    accessorKey: "notes", // Use notes field as placeholder since assignments doesn't exist
-    id: "notes",
+    accessorKey: "assignedReferees",
+    id: "assignedReferees",
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -395,17 +622,38 @@ export const gameColumns: ColumnDef<Game>[] = [
       />
     ),
     cell: ({ row }) => {
-      // Since assignments field doesn't exist in API, show placeholder
+      const assignedReferees = row.getValue("assignedReferees") as string[] || []
+      const refsNeeded = row.original.refsNeeded || row.original.refs_needed || 2
+      
+      if (assignedReferees.length === 0) {
+        return (
+          <div className="flex items-center text-muted-foreground">
+            <Users className="mr-1 h-3 w-3" />
+            <span className="text-sm">None assigned</span>
+          </div>
+        )
+      }
+      
       return (
-        <div className="flex items-center text-muted-foreground">
-          <Users className="mr-1 h-3 w-3" />
-          <span className="text-sm">None assigned</span>
+        <div className="space-y-1">
+          <div className="flex items-center">
+            <Users className="mr-1 h-3 w-3 text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {assignedReferees.length}/{refsNeeded}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {assignedReferees.join(", ")}
+          </div>
         </div>
       )
     },
     filterFn: (row, id, value) => {
-      // Since no assignments data, just return true for now
-      return true
+      const assignedReferees = row.getValue(id) as string[] || []
+      const searchTerm = value.toLowerCase()
+      return assignedReferees.some(referee => 
+        referee.toLowerCase().includes(searchTerm)
+      )
     },
     enableSorting: false,
   },
@@ -415,8 +663,10 @@ export const gameColumns: ColumnDef<Game>[] = [
     cell: ({ row }) => {
       const game = row.original
       const assignments = game.assignments || []
-      const refsNeeded = game.refs_needed || 2
-      const canAssign = assignments.length < refsNeeded
+      const assignedReferees = game.assignedReferees || []
+      const refsNeeded = game.refsNeeded || game.refs_needed || 2
+      const assignedCount = Math.max(assignments.length, assignedReferees.length)
+      const canAssign = assignedCount < refsNeeded
 
       return (
         <DropdownMenu>
@@ -435,15 +685,18 @@ export const gameColumns: ColumnDef<Game>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {canAssign && (
-              <DropdownMenuItem>
-                <Users className="mr-2 h-4 w-4" />
+              <DropdownMenuItem
+                onClick={() => actions?.onAssignReferee?.(game)}
+              >
                 Assign Referee
               </DropdownMenuItem>
             )}
             <DropdownMenuItem>
               View details
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => actions?.onEditGameDialog?.(game)}
+            >
               Edit game
             </DropdownMenuItem>
             {game.status !== "up-for-grabs" && (
@@ -457,3 +710,6 @@ export const gameColumns: ColumnDef<Game>[] = [
     },
   },
 ]
+
+// Backward compatibility export
+export const gameColumns = createGameColumns()

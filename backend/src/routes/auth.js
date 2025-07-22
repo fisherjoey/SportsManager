@@ -51,12 +51,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT token (include roles array for new system)
     const token = jwt.sign(
       { 
         userId: user.id, 
         email: user.email, 
-        role: user.role 
+        role: user.role,  // Keep for backward compatibility
+        roles: user.roles || [user.role] // New roles array
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -66,7 +67,8 @@ router.post('/login', async (req, res) => {
     let userData = {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role, // Keep for backward compatibility
+      roles: user.roles || [user.role] // New roles array
     };
 
     if (user.role === 'referee' || user.role === 'admin') {
@@ -151,12 +153,13 @@ router.post('/register', async (req, res) => {
 
       await trx.commit();
 
-      // Generate JWT token
+      // Generate JWT token (include roles array for new system)
       const token = jwt.sign(
         { 
           userId: user.id, 
           email: user.email, 
-          role: user.role 
+          role: user.role, // Keep for backward compatibility
+          roles: user.roles || [user.role] // New roles array
         },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -195,7 +198,8 @@ router.get('/me', authenticateToken, async (req, res) => {
     let userData = {
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role, // Keep for backward compatibility
+      roles: user.roles || [user.role], // New roles array
       name: user.name,
       created_at: user.created_at,
       updated_at: user.updated_at

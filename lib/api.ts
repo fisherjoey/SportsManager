@@ -296,6 +296,78 @@ class ApiClient {
     });
   }
 
+  // Availability Windows API
+  async getRefereeAvailabilityWindows(id: string, params?: { startDate?: string; endDate?: string }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const url = `/availability/referees/${id}${queryString ? `?${queryString}` : ''}`;
+    return this.request<{
+      success: boolean;
+      data: {
+        refereeId: string;
+        availability: AvailabilityWindow[];
+        count: number;
+      };
+    }>(url);
+  }
+
+  async createAvailabilityWindow(refereeId: string, window: Partial<AvailabilityWindow>) {
+    return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/referees/${refereeId}`, {
+      method: 'POST',
+      body: JSON.stringify(window),
+    });
+  }
+
+  async updateAvailabilityWindow(windowId: string, updates: Partial<AvailabilityWindow>) {
+    return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/${windowId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteAvailabilityWindow(windowId: string) {
+    return this.request<{ success: boolean; message: string }>(`/availability/${windowId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async checkAvailabilityConflicts(params: {
+    date: string;
+    start_time: string;
+    end_time: string;
+    referee_id?: string;
+  }) {
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return this.request<{
+      success: boolean;
+      data: {
+        availabilityConflicts: any[];
+        gameConflicts: any[];
+        totalConflicts: number;
+      };
+    }>(`/availability/conflicts?${queryString}`);
+  }
+
+  async createBulkAvailability(refereeId: string, windows: Partial<AvailabilityWindow>[]) {
+    return this.request<{
+      success: boolean;
+      data: {
+        created: AvailabilityWindow[];
+        skipped: { window: Partial<AvailabilityWindow>; reason: string }[];
+      };
+      summary: {
+        total: number;
+        created: number;
+        skipped: number;
+      };
+    }>('/availability/bulk', {
+      method: 'POST',
+      body: JSON.stringify({
+        referee_id: refereeId,
+        windows,
+      }),
+    });
+  }
+
   async getRefereeAssignments(id: string, params?: {
     status?: string;
     startDate?: string;
@@ -465,6 +537,291 @@ class ApiClient {
     }>('/self-assignment/available');
   }
 
+  // League endpoints
+  async getLeagues(params?: {
+    organization?: string;
+    age_group?: string;
+    gender?: string;
+    division?: string;
+    season?: string;
+    level?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      success: boolean;
+      data: {
+        leagues: League[];
+        pagination: any;
+      };
+    }>(`/leagues${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getLeague(id: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        league: League;
+        teams: Team[];
+        games: Game[];
+        stats: any;
+      };
+    }>(`/leagues/${id}`);
+  }
+
+  async createLeague(leagueData: Partial<League>) {
+    return this.request<{
+      success: boolean;
+      data: { league: League };
+      message: string;
+    }>('/leagues', {
+      method: 'POST',
+      body: JSON.stringify(leagueData),
+    });
+  }
+
+  async createBulkLeagues(data: {
+    organization: string;
+    age_groups: string[];
+    genders: string[];
+    divisions: string[];
+    season: string;
+    level: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        created: League[];
+        duplicates: string[];
+        summary: any;
+      };
+      message: string;
+    }>('/leagues/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLeague(id: string, leagueData: Partial<League>) {
+    return this.request<{
+      success: boolean;
+      data: { league: League };
+      message: string;
+    }>(`/leagues/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(leagueData),
+    });
+  }
+
+  async deleteLeague(id: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/leagues/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getLeagueFilterOptions() {
+    return this.request<{
+      success: boolean;
+      data: {
+        organizations: string[];
+        age_groups: string[];
+        genders: string[];
+        divisions: string[];
+        seasons: string[];
+        levels: string[];
+      };
+    }>('/leagues/options/filters');
+  }
+
+  // Team endpoints
+  async getTeams(params?: {
+    league_id?: string;
+    organization?: string;
+    age_group?: string;
+    gender?: string;
+    season?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      success: boolean;
+      data: {
+        teams: Team[];
+        pagination: any;
+      };
+    }>(`/teams${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getTeam(id: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        team: Team;
+        games: Game[];
+        stats: any;
+      };
+    }>(`/teams/${id}`);
+  }
+
+  async createTeam(teamData: Partial<Team>) {
+    return this.request<{
+      success: boolean;
+      data: { team: Team };
+      message: string;
+    }>('/teams', {
+      method: 'POST',
+      body: JSON.stringify(teamData),
+    });
+  }
+
+  async createBulkTeams(data: {
+    league_id: string;
+    teams: Partial<Team>[];
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        created: Team[];
+        duplicates: string[];
+        summary: any;
+      };
+      message: string;
+    }>('/teams/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateTeams(data: {
+    league_id: string;
+    count: number;
+    name_pattern?: string;
+    location_base?: string;
+    auto_rank?: boolean;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        created: Team[];
+        league: any;
+        summary: any;
+      };
+      message: string;
+    }>('/teams/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTeam(id: string, teamData: Partial<Team>) {
+    return this.request<{
+      success: boolean;
+      data: { team: Team };
+      message: string;
+    }>(`/teams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(teamData),
+    });
+  }
+
+  async deleteTeam(id: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/teams/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getTeamsForLeague(leagueId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        league: League;
+        teams: Team[];
+      };
+    }>(`/teams/league/${leagueId}`);
+  }
+
+  // Tournament endpoints
+  async generateTournament(data: {
+    name: string;
+    league_id: string;
+    tournament_type: 'round_robin' | 'single_elimination' | 'swiss_system' | 'group_stage_playoffs';
+    team_ids: string[];
+    start_date: string;
+    venue?: string;
+    time_slots?: string[];
+    days_of_week?: number[];
+    games_per_day?: number;
+    rounds?: number; // for swiss system
+    group_size?: number; // for group stage
+    advance_per_group?: number; // for group stage
+    seeding_method?: 'random' | 'ranked' | 'custom';
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        tournament: Tournament;
+      };
+      message: string;
+    }>('/tournaments/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createTournamentGames(data: {
+    games: any[];
+    tournament_name: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        created: Game[];
+        summary: any;
+      };
+      message: string;
+    }>('/tournaments/create-games', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getTournamentFormats() {
+    return this.request<{
+      success: boolean;
+      data: {
+        formats: TournamentFormat[];
+      };
+    }>('/tournaments/formats');
+  }
+
+  async estimateTournament(params: {
+    tournament_type: string;
+    team_count: number;
+    rounds?: number;
+    group_size?: number;
+    advance_per_group?: number;
+    games_per_day?: number;
+  }) {
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return this.request<{
+      success: boolean;
+      data: {
+        tournament_type: string;
+        team_count: number;
+        estimate: any;
+      };
+    }>(`/tournaments/estimate?${queryString}`);
+  }
+
   // Invitation endpoints
   async createInvitation(invitationData: {
     email: string;
@@ -599,13 +956,106 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "referee";
+  role: "admin" | "referee"; // Keep for backward compatibility
+  roles: string[]; // New array-based roles system
   phone?: string;
   certificationLevel?: string;
   location?: string;
   isAvailable?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface AvailabilityWindow {
+  id: string;
+  referee_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+  reason?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface League {
+  id: string;
+  organization: string;
+  age_group: string;
+  gender: string;
+  division: string;
+  season: string;
+  level: string;
+  team_count?: number;
+  game_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  league_id: string;
+  rank: number;
+  location?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  game_count?: number;
+  // League information when joined
+  organization?: string;
+  age_group?: string;
+  gender?: string;
+  division?: string;
+  season?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Tournament {
+  name: string;
+  type: 'round_robin' | 'single_elimination' | 'swiss_system' | 'group_stage_playoffs';
+  league: League;
+  teams: Team[];
+  total_games: number;
+  total_rounds: number;
+  games: Game[];
+  rounds: TournamentRound[];
+  groups?: TournamentGroup[];
+  summary: TournamentSummary;
+}
+
+export interface TournamentRound {
+  round: number;
+  round_name?: string;
+  stage?: string;
+  games: Game[];
+}
+
+export interface TournamentGroup {
+  id: number;
+  name: string;
+  teams: Team[];
+}
+
+export interface TournamentSummary {
+  teams_count: number;
+  games_per_team?: number;
+  max_games_per_team?: number;
+  estimated_duration_days: number;
+  format: string;
+  [key: string]: any;
+}
+
+export interface TournamentFormat {
+  id: string;
+  name: string;
+  description: string;
+  min_teams: number;
+  max_teams: number;
+  pros: string[];
+  cons: string[];
+  games_formula: string;
+  suitable_for: string;
 }
 
 // Create and export API client instance
