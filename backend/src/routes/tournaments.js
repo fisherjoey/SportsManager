@@ -138,8 +138,7 @@ router.post('/generate', authenticateToken, requireRole(['admin']), async (req, 
       pay_rate: getPayRateForLevel(league.level),
       refs_needed: getRefereeCountForLevel(league.level),
       status: 'unassigned',
-      postal_code: 'T0T0T0', // Default postal code
-      notes: `${name} - ${tournament_type.replace('_', ' ').toUpperCase()}`
+      postal_code: 'T0T0T0' // Default postal code
     }));
 
     res.status(201).json({
@@ -205,8 +204,7 @@ router.post('/create-games', authenticateToken, requireRole(['admin']), async (r
           refs_needed: gameData.refs_needed || 2,
           status: 'unassigned',
           wage_multiplier: 1.0,
-          wage_multiplier_reason: null,
-          notes: gameData.notes || `${tournament_name} - Round ${gameData.round}`
+          wage_multiplier_reason: null
         };
 
         const [createdGame] = await trx('games').insert(gameToCreate).returning('*');
