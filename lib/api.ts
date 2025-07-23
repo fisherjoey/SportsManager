@@ -971,6 +971,7 @@ export interface User {
   email: string;
   role: "admin" | "referee"; // Keep for backward compatibility
   roles: string[]; // New array-based roles system
+  referee_id?: string; // Add referee_id for referees
   phone?: string;
   certificationLevel?: string;
   location?: string;
