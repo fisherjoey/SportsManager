@@ -19,6 +19,7 @@ export interface Game {
   location: string
   postalCode?: string
   level: string
+  gameType: string
   division: string // "U11 Division 1", "U13 Division 2", etc.
   season: string // "Winter 2025", "Fall 2024", etc.
   payRate: string
@@ -42,6 +43,7 @@ export interface GameFilters {
   globalSearch: string
   dateRange: { from?: Date; to?: Date }
   levels: string[]
+  gameTypes: string[]
   payRange: { min: number; max: number }
   statuses: string[]
   refereeSearch: string
@@ -90,6 +92,7 @@ export interface Referee {
 }
 
 export type GameLevel = "Recreational" | "Competitive" | "Elite"
+export type GameType = "Community" | "Club" | "Tournament" | "Private Tournament"
 export type GameStatus = "unassigned" | "assigned" | "up-for-grabs" | "completed"
 export type AssignmentStatus = "pending" | "accepted" | "declined"
 export type RefereeLevel = "Recreational" | "Competitive" | "Elite"

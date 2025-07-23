@@ -243,6 +243,7 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
     time: "",
     location: "",
     level: "",
+    gameType: "Community",
     payRate: "",
   })
 
@@ -259,6 +260,7 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
       time: "",
       location: "",
       level: "",
+      gameType: "Community",
       payRate: "",
     })
   }
@@ -331,15 +333,29 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="payRate">Pay Rate ($)</Label>
-          <Input
-            id="payRate"
-            type="number"
-            value={formData.payRate}
-            onChange={(e) => setFormData({ ...formData, payRate: e.target.value })}
-            required
-          />
+          <Label htmlFor="gameType">Game Type</Label>
+          <Select value={formData.gameType} onValueChange={(value) => setFormData({ ...formData, gameType: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select game type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Community">Community</SelectItem>
+              <SelectItem value="Club">Club</SelectItem>
+              <SelectItem value="Tournament">Tournament</SelectItem>
+              <SelectItem value="Private Tournament">Private Tournament</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="payRate">Pay Rate ($)</Label>
+        <Input
+          id="payRate"
+          type="number"
+          value={formData.payRate}
+          onChange={(e) => setFormData({ ...formData, payRate: e.target.value })}
+          required
+        />
       </div>
       <Button type="submit" className="w-full">
         Create Game
@@ -499,6 +515,7 @@ function EditGameDialog({ game, onSave, onClose }: {
     location: game.location || '',
     postalCode: game.postalCode || '',
     level: game.level || '',
+    gameType: game.gameType || 'Community',
     division: game.division || '',
     season: game.season || '',
     wageMultiplier: game.wageMultiplier || '1.0',
@@ -518,6 +535,7 @@ function EditGameDialog({ game, onSave, onClose }: {
       location: formData.location,
       postalCode: formData.postalCode,
       level: formData.level,
+      gameType: formData.gameType,
       division: formData.division,
       season: formData.season,
       wageMultiplier: formData.wageMultiplier,
@@ -603,7 +621,7 @@ function EditGameDialog({ game, onSave, onClose }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="level">Level</Label>
               <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
@@ -617,6 +635,23 @@ function EditGameDialog({ game, onSave, onClose }: {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="gameType">Game Type</Label>
+              <Select value={formData.gameType} onValueChange={(value) => setFormData({ ...formData, gameType: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select game type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Community">Community</SelectItem>
+                  <SelectItem value="Club">Club</SelectItem>
+                  <SelectItem value="Tournament">Tournament</SelectItem>
+                  <SelectItem value="Private Tournament">Private Tournament</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="division">Division</Label>
               <Input

@@ -19,6 +19,7 @@ const gameSchema = Joi.object({
   location: Joi.string().required(),
   postalCode: Joi.string().max(10).required(),
   level: Joi.string().required(),
+  gameType: Joi.string().valid('Community', 'Club', 'Tournament', 'Private Tournament').default('Community'),
   division: Joi.string().required(),
   season: Joi.string().required(),
   payRate: Joi.number().positive().required(),
@@ -35,6 +36,7 @@ const gameUpdateSchema = Joi.object({
   location: Joi.string(),
   postalCode: Joi.string().max(10),
   level: Joi.string(),
+  gameType: Joi.string().valid('Community', 'Club', 'Tournament', 'Private Tournament'),
   division: Joi.string(),
   season: Joi.string(),
   payRate: Joi.number().positive(),
@@ -46,7 +48,7 @@ const gameUpdateSchema = Joi.object({
 // GET /api/games - Get all games with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { status, level, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
+    const { status, level, game_type, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
     
     let query = db('games')
       .select(
@@ -70,6 +72,10 @@ router.get('/', async (req, res) => {
     
     if (level) {
       query = query.where('games.level', level);
+    }
+    
+    if (game_type) {
+      query = query.where('games.game_type', game_type);
     }
     
     if (date_from) {
@@ -132,6 +138,7 @@ router.get('/', async (req, res) => {
         location: game.location,
         postalCode: game.postal_code,
         level: game.level,
+        gameType: game.game_type,
         division: game.division,
         season: game.season,
         payRate: game.pay_rate,
@@ -200,6 +207,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       location: value.location,
       postal_code: value.postalCode,
       level: value.level,
+      game_type: value.gameType,
       division: value.division,
       season: value.season,
       pay_rate: value.payRate,
@@ -220,6 +228,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       location: game.location,
       postalCode: game.postal_code,
       level: game.level,
+      gameType: game.game_type,
       division: game.division,
       season: game.season,
       payRate: game.pay_rate,

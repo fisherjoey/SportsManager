@@ -67,6 +67,33 @@ describe('Games Routes', () => {
       });
     });
 
+    it('should filter games by game_type', async () => {
+      const response = await request(app)
+        .get('/api/games?game_type=Community')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      response.body.data.games.forEach(game => {
+        expect(game.gameType).toBe('Community');
+      });
+    });
+
+    it('should return games with default gameType when none specified', async () => {
+      const response = await request(app)
+        .get('/api/games')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.games)).toBe(true);
+      // All games should have a gameType field
+      response.body.data.games.forEach(game => {
+        expect(game.gameType).toBeDefined();
+        expect(['Community', 'Club', 'Tournament', 'Private Tournament']).toContain(game.gameType);
+      });
+    });
+
     it('should paginate results correctly', async () => {
       const response = await request(app)
         .get('/api/games?page=1&limit=5')
@@ -155,6 +182,48 @@ describe('Games Routes', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Admin access required');
+    });
+
+    it('should create game with specified gameType', async () => {
+      const gameDataWithType = {
+        ...gameData,
+        gameType: 'Tournament'
+      };
+
+      const response = await request(app)
+        .post('/api/games')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(gameDataWithType)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.game.gameType).toBe('Tournament');
+    });
+
+    it('should create game with default gameType when not specified', async () => {
+      const response = await request(app)
+        .post('/api/games')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(gameData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.game.gameType).toBe('Community'); // default value
+    });
+
+    it('should reject invalid gameType values', async () => {
+      const invalidGameData = {
+        ...gameData,
+        gameType: 'InvalidType'
+      };
+
+      const response = await request(app)
+        .post('/api/games')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invalidGameData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
     });
 
     it('should return 400 for missing required fields', async () => {

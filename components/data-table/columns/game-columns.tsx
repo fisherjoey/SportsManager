@@ -410,6 +410,58 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
     },
   },
   {
+    accessorKey: "gameType",
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title="Game Type" 
+        searchable={false}
+        filterable={true}
+        filterOptions={[
+          { label: "Community", value: "Community", id: "type-community" },
+          { label: "Club", value: "Club", id: "type-club" },
+          { label: "Tournament", value: "Tournament", id: "type-tournament" },
+          { label: "Private Tournament", value: "Private Tournament", id: "type-private" },
+        ]}
+      />
+    ),
+    cell: ({ row }) => {
+      const gameType = row.getValue("gameType") as string
+      const game = row.original
+      
+      const gameTypeOptions = [
+        { label: "Community", value: "Community" },
+        { label: "Club", value: "Club" },
+        { label: "Tournament", value: "Tournament" },
+        { label: "Private Tournament", value: "Private Tournament" },
+      ]
+      
+      const typeColors = {
+        "Community": "bg-blue-100 text-blue-800 border-blue-200",
+        "Club": "bg-purple-100 text-purple-800 border-purple-200", 
+        "Tournament": "bg-orange-100 text-orange-800 border-orange-200",
+        "Private Tournament": "bg-pink-100 text-pink-800 border-pink-200",
+      }
+      
+      return (
+        <div className="flex items-center">
+          <Trophy className="mr-1 h-3 w-3 text-muted-foreground" />
+          <EditableSelect
+            value={gameType || "Community"}
+            options={gameTypeOptions}
+            onSave={(newValue) => actions?.onEditGame?.(game.id, "gameType", newValue)}
+            badgeVariant="outline"
+            badgeClassName={typeColors[gameType as keyof typeof typeColors] || typeColors["Community"]}
+          />
+        </div>
+      )
+    },
+    filterFn: (row, id, value) => {
+      const gameType = row.getValue(id) as string
+      return Array.isArray(value) ? value.includes(gameType) : value === gameType
+    },
+  },
+  {
     accessorKey: "division",
     id: "division",
     header: ({ column }) => (
