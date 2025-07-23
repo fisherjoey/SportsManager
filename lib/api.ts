@@ -242,6 +242,12 @@ class ApiClient {
       certificationLevel: referee.level,
       location: referee.location,
       isAvailable: referee.is_available,
+      certifications: referee.certifications || [],
+      preferredPositions: referee.preferred_positions || [],
+      wagePerGame: referee.wage_per_game,
+      notes: referee.notes,
+      maxDistance: referee.max_distance,
+      postalCode: referee.postal_code,
       createdAt: referee.created_at,
       updatedAt: referee.updated_at
     }));
@@ -262,6 +268,12 @@ class ApiClient {
       certificationLevel: response.data.referee.level,
       location: response.data.referee.location,
       isAvailable: response.data.referee.is_available,
+      certifications: response.data.referee.certifications || [],
+      preferredPositions: response.data.referee.preferred_positions || [],
+      wagePerGame: response.data.referee.wage_per_game,
+      notes: response.data.referee.notes,
+      maxDistance: response.data.referee.max_distance,
+      postalCode: response.data.referee.postal_code,
       createdAt: response.data.referee.created_at,
       updatedAt: response.data.referee.updated_at
     };
@@ -470,6 +482,12 @@ class ApiClient {
       certificationLevel: referee.level,
       location: referee.location,
       isAvailable: referee.is_available,
+      certifications: referee.certifications || [],
+      preferredPositions: referee.preferred_positions || [],
+      wagePerGame: referee.wage_per_game,
+      notes: referee.notes,
+      maxDistance: referee.max_distance,
+      postalCode: referee.postal_code,
       createdAt: referee.created_at,
       updatedAt: referee.updated_at
     }));

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useApi } from "@/lib/api"
 import { useAuth } from "@/components/auth-provider"
 
-export default function CompleteSignupPage() {
+function CompleteSignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -262,5 +262,20 @@ export default function CompleteSignupPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function CompleteSignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CompleteSignupContent />
+    </Suspense>
   )
 }

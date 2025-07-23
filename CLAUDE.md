@@ -48,7 +48,7 @@ This document outlines the core features, design improvements, and pending decis
 
 ## Games Interface
 
-- Add **Game Type** (e.g. Community, Club, Tournament, Private Tournament).
+- ✅ Add **Game Type** (e.g. Community, Club, Tournament, Private Tournament).
 - Add support for **Evaluators/Mentors**:
   - Treated like referees in terms of game assignment.
   - Paid the full game fee.

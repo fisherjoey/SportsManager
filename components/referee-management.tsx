@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { UserPlus, Calendar, Clock } from "lucide-react"
-import { mockReferees } from "@/lib/mock-data"
 import { useApi } from "@/lib/api"
 import { DataTable } from "@/components/data-table/DataTable"
 import { createRefereeColumns } from "@/components/data-table/columns/referee-columns"
@@ -25,12 +24,12 @@ import { AvailabilityCalendar } from "@/components/availability-calendar"
 import { Referee } from "@/components/data-table/types"
 
 export function RefereeManagement() {
-  const [referees] = useState<Referee[]>(mockReferees)
+  const [referees, setReferees] = useState<Referee[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [selectedReferee, setSelectedReferee] = useState<Referee | null>(null)
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
   const [availabilityRefereeId, setAvailabilityRefereeId] = useState<string>("")
-  const [loading, setLoading] = useState(false)
   const [inviteForm, setInviteForm] = useState({
     email: "",
     firstName: "",
@@ -39,6 +38,28 @@ export function RefereeManagement() {
   })
   const api = useApi()
   const { toast } = useToast()
+
+  // Fetch referees from API
+  useEffect(() => {
+    const fetchReferees = async () => {
+      try {
+        setIsLoading(true)
+        const response = await api.getReferees({ limit: 100 }) // Get all referees
+        setReferees(response.data.referees)
+      } catch (error) {
+        console.error('Failed to fetch referees:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load referees. Please try again.",
+          variant: "destructive"
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchReferees()
+  }, [api, toast])
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,22 +117,22 @@ export function RefereeManagement() {
   const stats = [
     {
       title: "Total Referees",
-      value: referees.length,
+      value: Array.isArray(referees) ? referees.length : 0,
       color: "text-blue-600",
     },
     {
       title: "Active This Week",
-      value: Math.floor(referees.length * 0.7),
+      value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
       color: "text-green-600",
     },
     {
       title: "Available Now",
-      value: Math.floor(referees.length * 0.4),
+      value: Array.isArray(referees) ? Math.floor(referees.length * 0.4) : 0,
       color: "text-orange-600",
     },
     {
       title: "Elite Level",
-      value: referees.filter((r) => r.level === "Elite").length,
+      value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === "Elite").length : 0,
       color: "text-purple-600",
     },
   ]
@@ -214,12 +235,12 @@ export function RefereeManagement() {
               onManageAvailability: handleManageAvailability
             })} 
             data={referees} 
-            loading={loading}
+            loading={isLoading}
             mobileCardType="referee"
+            enableViewToggle={true}
             onEditReferee={handleEditReferee}
             onViewProfile={handleViewProfile}
             searchKey="name"
-            enableViewToggle={true}
           />
         </CardContent>
       </Card>
