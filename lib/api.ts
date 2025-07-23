@@ -1,3 +1,5 @@
+import { AvailabilityWindow, AvailabilityResponse } from './types'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ApiResponse<T> {
@@ -312,14 +314,7 @@ class ApiClient {
   async getRefereeAvailabilityWindows(id: string, params?: { startDate?: string; endDate?: string }) {
     const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
     const url = `/availability/referees/${id}${queryString ? `?${queryString}` : ''}`;
-    return this.request<{
-      success: boolean;
-      data: {
-        refereeId: string;
-        availability: AvailabilityWindow[];
-        count: number;
-      };
-    }>(url);
+    return this.request<AvailabilityResponse>(url);
   }
 
   async createAvailabilityWindow(refereeId: string, window: Partial<AvailabilityWindow>) {
@@ -984,17 +979,6 @@ export interface User {
   updatedAt?: string;
 }
 
-export interface AvailabilityWindow {
-  id: string;
-  referee_id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-  reason?: string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 export interface League {
   id: string;

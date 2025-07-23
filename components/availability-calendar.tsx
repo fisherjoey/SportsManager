@@ -40,18 +40,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns'
-
-interface AvailabilityWindow {
-  id: string
-  referee_id: string
-  date: string
-  start_time: string
-  end_time: string
-  is_available: boolean
-  reason?: string
-  created_at?: string
-  updated_at?: string
-}
+import { AvailabilityWindow } from '@/lib/types'
 
 interface AvailabilityCalendarProps {
   refereeId: string
@@ -89,6 +78,11 @@ export function AvailabilityCalendar({
 
   // Fetch availability windows
   const fetchAvailability = useCallback(async () => {
+    if (!refereeId) {
+      console.warn('No refereeId provided to fetchAvailability')
+      return
+    }
+    
     setLoading(true)
     try {
       const startDate = format(weekStart, 'yyyy-MM-dd')
@@ -99,13 +93,19 @@ export function AvailabilityCalendar({
         endDate
       })
 
-      setAvailabilityWindows(response.data.availability)
-      onWindowChange?.(response.data.availability)
+      if (response.success && response.data && response.data.availability) {
+        setAvailabilityWindows(response.data.availability)
+        onWindowChange?.(response.data.availability)
+      } else {
+        console.error('Invalid API response structure:', response)
+        setAvailabilityWindows([])
+      }
     } catch (error) {
       console.error('Error fetching availability:', error)
+      setAvailabilityWindows([])
       toast({
         title: "Error",
-        description: "Failed to load availability data.",
+        description: "Failed to load availability data. Please try again.",
         variant: "destructive",
       })
     } finally {
