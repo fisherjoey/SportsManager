@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react"
 
 import {
   Sidebar,
@@ -76,6 +76,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Available Games",
       url: "available",
       icon: Trophy,
+    },
+    {
+      title: "Availability",
+      url: "availability",
+      icon: CalendarClock,
     },
     {
       title: "Calendar",

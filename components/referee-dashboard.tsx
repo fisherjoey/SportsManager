@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "@/components/auth-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -9,9 +10,11 @@ import { MyAssignments } from "@/components/my-assignments"
 import { AvailableGames } from "@/components/available-games"
 import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
+import { AvailabilityCalendar } from "@/components/availability-calendar"
 
 export function RefereeDashboard() {
   const [activeView, setActiveView] = useState("dashboard")
+  const { user } = useAuth()
 
   const renderContent = () => {
     switch (activeView) {
@@ -21,6 +24,8 @@ export function RefereeDashboard() {
         return <MyAssignments />
       case "available":
         return <AvailableGames />
+      case "availability":
+        return <AvailabilityCalendar refereeId={user?.referee_id || user?.id || ""} canEdit={true} />
       case "calendar":
         return <CalendarView />
       case "profile":
