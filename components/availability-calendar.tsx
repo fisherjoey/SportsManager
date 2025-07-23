@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -62,8 +62,17 @@ export function AvailabilityCalendar({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [dragStart, setDragStart] = useState<{date: string, time: string} | null>(null)
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
+  const isMountedRef = useRef(true)
   const { toast } = useToast()
   const api = useApi()
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Calculate week/month range
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday start
@@ -83,6 +92,14 @@ export function AvailabilityCalendar({
       return
     }
     
+    // Prevent rapid successive API calls (rate limiting)
+    const now = Date.now()
+    if (now - lastFetchTime < 1000) { // 1 second minimum between requests
+      console.log('Skipping fetch - too soon after last request')
+      return
+    }
+    setLastFetchTime(now)
+    
     setLoading(true)
     try {
       const startDate = format(weekStart, 'yyyy-MM-dd')
@@ -93,6 +110,9 @@ export function AvailabilityCalendar({
         endDate
       })
 
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) return
+      
       if (response.success && response.data && response.data.availability) {
         setAvailabilityWindows(response.data.availability)
         onWindowChange?.(response.data.availability)
@@ -101,21 +121,26 @@ export function AvailabilityCalendar({
         setAvailabilityWindows([])
       }
     } catch (error) {
+      // Only show error if component is still mounted
+      if (!isMountedRef.current) return
+      
       console.error('Error fetching availability:', error)
       setAvailabilityWindows([])
       toast({
-        title: "Error",
+        title: "Error", 
         description: "Failed to load availability data. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
-  }, [refereeId, weekStart, weekEnd, toast, onWindowChange, api])
+  }, [refereeId, weekStart, weekEnd, toast, onWindowChange])
 
   useEffect(() => {
     fetchAvailability()
-  }, [fetchAvailability])
+  }, [refereeId, weekStart, weekEnd])
 
   // Get availability windows for a specific date and time
   const getWindowsForSlot = (date: string, time: string) => {
