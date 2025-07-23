@@ -25,4 +25,5 @@ export interface User {
   email: string
   role: 'admin' | 'referee'
   referee_id?: string
+  roles?: string[]
 }

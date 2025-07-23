@@ -72,26 +72,30 @@ router.post('/login', async (req, res) => {
     };
 
     if (user.role === 'referee' || user.role === 'admin') {
-      // Include referee fields if they exist (they're in the users table now)
-      userData.referee = {
-        id: user.id,
-        user_id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        location: user.location,
-        postal_code: user.postal_code,
-        max_distance: user.max_distance,
-        is_available: user.is_available,
-        wage_per_game: user.wage_per_game,
-        referee_level_id: user.referee_level_id,
-        years_experience: user.years_experience,
-        games_refereed_season: user.games_refereed_season,
-        evaluation_score: user.evaluation_score,
-        notes: user.notes,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      };
+      // Get referee record to include proper referee_id
+      const referee = await db('referees').where('user_id', user.id).first();
+      if (referee) {
+        userData.referee_id = referee.id;
+        userData.referee = {
+          id: referee.id,
+          user_id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          location: user.location,
+          postal_code: user.postal_code,
+          max_distance: user.max_distance,
+          is_available: user.is_available,
+          wage_per_game: user.wage_per_game,
+          referee_level_id: user.referee_level_id,
+          years_experience: user.years_experience,
+          games_refereed_season: user.games_refereed_season,
+          evaluation_score: user.evaluation_score,
+          notes: user.notes,
+          created_at: user.created_at,
+          updated_at: user.updated_at
+        };
+      }
     }
 
     res.json({

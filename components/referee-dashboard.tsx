@@ -25,7 +25,7 @@ export function RefereeDashboard() {
       case "available":
         return <AvailableGames />
       case "availability":
-        return <AvailabilityCalendar refereeId={user?.referee_id || user?.id || ""} canEdit={true} />
+        return <AvailabilityCalendar refereeId={user?.referee_id || ""} canEdit={true} />
       case "calendar":
         return <CalendarView />
       case "profile":
