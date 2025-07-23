@@ -145,67 +145,106 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
   const hasActiveFilters = searchValue || selectedValues.size > 0 || startDate || endDate
   const sortDirection = column.getIsSorted()
 
-  return (
-    <div className={cn("flex flex-col space-y-1", className)}>
-      {/* Main header row */}
-      <div className="flex items-center justify-between min-h-[40px] px-2">
-        <div className="flex items-center space-x-1 flex-1">
-          <span className="font-medium text-sm">{title}</span>
-          
-          {/* Active filter indicator */}
-          {hasActiveFilters && (
-            <Badge variant="secondary" className="h-4 px-1 text-xs">
-              {selectedValues.size > 0 ? selectedValues.size : "1"}
-            </Badge>
-          )}
-        </div>
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = React.useState(false)
 
-        <div className="flex items-center space-x-1">
-          {/* Search toggle */}
-          {searchable && (
+  return (
+    <div className={cn("flex items-center justify-between h-10", className)}>
+      <div className="flex items-center space-x-2">
+        <Popover open={isColumnMenuOpen} onOpenChange={setIsColumnMenuOpen}>
+          <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              size="sm"
-              className={cn(
-                "h-6 w-6 p-0",
-                (isSearchOpen || searchValue) && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              title="Search in column"
+              className="justify-start p-0 h-auto font-medium text-xs hover:underline"
             >
-              <MagnifyingGlassIcon className="h-3 w-3" />
+              {title}
             </Button>
-          )}
-
-          {/* Filter dropdown */}
-          {filterable && (
-            <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <PopoverTrigger asChild>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0" align="start">
+            <div className="p-3 space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm">{title}</h4>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "h-6 w-6 p-0",
-                    (selectedValues.size > 0) && "bg-accent text-accent-foreground"
-                  )}
-                  title="Filter column"
+                  onClick={() => setIsColumnMenuOpen(false)}
+                  className="h-6 w-6 p-0"
                 >
-                  <Filter className="h-3 w-3" />
+                  <X className="h-3 w-3" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className={cn("p-0", dateRangeFilter ? "w-[280px]" : "w-[200px]")} align="start">
-                <div className="p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Filter {title}</span>
-                    {hasActiveFilters && (
+              </div>
+
+              {/* Search Section */}
+              {searchable && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Search</label>
+                  <div className="relative">
+                    <Input
+                      placeholder={`Search ${title.toLowerCase()}...`}
+                      value={searchValue}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="h-8 text-xs pr-8"
+                    />
+                    {searchValue && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={dateRangeFilter ? clearDateRangeFilter : clearAllFilters}
-                        className="h-6 px-2 text-xs"
+                        className="absolute right-1 top-0 h-8 w-6 p-0"
+                        onClick={() => handleSearch("")}
                       >
-                        Clear
+                        <X className="h-3 w-3" />
                       </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Sort Section */}
+              {column.getCanSort() && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Sort</label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={sortDirection === "asc" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => column.toggleSorting(false)}
+                      className="text-xs"
+                    >
+                      <ArrowUpIcon className="mr-1 h-3 w-3" />
+                      Ascending
+                    </Button>
+                    <Button
+                      variant={sortDirection === "desc" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => column.toggleSorting(true)}
+                      className="text-xs"
+                    >
+                      <ArrowDownIcon className="mr-1 h-3 w-3" />
+                      Descending
+                    </Button>
+                  </div>
+                  {sortDirection && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => column.clearSorting()}
+                      className="text-xs w-full"
+                    >
+                      Clear Sort
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Filter Section */}
+              {filterable && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-muted-foreground">Filter</label>
+                    {selectedValues.size > 0 && (
+                      <Badge variant="secondary" className="h-4 px-1 text-xs">
+                        {selectedValues.size}
+                      </Badge>
                     )}
                   </div>
                   
@@ -218,7 +257,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                       onClear={clearDateRangeFilter}
                     />
                   ) : filterSections.length > 0 ? (
-                    <div className="space-y-3 max-h-[300px] overflow-auto">
+                    <div className="space-y-3 max-h-[200px] overflow-auto">
                       {filterSections.map((section, sectionIndex) => (
                         <div key={`section-${sectionIndex}`} className="space-y-1">
                           <div className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted/50 rounded">
@@ -249,9 +288,32 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                           </div>
                         </div>
                       ))}
+                      
+                      {/* Active Filters Display for Sections */}
+                      {selectedValues.size > 0 && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <label className="text-xs font-medium text-muted-foreground">Active Filters</label>
+                          <div className="flex flex-wrap gap-1">
+                            {Array.from(selectedValues).map((value) => (
+                              <Badge
+                                key={value}
+                                variant="secondary"
+                                className="text-xs px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleFilterToggle(value)
+                                }}
+                              >
+                                {value}
+                                <X className="h-2 w-2" />
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="space-y-1 max-h-[200px] overflow-auto">
+                    <div className="space-y-1 max-h-[150px] overflow-auto">
                       {autoFilterOptions.length > 0 ? autoFilterOptions.map((option) => {
                         const isSelected = selectedValues.has(option.value)
                         return (
@@ -279,79 +341,77 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                       )}
                     </div>
                   )}
+
+                  {/* Active Filters Display */}
+                  {selectedValues.size > 0 && (
+                    <div className="space-y-2 pt-3 mt-2 border-t bg-blue-50 rounded p-2">
+                      <label className="text-xs font-medium text-blue-700">Active Filters ({selectedValues.size})</label>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(selectedValues).map((value) => (
+                          <Badge
+                            key={value}
+                            variant="secondary"
+                            className="text-xs px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-red-500 hover:text-white bg-blue-100 text-blue-800 border-blue-200"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleFilterToggle(value)
+                            }}
+                            title={`Click to remove filter: ${value}`}
+                          >
+                            {value}
+                            <X className="h-3 w-3" />
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </PopoverContent>
-            </Popover>
-          )}
-
-          {/* Column menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                title="Column options"
-              >
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {column.getCanSort() && (
-                <>
-                  <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                    <ArrowUpIcon className="mr-2 h-3.5 w-3.5" />
-                    Sort Ascending
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                    <ArrowDownIcon className="mr-2 h-3.5 w-3.5" />
-                    Sort Descending
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
               )}
-              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <EyeNoneIcon className="mr-2 h-3.5 w-3.5" />
-                Hide Column
-              </DropdownMenuItem>
-              {hasActiveFilters && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={clearAllFilters}>
-                    <X className="mr-2 h-3.5 w-3.5" />
-                    Clear Filters
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
 
-      {/* Search input row */}
-      {isSearchOpen && searchable && (
-        <div className="px-2 pb-1">
-          <div className="relative">
-            <Input
-              placeholder={`Search ${title.toLowerCase()}...`}
-              value={searchValue}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="h-7 text-xs pr-6"
-              autoFocus
-            />
-            {searchValue && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-0 h-7 w-6 p-0"
-                onClick={() => handleSearch("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+              {/* Column Actions */}
+              <div className="pt-2 border-t space-y-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => column.toggleVisibility(false)}
+                  className="text-xs w-full justify-start"
+                >
+                  <EyeNoneIcon className="mr-2 h-3 w-3" />
+                  Hide Column
+                </Button>
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="text-xs w-full justify-start text-destructive hover:text-destructive"
+                  >
+                    <X className="mr-2 h-3 w-3" />
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        {/* Active filter indicator */}
+        {hasActiveFilters && (
+          <div 
+            className="flex items-center gap-1 cursor-pointer hover:opacity-70"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsColumnMenuOpen(true)
+            }}
+            title="Click to manage filters"
+          >
+            <Filter className="h-3 w-3 text-blue-600" />
+            <Badge variant="secondary" className="h-4 px-1 text-xs bg-blue-100 text-blue-800 border-blue-200">
+              {selectedValues.size > 0 ? selectedValues.size : "1"}
+            </Badge>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

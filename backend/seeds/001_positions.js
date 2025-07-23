@@ -1,18 +1,22 @@
 exports.seed = function(knex) {
-  return knex('positions').del()
+  // Delete in correct order to respect foreign key constraints
+  return knex('game_assignments').del()
+    .then(function () {
+      return knex('positions').del();
+    })
     .then(function () {
       return knex('positions').insert([
         {
-          name: 'Referee 1',
-          description: 'Primary Referee'
+          name: 'Lead Official',
+          description: 'Lead basketball official responsible for primary game control'
         },
         {
-          name: 'Referee 2', 
-          description: 'Secondary Referee'
+          name: 'Trail Official', 
+          description: 'Trail basketball official providing secondary coverage'
         },
         {
-          name: 'Referee 3',
-          description: 'Third Referee (Optional)'
+          name: 'Center Official',
+          description: 'Center basketball official for 3-person crew games'
         }
       ]);
     });

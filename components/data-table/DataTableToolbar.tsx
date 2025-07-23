@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableViewOptions } from "./DataTableViewOptions"
 import { DateRangeFilter } from "./DateRangeFilter"
-import { Search, RefreshCw, Calendar } from "lucide-react"
+import { Search, RefreshCw, Calendar, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Popover,
@@ -129,18 +129,36 @@ export function DataTableToolbar<TData>({
           <span>Active filters:</span>
           
           {globalFilter && (
-            <Badge variant="secondary" className="rounded-sm px-2 font-normal">
+            <Badge variant="secondary" className="rounded-sm px-2 font-normal flex items-center gap-1">
               Global: "{globalFilter}"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-3 w-3 p-0 hover:bg-red-500 hover:text-white rounded-full ml-1"
+                onClick={() => setGlobalFilter("")}
+                title="Clear global search"
+              >
+                <X className="h-2 w-2" />
+              </Button>
             </Badge>
           )}
 
           {(startDate || endDate) && (
-            <Badge variant="secondary" className="rounded-sm px-2 font-normal">
+            <Badge variant="secondary" className="rounded-sm px-2 font-normal flex items-center gap-1">
               Date: {startDate && endDate
                 ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
                 : startDate
                 ? `From ${startDate.toLocaleDateString()}`
                 : `Until ${endDate?.toLocaleDateString()}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-3 w-3 p-0 hover:bg-red-500 hover:text-white rounded-full ml-1"
+                onClick={clearDateFilter}
+                title="Clear date filter"
+              >
+                <X className="h-2 w-2" />
+              </Button>
             </Badge>
           )}
 
@@ -153,8 +171,17 @@ export function DataTableToolbar<TData>({
               : `"${filter.value}"`
 
             return (
-              <Badge key={filter.id} variant="secondary" className="rounded-sm px-2 font-normal">
+              <Badge key={filter.id} variant="secondary" className="rounded-sm px-2 font-normal flex items-center gap-1">
                 {filter.id}: {filterValue}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-3 w-3 p-0 hover:bg-red-500 hover:text-white rounded-full ml-1"
+                  onClick={() => column.setFilterValue(undefined)}
+                  title={`Clear ${filter.id} filter`}
+                >
+                  <X className="h-2 w-2" />
+                </Button>
               </Badge>
             )
           })}

@@ -219,6 +219,7 @@ export function RefereeManagement() {
             onEditReferee={handleEditReferee}
             onViewProfile={handleViewProfile}
             searchKey="name"
+            enableViewToggle={true}
           />
         </CardContent>
       </Card>

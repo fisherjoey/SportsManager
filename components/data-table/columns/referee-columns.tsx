@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Phone, Mail, MapPin, Award, User, Calendar } from "lucide-react"
+import { MoreHorizontal, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -58,13 +58,10 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     cell: ({ row }) => {
       const referee = row.original
       return (
-        <div className="font-medium">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{referee.name}</span>
-          </div>
+        <div>
+          <div className="font-medium text-sm truncate">{referee.name}</div>
           {referee.certificationLevel && (
-            <div className="text-xs text-muted-foreground mt-1">
+            <div className="text-xs text-muted-foreground truncate">
               {referee.certificationLevel}
             </div>
           )}
@@ -87,14 +84,8 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       const referee = row.original
       return (
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="h-3 w-3 text-muted-foreground" />
-            <span className="truncate">{referee.email}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-3 w-3 text-muted-foreground" />
-            <span className="truncate">{referee.phone}</span>
-          </div>
+          <div className="text-sm truncate">{referee.email}</div>
+          <div className="text-xs text-muted-foreground truncate">{referee.phone}</div>
         </div>
       )
     },
@@ -124,15 +115,12 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       }
       
       return (
-        <div className="flex items-center gap-2">
-          <Award className="h-4 w-4 text-muted-foreground" />
-          <Badge 
-            variant="outline" 
-            className={levelColors[level as keyof typeof levelColors] || ""}
-          >
-            {level}
-          </Badge>
-        </div>
+        <Badge 
+          variant="outline" 
+          className={`text-xs ${levelColors[level as keyof typeof levelColors] || ""}`}
+        >
+          {level}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
@@ -149,10 +137,15 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={true}
         filterable={true}
         filterOptions={[
-          { label: "Downtown", value: "Downtown" },
-          { label: "Westside", value: "Westside" },
-          { label: "Northside", value: "Northside" },
-          { label: "Eastside", value: "Eastside" },
+          { label: "Northwest Calgary", value: "Northwest Calgary" },
+          { label: "Northeast Calgary", value: "Northeast Calgary" },
+          { label: "Southeast Calgary", value: "Southeast Calgary" },
+          { label: "Southwest Calgary", value: "Southwest Calgary" },
+          { label: "Downtown Calgary", value: "Downtown Calgary" },
+          { label: "Foothills", value: "Foothills" },
+          { label: "Bow Valley", value: "Bow Valley" },
+          { label: "Fish Creek", value: "Fish Creek" },
+          { label: "Olds", value: "Olds" },
         ]}
       />
     ),
@@ -161,13 +154,10 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       const referee = row.original
       
       return (
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          <div>
-            <div className="font-medium">{location}</div>
-            <div className="text-xs text-muted-foreground">
-              {referee.maxDistance} km radius
-            </div>
+        <div>
+          <div className="text-sm font-medium truncate">{location}</div>
+          <div className="text-xs text-muted-foreground">
+            {referee.maxDistance}km radius
           </div>
         </div>
       )
@@ -193,9 +183,9 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       return (
         <div className="space-y-1">
           {certifications.slice(0, 2).map((cert, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
+            <div key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md truncate">
               {cert}
-            </Badge>
+            </div>
           ))}
           {certifications.length > 2 && (
             <div className="text-xs text-muted-foreground">
@@ -227,9 +217,9 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       return (
         <Badge 
           variant={isAvailable ? "default" : "secondary"}
-          className={isAvailable ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-100" : "bg-gray-100 text-gray-600 border-gray-200"}
+          className={`text-xs ${isAvailable ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-100" : "bg-gray-100 text-gray-600 border-gray-200"}`}
         >
-          {isAvailable ? "Available: July 20" : "Unavailable"}
+          {isAvailable ? "Available" : "Unavailable"}
         </Badge>
       )
     },
@@ -247,9 +237,9 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button variant="ghost" className="h-6 w-6 p-0">
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

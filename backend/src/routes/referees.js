@@ -42,17 +42,11 @@ router.get('/', async (req, res) => {
     const { level, postal_code, is_available, page = 1, limit = 50 } = req.query;
     
     let query = db('referees')
-      .leftJoin('referee_levels', 'referees.referee_level_id', 'referee_levels.id')
-      .select(
-        'referees.*',
-        'referee_levels.name as level_name',
-        'referee_levels.wage_amount',
-        'referee_levels.allowed_divisions'
-      )
-      .orderBy('referees.name', 'asc');
+      .select('*')
+      .orderBy('name', 'asc');
 
     if (level) {
-      query = query.where('referee_levels.name', level);
+      query = query.where('level', level);
     }
     
     if (postal_code) {

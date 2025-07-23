@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight } from "lucide-react"
 
 import {
   Sidebar,
@@ -13,6 +13,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -24,6 +26,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { user, logout } = useAuth()
+  const { state, toggleSidebar } = useSidebar()
 
   const adminItems = [
     {
@@ -84,16 +87,29 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const items = user?.role === "admin" ? adminItems : refereeItems
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-4">
           <div className="p-2 bg-blue-600 rounded-lg">
             <Whistle className="h-6 w-6 text-white" />
           </div>
-          <div>
+          <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-lg font-bold">RefAssign</h2>
             <p className="text-sm text-muted-foreground capitalize">{user?.role}</p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="ml-auto h-7 w-7 group-data-[collapsible=icon]:hidden"
+          >
+            {state === "expanded" ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -103,7 +119,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton onClick={() => setActiveView(item.url)} isActive={activeView === item.url}>
+                  <SidebarMenuButton 
+                    onClick={() => setActiveView(item.url)} 
+                    isActive={activeView === item.url}
+                    tooltip={item.title}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
@@ -117,7 +137,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setActiveView("profile")} isActive={activeView === "profile"}>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView("profile")} 
+                  isActive={activeView === "profile"}
+                  tooltip="Profile"
+                >
                   <User />
                   <span>Profile</span>
                 </SidebarMenuButton>
@@ -128,16 +152,21 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <div className="p-2">
-          <div className="mb-2 px-2">
+          <div className="mb-2 px-2 group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-medium">{user?.name}</p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={logout} className="w-full bg-transparent">
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <SidebarMenuButton 
+            onClick={logout} 
+            className="w-full justify-start bg-transparent border border-sidebar-border hover:bg-sidebar-accent"
+            tooltip="Sign Out"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign Out</span>
+          </SidebarMenuButton>
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
