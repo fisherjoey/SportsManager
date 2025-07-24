@@ -23,12 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Users } from "lucide-react"
-import { mockGames, mockReferees, type Referee } from "@/lib/mock-data"
+import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { DataTable } from "@/components/data-table/DataTable"
-import { createGameColumns } from "@/components/data-table/columns/game-columns"
-import { Game } from "@/components/data-table/types"
+import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
+import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
 
 export function GameManagement() {
   const [games, setGames] = useState<Game[]>([])
@@ -164,7 +162,323 @@ export function GameManagement() {
     })
   }
 
-  // Status badge logic moved to DataTable column definition
+  const handleImportGames = (importedGames: Game[]) => {
+    try {
+      // Get existing game IDs to prevent duplicates
+      const existingIds = new Set(games.map(g => g.id))
+      
+      // Filter out games that already exist
+      const newGames = importedGames.filter(g => !existingIds.has(g.id))
+      
+      // Add new games to the existing games
+      setGames(prevGames => [...prevGames, ...newGames])
+      
+      toast({
+        title: "Games imported successfully",
+        description: `Imported ${newGames.length} new games from CSV file.`,
+      })
+    } catch (error) {
+      console.error('Import error:', error)
+      toast({
+        title: "Import failed",
+        description: "There was an error importing the games.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Column definitions for the games table - includes all database fields
+  const columns: ColumnDef<Game>[] = [
+    {
+      id: 'game',
+      title: 'Game',
+      filterType: 'search',
+      accessor: (game) => {
+        const homeTeamName = typeof game.homeTeam === 'object' 
+          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+          : game.homeTeam
+        const awayTeamName = typeof game.awayTeam === 'object' 
+          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+          : game.awayTeam
+        
+        return (
+          <div>
+            <p className="font-medium">
+              {homeTeamName} vs {awayTeamName}
+            </p>
+            <p className="text-sm text-muted-foreground">{game.division}</p>
+          </div>
+        )
+      }
+    },
+    {
+      id: 'id',
+      title: 'Game ID',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="font-mono text-xs">{game.id}</span>
+      )
+    },
+    {
+      id: 'homeTeam',
+      title: 'Home Team',
+      filterType: 'search',
+      accessor: (game) => {
+        const homeTeamName = typeof game.homeTeam === 'object' 
+          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+          : game.homeTeam
+        return <span className="text-sm">{homeTeamName}</span>
+      }
+    },
+    {
+      id: 'awayTeam',
+      title: 'Away Team',
+      filterType: 'search',
+      accessor: (game) => {
+        const awayTeamName = typeof game.awayTeam === 'object' 
+          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+          : game.awayTeam
+        return <span className="text-sm">{awayTeamName}</span>
+      }
+    },
+    {
+      id: 'date',
+      title: 'Date',
+      filterType: 'date',
+      accessor: (game) => (
+        <span className="text-sm">{new Date(game.date).toLocaleDateString()}</span>
+      )
+    },
+    {
+      id: 'time',
+      title: 'Time',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-sm">
+          {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
+        </span>
+      )
+    },
+    {
+      id: 'datetime',
+      title: 'Date & Time',
+      filterType: 'date',
+      accessor: (game) => (
+        <div>
+          <p className="text-sm">{new Date(game.date).toLocaleDateString()}</p>
+          <p className="text-sm text-muted-foreground">
+            {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
+          </p>
+        </div>
+      )
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      filterType: 'search',
+      accessor: (game) => (
+        <div className="flex items-center">
+          <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+          <span className="text-sm">{game.location}</span>
+        </div>
+      )
+    },
+    {
+      id: 'postalCode',
+      title: 'Postal Code',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-sm font-mono">{game.postalCode || 'N/A'}</span>
+      )
+    },
+    {
+      id: 'level',
+      title: 'Level',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Levels' },
+        { value: 'Recreational', label: 'Recreational' },
+        { value: 'Competitive', label: 'Competitive' },
+        { value: 'Elite', label: 'Elite' }
+      ],
+      accessor: (game) => (
+        <Badge variant={game.level === 'Elite' ? 'default' : 'secondary'}>
+          {game.level}
+        </Badge>
+      )
+    },
+    {
+      id: 'gameType',
+      title: 'Game Type',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Types' },
+        { value: 'Community', label: 'Community' },
+        { value: 'Club', label: 'Club' },
+        { value: 'Tournament', label: 'Tournament' },
+        { value: 'Private Tournament', label: 'Private Tournament' }
+      ],
+      accessor: (game) => (
+        <Badge variant="outline">{(game as any).gameType || 'Community'}</Badge>
+      )
+    },
+    {
+      id: 'division',
+      title: 'Division',
+      filterType: 'search',
+      accessor: 'division'
+    },
+    {
+      id: 'season',
+      title: 'Season',
+      filterType: 'search',
+      accessor: 'season'
+    },
+    {
+      id: 'payRate',
+      title: 'Pay Rate',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-sm font-medium">${game.payRate}</span>
+      )
+    },
+    {
+      id: 'wageMultiplier',
+      title: 'Pay Modifier',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Modifiers' },
+        { value: '0.8', label: 'Reduced (0.8x)' },
+        { value: '1.0', label: 'Standard (1.0x)' },
+        { value: '1.5', label: 'Time and Half (1.5x)' },
+        { value: '2.0', label: 'Double Time (2.0x)' },
+        { value: '2.5', label: 'Holiday Rate (2.5x)' }
+      ],
+      accessor: (game) => (
+        <span className="text-sm">{game.wageMultiplier}x</span>
+      )
+    },
+    {
+      id: 'wageMultiplierReason',
+      title: 'Pay Reason',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-sm">{game.wageMultiplierReason || 'Standard'}</span>
+      )
+    },
+    {
+      id: 'refsNeeded',
+      title: 'Refs Needed',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All' },
+        { value: '1', label: '1 Referee' },
+        { value: '2', label: '2 Referees' },
+        { value: '3', label: '3 Referees' },
+        { value: '4', label: '4 Referees' }
+      ],
+      accessor: (game) => (
+        <span className="text-sm font-medium">{game.refsNeeded}</span>
+      )
+    },
+    {
+      id: 'assignedReferees',
+      title: 'Assigned Referees',
+      filterType: 'search',
+      accessor: (game) => (
+        <div>
+          <p className="text-xs text-muted-foreground">
+            {game.assignedReferees?.join(', ') || 'None assigned'}
+          </p>
+        </div>
+      )
+    },
+    {
+      id: 'referees',
+      title: 'Referees',
+      filterType: 'search',
+      accessor: (game) => (
+        <div>
+          <p className="text-sm font-medium">
+            {game.assignedReferees?.length || 0}/{game.refsNeeded}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {game.assignedReferees?.join(', ') || 'None assigned'}
+          </p>
+        </div>
+      )
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Status' },
+        { value: 'unassigned', label: 'Unassigned' },
+        { value: 'assigned', label: 'Assigned' },
+        { value: 'partial', label: 'Partial' },
+        { value: 'up-for-grabs', label: 'Up for Grabs' }
+      ],
+      accessor: (game) => (
+        <Badge
+          variant={
+            game.status === 'assigned' ? 'default' :
+            game.status === 'unassigned' ? 'destructive' :
+            'secondary'
+          }
+        >
+          {game.status === 'up-for-grabs' ? 'Up for Grabs' : 
+           game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+        </Badge>
+      )
+    },
+    {
+      id: 'notes',
+      title: 'Notes',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-sm">{game.notes || 'No notes'}</span>
+      )
+    },
+    {
+      id: 'createdAt',
+      title: 'Created',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(game.createdAt).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      id: 'updatedAt',
+      title: 'Updated',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(game.updatedAt).toLocaleDateString()}
+        </span>
+      )
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (game) => (
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="sm">
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setGameToEdit(game)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setGameToAssign(game)}>
+            <Users className="h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -193,15 +507,17 @@ export function GameManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={createGameColumns({
-              onAssignReferee: (game) => setGameToAssign(game),
-              onEditGame: handleEditGame,
-              onEditGameDialog: (game) => setGameToEdit(game)
-            })} 
+          <FilterableTable 
             data={games} 
+            columns={columns} 
+            emptyMessage="No games found matching your criteria."
             loading={loading}
             onAssignReferee={(game) => setGameToAssign(game)}
+            mobileCardType="game"
+            enableViewToggle={true}
+            enableCSV={true}
+            onDataImport={handleImportGames}
+            csvFilename="games-export"
           />
         </CardContent>
       </Card>

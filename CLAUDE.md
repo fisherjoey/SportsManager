@@ -13,6 +13,12 @@ This project uses git for version control. After making meaningful changes:
 5. Stage files with `git add` before committing
 6. Use `git status` to check current state before committing
 
+# database-schema-tracking
+When making database schema changes (adding/removing tables, fields, relationships):
+1. Document changes in `database-schema-changes.md` with date and description
+2. Include affected tables/fields
+3. An agent will update the database diagram every ~20 commits and clear this file
+
 # project-status
 ✅ Initial setup complete with team/league restructuring
 ✅ Database schema migrated from JSON to proper entity relationships  
