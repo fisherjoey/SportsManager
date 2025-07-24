@@ -323,6 +323,12 @@ class ApiClient {
       body: JSON.stringify(window),
     });
   }
+  async createBulkAvailabilityWindows(refereeId: string, windows: Partial<AvailabilityWindow>[]) {
+    return this.request<{ success: boolean; data: { created: number; windows: AvailabilityWindow[] } }>('/availability/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ referee_id: refereeId, windows }),
+    });
+  }
 
   async updateAvailabilityWindow(windowId: string, updates: Partial<AvailabilityWindow>) {
     return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/${windowId}`, {

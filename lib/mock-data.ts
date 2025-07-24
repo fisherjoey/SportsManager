@@ -46,6 +46,97 @@ export interface Referee {
   standardPayRate: number
 }
 
+export const calgaryVenues = [
+  "Bowness Community Centre",
+  "Calgary Soccer Centre",
+  "Foothills Athletic Park",
+  "Genesis Centre",
+  "Huntington Hills Community Centre",
+  "Prince's Island Park",
+  "Ralph Klein Park",
+  "Shouldice Athletic Park",
+  "South Glenmore Park",
+  "Village Square Leisure Centre"
+]
+
+export const mockTeams = [
+  {
+    id: '1',
+    name: 'Calgary Flames',
+    division: 'U12',
+    location: 'Calgary NW',
+    contactName: 'John Doe',
+    contactEmail: 'john@test.com',
+    contactPhone: '403-555-0123',
+    homeVenue: 'Saddledome',
+    foundedYear: 2020,
+    website: 'https://flames.com',
+    colors: {
+      primary: '#FF0000',
+      secondary: '#FFFFFF',
+    },
+    notes: 'Test team notes',
+    isActive: true,
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-02T00:00:00Z',
+  },
+  {
+    id: '2',
+    name: 'Edmonton Oilers',
+    division: 'U14',
+    location: 'Edmonton',
+    contactName: 'Jane Smith',
+    contactEmail: 'jane@test.com',
+    contactPhone: '780-555-0124',
+    homeVenue: 'Rogers Place',
+    foundedYear: 2018,
+    website: 'https://oilers.com',
+    colors: {
+      primary: '#0000FF',
+      secondary: '#ORANGE',
+    },
+    notes: 'Another test team',
+    isActive: true,
+    createdAt: '2023-01-03T00:00:00Z',
+    updatedAt: '2023-01-04T00:00:00Z',
+  }
+]
+
+export const mockLocations = [
+  {
+    id: '1',
+    name: 'Saddledome',
+    address: '555 Saddledome Rise SE',
+    city: 'Calgary',
+    postalCode: 'T2G 2W1',
+    phone: '403-777-1234',
+    capacity: 19289,
+    type: 'Arena',
+    facilities: ['Parking', 'Concessions', 'Washrooms'],
+    notes: 'Home of the Calgary Flames',
+    hourlyRate: 150,
+    isActive: true,
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-02T00:00:00Z',
+  },
+  {
+    id: '2',
+    name: 'Rogers Place',
+    address: '10220 104 Ave NW',
+    city: 'Edmonton',
+    postalCode: 'T5J 2S7',
+    phone: '780-414-4625',
+    capacity: 18347,
+    type: 'Arena',
+    facilities: ['Parking', 'Concessions', 'Washrooms', 'WiFi'],
+    notes: 'Home of the Edmonton Oilers',
+    hourlyRate: 200,
+    isActive: true,
+    createdAt: '2023-01-03T00:00:00Z',
+    updatedAt: '2023-01-04T00:00:00Z',
+  }
+]
+
 export const mockGames: Game[] = [
   {
     id: "1",

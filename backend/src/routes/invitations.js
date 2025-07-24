@@ -4,6 +4,7 @@ const db = require('../config/database');
 const Joi = require('joi');
 const crypto = require('crypto');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 const inviteSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -25,18 +26,26 @@ const completeInvitationSchema = Joi.object({
 // POST /api/invitations - Create invitation (admin only)
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
+    console.log('Creating invitation - request body:', req.body);
+    console.log('User making request:', req.user);
+    
     const { error, value } = inviteSchema.validate(req.body);
     if (error) {
+      console.log('Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
     const { email, first_name, last_name, role } = value;
+    console.log('Validated data:', { email, first_name, last_name, role });
 
     // Check if user already exists
+    console.log('Checking if user exists with email:', email);
     const existingUser = await db('users').where('email', email).first();
     if (existingUser) {
+      console.log('User already exists:', existingUser.email);
       return res.status(409).json({ error: 'User with this email already exists' });
     }
+    console.log('User does not exist, proceeding...');
 
     // Check if there's already a pending invitation
     const existingInvitation = await db('invitations')
@@ -48,6 +57,10 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     if (existingInvitation) {
       return res.status(409).json({ error: 'Invitation already sent to this email' });
     }
+
+    // Get inviter details
+    const inviter = await db('users').where('id', req.user.userId).first();
+    const inviterName = inviter ? inviter.name : 'System Administrator';
 
     // Generate secure token
     const token = crypto.randomBytes(32).toString('hex');
@@ -64,9 +77,24 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       expires_at: expiresAt
     }).returning('*');
 
-    // TODO: Send email with invitation link
-    // For now, we'll just return the token for testing
+    // Generate invitation link
     const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/complete-signup?token=${token}`;
+
+    // Send invitation email
+    try {
+      await emailService.sendInvitationEmail({
+        email,
+        firstName: first_name,
+        lastName: last_name,
+        role,
+        invitationLink,
+        invitedBy: inviterName
+      });
+      console.log(`Invitation email sent to ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Don't fail the entire request if email fails - invitation is still created
+    }
 
     res.status(201).json({
       success: true,
@@ -78,9 +106,9 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
           last_name: invitation.last_name,
           role: invitation.role,
           expires_at: invitation.expires_at
-        },
-        invitation_link: invitationLink // Remove this in production
-      }
+        }
+      },
+      message: `Invitation sent to ${email}`
     });
   } catch (error) {
     console.error('Error creating invitation:', error);

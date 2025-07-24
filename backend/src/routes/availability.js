@@ -272,8 +272,8 @@ router.post('/bulk', authenticateToken, requireAnyRole('admin', 'referee'), asyn
       return res.status(404).json({ error: 'Referee not found' });
     }
 
-    // Authorization check
-    if (req.user.role === 'referee' && req.user.userId !== referee_id) {
+    // Authorization check - referees can only create availability for themselves
+    if (req.user.role === 'referee' && req.user.referee_id !== referee_id) {
       return res.status(403).json({ error: 'Can only create availability for yourself' });
     }
 

@@ -5,8 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
-import { mockGames } from "@/lib/mock-data"
+import { mockGames, Team } from "@/lib/mock-data"
 import { useAuth } from "@/components/auth-provider"
+
+function formatTeamName(team: Team): string {
+  return `${team.organization} ${team.ageGroup} ${team.gender}`
+}
 
 export function CalendarView() {
   const { user } = useAuth()
@@ -74,9 +78,9 @@ export function CalendarView() {
                       ? "bg-orange-100 text-orange-800"
                       : "bg-red-100 text-red-800"
                 }`}
-                title={`${game.homeTeam} vs ${game.awayTeam} at ${game.time}`}
+                title={`${formatTeamName(game.homeTeam)} vs ${formatTeamName(game.awayTeam)} at ${game.time}`}
               >
-                {game.homeTeam} vs {game.awayTeam}
+{formatTeamName(game.homeTeam)} vs {formatTeamName(game.awayTeam)}
               </div>
             ))}
             {gamesForDay.length > 2 && <div className="text-xs text-gray-500">+{gamesForDay.length - 2} more</div>}

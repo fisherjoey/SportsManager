@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { apiClient, type User } from "@/lib/api"
+import { useToast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
   user: User | null
@@ -17,6 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { toast } = useToast()
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -55,6 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false
     } catch (error) {
       console.error('Login failed:', error)
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Please check your email and password and try again.",
+      })
       return false
     }
   }
@@ -74,6 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to update profile:', error)
+        toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: "Failed to update your profile. Please try again.",
+        })
       }
     }
   }

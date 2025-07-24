@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -28,6 +30,8 @@ export function RefereeManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [selectedReferee, setSelectedReferee] = useState<Referee | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showProfileDialog, setShowProfileDialog] = useState(false)
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
   const [availabilityRefereeId, setAvailabilityRefereeId] = useState<string>("")
   const [inviteForm, setInviteForm] = useState({
@@ -35,6 +39,16 @@ export function RefereeManagement() {
     firstName: "",
     lastName: "",
     role: "referee"
+  })
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    certificationLevel: "",
+    location: "",
+    notes: "",
+    maxDistance: 50,
+    isAvailable: true
   })
   const api = useApi()
   const { toast } = useToast()
@@ -79,8 +93,7 @@ export function RefereeManagement() {
         role: "referee"
       })
       
-      // For testing purposes, show the invitation link
-      console.log('Invitation link:', response.data.invitation_link)
+      // Invitation email sent automatically
     } catch (error) {
       console.error('Failed to send invitation:', error)
       toast({
@@ -93,20 +106,62 @@ export function RefereeManagement() {
 
   const handleEditReferee = (referee: Referee) => {
     setSelectedReferee(referee)
-    // TODO: Open edit dialog
-    toast({
-      title: "Edit Referee",
-      description: `Opening edit form for ${referee.name}`,
+    setEditForm({
+      name: referee.name,
+      email: referee.email,
+      phone: referee.phone,
+      certificationLevel: referee.certificationLevel || "",
+      location: referee.location,
+      notes: referee.notes || "",
+      maxDistance: referee.maxDistance,
+      isAvailable: referee.isAvailable
     })
+    setShowEditDialog(true)
   }
 
   const handleViewProfile = (referee: Referee) => {
     setSelectedReferee(referee)
-    // TODO: Open profile view
-    toast({
-      title: "View Profile",
-      description: `Opening profile for ${referee.name}`,
-    })
+    setShowProfileDialog(true)
+  }
+
+  const handleSaveReferee = async () => {
+    if (!selectedReferee) return
+
+    try {
+      const response = await api.updateReferee(selectedReferee.id, {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        level: editForm.certificationLevel,
+        location: editForm.location,
+        notes: editForm.notes,
+        max_distance: editForm.maxDistance,
+        is_available: editForm.isAvailable
+      })
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Referee updated successfully",
+        })
+        
+        // Update the referee in the list
+        setReferees(prev => prev.map(ref => 
+          ref.id === selectedReferee.id 
+            ? { ...ref, ...response.data.referee }
+            : ref
+        ))
+        
+        setShowEditDialog(false)
+      }
+    } catch (error) {
+      console.error('Failed to update referee:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update referee. Please try again.",
+      })
+    }
   }
 
   const handleManageAvailability = (referee: Referee) => {
@@ -244,6 +299,175 @@ export function RefereeManagement() {
           />
         </CardContent>
       </Card>
+
+      {/* Edit Referee Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Referee</DialogTitle>
+            <DialogDescription>
+              Update referee information for {selectedReferee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="certificationLevel">Certification Level</Label>
+              <Select value={editForm.certificationLevel} onValueChange={(value) => setEditForm(prev => ({ ...prev, certificationLevel: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Recreational">Recreational</SelectItem>
+                  <SelectItem value="Competitive">Competitive</SelectItem>
+                  <SelectItem value="Elite">Elite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={editForm.location}
+                onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={editForm.notes}
+                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="maxDistance">Max Distance (miles)</Label>
+              <Input
+                id="maxDistance"
+                type="number"
+                value={editForm.maxDistance}
+                onChange={(e) => setEditForm(prev => ({ ...prev, maxDistance: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isAvailable"
+                checked={editForm.isAvailable}
+                onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isAvailable: checked as boolean }))}
+              />
+              <Label htmlFor="isAvailable">Available for assignments</Label>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveReferee}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile View Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Referee Profile</DialogTitle>
+            <DialogDescription>
+              Detailed information for {selectedReferee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReferee && (
+            <div className="space-y-4">
+              <div>
+                <Label className="font-semibold">Name</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.name}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Email</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.email}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Phone</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.phone}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Certification Level</Label>
+                <Badge variant="secondary">{selectedReferee.certificationLevel}</Badge>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Location</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.location}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Max Distance</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.maxDistance} miles</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Status</Label>
+                <Badge variant={selectedReferee.isAvailable ? "default" : "secondary"}>
+                  {selectedReferee.isAvailable ? "Available" : "Unavailable"}
+                </Badge>
+              </div>
+              
+              {selectedReferee.notes && (
+                <div>
+                  <Label className="font-semibold">Notes</Label>
+                  <p className="text-sm text-muted-foreground">{selectedReferee.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-6">
+            <Button onClick={() => setShowProfileDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Availability Calendar Dialog */}
       <Dialog open={showAvailabilityCalendar} onOpenChange={setShowAvailabilityCalendar}>

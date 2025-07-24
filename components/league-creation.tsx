@@ -147,6 +147,11 @@ export function LeagueCreation() {
       setFilterOptions(response.data)
     } catch (error) {
       console.error('Error fetching filter options:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load filter options. Some features may not work properly.",
+      })
     }
   }
 

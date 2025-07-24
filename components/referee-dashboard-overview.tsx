@@ -4,8 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, DollarSign, MapPin } from "lucide-react"
-import { mockGames } from "@/lib/mock-data"
+import { mockGames, Team } from "@/lib/mock-data"
 import { useAuth } from "@/components/auth-provider"
+
+function formatTeamName(team: Team): string {
+  return `${team.organization} ${team.ageGroup} ${team.gender}`
+}
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
@@ -91,7 +95,7 @@ export function RefereeDashboardOverview() {
                 <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">
-                      {game.homeTeam} vs {game.awayTeam}
+                      {formatTeamName(game.homeTeam)} vs {formatTeamName(game.awayTeam)}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(game.date).toLocaleDateString()} at {game.time}
@@ -122,7 +126,7 @@ export function RefereeDashboardOverview() {
                 <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg border-green-200">
                   <div>
                     <p className="font-medium">
-                      {game.homeTeam} vs {game.awayTeam}
+                      {formatTeamName(game.homeTeam)} vs {formatTeamName(game.awayTeam)}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(game.date).toLocaleDateString()} at {game.time}

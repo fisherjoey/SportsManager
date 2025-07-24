@@ -48,7 +48,7 @@ function requireAnyRole(...roles) {
     }
     
     // Check new roles array first, fallback to legacy role field
-    const userRoles = req.user.roles || [req.user.role];
+    const userRoles = (req.user.roles && req.user.roles.length > 0) ? req.user.roles : [req.user.role];
     
     // Admin always has access
     if (userRoles.includes('admin') || req.user.role === 'admin') {

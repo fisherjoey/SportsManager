@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
 import { useToast } from "@/components/ui/use-toast"
 import { AssignChunkDialog } from "@/components/assign-chunk-dialog"
+import Papa from 'papaparse'
 
 interface GameChunk {
   id: string
@@ -33,6 +34,7 @@ export function GameAssignmentBoard() {
   const [filterLocation, setFilterLocation] = useState("all")
   const [filterDate, setFilterDate] = useState("all")
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleGameSelect = (gameId: string) => {
     setSelectedGames((prev) => 
@@ -149,6 +151,127 @@ export function GameAssignmentBoard() {
     })
   }
 
+  // Export functionality
+  const handleExport = () => {
+    try {
+      // Prepare data for export
+      const exportData = games.map(game => ({
+        'Game ID': game.id,
+        'Date': game.date,
+        'Time': game.time || game.startTime || '',
+        'Home Team': typeof game.homeTeam === 'object' 
+          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+          : game.homeTeam,
+        'Away Team': typeof game.awayTeam === 'object' 
+          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+          : game.awayTeam,
+        'Location': game.location,
+        'Division': game.division,
+        'Level': game.level,
+        'Pay Rate': game.payRate,
+        'Status': game.status,
+        'Refs Needed': game.refsNeeded,
+        'Assigned Referees': game.assignedReferees?.join('; ') || '',
+        'Notes': game.notes || ''
+      }))
+
+      // Convert to CSV
+      const csv = Papa.unparse(exportData)
+      
+      // Create and download file
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob)
+        link.setAttribute('href', url)
+        link.setAttribute('download', `game-assignments-${new Date().toISOString().split('T')[0]}.csv`)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
+      toast({
+        title: "Export Successful",
+        description: `Exported ${games.length} games to CSV file`,
+      })
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Import functionality
+  const handleImport = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    Papa.parse(file, {
+      header: true,
+      complete: (results) => {
+        try {
+          const importedGames: Game[] = results.data
+            .filter((row: any) => row['Game ID']) // Filter out empty rows
+            .map((row: any, index: number) => ({
+              id: row['Game ID'] || `imported-${Date.now()}-${index}`,
+              date: row['Date'] || '',
+              time: row['Time'] || '',
+              startTime: row['Time'] || '',
+              homeTeam: row['Home Team'] || '',
+              awayTeam: row['Away Team'] || '',
+              location: row['Location'] || '',
+              division: row['Division'] || '',
+              level: (row['Level'] as "Recreational" | "Competitive" | "Elite") || 'Recreational',
+              payRate: row['Pay Rate'] || '50.00',
+              status: (row['Status'] as "assigned" | "unassigned" | "up-for-grabs") || 'unassigned',
+              refsNeeded: parseInt(row['Refs Needed']) || 1,
+              assignedReferees: row['Assigned Referees'] ? row['Assigned Referees'].split('; ').filter(Boolean) : [],
+              notes: row['Notes'] || '',
+              season: 'Imported',
+              wageMultiplier: '1.0',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }))
+
+          // Update games state with imported data
+          setGames(prev => {
+            const existingIds = new Set(prev.map(g => g.id))
+            const newGames = importedGames.filter(g => !existingIds.has(g.id))
+            return [...prev, ...newGames]
+          })
+
+          toast({
+            title: "Import Successful",
+            description: `Imported ${importedGames.length} games from CSV file`,
+          })
+        } catch (error) {
+          toast({
+            title: "Import Failed",
+            description: "There was an error processing the CSV file",
+            variant: "destructive",
+          })
+        }
+      },
+      error: (error) => {
+        toast({
+          title: "Import Failed",
+          description: `Error reading file: ${error.message}`,
+          variant: "destructive",
+        })
+      }
+    })
+
+    // Reset file input
+    event.target.value = ''
+  }
+
   const filteredGames = games.filter((game) => {
     const homeTeamName = typeof game.homeTeam === 'object' 
       ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
@@ -172,17 +295,26 @@ export function GameAssignmentBoard() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Hidden file input for CSV import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".csv"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+      />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Game Assignment Board</h1>
           <p className="text-gray-600">Manage game assignments and create referee chunks</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleImport}>
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>

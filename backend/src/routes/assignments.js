@@ -5,6 +5,7 @@ const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
+const { getOrganizationSettings } = require('../utils/organization-settings');
 
 const assignmentSchema = Joi.object({
   game_id: Joi.string().required(),
@@ -22,10 +23,12 @@ router.get('/', async (req, res) => {
       .join('games', 'game_assignments.game_id', 'games.id')
       .join('users', 'game_assignments.user_id', 'users.id')
       .join('positions', 'game_assignments.position_id', 'positions.id')
+      .join('teams as home_team', 'games.home_team_id', 'home_team.id')
+      .join('teams as away_team', 'games.away_team_id', 'away_team.id')
       .select(
         'game_assignments.*',
-        'games.home_team_name',
-        'games.away_team_name',
+        'home_team.name as home_team_name',
+        'away_team.name as away_team_name',
         'games.game_date',
         'games.game_time',
         'games.location',
@@ -43,7 +46,7 @@ router.get('/', async (req, res) => {
     }
     
     if (referee_id) {
-      query = query.where('game_assignments.referee_id', referee_id);
+      query = query.where('game_assignments.user_id', referee_id);
     }
     
     if (status) {
@@ -55,11 +58,38 @@ router.get('/', async (req, res) => {
 
     const assignments = await query;
     
+    // Get organization settings for wage calculations
+    const orgSettings = await getOrganizationSettings();
+    
+    // Get referee counts per game for flat rate calculation
+    const gameRefereeCounts = {};
+    if (orgSettings.payment_model === 'FLAT_RATE') {
+      const gameIds = [...new Set(assignments.map(a => a.game_id))];
+      const refereeCounts = await db('game_assignments')
+        .whereIn('game_id', gameIds)
+        .whereIn('status', ['pending', 'accepted'])
+        .groupBy('game_id')
+        .select('game_id')
+        .count('* as count');
+      
+      refereeCounts.forEach(rc => {
+        gameRefereeCounts[rc.game_id] = parseInt(rc.count);
+      });
+    }
+    
     // Transform assignments to include game object and wage calculations
     const transformedAssignments = assignments.map(assignment => {
       const baseWage = assignment.calculated_wage || assignment.pay_rate || 0;
       const multiplier = assignment.wage_multiplier || 1.0;
-      const finalWage = assignment.calculated_wage || calculateFinalWage(baseWage, multiplier);
+      const assignedRefereesCount = gameRefereeCounts[assignment.game_id] || 1;
+      
+      const finalWage = assignment.calculated_wage || calculateFinalWage(
+        baseWage, 
+        multiplier, 
+        orgSettings.payment_model, 
+        orgSettings.default_game_rate, 
+        assignedRefereesCount
+      );
       
       return {
         id: assignment.id,
@@ -109,11 +139,15 @@ router.get('/:id', async (req, res) => {
   try {
     const assignment = await db('game_assignments')
       .join('games', 'game_assignments.game_id', 'games.id')
-      .join('referees', 'game_assignments.referee_id', 'referees.id')
+      .join('users', 'game_assignments.user_id', 'users.id')
       .join('positions', 'game_assignments.position_id', 'positions.id')
+      .join('teams as home_team', 'games.home_team_id', 'home_team.id')
+      .join('teams as away_team', 'games.away_team_id', 'away_team.id')
       .select(
         'game_assignments.*',
         'games.*',
+        'home_team.name as home_team_name',
+        'away_team.name as away_team_name',
         'users.name as referee_name',
         'users.email as referee_email',
         'positions.name as position_name'
@@ -229,9 +263,8 @@ router.post('/', async (req, res) => {
     }
 
     // Check availability windows for the game time
-    const availabilityWindows = await db('referee_availability')
-      .where('referee_id', value.user_id)
-      .where('date', game.game_date);
+    // DISABLED: referee_availability table no longer exists
+    const availabilityWindows = []; // await db('referee_availability').where('referee_id', value.user_id).where('date', game.game_date);
 
     // Calculate game end time (assuming 2-hour duration if not specified)
     const gameStartTime = game.game_time;
@@ -278,9 +311,35 @@ router.post('/', async (req, res) => {
       availabilityWarning = 'Note: Referee has not set any availability windows for this date';
     }
 
-    // Calculate final wage using referee's base wage and game multiplier
-    const finalWage = calculateFinalWage(referee.wage_per_game, game.wage_multiplier);
-    const wageBreakdown = getWageBreakdown(referee.wage_per_game, game.wage_multiplier, game.wage_multiplier_reason);
+    // Get organization settings and existing assignments count for wage calculation
+    const orgSettings = await getOrganizationSettings();
+    
+    // Get current referee count for this game (including this new assignment)
+    const existingAssignments = await db('game_assignments')
+      .where('game_id', value.game_id)
+      .whereIn('status', ['pending', 'accepted'])
+      .count('* as count')
+      .first();
+    
+    const assignedRefereesCount = parseInt(existingAssignments.count) + 1; // +1 for this new assignment
+    
+    // Calculate final wage using organization payment model
+    const finalWage = calculateFinalWage(
+      referee.wage_per_game, 
+      game.wage_multiplier, 
+      orgSettings.payment_model, 
+      orgSettings.default_game_rate, 
+      assignedRefereesCount
+    );
+    
+    const wageBreakdown = getWageBreakdown(
+      referee.wage_per_game, 
+      game.wage_multiplier, 
+      game.wage_multiplier_reason, 
+      orgSettings.payment_model, 
+      orgSettings.default_game_rate, 
+      assignedRefereesCount
+    );
     
     // Create assignment with pending status and calculated wage
     const assignmentData = {
@@ -437,12 +496,12 @@ router.post('/bulk', async (req, res) => {
       const createdAssignments = [];
       
       for (const assignment of assignments) {
-        const { referee_id, position_id } = assignment;
+        const { user_id, position_id } = assignment;
         
         // Validate each assignment
-        const referee = await trx('referees').where('id', referee_id).first();
+        const referee = await trx('users').where('id', user_id).where('role', 'referee').first();
         if (!referee || !referee.is_available) {
-          throw new Error(`Referee ${referee_id} not found or not available`);
+          throw new Error(`Referee ${user_id} not found or not available`);
         }
         
         const position = await trx('positions').where('id', position_id).first();
@@ -454,7 +513,7 @@ router.post('/bulk', async (req, res) => {
         const existingAssignment = await trx('game_assignments')
           .where('game_id', game_id)
           .where(function() {
-            this.where('referee_id', referee_id).orWhere('position_id', position_id);
+            this.where('user_id', user_id).orWhere('position_id', position_id);
           })
           .first();
         
@@ -465,20 +524,20 @@ router.post('/bulk', async (req, res) => {
         // Check if referee has time conflict with other games
         const timeConflictAssignment = await trx('game_assignments')
           .join('games', 'game_assignments.game_id', 'games.id')
-          .where('game_assignments.referee_id', referee_id)
+          .where('game_assignments.user_id', user_id)
           .where('games.game_date', game.game_date)
           .where('games.game_time', game.game_time)
           .where('games.id', '!=', game_id)
           .first();
         
         if (timeConflictAssignment) {
-          throw new Error(`Referee ${referee_id} has a time conflict with another game`);
+          throw new Error(`Referee ${user_id} has a time conflict with another game`);
         }
         
         const [newAssignment] = await trx('game_assignments')
           .insert({
             game_id,
-            referee_id,
+            user_id,
             position_id,
             assigned_by
           })
@@ -543,10 +602,9 @@ router.get('/available-referees/:game_id', async (req, res) => {
       .select('*');
 
     // Get availability windows for all potential referees
+    // DISABLED: referee_availability table no longer exists
     const refereeIds = potentialReferees.map(ref => ref.id);
-    const availabilityWindows = await db('referee_availability')
-      .whereIn('referee_id', refereeIds)
-      .where('date', game.game_date);
+    const availabilityWindows = []; // await db('referee_availability').whereIn('referee_id', refereeIds).where('date', game.game_date);
 
     // Group availability by referee
     const availabilityByReferee = {};

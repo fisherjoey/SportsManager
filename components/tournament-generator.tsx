@@ -147,6 +147,11 @@ export function TournamentGenerator() {
       setTournamentFormats(response.data.formats)
     } catch (error) {
       console.error('Error fetching tournament formats:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load tournament formats. Some features may not work properly.",
+      })
     }
   }
 
@@ -189,6 +194,11 @@ export function TournamentGenerator() {
       setEstimate(response.data.estimate)
     } catch (error) {
       console.error('Error estimating tournament:', error)
+      toast({
+        variant: "destructive",
+        title: "Estimation Error",
+        description: "Failed to estimate tournament details. Please check your settings.",
+      })
     }
   }
 

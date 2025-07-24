@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings } from "lucide-react"
 
 import {
   Sidebar,
@@ -48,6 +48,16 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Game Management",
       url: "games",
       icon: GamepadIcon,
+    },
+    {
+      title: "Assigning",
+      url: "assigning",
+      icon: ClipboardList,
+    },
+    {
+      title: "Teams & Locations",
+      url: "locations",
+      icon: MapPin,
     },
     {
       title: "Referees",
@@ -151,6 +161,18 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                   <span>Profile</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {user?.role === "admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => setActiveView("organization-settings")} 
+                    isActive={activeView === "organization-settings"}
+                    tooltip="Organization Settings"
+                  >
+                    <Settings />
+                    <span>Organization Settings</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

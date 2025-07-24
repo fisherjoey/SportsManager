@@ -16,6 +16,7 @@ const availabilityRoutes = require('./routes/availability');
 const leagueRoutes = require('./routes/leagues');
 const teamRoutes = require('./routes/teams');
 const tournamentRoutes = require('./routes/tournaments');
+const organizationRoutes = require('./routes/organization');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/leagues', leagueRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/organization', organizationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
