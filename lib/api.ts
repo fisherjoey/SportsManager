@@ -902,9 +902,34 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Organization settings endpoints
+  async getOrganizationSettings() {
+    return this.request<{ success: boolean; data: OrganizationSettings }>('/organization/settings');
+  }
+
+  async updateOrganizationSettings(settings: {
+    organization_name: string;
+    payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
+    default_game_rate?: number;
+  }) {
+    return this.request<{ success: boolean; data: OrganizationSettings; message: string }>('/organization/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
 }
 
 // Types (updated to match backend schema)
+export interface OrganizationSettings {
+  id: string;
+  organization_name: string;
+  payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
+  default_game_rate: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Game {
   id: string;
   homeTeam: string;

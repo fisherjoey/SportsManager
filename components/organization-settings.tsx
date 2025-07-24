@@ -8,17 +8,10 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { toast } from 'sonner'
 import { Loader2, Settings } from 'lucide-react'
-
-interface OrganizationSettings {
-  id: string
-  organization_name: string
-  payment_model: 'INDIVIDUAL' | 'FLAT_RATE'
-  default_game_rate: number | null
-  created_at: string
-  updated_at: string
-}
+import { useApi, OrganizationSettings } from '@/lib/api'
 
 export default function OrganizationSettings() {
+  const api = useApi()
   const [settings, setSettings] = useState<OrganizationSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -34,23 +27,14 @@ export default function OrganizationSettings() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/organization/settings', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch organization settings')
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        setSettings(data.data)
+      const response = await api.getOrganizationSettings()
+      
+      if (response.success) {
+        setSettings(response.data)
         setFormData({
-          organization_name: data.data.organization_name,
-          payment_model: data.data.payment_model,
-          default_game_rate: data.data.default_game_rate?.toString() || ''
+          organization_name: response.data.organization_name,
+          payment_model: response.data.payment_model,
+          default_game_rate: response.data.default_game_rate?.toString() || ''
         })
       }
     } catch (error) {
@@ -75,29 +59,17 @@ export default function OrganizationSettings() {
     setSaving(true)
 
     try {
-      const response = await fetch('/api/organization/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          organization_name: formData.organization_name.trim(),
-          payment_model: formData.payment_model,
-          default_game_rate: formData.payment_model === 'FLAT_RATE' ? parseFloat(formData.default_game_rate) : null
-        })
+      const response = await api.updateOrganizationSettings({
+        organization_name: formData.organization_name.trim(),
+        payment_model: formData.payment_model,
+        default_game_rate: formData.payment_model === 'FLAT_RATE' ? parseFloat(formData.default_game_rate) : undefined
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to update organization settings')
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        setSettings(data.data)
+      if (response.success) {
+        setSettings(response.data)
         toast.success('Organization settings updated successfully')
       } else {
-        throw new Error(data.message || 'Failed to update settings')
+        throw new Error('Failed to update settings')
       }
     } catch (error) {
       console.error('Error updating settings:', error)
