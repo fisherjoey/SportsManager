@@ -39,8 +39,11 @@ export interface Referee {
   location: string
   certifications: string[]
   preferredPositions: string[]
+  preferredDivisions: string[]
   maxDistance: number
   isAvailable: boolean
+  experience: number
+  standardPayRate: number
 }
 
 export const mockGames: Game[] = [
@@ -295,8 +298,11 @@ export const mockReferees: Referee[] = [
     location: "Downtown",
     certifications: ["USSF Grade 7", "SafeSport"],
     preferredPositions: ["Center", "Assistant"],
+    preferredDivisions: ["U13 Division 1", "U15 Division 1"],
     maxDistance: 25,
     isAvailable: true,
+    experience: 3,
+    standardPayRate: 75,
   },
   {
     id: "3",
@@ -308,8 +314,11 @@ export const mockReferees: Referee[] = [
     location: "Westside",
     certifications: ["USSF Grade 6", "SafeSport", "Futsal"],
     preferredPositions: ["Center"],
+    preferredDivisions: ["U15 Division 1", "U18 Division 1"],
     maxDistance: 30,
     isAvailable: true,
+    experience: 7,
+    standardPayRate: 100,
   },
   {
     id: "4",
@@ -321,8 +330,11 @@ export const mockReferees: Referee[] = [
     location: "Eastside",
     certifications: ["USSF Grade 8", "SafeSport"],
     preferredPositions: ["Assistant", "4th Official"],
+    preferredDivisions: ["U11 Division 2", "U13 Division 3"],
     maxDistance: 20,
     isAvailable: false,
+    experience: 2,
+    standardPayRate: 50,
   },
   {
     id: "5",
@@ -334,8 +346,11 @@ export const mockReferees: Referee[] = [
     location: "Northside",
     certifications: ["USSF Grade 7", "SafeSport", "Youth Specialist"],
     preferredPositions: ["Center", "Assistant"],
+    preferredDivisions: ["U11 Division 1", "U13 Division 1"],
     maxDistance: 35,
     isAvailable: true,
+    experience: 5,
+    standardPayRate: 75,
   },
   {
     id: "6",
@@ -347,7 +362,85 @@ export const mockReferees: Referee[] = [
     location: "Downtown",
     certifications: ["USSF Grade 5", "SafeSport", "Futsal", "Beach Soccer"],
     preferredPositions: ["Center"],
+    preferredDivisions: ["U15 Division 1", "U18 Division 1"],
     maxDistance: 40,
     isAvailable: true,
+    experience: 10,
+    standardPayRate: 125,
   },
 ]
+
+export interface AvailabilitySlot {
+  id: string
+  refereeId: string
+  date: string
+  startTime: string
+  endTime: string
+  isRecurring: boolean
+  recurringDays?: number[]
+  recurringEndDate?: string
+  maxGames?: number
+  comments?: string
+}
+
+export const mockAvailabilitySlots: AvailabilitySlot[] = [
+  {
+    id: "1",
+    refereeId: "2",
+    date: "2025-01-15",
+    startTime: "09:00",
+    endTime: "18:00",
+    isRecurring: true,
+    recurringDays: [0, 6], // Sunday and Saturday
+    recurringEndDate: "2025-03-31",
+    maxGames: 3,
+    comments: "Available weekends",
+  },
+  {
+    id: "2",
+    refereeId: "3",
+    date: "2025-01-15",
+    startTime: "08:00",
+    endTime: "20:00",
+    isRecurring: true,
+    recurringDays: [0, 6], // Sunday and Saturday
+    recurringEndDate: "2025-03-31",
+    maxGames: 4,
+    comments: "Prefer morning games",
+  },
+  {
+    id: "3",
+    refereeId: "5",
+    date: "2025-01-15",
+    startTime: "10:00",
+    endTime: "16:00",
+    isRecurring: true,
+    recurringDays: [0, 6], // Sunday and Saturday
+    recurringEndDate: "2025-03-31",
+    maxGames: 2,
+    comments: "Northside locations preferred",
+  },
+  {
+    id: "4",
+    refereeId: "6",
+    date: "2025-01-15",
+    startTime: "07:00",
+    endTime: "21:00",
+    isRecurring: true,
+    recurringDays: [0, 6], // Sunday and Saturday
+    recurringEndDate: "2025-03-31",
+    maxGames: 5,
+    comments: "Available all day",
+  },
+]
+
+export interface GameChunk {
+  id: string
+  gameIds: string[]
+  location: string
+  date: string
+  startTime: string
+  endTime: string
+  requiredReferees: number
+  assignedTo?: string
+}
