@@ -316,8 +316,63 @@ export function AvailabilityCalendar({
     setSelectedSlots(newSelectedSlots)
   }
 
+  // Clear availability for selected slots (removes entries)
+  const clearAvailabilityForSelected = async () => {
+    if (selectedSlots.size === 0) return
+
+    try {
+      // Find existing windows that match selected slots
+      const windowsToDelete = []
+      
+      for (const slot of selectedSlots) {
+        const [date, time] = slot.split('-')
+        const existingWindows = availabilityWindows.filter(window => {
+          const windowDate = window.date.includes('T') ? window.date.split('T')[0] : window.date
+          return windowDate === date && window.start_time === time
+        })
+        windowsToDelete.push(...existingWindows)
+      }
+
+      if (windowsToDelete.length === 0) {
+        toast({
+          title: "Nothing to clear",
+          description: "No availability entries found for selected slots.",
+        })
+        setSelectedSlots(new Set())
+        setIsSelectionMode(false)
+        return
+      }
+
+      // Optimistically remove from UI
+      setAvailabilityWindows(prev => 
+        prev.filter(window => !windowsToDelete.some(w => w.id === window.id))
+      )
+
+      // Delete via API
+      await Promise.all(windowsToDelete.map(window => api.deleteAvailabilityWindow(window.id)))
+
+      // Clear selection and exit selection mode
+      setSelectedSlots(new Set())
+      setIsSelectionMode(false)
+      
+      toast({
+        title: "Success",
+        description: `Cleared availability for ${selectedSlots.size} time slot${selectedSlots.size > 1 ? 's' : ''}.`,
+      })
+    } catch (error) {
+      console.error('Error clearing availability:', error)
+      toast({
+        title: "Error",
+        description: "Failed to clear availability. Please try again.",
+        variant: "destructive",
+      })
+      // Refresh data to restore correct state
+      fetchAvailabilityWindows()
+    }
+  }
+
   // Apply availability to selected slots
-  const applyAvailabilityToSelected = async (isAvailable: boolean) => {
+  const applyAvailabilityToSelected = async (isAvailable: boolean | null) => {
     if (selectedSlots.size === 0) return
 
     try {
@@ -994,10 +1049,21 @@ export function AvailabilityCalendar({
               </Button>
               <Button
                 size="sm"
+                variant="default"
+                className="bg-gray-600 hover:bg-gray-700 text-white"
+                onClick={clearAvailabilityForSelected}
+                title="Remove availability entries (reset to undefined)"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={() => setSelectedSlots(new Set())}
+                title="Cancel selection"
               >
-                Clear
+                Cancel
               </Button>
             </div>
           </div>

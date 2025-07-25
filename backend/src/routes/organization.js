@@ -8,7 +8,7 @@ const { clearSettingsCache } = require('../utils/organization-settings');
 router.get('/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const result = await db('organization_settings')
-      .select('id', 'organization_name', 'payment_model', 'default_game_rate', 'created_at', 'updated_at')
+      .select('id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at')
       .orderBy('created_at', 'desc')
       .limit(1);
     
@@ -18,9 +18,10 @@ router.get('/settings', authenticateToken, requireRole(['admin']), async (req, r
         .insert({
           organization_name: 'Sports Organization',
           payment_model: 'INDIVIDUAL',
-          default_game_rate: null
+          default_game_rate: null,
+          availability_strategy: 'BLACKLIST'
         })
-        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'created_at', 'updated_at']);
+        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at']);
       
       return res.json({
         success: true,
@@ -44,7 +45,7 @@ router.get('/settings', authenticateToken, requireRole(['admin']), async (req, r
 // Update organization settings
 router.put('/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    const { organization_name, payment_model, default_game_rate } = req.body;
+    const { organization_name, payment_model, default_game_rate, availability_strategy } = req.body;
     
     // Validation
     if (!organization_name || !payment_model) {
@@ -58,6 +59,13 @@ router.put('/settings', authenticateToken, requireRole(['admin']), async (req, r
       return res.status(400).json({
         success: false,
         message: 'Payment model must be either INDIVIDUAL or FLAT_RATE'
+      });
+    }
+    
+    if (availability_strategy && !['WHITELIST', 'BLACKLIST'].includes(availability_strategy)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Availability strategy must be either WHITELIST or BLACKLIST'
       });
     }
     
@@ -81,9 +89,10 @@ router.put('/settings', authenticateToken, requireRole(['admin']), async (req, r
         .insert({
           organization_name,
           payment_model,
-          default_game_rate: payment_model === 'FLAT_RATE' ? default_game_rate : null
+          default_game_rate: payment_model === 'FLAT_RATE' ? default_game_rate : null,
+          availability_strategy: availability_strategy || 'BLACKLIST'
         })
-        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'created_at', 'updated_at']);
+        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at']);
     } else {
       // Update existing settings
       result = await db('organization_settings')
@@ -92,9 +101,10 @@ router.put('/settings', authenticateToken, requireRole(['admin']), async (req, r
           organization_name,
           payment_model,
           default_game_rate: payment_model === 'FLAT_RATE' ? default_game_rate : null,
+          availability_strategy: availability_strategy || 'BLACKLIST',
           updated_at: db.fn.now()
         })
-        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'created_at', 'updated_at']);
+        .returning(['id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at']);
     }
     
     // Clear cache after update

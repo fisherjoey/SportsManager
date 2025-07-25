@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText } from "lucide-react"
 
 import {
   Sidebar,
@@ -68,6 +68,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Calendar",
       url: "calendar",
       icon: Calendar,
+    },
+    {
+      title: "Posts",
+      url: "posts",
+      icon: FileText,
     },
   ]
 

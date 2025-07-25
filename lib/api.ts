@@ -912,6 +912,7 @@ class ApiClient {
     organization_name: string;
     payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
     default_game_rate?: number;
+    availability_strategy?: 'WHITELIST' | 'BLACKLIST';
   }) {
     return this.request<{ success: boolean; data: OrganizationSettings; message: string }>('/organization/settings', {
       method: 'PUT',
@@ -926,6 +927,7 @@ export interface OrganizationSettings {
   organization_name: string;
   payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
   default_game_rate: number | null;
+  availability_strategy: 'WHITELIST' | 'BLACKLIST';
   created_at: string;
   updated_at: string;
 }

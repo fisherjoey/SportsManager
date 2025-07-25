@@ -17,6 +17,7 @@ const leagueRoutes = require('./routes/leagues');
 const teamRoutes = require('./routes/teams');
 const tournamentRoutes = require('./routes/tournaments');
 const organizationRoutes = require('./routes/organization');
+const postRoutes = require('./routes/posts');
 
 const app = express();
 
@@ -39,6 +40,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/referees', refereeRoutes);
@@ -52,6 +56,7 @@ app.use('/api/leagues', leagueRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/organization', organizationRoutes);
+app.use('/api/posts', postRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

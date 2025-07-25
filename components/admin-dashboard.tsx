@@ -14,6 +14,7 @@ import { RefereeManagement } from "@/components/referee-management"
 import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
 import OrganizationSettings from "@/components/organization-settings"
+import { PostsManagement } from "@/components/posts-management"
 import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
@@ -37,6 +38,8 @@ export function AdminDashboard() {
         return "Referees"
       case "calendar":
         return "Calendar"
+      case "posts":
+        return "Posts"
       case "profile":
         return "Profile"
       case "organization-settings":
@@ -64,6 +67,8 @@ export function AdminDashboard() {
         return <RefereeManagement />
       case "calendar":
         return <CalendarView />
+      case "posts":
+        return <PostsManagement />
       case "profile":
         return <ProfileSettings />
       case "organization-settings":
