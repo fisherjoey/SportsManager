@@ -66,6 +66,7 @@ export function AvailabilityCalendar({
   const [isDragging, setIsDragging] = useState(false)
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set())
   const [dragHasHappened, setDragHasHappened] = useState(false)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
   const lastFetchTimeRef = useRef<number>(0)
   const { toast } = useToast()
   const api = useApi()
@@ -293,8 +294,99 @@ export function AvailabilityCalendar({
     }
   }
 
+  // Toggle selection mode
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode)
+    setSelectedSlots(new Set()) // Clear selection when toggling mode
+  }
+
+  // Handle slot selection in selection mode
+  const handleSlotSelect = (date: string, time: string) => {
+    if (!isSelectionMode) return
+    
+    const slotKey = `${date}-${time}`
+    const newSelectedSlots = new Set(selectedSlots)
+    
+    if (newSelectedSlots.has(slotKey)) {
+      newSelectedSlots.delete(slotKey)
+    } else {
+      newSelectedSlots.add(slotKey)
+    }
+    
+    setSelectedSlots(newSelectedSlots)
+  }
+
+  // Apply availability to selected slots
+  const applyAvailabilityToSelected = async (isAvailable: boolean) => {
+    if (selectedSlots.size === 0) return
+
+    try {
+      const windows = Array.from(selectedSlots).map(slot => {
+        const [date, time] = slot.split('-')
+        const [hour, minute] = time.split(':').map(Number)
+        const totalMinutes = hour * 60 + minute + 30 // 30-minute slots
+        const endHour = Math.floor(totalMinutes / 60).toString().padStart(2, '0')
+        const endMinute = (totalMinutes % 60).toString().padStart(2, '0')
+        const endTime = `${endHour}:${endMinute}`
+        
+        return {
+          referee_id: refereeId,
+          date,
+          start_time: time,
+          end_time: endTime,
+          is_available: isAvailable,
+          reason: '',
+          max_games: null,
+          preferred_partners: '',
+          location_preference: '',
+          notes: ''
+        }
+      })
+
+      // Optimistically update UI
+      const newWindows = windows.map(w => ({
+        ...w,
+        id: `temp-${Date.now()}-${Math.random()}`, // Temporary ID for optimistic update
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }))
+
+      setAvailabilityWindows(prev => [...prev, ...newWindows])
+
+      // Create windows via API
+      await Promise.all(windows.map(window => api.createAvailabilityWindow(window)))
+
+      // Clear selection and exit selection mode
+      setSelectedSlots(new Set())
+      setIsSelectionMode(false)
+
+      // Refresh data to get actual IDs
+      fetchAvailabilityWindows()
+      
+      toast({
+        title: "Success",
+        description: `${selectedSlots.size} time slots marked as ${isAvailable ? 'available' : 'unavailable'}.`,
+      })
+    } catch (error) {
+      console.error('Error applying availability:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update availability. Please try again.",
+        variant: "destructive",
+      })
+      // Refresh data to restore correct state
+      fetchAvailabilityWindows()
+    }
+  }
+
   // Handle time slot click for quick create
   const handleSlotClick = (date: string, time: string) => {
+    // In selection mode, handle slot selection
+    if (isSelectionMode) {
+      handleSlotSelect(date, time)
+      return
+    }
+
     if (!canEdit || !refereeId || isDragging || dragHasHappened) {
       if (dragHasHappened) {
         setDragHasHappened(false) // Reset for next interaction
@@ -323,9 +415,9 @@ export function AvailabilityCalendar({
     }
   }
 
-  // Handle drag selection
+  // Handle drag selection (disabled in selection mode)
   const handleSlotMouseDown = (date: string, time: string, e: React.MouseEvent) => {
-    if (!canEdit || !refereeId) return
+    if (!canEdit || !refereeId || isSelectionMode) return
     
     e.preventDefault()
     setIsDragging(true)
@@ -336,7 +428,7 @@ export function AvailabilityCalendar({
   }
 
   const handleSlotMouseEnter = (date: string, time: string) => {
-    if (!isDragging || !dragStart) return
+    if (!isDragging || !dragStart || isSelectionMode) return
     
     setDragHasHappened(true) // Mark that dragging has occurred
     setDragEnd({ date, time })
@@ -497,14 +589,35 @@ export function AvailabilityCalendar({
                 </Button>
               </div>
               {canEdit && (
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="w-full sm:w-auto">
-                      <Plus className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Add Window</span>
-                      <span className="sm:hidden">Add</span>
-                    </Button>
-                  </DialogTrigger>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant={isSelectionMode ? "default" : "outline"}
+                    onClick={toggleSelectionMode}
+                    className="w-full sm:w-auto"
+                  >
+                    {isSelectionMode ? (
+                      <X className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isSelectionMode ? 'Exit Select' : 'Select Mode'}
+                    </span>
+                    <span className="sm:hidden">
+                      {isSelectionMode ? 'Exit' : 'Select'}
+                    </span>
+                  </Button>
+                  
+                  {!isSelectionMode && (
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="w-full sm:w-auto">
+                          <Plus className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Add Window</span>
+                          <span className="sm:hidden">Add</span>
+                        </Button>
+                      </DialogTrigger>
                   <DialogContent className="mx-4 max-w-md">
                     <AvailabilityWindowForm
                       onSubmit={(data) => {
@@ -522,6 +635,8 @@ export function AvailabilityCalendar({
                     />
                   </DialogContent>
                 </Dialog>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -576,9 +691,10 @@ export function AvailabilityCalendar({
                             <div
                               key={slotKey}
                               className={`
-                                bg-background p-1 min-h-[32px] border-b cursor-pointer transition-colors select-none
+                                bg-background p-1 min-h-[32px] border-b cursor-pointer transition-colors select-none relative
                                 ${canEdit ? 'hover:bg-muted/50' : ''}
-                                ${isSelected ? 'bg-blue-200 hover:bg-blue-300' : ''}
+                                ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-400 ring-opacity-50' : ''}
+                                ${!isSelectionMode && isSelected ? 'bg-blue-200 hover:bg-blue-300' : ''}
                                 ${!isSelected && hasWindow ? (
                                   isAvailable ? 'bg-green-100 hover:bg-green-200' :
                                   isUnavailable ? 'bg-red-100 hover:bg-red-200' :
@@ -586,8 +702,8 @@ export function AvailabilityCalendar({
                                 ) : !isSelected ? 'hover:bg-blue-50' : ''}
                               `}
                               onClick={() => handleSlotClick(dateStr, time)}
-                              onMouseDown={(e) => handleSlotMouseDown(dateStr, time, e)}
-                              onMouseEnter={() => handleSlotMouseEnter(dateStr, time)}
+                              onMouseDown={(e) => !isSelectionMode && handleSlotMouseDown(dateStr, time, e)}
+                              onMouseEnter={() => !isSelectionMode && handleSlotMouseEnter(dateStr, time)}
                               title={
                                 isSelected ? 'Selected for bulk creation' :
                                 hasWindow 
@@ -606,7 +722,13 @@ export function AvailabilityCalendar({
                               )}
                               {isSelected && (
                                 <div className="flex items-center justify-center h-full">
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                  {isSelectionMode ? (
+                                    <div className="w-3 h-3 bg-blue-600 rounded border border-blue-700 flex items-center justify-center">
+                                      <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                                    </div>
+                                  ) : (
+                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -648,8 +770,9 @@ export function AvailabilityCalendar({
                               <div
                                 key={slotKey}
                                 className={`
-                                  p-3 border rounded-lg cursor-pointer transition-colors select-none text-center
-                                  ${isSelected ? 'bg-blue-200 border-blue-400' : ''}
+                                  p-3 border rounded-lg cursor-pointer transition-colors select-none text-center relative
+                                  ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400 ring-opacity-50' : ''}
+                                  ${!isSelectionMode && isSelected ? 'bg-blue-200 border-blue-400' : ''}
                                   ${!isSelected && hasWindow ? (
                                     isAvailable ? 'bg-green-100 border-green-300' :
                                     isUnavailable ? 'bg-red-100 border-red-300' :
@@ -658,24 +781,30 @@ export function AvailabilityCalendar({
                                 `}
                                 onClick={() => handleSlotClick(dateStr, time)}
                                 onTouchStart={(e) => {
-                                  e.preventDefault()
-                                  handleSlotMouseDown(dateStr, time, e as any)
+                                  if (!isSelectionMode) {
+                                    e.preventDefault()
+                                    handleSlotMouseDown(dateStr, time, e as any)
+                                  }
                                 }}
                                 onTouchMove={(e) => {
-                                  e.preventDefault()
-                                  const touch = e.touches[0]
-                                  const element = document.elementFromPoint(touch.clientX, touch.clientY)
-                                  const slotElement = element?.closest('[data-slot]')
-                                  if (slotElement) {
-                                    const [touchDate, touchTime] = slotElement.getAttribute('data-slot')?.split('-') || []
-                                    if (touchDate && touchTime) {
-                                      handleSlotMouseEnter(touchDate, touchTime)
+                                  if (!isSelectionMode) {
+                                    e.preventDefault()
+                                    const touch = e.touches[0]
+                                    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+                                    const slotElement = element?.closest('[data-slot]')
+                                    if (slotElement) {
+                                      const [touchDate, touchTime] = slotElement.getAttribute('data-slot')?.split('-') || []
+                                      if (touchDate && touchTime) {
+                                        handleSlotMouseEnter(touchDate, touchTime)
+                                      }
                                     }
                                   }
                                 }}
                                 onTouchEnd={(e) => {
-                                  e.preventDefault()
-                                  handleSlotMouseUp()
+                                  if (!isSelectionMode) {
+                                    e.preventDefault()
+                                    handleSlotMouseUp()
+                                  }
                                 }}
                                 data-slot={slotKey}
                               >
@@ -691,7 +820,13 @@ export function AvailabilityCalendar({
                                 )}
                                 {isSelected && (
                                   <div className="flex items-center justify-center">
-                                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                                    {isSelectionMode ? (
+                                      <div className="w-4 h-4 bg-blue-600 rounded border border-blue-700 flex items-center justify-center">
+                                        <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                                      </div>
+                                    ) : (
+                                      <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                                    )}
                                   </div>
                                 )}
                                 {!hasWindow && !isSelected && (
@@ -830,6 +965,44 @@ export function AvailabilityCalendar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Action Bar for Selection Mode */}
+      {isSelectionMode && selectedSlots.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border border-border rounded-full shadow-lg px-4 py-3 flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">
+              {selectedSlots.size} slot{selectedSlots.size > 1 ? 's' : ''} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => applyAvailabilityToSelected(true)}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Available
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => applyAvailabilityToSelected(false)}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Unavailable
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedSlots(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
