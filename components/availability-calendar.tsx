@@ -354,7 +354,7 @@ export function AvailabilityCalendar({
       setAvailabilityWindows(prev => [...prev, ...newWindows])
 
       // Create windows via API
-      await Promise.all(windows.map(window => api.createAvailabilityWindow(window)))
+      await Promise.all(windows.map(window => api.createAvailabilityWindow(refereeId, window)))
 
       // Clear selection and exit selection mode
       setSelectedSlots(new Set())
