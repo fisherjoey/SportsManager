@@ -18,8 +18,7 @@ export default function OrganizationSettings() {
   const [formData, setFormData] = useState({
     organization_name: '',
     payment_model: 'INDIVIDUAL' as 'INDIVIDUAL' | 'FLAT_RATE',
-    default_game_rate: '',
-    availability_strategy: 'BLACKLIST' as 'WHITELIST' | 'BLACKLIST'
+    default_game_rate: ''
   })
 
   useEffect(() => {
@@ -35,8 +34,7 @@ export default function OrganizationSettings() {
         setFormData({
           organization_name: response.data.organization_name,
           payment_model: response.data.payment_model,
-          default_game_rate: response.data.default_game_rate?.toString() || '',
-          availability_strategy: response.data.availability_strategy || 'BLACKLIST'
+          default_game_rate: response.data.default_game_rate?.toString() || ''
         })
       }
     } catch (error) {
@@ -64,8 +62,7 @@ export default function OrganizationSettings() {
       const response = await api.updateOrganizationSettings({
         organization_name: formData.organization_name.trim(),
         payment_model: formData.payment_model,
-        default_game_rate: formData.payment_model === 'FLAT_RATE' ? parseFloat(formData.default_game_rate) : undefined,
-        availability_strategy: formData.availability_strategy
+        default_game_rate: formData.payment_model === 'FLAT_RATE' ? parseFloat(formData.default_game_rate) : undefined
       })
 
       if (response.success) {
@@ -168,40 +165,6 @@ export default function OrganizationSettings() {
             </div>
           )}
 
-          <div className="space-y-4">
-            <Label>Availability Strategy</Label>
-            <RadioGroup
-              value={formData.availability_strategy}
-              onValueChange={(value: 'WHITELIST' | 'BLACKLIST') => 
-                setFormData({ ...formData, availability_strategy: value })
-              }
-              className="grid grid-cols-1 gap-4"
-            >
-              <div className="flex items-center space-x-3 rounded-lg border p-4">
-                <RadioGroupItem value="BLACKLIST" id="blacklist" />
-                <div className="space-y-1">
-                  <Label htmlFor="blacklist" className="font-medium">
-                    Blacklist Mode (Assume Available)
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Referees are available by default. They mark specific times as unavailable to block assignments.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3 rounded-lg border p-4">
-                <RadioGroupItem value="WHITELIST" id="whitelist" />
-                <div className="space-y-1">
-                  <Label htmlFor="whitelist" className="font-medium">
-                    Whitelist Mode (Assume Unavailable)
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Referees are unavailable by default. They must explicitly mark times as available for assignments.
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
 
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving}>
@@ -227,12 +190,6 @@ export default function OrganizationSettings() {
                 <span className="font-medium">Payment Model:</span>
                 <p className="text-muted-foreground">
                   {settings.payment_model === 'INDIVIDUAL' ? 'Individual Referee Rates' : 'Flat Rate per Game'}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Availability Strategy:</span>
-                <p className="text-muted-foreground">
-                  {settings.availability_strategy === 'BLACKLIST' ? 'Blacklist Mode (Assume Available)' : 'Whitelist Mode (Assume Unavailable)'}
                 </p>
               </div>
               {settings.payment_model === 'FLAT_RATE' && settings.default_game_rate && (

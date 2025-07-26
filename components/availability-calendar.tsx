@@ -67,6 +67,8 @@ export function AvailabilityCalendar({
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set())
   const [dragHasHappened, setDragHasHappened] = useState(false)
   const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [availabilityStrategy, setAvailabilityStrategy] = useState<'WHITELIST' | 'BLACKLIST'>('BLACKLIST')
+  const [referee, setReferee] = useState<any>(null)
   const lastFetchTimeRef = useRef<number>(0)
   const { toast } = useToast()
   const api = useApi()
@@ -83,6 +85,45 @@ export function AvailabilityCalendar({
     const minute = (totalMinutes % 60).toString().padStart(2, '0')
     return `${hour}:${minute}`
   })
+
+  // Fetch referee details including availability strategy
+  const fetchRefereeDetails = useCallback(async () => {
+    if (!refereeId) return
+    
+    try {
+      const response = await api.getReferee(refereeId)
+      if (response.success && response.data.referee) {
+        setReferee(response.data.referee)
+        setAvailabilityStrategy(response.data.referee.availabilityStrategy || 'BLACKLIST')
+      }
+    } catch (error) {
+      console.error('Error fetching referee details:', error)
+      // Fallback to default strategy
+      setAvailabilityStrategy('BLACKLIST')
+    }
+  }, [refereeId, api])
+
+  // Update referee's availability strategy
+  const updateAvailabilityStrategy = async (strategy: 'WHITELIST' | 'BLACKLIST') => {
+    if (!refereeId || !canEdit) return
+    
+    try {
+      await api.updateReferee(refereeId, { availabilityStrategy: strategy })
+      setAvailabilityStrategy(strategy)
+      
+      toast({
+        title: "Success",
+        description: `Availability strategy updated to ${strategy === 'BLACKLIST' ? 'Blacklist Mode (Assume Available)' : 'Whitelist Mode (Assume Unavailable)'}.`,
+      })
+    } catch (error) {
+      console.error('Error updating availability strategy:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update availability strategy.",
+        variant: "destructive",
+      })
+    }
+  }
 
   // Fetch availability windows
   const fetchAvailability = useCallback(async () => {
@@ -140,8 +181,9 @@ export function AvailabilityCalendar({
   }, [refereeId, weekStart, weekEnd])
 
   useEffect(() => {
+    fetchRefereeDetails()
     fetchAvailability()
-  }, [refereeId, weekStart, weekEnd])
+  }, [refereeId, weekStart, weekEnd, fetchRefereeDetails])
 
   // Get availability windows for a specific date and time
   const getWindowsForSlot = (date: string, time: string) => {
@@ -644,7 +686,26 @@ export function AvailabilityCalendar({
                 </Button>
               </div>
               {canEdit && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  <Select value={availabilityStrategy} onValueChange={updateAvailabilityStrategy}>
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BLACKLIST">
+                        <div className="text-xs">
+                          <div className="font-medium">Blacklist</div>
+                          <div className="text-muted-foreground">Assume Available</div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="WHITELIST">
+                        <div className="text-xs">
+                          <div className="font-medium">Whitelist</div>
+                          <div className="text-muted-foreground">Assume Unavailable</div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button 
                     size="sm" 
                     variant={isSelectionMode ? "default" : "outline"}

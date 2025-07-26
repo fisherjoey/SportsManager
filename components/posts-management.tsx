@@ -105,8 +105,8 @@ export function PostsManagement() {
   const fetchPosts = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.get('/api/posts?include_drafts=true')
-      setPosts(response.data.data.posts || [])
+      const response = await apiClient.getPosts(true)
+      setPosts(response.data.posts || [])
     } catch (error) {
       console.error('Error fetching posts:', error)
       setError('Failed to load posts')
@@ -117,8 +117,8 @@ export function PostsManagement() {
 
   const fetchCategories = async () => {
     try {
-      const response = await apiClient.get('/api/posts/categories')
-      setCategories(response.data.data || [])
+      const response = await apiClient.getPostCategories()
+      setCategories(response.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
@@ -126,8 +126,15 @@ export function PostsManagement() {
 
   const handleCreatePost = async () => {
     try {
-      const response = await apiClient.post('/api/posts', formData)
-      setPosts([response.data.data, ...posts])
+      const response = await apiClient.createPost({
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        status: formData.status,
+        excerpt: formData.excerpt,
+        tags: formData.tags
+      })
+      setPosts([response.data, ...posts])
       setIsCreateDialogOpen(false)
       resetForm()
     } catch (error) {
@@ -140,9 +147,16 @@ export function PostsManagement() {
     if (!editingPost) return
 
     try {
-      const response = await apiClient.put(`/api/posts/${editingPost.id}`, formData)
+      const response = await apiClient.updatePost(editingPost.id, {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        status: formData.status,
+        excerpt: formData.excerpt,
+        tags: formData.tags
+      })
       setPosts(posts.map(post => 
-        post.id === editingPost.id ? response.data.data : post
+        post.id === editingPost.id ? response.data : post
       ))
       setIsEditDialogOpen(false)
       setEditingPost(null)
@@ -157,7 +171,7 @@ export function PostsManagement() {
     if (!confirm('Are you sure you want to delete this post?')) return
 
     try {
-      await apiClient.delete(`/api/posts/${postId}`)
+      await apiClient.deletePost(postId)
       setPosts(posts.filter(post => post.id !== postId))
     } catch (error) {
       console.error('Error deleting post:', error)

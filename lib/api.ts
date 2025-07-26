@@ -72,6 +72,7 @@ class ApiClient {
     }
   }
 
+
   // Auth endpoints
   async login(email: string, password: string) {
     return this.request<{ token: string; user: any }>('/auth/login', {
@@ -117,17 +118,17 @@ class ApiClient {
     // Transform backend response to frontend format
     const transformedGames = response.data.map((game: any) => ({
       id: game.id,
-      homeTeam: game.home_team_name,
-      awayTeam: game.away_team_name,
-      date: game.game_date,
-      time: game.game_time,
+      homeTeam: game.homeTeam || game.home_team_name || 'Home Team',
+      awayTeam: game.awayTeam || game.away_team_name || 'Away Team',
+      date: game.date || game.game_date,
+      time: game.time || game.game_time,
       location: game.location,
       level: game.level,
-      payRate: game.pay_rate,
+      payRate: game.payRate || game.pay_rate,
       status: game.status,
-      notes: game.notes,
-      createdAt: game.created_at,
-      updatedAt: game.updated_at
+      notes: game.notes || '',
+      createdAt: game.createdAt || game.created_at,
+      updatedAt: game.updatedAt || game.updated_at
     }));
     
     return { data: transformedGames, pagination: response.pagination };
@@ -244,6 +245,7 @@ class ApiClient {
       certificationLevel: referee.level,
       location: referee.location,
       isAvailable: referee.is_available,
+      availabilityStrategy: referee.availability_strategy || 'BLACKLIST',
       certifications: referee.certifications || [],
       preferredPositions: referee.preferred_positions || [],
       wagePerGame: referee.wage_per_game,
@@ -270,6 +272,7 @@ class ApiClient {
       certificationLevel: response.data.referee.level,
       location: response.data.referee.location,
       isAvailable: response.data.referee.is_available,
+      availabilityStrategy: response.data.referee.availability_strategy || 'BLACKLIST',
       certifications: response.data.referee.certifications || [],
       preferredPositions: response.data.referee.preferred_positions || [],
       wagePerGame: response.data.referee.wage_per_game,
@@ -296,6 +299,7 @@ class ApiClient {
     if (refereeData.certificationLevel) transformedData.level = refereeData.certificationLevel;
     if (refereeData.location) transformedData.location = refereeData.location;
     if (refereeData.isAvailable !== undefined) transformedData.is_available = refereeData.isAvailable;
+    if (refereeData.availabilityStrategy) transformedData.availability_strategy = refereeData.availabilityStrategy;
     
     return this.request<{ success: boolean; data: { referee: Referee } }>(`/referees/${id}`, {
       method: 'PUT',
@@ -919,6 +923,50 @@ class ApiClient {
       body: JSON.stringify(settings),
     });
   }
+
+  // Posts endpoints
+  async getPosts(includeDrafts = false) {
+    const params = includeDrafts ? '?include_drafts=true' : '';
+    return this.request<{ success: boolean; data: { posts: Post[] } }>(`/posts${params}`);
+  }
+
+  async getPostCategories() {
+    return this.request<{ success: boolean; data: PostCategory[] }>('/posts/categories');
+  }
+
+  async createPost(postData: {
+    title: string;
+    content: string;
+    category: string;
+    status?: 'draft' | 'published' | 'archived';
+    excerpt?: string;
+    tags?: string[];
+  }) {
+    return this.request<{ success: boolean; data: Post }>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async updatePost(id: string, postData: Partial<{
+    title: string;
+    content: string;
+    category: string;
+    status: 'draft' | 'published' | 'archived';
+    excerpt: string;
+    tags: string[];
+  }>) {
+    return this.request<{ success: boolean; data: Post }>(`/posts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async deletePost(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/posts/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Types (updated to match backend schema)
@@ -960,6 +1008,7 @@ export interface Referee {
   certificationLevel: "Level 1" | "Level 2" | "Level 3" | "Level 4";
   location?: string;
   isAvailable: boolean;
+  availabilityStrategy?: "WHITELIST" | "BLACKLIST";
   createdAt?: string;
   updatedAt?: string;
 }
@@ -1092,6 +1141,39 @@ export interface TournamentFormat {
   cons: string[];
   games_formula: string;
   suitable_for: string;
+}
+
+export interface Post {
+  id: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  status: 'draft' | 'published' | 'archived';
+  category: string;
+  tags: string[];
+  author_id: string;
+  author_name?: string;
+  author_email?: string;
+  category_name?: string;
+  category_color?: string;
+  category_icon?: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  hasRead?: boolean;
+  readCount?: number;
+  media?: any[];
+}
+
+export interface PostCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
 }
 
 // Create and export API client instance

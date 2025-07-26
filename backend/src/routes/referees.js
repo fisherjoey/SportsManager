@@ -22,7 +22,8 @@ const refereeUpdateSchema = Joi.object({
   location: Joi.string().allow(''),
   postal_code: Joi.string().max(10).allow(''),
   max_distance: Joi.number().integer().min(1).max(200),
-  is_available: Joi.boolean()
+  is_available: Joi.boolean(),
+  availability_strategy: Joi.string().valid('WHITELIST', 'BLACKLIST')
 });
 
 const adminRefereeUpdateSchema = Joi.object({
@@ -33,7 +34,8 @@ const adminRefereeUpdateSchema = Joi.object({
   postal_code: Joi.string().max(10).allow(''),
   max_distance: Joi.number().integer().min(1).max(200),
   is_available: Joi.boolean(),
-  wage_per_game: Joi.number().min(0)
+  wage_per_game: Joi.number().min(0),
+  availability_strategy: Joi.string().valid('WHITELIST', 'BLACKLIST')
 });
 
 // GET /api/referees - Get all referees with optional filters

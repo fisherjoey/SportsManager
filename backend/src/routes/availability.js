@@ -117,8 +117,12 @@ router.put('/:windowId', authenticateToken, requireAnyRole('admin', 'referee'), 
     }
 
     // Authorization check - referees can only update their own windows
-    if (req.user.role === 'referee' && req.user.userId !== existingWindow.referee_id) {
-      return res.status(403).json({ error: 'Can only update your own availability' });
+    if (req.user.role === 'referee') {
+      // Get the referee record for this user to compare referee_id
+      const referee = await db('referees').where('user_id', req.user.userId).first();
+      if (!referee || referee.id !== existingWindow.referee_id) {
+        return res.status(403).json({ error: 'Can only update your own availability' });
+      }
     }
 
     // Check for overlapping windows (exclude current window)
@@ -183,8 +187,12 @@ router.delete('/:windowId', authenticateToken, requireAnyRole('admin', 'referee'
     }
 
     // Authorization check
-    if (req.user.role === 'referee' && req.user.userId !== existingWindow.referee_id) {
-      return res.status(403).json({ error: 'Can only delete your own availability' });
+    if (req.user.role === 'referee') {
+      // Get the referee record for this user to compare referee_id
+      const referee = await db('referees').where('user_id', req.user.userId).first();
+      if (!referee || referee.id !== existingWindow.referee_id) {
+        return res.status(403).json({ error: 'Can only delete your own availability' });
+      }
     }
 
     await db('referee_availability').where('id', windowId).del();
@@ -273,8 +281,12 @@ router.post('/bulk', authenticateToken, requireAnyRole('admin', 'referee'), asyn
     }
 
     // Authorization check - referees can only create availability for themselves
-    if (req.user.role === 'referee' && req.user.referee_id !== referee_id) {
-      return res.status(403).json({ error: 'Can only create availability for yourself' });
+    if (req.user.role === 'referee') {
+      // Get the referee record for this user to compare referee_id
+      const refereeRecord = await db('referees').where('user_id', req.user.userId).first();
+      if (!refereeRecord || refereeRecord.id !== referee_id) {
+        return res.status(403).json({ error: 'Can only create availability for yourself' });
+      }
     }
 
     // Validate all windows

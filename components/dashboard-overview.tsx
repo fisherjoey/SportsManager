@@ -35,6 +35,18 @@ interface Game {
   updatedAt: string
 }
 
+const getTeamName = (team: any) => {
+  if (typeof team === 'string') {
+    return team || 'Team'
+  }
+  if (team && typeof team === 'object' && Object.keys(team).length > 0) {
+    if (team.name) return team.name
+    const parts = [team.organization, team.ageGroup, team.gender].filter(Boolean)
+    return parts.length > 0 ? parts.join(' ') : 'Team'
+  }
+  return 'Team'
+}
+
 export function DashboardOverview() {
   const [games, setGames] = useState<Game[]>([])
   const [refereeCount, setRefereeCount] = useState(0)
@@ -173,12 +185,8 @@ export function DashboardOverview() {
           <CardContent>
             <div className="space-y-4">
               {upcomingGames.map((game) => {
-                const homeTeamName = typeof game.homeTeam === 'string' 
-                  ? game.homeTeam 
-                  : `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                const awayTeamName = typeof game.awayTeam === 'string' 
-                  ? game.awayTeam 
-                  : `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+                const homeTeamName = getTeamName(game.homeTeam)
+                const awayTeamName = getTeamName(game.awayTeam)
                 
                 return (
                   <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -210,12 +218,8 @@ export function DashboardOverview() {
           <CardContent>
             <div className="space-y-4">
               {unassignedGames.slice(0, 5).map((game) => {
-                const homeTeamName = typeof game.homeTeam === 'string' 
-                  ? game.homeTeam 
-                  : `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                const awayTeamName = typeof game.awayTeam === 'string' 
-                  ? game.awayTeam 
-                  : `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+                const homeTeamName = getTeamName(game.homeTeam)
+                const awayTeamName = getTeamName(game.awayTeam)
                 
                 return (
                   <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg border-red-200">
