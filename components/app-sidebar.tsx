@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot } from "lucide-react"
 
 import {
   Sidebar,
@@ -53,6 +53,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Assigning",
       url: "assigning",
       icon: ClipboardList,
+    },
+    {
+      title: "AI Assignments",
+      url: "ai-assignments",
+      icon: Bot,
     },
     {
       title: "Teams & Locations",

@@ -5,6 +5,7 @@ exports.seed = async function(knex) {
   await knex('game_assignments').del();
   await knex('games').del();
   await knex('teams').del();
+  await knex('leagues').del();
   await knex('users').del();
   await knex('positions').del();
   await knex('referee_levels').del();
@@ -85,10 +86,20 @@ exports.seed = async function(knex) {
     }
   ]).returning('*');
 
+  // Insert leagues
+  const [league1] = await knex('leagues').insert([{
+    name: 'Test League',
+    organization: 'Test Org',
+    age_group: 'Senior',
+    gender: 'Mixed',
+    division: 'Division 1',
+    season: '2024/25'
+  }]).returning('*');
+
   // Insert teams
   const [team1, team2] = await knex('teams').insert([
-    { name: 'Team Alpha', location: 'Stadium A' },
-    { name: 'Team Beta', location: 'Stadium B' }
+    { name: 'Team Alpha', location: 'Stadium A', league_id: league1.id },
+    { name: 'Team Beta', location: 'Stadium B', league_id: league1.id }
   ]).returning('*');
 
   // Insert test games
@@ -96,8 +107,8 @@ exports.seed = async function(knex) {
     {
       home_team_id: team1.id,
       away_team_id: team2.id,
-      date: new Date('2024-12-01'),
-      time: '14:00',
+      game_date: new Date('2024-12-01'),
+      game_time: '14:00',
       location: 'Test Stadium',
       level: 'Recreational',
       refs_needed: 2,
@@ -106,8 +117,8 @@ exports.seed = async function(knex) {
     {
       home_team_id: team2.id,
       away_team_id: team1.id,
-      date: new Date('2024-12-15'),
-      time: '16:00',
+      game_date: new Date('2024-12-15'),
+      game_time: '16:00',
       location: 'Test Stadium 2',
       level: 'Competitive',
       refs_needed: 3,

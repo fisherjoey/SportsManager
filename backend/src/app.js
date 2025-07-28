@@ -18,6 +18,10 @@ const teamRoutes = require('./routes/teams');
 const tournamentRoutes = require('./routes/tournaments');
 const organizationRoutes = require('./routes/organization');
 const postRoutes = require('./routes/posts');
+const aiSuggestionsRoutes = require('./routes/ai-suggestions');
+const historicPatternsRoutes = require('./routes/historic-patterns');
+const chunksRoutes = require('./routes/chunks');
+const aiAssignmentRulesRoutes = require('./routes/ai-assignment-rules');
 
 const app = express();
 
@@ -46,6 +50,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/referees', refereeRoutes);
+app.use('/api/assignments/ai-suggestions', aiSuggestionsRoutes);
+app.use('/api/assignments/patterns', historicPatternsRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/invitations', invitationRoutes);
 // app.use('/api/referee-levels', refereeLevelRoutes); // DISABLED: uses referees table
@@ -57,6 +63,8 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/chunks', chunksRoutes);
+app.use('/api/ai-assignment-rules', aiAssignmentRulesRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

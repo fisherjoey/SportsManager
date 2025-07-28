@@ -15,6 +15,7 @@ import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
 import OrganizationSettings from "@/components/organization-settings"
 import { PostsManagement } from "@/components/posts-management"
+import AIAssignmentsSimple from "@/components/ai-assignments-simple"
 import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
@@ -32,6 +33,8 @@ export function AdminDashboard() {
         return "Games"
       case "assigning":
         return "Game Assignment"
+      case "ai-assignments":
+        return "AI Assignments"
       case "locations":
         return "Teams & Locations"
       case "referees":
@@ -61,6 +64,8 @@ export function AdminDashboard() {
         return <GameManagement />
       case "assigning":
         return <GameAssignmentBoard />
+      case "ai-assignments":
+        return <AIAssignmentsSimple />
       case "locations":
         return <TeamsLocationsPage />
       case "referees":
