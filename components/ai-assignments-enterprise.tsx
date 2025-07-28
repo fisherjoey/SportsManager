@@ -183,7 +183,7 @@ async function generateBulkAssignments(
     }
 
     const ruleResponse = await apiClient.createAIAssignmentRule(ruleData)
-    if (ruleResponse.success && ruleResponse.data) {
+    if (ruleResponse?.success && ruleResponse?.data) {
       // Run the rule with our games
       const gameIds = games.map(g => g.id)
       const runResponse = await apiClient.runAIAssignmentRule(ruleResponse.data.id, {
@@ -192,7 +192,7 @@ async function generateBulkAssignments(
         contextComments: [`Enterprise bulk assignment with ${games.length} games`]
       })
 
-      if (runResponse.success && runResponse.data) {
+      if (runResponse?.success && runResponse?.data) {
         // Transform backend response to our format
         const assignments = runResponse.data.assignments.map(assignment => ({
           gameId: assignment.gameId,
