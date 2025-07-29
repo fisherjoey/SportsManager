@@ -32,6 +32,7 @@ import { PageLayout } from "@/components/ui/page-layout"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatsGrid } from "@/components/ui/stats-grid"
 import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
+import { LocationSelector } from "@/components/ui/location-selector"
 
 interface GameManagementProps {
   initialDateFilter?: string
@@ -186,7 +187,7 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
   // Stats for the games overview (based on filtered games)
   const stats = [
     {
-      title: "Total Games",
+      title: selectedDate !== "all" ? "Games This Day" : "Total Games",
       value: filteredGames.length,
       icon: Calendar,
       color: "text-blue-600",
@@ -204,15 +205,17 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       color: "text-green-600",
     },
     {
-      title: "This Week",
-      value: filteredGames.filter((g) => {
-        const gameDate = new Date(g.date)
-        const now = new Date()
-        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-        return gameDate >= now && gameDate <= weekFromNow
-      }).length,
+      title: selectedDate !== "all" ? "Up for Grabs" : "This Week",
+      value: selectedDate !== "all" 
+        ? filteredGames.filter((g) => g.status === "up-for-grabs").length
+        : filteredGames.filter((g) => {
+            const gameDate = new Date(g.date)
+            const now = new Date()
+            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+            return gameDate >= now && gameDate <= weekFromNow
+          }).length,
       icon: Calendar,
-      color: "text-purple-600",
+      color: selectedDate !== "all" ? "text-orange-600" : "text-purple-600",
     },
   ]
 
@@ -321,8 +324,33 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       <PageHeader
         icon={Calendar}
         title="Game Management"
-        description="Manage all games and assignments"
+        description={
+          selectedDate !== "all" 
+            ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}`
+            : "Manage all games and assignments"
+        }
       >
+        {selectedDate !== "all" && (
+          <>
+            <Badge variant="outline" className="text-blue-600 border-blue-600">
+              <Calendar className="h-3 w-3 mr-1" />
+              Filtered by Date
+            </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedDate("all")}
+              className="text-gray-600"
+            >
+              Clear Date Filter
+            </Button>
+          </>
+        )}
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Game
@@ -338,11 +366,32 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
               <CardTitle>Games Directory</CardTitle>
               <CardDescription>Search and manage games across all divisions</CardDescription>
             </div>
-            <GameFilters 
-              games={games}
-              activeFilters={activeFilters}
-              onFiltersChange={setActiveFilters}
-            />
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Input
+                  type="date"
+                  placeholder="Filter by date"
+                  value={selectedDate === "all" ? "" : selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value || "all")}
+                  className={`w-[180px] ${
+                    selectedDate !== "all" ? "ring-2 ring-blue-500 border-blue-500" : ""
+                  }`}
+                />
+                {selectedDate !== "all" && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
+                  >
+                    Active
+                  </Badge>
+                )}
+              </div>
+              <GameFilters 
+                games={games}
+                activeFilters={activeFilters}
+                onFiltersChange={setActiveFilters}
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -415,7 +464,9 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
     level: "",
     gameType: "Competitive",
     payRate: "",
+    locationCost: "",
   })
+  const [selectedLocation, setSelectedLocation] = useState<any>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -429,11 +480,26 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
       })
       return
     }
+
+    // Validate that a location is selected
+    if (!selectedLocation) {
+      toast({
+        title: "Location Required",
+        description: "Please select a location for the game.",
+        variant: "destructive",
+      })
+      return
+    }
     
     onSubmit({
       ...formData,
       time: formData.startTime, // Map startTime to time for compatibility
       payRate: Number.parseFloat(formData.payRate),
+      location: selectedLocation ? selectedLocation.name : formData.location,
+      postalCode: selectedLocation ? selectedLocation.postal_code : formData.postalCode,
+      locationId: selectedLocation?.id,
+      locationData: selectedLocation,
+      locationCost: formData.locationCost ? Number.parseFloat(formData.locationCost) : null
     })
     setFormData({
       homeTeam: "",
@@ -446,7 +512,9 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
       level: "",
       gameType: "Competitive",
       payRate: "",
+      locationCost: "",
     })
+    setSelectedLocation(null)
   }
 
   return (
@@ -505,28 +573,11 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="e.g., Central Park Field 1"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="postalCode">Postal Code</Label>
-          <Input
-            id="postalCode"
-            value={formData.postalCode}
-            onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-            placeholder="e.g., T1S 1A1"
-            required
-          />
-        </div>
-      </div>
+      <LocationSelector
+        value={selectedLocation?.id}
+        onLocationSelect={(location) => setSelectedLocation(location)}
+        placeholder="Search and select a location..."
+      />
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="level">Level</Label>
@@ -779,25 +830,43 @@ function EditGameDialog({ game, onSave, onClose }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <LocationSelector
+            value={selectedLocation?.id}
+            onLocationSelect={(location) => {
+              setSelectedLocation(location)
+              setFormData({ 
+                ...formData, 
+                location: location.name,
+                postalCode: location.postal_code 
+              })
+            }}
+            placeholder="Select game location..."
+          />
+
+          {selectedLocation && (selectedLocation.hourly_rate || selectedLocation.game_rate) && (
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="locationCost">Location Cost Override (optional)</Label>
               <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
+                id="locationCost"
+                type="number"
+                step="0.01"
+                value={formData.locationCost || ""}
+                onChange={(e) => setFormData({ ...formData, locationCost: e.target.value })}
+                placeholder={
+                  selectedLocation.game_rate ? 
+                    `Default: $${selectedLocation.game_rate}` : 
+                    `Default: $${selectedLocation.hourly_rate}/hr`
+                }
               />
+              <p className="text-sm text-muted-foreground">
+                Leave blank to use location default: {
+                  selectedLocation.game_rate ? 
+                    `$${selectedLocation.game_rate} per game` : 
+                    `$${selectedLocation.hourly_rate} per hour`
+                }
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="postalCode">Postal Code</Label>
-              <Input
-                id="postalCode"
-                value={formData.postalCode}
-                onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-              />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

@@ -29,10 +29,13 @@ export default function AIAssignmentsPage() {
   const [selectedResult, setSelectedResult] = useState<AIAssignmentRuleRun | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   // Load rules from API
   useEffect(() => {
     loadRules()
+    loadAnalytics()
   }, [])
 
   // Load results when rules are loaded
@@ -41,6 +44,13 @@ export default function AIAssignmentsPage() {
       loadResults()
     }
   }, [rules])
+
+  // Load analytics when switching to analytics tab
+  useEffect(() => {
+    if (activeTab === 'analytics' && !analytics) {
+      loadAnalytics()
+    }
+  }, [activeTab])
 
   const loadRules = async () => {
     try {
@@ -70,6 +80,20 @@ export default function AIAssignmentsPage() {
       setResults(allResults.sort((a, b) => new Date(b.run_date).getTime() - new Date(a.run_date).getTime()))
     } catch (err) {
       console.error('Error loading results:', err)
+    }
+  }
+
+  const loadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true)
+      const response = await apiClient.getAIAssignmentAnalytics({ days: 30 })
+      if (response.success) {
+        setAnalytics(response.data)
+      }
+    } catch (err) {
+      console.error('Error loading analytics:', err)
+    } finally {
+      setAnalyticsLoading(false)
     }
   }
 
@@ -364,44 +388,159 @@ export default function AIAssignmentsPage() {
         </AutoHidingTabsContent>
 
         <AutoHidingTabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">32</div>
-                <p className="text-xs text-muted-foreground">
-                  +12% from last week
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">92%</div>
-                <p className="text-xs text-muted-foreground">
-                  +5% from last week
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Rules</CardTitle>
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">
-                  2 total rules
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <span className="ml-2">Loading analytics...</span>
+            </div>
+          ) : analytics ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.summary.totalAssignments}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {analytics.summary.assignmentGrowth} from last {analytics.summary.period}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.summary.successRate}%</div>
+                    <p className="text-xs text-muted-foreground">
+                      {analytics.summary.successRateGrowth} from last {analytics.summary.period}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Rules</CardTitle>
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.summary.activeRules}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {analytics.summary.totalRules} total rules
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Clock className="h-5 w-5 mr-2" />
+                      Performance Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Average Duration</Label>
+                        <div className="text-lg font-bold">{analytics.performance.averageDuration}s</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Total Runs</Label>
+                        <div className="text-lg font-bold">{analytics.performance.totalRuns}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Successful Runs</Label>
+                        <div className="text-lg font-bold">{analytics.performance.successfulRuns}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Run Success Rate</Label>
+                        <div className="text-lg font-bold">{analytics.performance.runSuccessRate}%</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <AlertCircle className="h-5 w-5 mr-2" />
+                      Conflict Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Total Conflicts</Label>
+                        <div className="text-lg font-bold text-yellow-600">{analytics.conflicts.totalConflicts}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Conflict Rate</Label>
+                        <div className="text-lg font-bold text-yellow-600">{analytics.conflicts.conflictRate}%</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Avg per Run</Label>
+                        <div className="text-lg font-bold">{analytics.conflicts.avgConflictsPerRun.toFixed(1)}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Runs with Conflicts</Label>
+                        <div className="text-lg font-bold">{analytics.conflicts.runsWithConflicts}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {analytics.aiSystems.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Brain className="h-5 w-5 mr-2" />
+                      AI System Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {analytics.aiSystems.map((system: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {system.type === 'algorithmic' ? <Calculator className="h-4 w-4" /> : <Brain className="h-4 w-4" />}
+                            <span className="font-medium capitalize">{system.type}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="font-bold">{system.runs}</div>
+                              <div className="text-muted-foreground">Runs</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-bold">{system.assignments}</div>
+                              <div className="text-muted-foreground">Assignments</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-bold">{system.avgDuration.toFixed(1)}s</div>
+                              <div className="text-muted-foreground">Avg Duration</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-bold">{system.successRate.toFixed(1)}%</div>
+                              <div className="text-muted-foreground">Success Rate</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No analytics data available yet.</p>
+              <p className="text-sm text-muted-foreground mt-2">Run some AI assignment rules to see performance metrics.</p>
+            </div>
+          )}
         </AutoHidingTabsContent>
       </AutoHidingTabs>
 

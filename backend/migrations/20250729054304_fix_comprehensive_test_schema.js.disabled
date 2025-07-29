@@ -16,9 +16,11 @@
 exports.up = async function(knex) {
   console.log('🔧 Starting comprehensive test schema fixes...');
 
-  // Phase 1: Create missing referees table
+  // Phase 1: Create missing referees table if it doesn't exist
   console.log('📋 Creating referees table...');
-  await knex.schema.createTable('referees', function (table) {
+  const hasReferees = await knex.schema.hasTable('referees');
+  if (!hasReferees) {
+    await knex.schema.createTable('referees', function (table) {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
     table.timestamps(true, true);
@@ -28,11 +30,14 @@ exports.up = async function(knex) {
     
     // Ensure one referee record per user
     table.unique('user_id', 'referees_user_id_unique');
-  });
+    });
+  }
 
-  // Phase 2: Create missing referee_availability table
+  // Phase 2: Create missing referee_availability table if it doesn't exist
   console.log('📅 Creating referee_availability table...');
-  await knex.schema.createTable('referee_availability', function (table) {
+  const hasRefAvailability = await knex.schema.hasTable('referee_availability');
+  if (!hasRefAvailability) {
+    await knex.schema.createTable('referee_availability', function (table) {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
     table.date('date_from').notNullable();
@@ -48,7 +53,8 @@ exports.up = async function(knex) {
     // Indexes for performance
     table.index('user_id', 'idx_referee_availability_user_id');
     table.index(['date_from', 'date_to'], 'idx_referee_availability_dates');
-  });
+    });
+  }
 
   // Phase 3: Fix data type mismatches (text -> character varying)
   console.log('🔧 Fixing data type mismatches...');

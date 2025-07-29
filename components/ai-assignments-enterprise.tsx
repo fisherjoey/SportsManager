@@ -435,14 +435,14 @@ export function AIAssignmentsEnterprise() {
       title: "Available Referees",
       value: availableReferees.length,
       icon: Users,
-      color: "text-green-600",
+      color: "text-success",
       description: "Ready for assignment",
     },
     {
       title: "Selected Games",
       value: selectedGames.length,
       icon: Target,
-      color: "text-blue-600",
+      color: "text-primary",
       description: "Games selected for assignment",
     },
     {
@@ -451,7 +451,7 @@ export function AIAssignmentsEnterprise() {
         ? `${Math.round((bulkResult.optimizationMetrics.workloadBalance + bulkResult.optimizationMetrics.preferenceMatch) / 2)}%`
         : "N/A",
       icon: TrendingUp,
-      color: "text-purple-600",
+      color: "text-muted-foreground",
       description: "Overall assignment quality",
     },
   ]
@@ -461,7 +461,7 @@ export function AIAssignmentsEnterprise() {
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
             <p className="text-muted-foreground">Loading games and referees...</p>
           </div>
         </div>
@@ -474,12 +474,12 @@ export function AIAssignmentsEnterprise() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight flex items-center">
-            <Brain className="h-8 w-8 mr-3 text-blue-600" />
+            <Brain className="h-8 w-8 mr-3 text-primary" />
             Enterprise AI Assignment Engine
           </h2>
           <p className="text-muted-foreground">Intelligent bulk referee assignment system for large-scale operations</p>
         </div>
-        <Badge variant="outline" className="text-blue-600 border-blue-600">
+        <Badge variant="outline" className="text-primary border-primary">
           <Sparkles className="h-3 w-3 mr-1" />
           Enterprise Scale
         </Badge>
@@ -513,7 +513,7 @@ export function AIAssignmentsEnterprise() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-green-600" />
+                <BarChart3 className="h-5 w-5 mr-2 text-success" />
                 Enterprise Bulk Assignment
               </CardTitle>
               <CardDescription>
@@ -551,10 +551,10 @@ export function AIAssignmentsEnterprise() {
                 {selectedGames.length === 0 && (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <Zap className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium text-blue-900">Bulk Assignment Mode</span>
+                      <Zap className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-primary">Bulk Assignment Mode</span>
                     </div>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-primary/80 mt-1">
                       Will process all {unassignedGames.length} unassigned games using advanced optimization algorithms.
                       Estimated processing time: {Math.ceil(unassignedGames.length / 10)} seconds.
                     </p>
@@ -650,7 +650,7 @@ export function AIAssignmentsEnterprise() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Settings className="h-5 w-5 mr-2 text-purple-600" />
+                <Settings className="h-5 w-5 mr-2 text-muted-foreground" />
                 Optimization Parameters
               </CardTitle>
               <CardDescription>Fine-tune the assignment algorithm for your organization's needs</CardDescription>
@@ -837,19 +837,19 @@ export function AIAssignmentsEnterprise() {
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-success">
                         {bulkResult.optimizationMetrics.workloadBalance}%
                       </div>
                       <div className="text-sm text-muted-foreground">Workload Balance</div>
                     </div>
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-primary">
                         {bulkResult.optimizationMetrics.preferenceMatch}%
                       </div>
                       <div className="text-sm text-muted-foreground">Preference Match</div>
                     </div>
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
+                      <div className="text-2xl font-bold text-muted-foreground">
                         {Math.round(bulkResult.optimizationMetrics.totalTravelDistance)}km
                       </div>
                       <div className="text-sm text-muted-foreground">Total Travel</div>
@@ -1022,14 +1022,14 @@ export function AIAssignmentsEnterprise() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-1" />
+                  <CheckCircle className="h-4 w-4 text-success mt-1" />
                   <div>
                     <p className="text-sm font-medium">Enterprise Scale</p>
                     <p className="text-xs text-muted-foreground">Handles 300+ games and 100+ referees simultaneously</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-1" />
+                  <CheckCircle className="h-4 w-4 text-success mt-1" />
                   <div>
                     <p className="text-sm font-medium">Constraint Optimization</p>
                     <p className="text-xs text-muted-foreground">
@@ -1038,7 +1038,7 @@ export function AIAssignmentsEnterprise() {
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-1" />
+                  <CheckCircle className="h-4 w-4 text-success mt-1" />
                   <div>
                     <p className="text-sm font-medium">Real-time Processing</p>
                     <p className="text-xs text-muted-foreground">
@@ -1047,7 +1047,7 @@ export function AIAssignmentsEnterprise() {
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-1" />
+                  <CheckCircle className="h-4 w-4 text-success mt-1" />
                   <div>
                     <p className="text-sm font-medium">Conflict Prevention</p>
                     <p className="text-xs text-muted-foreground">

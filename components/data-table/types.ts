@@ -82,17 +82,20 @@ export interface Referee {
   name: string
   email: string
   phone: string
-  level: "Recreational" | "Competitive" | "Elite"
-  certificationLevel?: string
+  level: "Learning" | "Learning+" | "Growing" | "Growing+" | "Teaching" | "Expert"
   location: string
-  certifications: string[]
-  preferredPositions: string[]
+  roles: string[]
   maxDistance: number
   isAvailable: boolean
+  isWhiteWhistle?: boolean
+  yearsExperience?: number
+  gamesRefereedSeason?: number
+  evaluationScore?: number
+  notes?: string
 }
 
 export type GameLevel = "Recreational" | "Competitive" | "Elite"
 export type GameType = "Community" | "Club" | "Tournament" | "Private Tournament"
 export type GameStatus = "unassigned" | "assigned" | "up-for-grabs" | "completed"
 export type AssignmentStatus = "pending" | "accepted" | "declined"
-export type RefereeLevel = "Recreational" | "Competitive" | "Elite"
+export type RefereeLevel = "Learning" | "Learning+" | "Growing" | "Growing+" | "Teaching" | "Expert"

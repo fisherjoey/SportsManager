@@ -20,7 +20,6 @@ import {
   Eye,
 } from "lucide-react"
 import { LocationWithDistance } from "@/components/ui/location-with-distance"
-import { mockLocations } from "@/lib/mock-data"
 import { apiClient } from "@/lib/api"
 import { PageLayout } from "@/components/ui/page-layout"
 import { PageHeader } from "@/components/ui/page-header"
@@ -33,7 +32,7 @@ import { CreateLocationDialog } from "./create-location-dialog"
 
 export function TeamsLocationsPage() {
   const [teams, setTeams] = useState([])
-  const [locations, setLocations] = useState(mockLocations)
+  const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -57,23 +56,52 @@ export function TeamsLocationsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Fetch teams from backend API
+  // Fetch teams and locations from backend API
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
         setError(null)
-        const response = await apiClient.getTeams()
-        setTeams(response.data?.teams || [])
+        
+        console.log('Starting to fetch data...')
+        
+        // Fetch teams
+        const teamsResponse = await apiClient.getTeams()
+        setTeams(teamsResponse.data?.teams || [])
+        console.log('Teams loaded:', teamsResponse.data?.teams?.length || 0)
+        
+        // Fetch locations
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+        console.log('Fetching locations from', `${API_BASE_URL}/locations`)
+        console.log('Token:', localStorage.getItem('auth_token') ? 'Present' : 'Missing')
+        
+        const locationsResponse = await fetch(`${API_BASE_URL}/locations`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+          }
+        })
+        
+        console.log('Locations response status:', locationsResponse.status)
+        
+        if (locationsResponse.ok) {
+          const locationsData = await locationsResponse.json()
+          console.log('Locations loaded successfully:', locationsData.length, 'locations')
+          console.log('First few locations:', locationsData.slice(0, 3))
+          setLocations(locationsData)
+        } else {
+          const errorText = await locationsResponse.text()
+          console.error('Failed to fetch locations:', locationsResponse.status, locationsResponse.statusText, errorText)
+          setError(`Failed to fetch locations: ${locationsResponse.statusText}`)
+        }
       } catch (err) {
-        console.error('Failed to fetch teams:', err)
-        setError(err.message || 'Failed to load teams')
+        console.error('Failed to fetch data:', err)
+        setError(err.message || 'Failed to load data')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTeams()
+    fetchData()
   }, [])
 
   // Filter teams
@@ -96,7 +124,7 @@ export function TeamsLocationsPage() {
       location.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       location.city.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesLocation = locationFilter === "all" || location.city === locationFilter
-    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? location.isActive : !location.isActive)
+    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? location.is_active : !location.is_active)
     
     return matchesSearch && matchesLocation && matchesStatus
   })
@@ -115,16 +143,31 @@ export function TeamsLocationsPage() {
     }
   }
 
-  const handleCreateLocation = (locationData: any) => {
-    const newLocation = {
-      id: (locations.length + 1).toString(),
-      ...locationData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  const handleCreateLocation = async (locationData: any) => {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const response = await fetch(`${API_BASE_URL}/locations`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+        },
+        body: JSON.stringify(locationData)
+      })
+
+      if (response.ok) {
+        const newLocation = await response.json()
+        setLocations([...locations, newLocation])
+        setIsCreateLocationOpen(false)
+        // showToast("Location created successfully", "The new location has been added to the system.")
+      } else {
+        console.error('Failed to create location')
+        // showToast("Error", "Failed to create location. Please try again.")
+      }
+    } catch (error) {
+      console.error('Failed to create location:', error)
+      // showToast("Error", "Failed to create location. Please try again.")
     }
-    setLocations([...locations, newLocation])
-    setIsCreateLocationOpen(false)
-    // showToast("Location created successfully", "The new location has been added to the system.")
   }
 
   const handleImportTeams = (importedTeams: any[]) => {
@@ -199,19 +242,19 @@ export function TeamsLocationsPage() {
     },
     {
       title: "Active Venues",
-      value: locations.filter((l) => l.isActive).length,
+      value: locations.filter((l) => l.is_active).length,
       icon: Building,
       color: "text-green-600",
     },
     {
       title: "Total Capacity",
-      value: locations.reduce((sum, l) => sum + l.capacity, 0).toLocaleString(),
+      value: locations.reduce((sum, l) => sum + (l.capacity || 0), 0).toLocaleString(),
       icon: Users,
       color: "text-purple-600",
     },
     {
       title: "Parking Spaces",
-      value: locations.reduce((sum, l) => sum + (l.parkingSpaces || 0), 0).toLocaleString(),
+      value: locations.reduce((sum, l) => sum + (l.parking_spaces || 0), 0).toLocaleString(),
       icon: Parking,
       color: "text-orange-600",
     },
@@ -390,7 +433,7 @@ export function TeamsLocationsPage() {
           address={location.address}
           city={location.city}
           province={location.province}
-          postalCode={location.postalCode}
+          postalCode={location.postal_code}
           showDistance={true}
           showMapLink={true}
           compact={true}
@@ -412,31 +455,45 @@ export function TeamsLocationsPage() {
       id: 'facilities',
       title: 'Facilities',
       filterType: 'search',
-      accessor: (location) => (
-        <div className="flex flex-wrap gap-1">
-          {location.facilities?.slice(0, 2).map((facility, idx) => (
-            <Badge key={idx} variant="outline" className="text-xs">
-              {facility}
-            </Badge>
-          ))}
-          {location.facilities?.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{location.facilities.length - 2}
-            </Badge>
-          )}
-        </div>
-      )
+      accessor: (location) => {
+        const facilities = Array.isArray(location.facilities) ? location.facilities : 
+                          (location.facilities ? JSON.parse(location.facilities) : [])
+        return (
+          <div className="flex flex-wrap gap-1">
+            {facilities?.slice(0, 2).map((facility, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {facility}
+              </Badge>
+            ))}
+            {facilities?.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{facilities.length - 2}
+              </Badge>
+            )}
+          </div>
+        )
+      }
     },
     {
       id: 'rate',
-      title: 'Rate',
+      title: 'Cost',
       filterType: 'search',
       accessor: (location) => (
-        location.hourlyRate ? (
-          <div className="flex items-center">
-            <DollarSign className="h-4 w-4 mr-1 text-green-600" />${location.hourlyRate}/hr
-          </div>
-        ) : null
+        <div className="text-sm">
+          {location.hourly_rate && (
+            <div className="flex items-center">
+              <DollarSign className="h-4 w-4 mr-1 text-green-600" />${location.hourly_rate}/hr
+            </div>
+          )}
+          {location.game_rate && (
+            <div className="flex items-center">
+              <DollarSign className="h-4 w-4 mr-1 text-blue-600" />${location.game_rate}/game
+            </div>
+          )}
+          {!location.hourly_rate && !location.game_rate && (
+            <span className="text-muted-foreground">No cost set</span>
+          )}
+        </div>
       )
     },
     {
@@ -449,8 +506,8 @@ export function TeamsLocationsPage() {
         { value: 'inactive', label: 'Inactive' }
       ],
       accessor: (location) => (
-        <Badge variant={location.isActive ? "default" : "secondary"}>
-          {location.isActive ? "Active" : "Inactive"}
+        <Badge variant={location.is_active ? "default" : "secondary"}>
+          {location.is_active ? "Active" : "Inactive"}
         </Badge>
       )
     },
@@ -516,8 +573,8 @@ export function TeamsLocationsPage() {
             {location.city}, {location.province}
           </p>
         </div>
-        <Badge variant={location.isActive ? "default" : "secondary"}>
-          {location.isActive ? "Active" : "Inactive"}
+        <Badge variant={location.is_active ? "default" : "secondary"}>
+          {location.is_active ? "Active" : "Inactive"}
         </Badge>
       </div>
       
@@ -531,16 +588,24 @@ export function TeamsLocationsPage() {
           <span>{location.capacity} capacity</span>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
-          {location.facilities?.slice(0, 3).map((facility: string, idx: number) => (
-            <Badge key={idx} variant="outline" className="text-xs">
-              {facility}
-            </Badge>
-          ))}
-          {location.facilities?.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{location.facilities.length - 3}
-            </Badge>
-          )}
+          {(() => {
+            const facilities = Array.isArray(location.facilities) ? location.facilities : 
+                              (location.facilities ? JSON.parse(location.facilities) : [])
+            return (
+              <>
+                {facilities?.slice(0, 3).map((facility: string, idx: number) => (
+                  <Badge key={idx} variant="outline" className="text-xs">
+                    {facility}
+                  </Badge>
+                ))}
+                {facilities?.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{facilities.length - 3}
+                  </Badge>
+                )}
+              </>
+            )
+          })()}
         </div>
       </div>
       
@@ -577,7 +642,7 @@ export function TeamsLocationsPage() {
       )}
 
       <Tabs defaultValue="teams" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="inline-flex">
           <TabsTrigger value="teams">Teams</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
         </TabsList>

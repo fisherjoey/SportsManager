@@ -49,8 +49,8 @@ export function LoginForm() {
               <Whistle className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">RefAssign</CardTitle>
-          <CardDescription>Sign in to your referee management account</CardDescription>
+          <CardTitle className="text-2xl font-bold">SyncedSport</CardTitle>
+          <CardDescription>Sign in to your sports management account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -94,10 +94,10 @@ export function AdminDashboard() {
       <AppSidebar activeView={activeView} setActiveView={setActiveView} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              RefAssign Dashboard
+              SyncedSport Dashboard
               {activeView !== "dashboard" && (
                 <>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

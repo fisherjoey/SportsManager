@@ -937,4 +937,167 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res
   }
 });
 
+// GET /api/ai-assignment-rules/analytics - Get performance analytics
+router.get('/analytics', authenticateToken, async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+
+    // Get total assignments created in the time period
+    const totalAssignmentsResult = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', cutoffDate)
+      .sum('assignments_created as total');
+    const totalAssignments = parseInt(totalAssignmentsResult[0]?.total || 0);
+
+    // Get previous period total for comparison
+    const previousCutoffDate = new Date(cutoffDate);
+    previousCutoffDate.setDate(previousCutoffDate.getDate() - parseInt(days));
+    const previousTotalResult = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', previousCutoffDate)
+      .where('run_date', '<', cutoffDate)
+      .sum('assignments_created as total');
+    const previousTotal = parseInt(previousTotalResult[0]?.total || 0);
+    
+    const assignmentGrowth = previousTotal > 0 
+      ? Math.round(((totalAssignments - previousTotal) / previousTotal) * 100)
+      : totalAssignments > 0 ? 100 : 0;
+
+    // Calculate success rate
+    const successStats = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', cutoffDate)
+      .select([
+        db.raw('SUM(assignments_created) as successful_assignments'),
+        db.raw('SUM(games_processed) as total_games'),
+        db.raw('COUNT(*) as total_runs'),
+        db.raw('COUNT(CASE WHEN status = \'success\' THEN 1 END) as successful_runs')
+      ])
+      .first();
+
+    const successRate = successStats.total_games > 0 
+      ? Math.round((successStats.successful_assignments / successStats.total_games) * 100)
+      : 0;
+
+    // Get previous period success rate for comparison
+    const previousSuccessStats = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', previousCutoffDate)
+      .where('run_date', '<', cutoffDate)
+      .select([
+        db.raw('SUM(assignments_created) as successful_assignments'),
+        db.raw('SUM(games_processed) as total_games')
+      ])
+      .first();
+
+    const previousSuccessRate = previousSuccessStats.total_games > 0 
+      ? Math.round((previousSuccessStats.successful_assignments / previousSuccessStats.total_games) * 100)
+      : 0;
+    
+    const successRateGrowth = previousSuccessRate > 0 
+      ? Math.round(successRate - previousSuccessRate)
+      : successRate > 0 ? successRate : 0;
+
+    // Get active rules count
+    const activeRulesResult = await db('ai_assignment_rules')
+      .select([
+        db.raw('COUNT(CASE WHEN enabled = true THEN 1 END) as active_rules'),
+        db.raw('COUNT(*) as total_rules')
+      ])
+      .first();
+
+    // Get performance metrics over time (for charts)
+    const performanceOverTime = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', cutoffDate)
+      .select([
+        db.raw('DATE(run_date) as date'),
+        db.raw('SUM(assignments_created) as assignments'),
+        db.raw('SUM(games_processed) as games'),
+        db.raw('AVG(duration_seconds) as avg_duration'),
+        db.raw('COUNT(*) as runs')
+      ])
+      .groupBy(db.raw('DATE(run_date)'))
+      .orderBy('date');
+
+    // Get AI system usage statistics
+    const aiSystemStats = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', cutoffDate)
+      .select([
+        'ai_system_used',
+        db.raw('COUNT(*) as runs'),
+        db.raw('SUM(assignments_created) as assignments'),
+        db.raw('AVG(duration_seconds) as avg_duration'),
+        db.raw('AVG(CASE WHEN games_processed > 0 THEN (assignments_created::float / games_processed) * 100 ELSE 0 END) as success_rate')
+      ])
+      .groupBy('ai_system_used');
+
+    // Get conflict analysis
+    const conflictStats = await db('ai_assignment_rule_runs')
+      .where('run_date', '>=', cutoffDate)
+      .select([
+        db.raw('SUM(conflicts_found) as total_conflicts'),
+        db.raw('AVG(conflicts_found) as avg_conflicts_per_run'),
+        db.raw('COUNT(CASE WHEN conflicts_found > 0 THEN 1 END) as runs_with_conflicts'),
+        db.raw('COUNT(*) as total_runs')
+      ])
+      .first();
+
+    const conflictRate = conflictStats.total_runs > 0
+      ? Math.round((conflictStats.runs_with_conflicts / conflictStats.total_runs) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalAssignments,
+          assignmentGrowth: assignmentGrowth >= 0 ? `+${assignmentGrowth}%` : `${assignmentGrowth}%`,
+          successRate,
+          successRateGrowth: successRateGrowth >= 0 ? `+${successRateGrowth}%` : `${successRateGrowth}%`,
+          activeRules: activeRulesResult.active_rules,
+          totalRules: activeRulesResult.total_rules,
+          period: `${days} days`
+        },
+        performance: {
+          averageDuration: performanceOverTime.length > 0 
+            ? Math.round(performanceOverTime.reduce((sum, p) => sum + parseFloat(p.avg_duration || 0), 0) / performanceOverTime.length * 100) / 100
+            : 0,
+          totalRuns: successStats.total_runs,
+          successfulRuns: successStats.successful_runs,
+          runSuccessRate: successStats.total_runs > 0 
+            ? Math.round((successStats.successful_runs / successStats.total_runs) * 100)
+            : 0
+        },
+        trends: {
+          performanceOverTime: performanceOverTime.map(p => ({
+            date: p.date,
+            assignments: parseInt(p.assignments || 0),
+            games: parseInt(p.games || 0),
+            successRate: p.games > 0 ? Math.round((p.assignments / p.games) * 100) : 0,
+            avgDuration: parseFloat(p.avg_duration || 0),
+            runs: parseInt(p.runs || 0)
+          }))
+        },
+        aiSystems: aiSystemStats.map(stat => ({
+          type: stat.ai_system_used,
+          runs: parseInt(stat.runs || 0),
+          assignments: parseInt(stat.assignments || 0),
+          avgDuration: parseFloat(stat.avg_duration || 0),
+          successRate: parseFloat(stat.success_rate || 0)
+        })),
+        conflicts: {
+          totalConflicts: parseInt(conflictStats.total_conflicts || 0),
+          avgConflictsPerRun: parseFloat(conflictStats.avg_conflicts_per_run || 0),
+          conflictRate,
+          runsWithConflicts: parseInt(conflictStats.runs_with_conflicts || 0)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error getting AI assignment analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get analytics data'
+    });
+  }
+});
+
 module.exports = router;

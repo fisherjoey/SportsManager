@@ -22,6 +22,7 @@ const aiSuggestionsRoutes = require('./routes/ai-suggestions');
 const historicPatternsRoutes = require('./routes/historic-patterns');
 const chunksRoutes = require('./routes/chunks');
 const aiAssignmentRulesRoutes = require('./routes/ai-assignment-rules');
+const locationRoutes = require('./routes/locations');
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/api/organization', organizationRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/chunks', chunksRoutes);
 app.use('/api/ai-assignment-rules', aiAssignmentRulesRoutes);
+app.use('/api/locations', locationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

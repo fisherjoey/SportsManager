@@ -43,7 +43,7 @@ export function RefereeDashboard() {
       <AppSidebar activeView={activeView} setActiveView={setActiveView} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">My Dashboard</h1>
           </div>

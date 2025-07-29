@@ -707,7 +707,7 @@ export function FilterableTable<T extends Record<string, any>>({
               <RefereeMobileCard
                 key={row.id}
                 referee={item as any}
-                onEdit={onEditReferee}
+                onEditReferee={onEditReferee}
                 onViewProfile={onViewProfile}
               />
             )

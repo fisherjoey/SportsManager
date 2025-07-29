@@ -548,7 +548,7 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
       const gender = homeTeam?.gender
       
       return (
-        <Badge variant="outline" className={`text-xs ${gender === 'Boys' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
+        <Badge variant="outline" className={`text-xs ${gender === 'Boys' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
           {gender}
         </Badge>
       )

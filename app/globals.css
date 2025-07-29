@@ -4,74 +4,89 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    /* SyncedSport Light Mode Palette - Based on Teal Brand Icon */
+    --background: 0 0% 100%; /* Pure white */
+    --foreground: 210 11% 15%; /* Dark gray */
+    --card: 0 0% 100%; /* Pure white */
+    --card-foreground: 210 11% 15%; /* Dark gray */
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 9% 17%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 210 11% 15%;
+    --primary: 173 80% 40%; /* Brand Teal - matches icon */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 96%; /* Light gray */
+    --secondary-foreground: 210 11% 15%;
+    --muted: 210 20% 96%; /* Light gray */
+    --muted-foreground: 215 16% 46%; /* Medium gray */
+    --accent: 173 80% 90%; /* Light teal */
+    --accent-foreground: 173 80% 25%; /* Dark teal */
+    --destructive: 0 72% 51%; /* Red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%; /* Light border */
+    --input: 214 32% 91%; /* Light border */
+    --ring: 173 80% 40%; /* Brand Teal */
+    --chart-1: 173 80% 40%; /* Brand Teal */
+    --chart-2: 142 71% 45%; /* Success Green */
+    --chart-3: 38 92% 50%; /* Warning Orange */
+    --chart-4: 0 72% 51%; /* Error Red */
+    --chart-5: 199 89% 48%; /* Info Blue */
+    --success: 142 71% 45%; /* Success Green */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%; /* Warning Orange */
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%; /* Info Blue */
+    --info-foreground: 0 0% 100%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 210 11% 15%;
+    --sidebar-primary: 173 80% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 210 11% 15%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 173 80% 40%;
   }
 
   .dark {
-    --background: 240 10% 12%;
-    --foreground: 0 0% 95%;
-    --card: 240 8% 16%;
+    /* SyncedSport Dark Mode Palette - Based on Teal Brand Icon */
+    --background: 210 22% 8%; /* Very dark gray */
+    --foreground: 0 0% 95%; /* Near white */
+    --card: 210 22% 11%; /* Dark card */
     --card-foreground: 0 0% 95%;
-    --popover: 240 8% 16%;
+    --popover: 210 22% 11%;
     --popover-foreground: 0 0% 95%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 5% 22%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 240 5% 22%;
-    --muted-foreground: 240 5% 70%;
-    --accent: 240 5% 22%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 26%;
-    --input: 240 5% 20%;
-    --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 60%;
-    --chart-2: 160 60% 55%;
-    --chart-3: 30 80% 65%;
-    --chart-4: 280 65% 70%;
-    --chart-5: 340 75% 65%;
-    --sidebar-background: 240 8% 14%;
-    --sidebar-foreground: 240 4.8% 90%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 240 5.9% 10%;
-    --sidebar-accent: 240 5% 20%;
-    --sidebar-accent-foreground: 240 4.8% 90%;
-    --sidebar-border: 240 5% 26%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --primary: 173 80% 50%; /* Brighter teal for dark mode */
+    --primary-foreground: 210 22% 8%;
+    --secondary: 210 22% 16%; /* Dark secondary */
+    --secondary-foreground: 0 0% 85%;
+    --muted: 210 22% 16%; /* Dark muted */
+    --muted-foreground: 215 16% 65%; /* Medium gray */
+    --accent: 173 80% 15%; /* Dark teal */
+    --accent-foreground: 173 80% 85%; /* Light teal */
+    --destructive: 0 72% 60%; /* Brighter red for dark mode */
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 22% 20%; /* Dark border */
+    --input: 210 22% 20%;
+    --ring: 173 80% 50%; /* Bright teal */
+    --chart-1: 173 80% 50%; /* Brand Teal */
+    --chart-2: 142 71% 55%; /* Success Green */
+    --chart-3: 38 92% 60%; /* Warning Orange */
+    --chart-4: 0 72% 60%; /* Error Red */
+    --chart-5: 199 89% 60%; /* Info Blue */
+    --success: 142 71% 55%; /* Success Green */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 60%; /* Warning Orange */
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 60%; /* Info Blue */
+    --info-foreground: 0 0% 100%;
+    --radius: 0.5rem;
+    --sidebar-background: 210 22% 8%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 173 80% 50%;
+    --sidebar-primary-foreground: 210 22% 8%;
+    --sidebar-accent: 210 22% 16%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 210 22% 20%;
+    --sidebar-ring: 173 80% 50%;
   }
 }
 
@@ -81,5 +96,62 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+}
+
+/* Cloudflare system font stack */
+.font-system {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Custom color utilities */
+@layer utilities {
+  .text-success {
+    color: hsl(var(--success));
+  }
+  .text-success-foreground {
+    color: hsl(var(--success-foreground));
+  }
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  .bg-success-foreground {
+    background-color: hsl(var(--success-foreground));
+  }
+  .border-success {
+    border-color: hsl(var(--success));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  .text-warning-foreground {
+    color: hsl(var(--warning-foreground));
+  }
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  .bg-warning-foreground {
+    background-color: hsl(var(--warning-foreground));
+  }
+  .border-warning {
+    border-color: hsl(var(--warning));
+  }
+  
+  .text-info {
+    color: hsl(var(--info));
+  }
+  .text-info-foreground {
+    color: hsl(var(--info-foreground));
+  }
+  .bg-info {
+    background-color: hsl(var(--info));
+  }
+  .bg-info-foreground {
+    background-color: hsl(var(--info-foreground));
+  }
+  .border-info {
+    border-color: hsl(var(--info));
   }
 }

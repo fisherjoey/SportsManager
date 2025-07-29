@@ -156,7 +156,7 @@ export function DashboardOverview() {
     <PageLayout>
       <PageHeader
         icon={Home}
-        title="RefAssign Dashboard"
+        title="SyncedSport Dashboard"
         description="Overview of games, assignments, and referee activity"
       >
         <Badge variant="outline" className="text-blue-600 border-blue-600">

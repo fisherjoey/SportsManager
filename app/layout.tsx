@@ -1,21 +1,18 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/components/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 
-const inter = Inter({ subsets: ["latin"] })
-
 export const metadata: Metadata = {
-  title: "CMBA RefAssign - Referee Management System",
-  description: "Modern referee assignment and management platform",
+  title: "SyncedSport - Sports Management System",
+  description: "Modern sports league and referee management platform",
   generator: 'v0.dev',
   icons: {
-    icon: '/cmba-logo.png',
+    icon: '/sportsync-icon.png',
     shortcut: '/favicon.ico',
-    apple: '/cmba-logo.png',
+    apple: '/sportsync-icon.png',
   },
 }
 
@@ -25,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className} suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-system" suppressHydrationWarning={true}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

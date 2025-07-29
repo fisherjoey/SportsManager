@@ -23,8 +23,7 @@ import { useApi } from "@/lib/api"
 import { PageLayout } from "@/components/ui/page-layout"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatsGrid } from "@/components/ui/stats-grid"
-import { DataTable } from "@/components/data-table/DataTable"
-import { createRefereeColumns } from "@/components/data-table/columns/referee-columns"
+import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
 import { Referee } from "@/components/data-table/types"
 
@@ -199,6 +198,182 @@ export function RefereeManagement() {
     },
   ]
 
+  // Column definitions for the referees table using FilterableTable format
+  const columns: ColumnDef<Referee>[] = [
+    {
+      id: 'name',
+      title: 'Name',
+      filterType: 'search',
+      accessor: (referee) => (
+        <div>
+          <div className="font-medium text-sm truncate">{referee.name}</div>
+          {referee.isWhiteWhistle && (
+            <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
+              <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+              White Whistle
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'contact',
+      title: 'Contact',
+      filterType: 'search',
+      accessor: (referee) => (
+        <div className="space-y-1">
+          <div className="text-sm truncate">{referee.email}</div>
+          <div className="text-xs text-muted-foreground truncate">{referee.phone}</div>
+        </div>
+      )
+    },
+    {
+      id: 'level',
+      title: 'Level',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Levels' },
+        { value: 'Learning', label: 'Learning' },
+        { value: 'Learning+', label: 'Learning+' },
+        { value: 'Growing', label: 'Growing' },
+        { value: 'Growing+', label: 'Growing+' },
+        { value: 'Teaching', label: 'Teaching' },
+        { value: 'Expert', label: 'Expert' },
+      ],
+      accessor: (referee) => {
+        const level = referee.level
+        const levelColors = {
+          "Learning": "bg-green-100 text-green-800 border-green-200",
+          "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
+          "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
+          "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
+          "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
+          "Expert": "bg-red-100 text-red-800 border-red-200",
+        }
+        
+        return (
+          <Badge 
+            variant="outline" 
+            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ""}`}
+          >
+            {level}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Locations' },
+        { value: 'Northwest Calgary', label: 'Northwest Calgary' },
+        { value: 'Northeast Calgary', label: 'Northeast Calgary' },
+        { value: 'Southeast Calgary', label: 'Southeast Calgary' },
+        { value: 'Southwest Calgary', label: 'Southwest Calgary' },
+        { value: 'Downtown Calgary', label: 'Downtown Calgary' },
+        { value: 'Foothills', label: 'Foothills' },
+        { value: 'Bow Valley', label: 'Bow Valley' },
+        { value: 'Fish Creek', label: 'Fish Creek' },
+        { value: 'Olds', label: 'Olds' },
+      ],
+      accessor: (referee) => (
+        <div>
+          <div className="text-sm font-medium truncate">{referee.location}</div>
+          <div className="text-xs text-muted-foreground">
+            {referee.maxDistance}km radius
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'roles',
+      title: 'Roles',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Roles' },
+        { value: 'Referee', label: 'Referee' },
+        { value: 'Evaluator', label: 'Evaluator' },
+        { value: 'Mentor', label: 'Mentor' },
+        { value: 'Trainer', label: 'Trainer' },
+        { value: 'Referee Coach', label: 'Referee Coach' },
+      ],
+      accessor: (referee) => {
+        const roles = referee.roles || ["Referee"]
+        
+        return (
+          <div className="space-y-1">
+            {roles.slice(0, 2).map((role, index) => (
+              <div key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md truncate">
+                {role}
+              </div>
+            ))}
+            {roles.length > 2 && (
+              <div className="text-xs text-muted-foreground">
+                +{roles.length - 2} more
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All' },
+        { value: 'true', label: 'Available' },
+        { value: 'false', label: 'Unavailable' },
+      ],
+      accessor: (referee) => {
+        const isAvailable = referee.isAvailable
+        
+        return (
+          <Badge 
+            variant={isAvailable ? "default" : "secondary"}
+            className={`text-xs ${isAvailable ? "bg-success/10 text-success border-success/20 hover:bg-success/20" : "bg-muted text-muted-foreground border-border"}`}
+          >
+            {isAvailable ? "Available" : "Unavailable"}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (referee) => (
+        <div className="flex items-center space-x-1">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleViewProfile(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleEditReferee(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleManageAvailability(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+  ]
+
   return (
     <PageLayout>
       <PageHeader
@@ -220,19 +395,17 @@ export function RefereeManagement() {
           <CardDescription>Manage referee profiles and availability</CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={createRefereeColumns({
-              onEditReferee: handleEditReferee,
-              onViewProfile: handleViewProfile,
-              onManageAvailability: handleManageAvailability
-            })} 
+          <FilterableTable 
+            columns={columns}
             data={referees} 
             loading={isLoading}
             mobileCardType="referee"
             enableViewToggle={true}
+            enableCSV={true}
+            searchKey="name"
+            emptyMessage="No referees found. Try adjusting your filters."
             onEditReferee={handleEditReferee}
             onViewProfile={handleViewProfile}
-            searchKey="name"
           />
         </CardContent>
       </Card>

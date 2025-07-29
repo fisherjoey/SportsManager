@@ -344,14 +344,14 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
 
                   {/* Active Filters Display */}
                   {selectedValues.size > 0 && (
-                    <div className="space-y-2 pt-3 mt-2 border-t bg-blue-50 rounded p-2">
-                      <label className="text-xs font-medium text-blue-700">Active Filters ({selectedValues.size})</label>
+                    <div className="space-y-2 pt-3 mt-2 border-t bg-accent rounded p-2">
+                      <label className="text-xs font-medium text-primary">Active Filters ({selectedValues.size})</label>
                       <div className="flex flex-wrap gap-1">
                         {Array.from(selectedValues).map((value) => (
                           <Badge
                             key={value}
                             variant="secondary"
-                            className="text-xs px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-red-500 hover:text-white bg-blue-100 text-blue-800 border-blue-200"
+                            className="text-xs px-2 py-1 flex items-center gap-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground bg-secondary text-secondary-foreground border-border"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleFilterToggle(value)
@@ -405,8 +405,8 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
             }}
             title="Click to manage filters"
           >
-            <Filter className="h-3 w-3 text-blue-600" />
-            <Badge variant="secondary" className="h-4 px-1 text-xs bg-blue-100 text-blue-800 border-blue-200">
+            <Filter className="h-3 w-3 text-primary" />
+            <Badge variant="secondary" className="h-4 px-1 text-xs bg-accent text-accent-foreground border-border">
               {selectedValues.size > 0 ? selectedValues.size : "1"}
             </Badge>
           </div>

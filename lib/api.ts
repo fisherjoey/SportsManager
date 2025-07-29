@@ -1091,6 +1091,58 @@ class ApiClient {
     return this.request<{ success: boolean; data: AIAssignmentRuleRun }>(`/ai-assignment-rules/runs/${runId}`);
   }
 
+  async getAIAssignmentAnalytics(params?: { days?: number }) {
+    const query = params ? new URLSearchParams(
+      Object.entries(params)
+        .filter(([, value]) => value !== undefined && value !== '')
+        .map(([key, value]) => [key, String(value)])
+    ).toString() : '';
+    
+    return this.request<{ 
+      success: boolean; 
+      data: {
+        summary: {
+          totalAssignments: number;
+          assignmentGrowth: string;
+          successRate: number;
+          successRateGrowth: string;
+          activeRules: number;
+          totalRules: number;
+          period: string;
+        };
+        performance: {
+          averageDuration: number;
+          totalRuns: number;
+          successfulRuns: number;
+          runSuccessRate: number;
+        };
+        trends: {
+          performanceOverTime: Array<{
+            date: string;
+            assignments: number;
+            games: number;
+            successRate: number;
+            avgDuration: number;
+            runs: number;
+          }>;
+        };
+        aiSystems: Array<{
+          type: string;
+          runs: number;
+          assignments: number;
+          avgDuration: number;
+          successRate: number;
+        }>;
+        conflicts: {
+          totalConflicts: number;
+          avgConflictsPerRun: number;
+          conflictRate: number;
+          runsWithConflicts: number;
+        };
+      }
+    }>(`/ai-assignment-rules/analytics${query ? `?${query}` : ''}`);
+  }
+
   async addPartnerPreference(ruleId: string, preference: {
     referee1Id: string;
     referee2Id: string;
