@@ -11,7 +11,11 @@ import { mockGames, Team } from "@/lib/mock-data"
 import { useAuth } from "@/components/auth-provider"
 import { formatTeamName } from "@/lib/team-utils"
 
-export function CalendarView() {
+interface CalendarViewProps {
+  onDateClick?: (date: string) => void
+}
+
+export function CalendarView({ onDateClick }: CalendarViewProps) {
   const { user } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
 
