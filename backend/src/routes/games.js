@@ -50,8 +50,7 @@ const gameUpdateSchema = Joi.object({
 
 // GET /api/games - Get all games with optional filters
 router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(async (req, res) => {
-  try {
-    const { status, level, game_type, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
+  const { status, level, game_type, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
     
     let query = db('games')
       .select(
