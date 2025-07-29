@@ -13,12 +13,9 @@ exports.up = async function(knex) {
     roles: knex.raw("'{Referee}'") 
   });
 
-  // Update existing referees based on their level
-  // Learning and Learning+ levels typically use white whistles
-  // Use the old 'level' column to determine white whistle status
-  await knex('referees')
-    .whereIn('level', ['Recreational']) // Assuming Recreational maps to Learning levels
-    .update({ is_white_whistle: true });
+  // Note: The 'level' column no longer exists in the referees table
+  // All existing referees will have is_white_whistle = false by default
+  // This can be manually updated later based on business requirements
 };
 
 exports.down = async function(knex) {
