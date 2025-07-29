@@ -3,14 +3,13 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CustomFormDialog } from "@/components/ui/form-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AddressSearch } from "@/components/ui/address-search"
-import { formatPostalCode } from "@/lib/address-utils"
+import { ContactFieldGroup } from "@/components/ui/contact-field-group"
+import { AddressFieldGroup } from "@/components/ui/address-field-group"
 
 interface CreateLocationDialogProps {
   open: boolean
@@ -43,7 +42,7 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
       address: `${address.streetNumber} ${address.streetName}`.trim(),
       city: address.city,
       province: address.province,
-      postalCode: formatPostalCode(address.postalCode)
+      postalCode: address.postalCode
     }))
   }
 
@@ -99,9 +98,12 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onCreateLocation(formData)
+  const handleSubmit = async (data: any) => {
+    const locationData = {
+      ...formData,
+      ...data,
+    }
+    await onCreateLocation(locationData)
     setFormData({
       name: "",
       address: "",
@@ -122,13 +124,22 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Location</DialogTitle>
-          <DialogDescription>Create a new venue in the system</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <CustomFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add New Location"
+      description="Create a new venue in the system"
+      onSubmit={handleSubmit}
+      submitText="Create Location"
+      maxWidth="sm:max-w-[700px] max-h-[80vh] overflow-y-auto"
+    >
+      {({ loading, handleSubmit: submitForm }) => (
+        <form id="dialog-form" onSubmit={(e) => {
+          e.preventDefault()
+          const formData = new FormData(e.target as HTMLFormElement)
+          const data = Object.fromEntries(formData.entries())
+          submitForm(data)
+        }} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Venue Name</Label>
             <Input
@@ -139,61 +150,24 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="address">Address Search</Label>
-            <AddressSearch
-              onAddressSelect={handleAddressSelect}
-              placeholder="Search for venue address..."
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Start typing an address to search and auto-fill location details
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="address">Street Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="123 Main Street"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Calgary"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="province">Province</Label>
-              <Input
-                id="province"
-                value={formData.province}
-                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                placeholder="AB"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="postalCode">Postal Code</Label>
-            <Input
-              id="postalCode"
-              placeholder="T2G 5B6"
-              value={formData.postalCode}
-              onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-              required
-            />
-          </div>
+          <AddressFieldGroup
+            addressValue={formData.address}
+            cityValue={formData.city}
+            provinceValue={formData.province}
+            postalCodeValue={formData.postalCode}
+            onAddressChange={(value) => setFormData({ ...formData, address: value })}
+            onCityChange={(value) => setFormData({ ...formData, city: value })}
+            onProvinceChange={(value) => setFormData({ ...formData, province: value })}
+            onPostalCodeChange={(value) => setFormData({ ...formData, postalCode: value })}
+            onAddressSelect={handleAddressSelect}
+            addressRequired
+            cityRequired
+            provinceRequired
+            postalCodeRequired
+            showAddressSearch
+            addressSearchPlaceholder="Search for venue address..."
+            disabled={loading}
+          />
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -229,36 +203,16 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contactName">Contact Name</Label>
-            <Input
-              id="contactName"
-              value={formData.contactName}
-              onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
-              <Input
-                id="contactPhone"
-                type="tel"
-                placeholder="(403) 555-0123"
-                value={formData.contactPhone}
-                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                value={formData.contactEmail}
-                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-              />
-            </div>
-          </div>
+          <ContactFieldGroup
+            nameValue={formData.contactName}
+            emailValue={formData.contactEmail}
+            phoneValue={formData.contactPhone}
+            onNameChange={(value) => setFormData({ ...formData, contactName: value })}
+            onEmailChange={(value) => setFormData({ ...formData, contactEmail: value })}
+            onPhoneChange={(value) => setFormData({ ...formData, contactPhone: value })}
+            layout="grid"
+            disabled={loading}
+          />
 
           <div className="space-y-2">
             <Label>Facilities</Label>
@@ -307,14 +261,8 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Location</Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      )}
+    </CustomFormDialog>
   )
 }

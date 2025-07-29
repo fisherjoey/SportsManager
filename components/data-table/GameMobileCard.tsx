@@ -1,31 +1,25 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { 
+  BaseEntityCard,
+  InfoRow,
+  BadgeRow,
+  CollapsibleSection
+} from "@/components/ui/base-entity-card"
+import { 
+  AssignmentStatusBadge,
+  LevelBadge
+} from "@/components/ui/specialized-badges"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Calendar, 
   MapPin, 
   Trophy, 
   DollarSign, 
-  Users, 
-  MoreVertical,
-  Copy,
+  Users,
   Edit,
   Eye,
-  UserCheck,
-  AlertCircle,
-  CheckCircle,
-  Clock
+  UserCheck
 } from "lucide-react"
 import { Game } from "./types"
 import { LocationWithDistance } from "@/components/ui/location-with-distance"
@@ -54,172 +48,113 @@ export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: 
   const refsNeeded = game.refsNeeded || (game as any).refs_needed || 2
   const assignedCount = assignments.length
 
-  // Determine status
-  let displayStatus = game.status
-  let statusVariant: "default" | "secondary" | "outline" | "destructive" = "secondary"
-  let StatusIcon = Clock
-
-  if (assignedCount >= refsNeeded) {
-    displayStatus = "Full"
-    statusVariant = "default"
-    StatusIcon = CheckCircle
-  } else if (assignedCount > 0) {
-    displayStatus = `Partial (${assignedCount}/${refsNeeded})`
-    statusVariant = "secondary"
-    StatusIcon = UserCheck
-  } else if (game.status === "up-for-grabs") {
-    displayStatus = "Up for Grabs"
-    statusVariant = "outline"
-    StatusIcon = AlertCircle
-  } else {
-    displayStatus = "Unassigned"
-    statusVariant = "destructive"
-    StatusIcon = AlertCircle
-  }
+  // Determine game status for actions
+  const isUpForGrabs = game.status === "up-for-grabs"
 
   const payRate = parseFloat(game.payRate || (game as any).pay_rate || "0")
   const multiplier = parseFloat(game.wageMultiplier || (game as any).wage_multiplier || "1")
   const finalAmount = payRate * multiplier
 
-  const levelColors = {
-    "Recreational": "bg-green-100 text-green-800 border-green-200",
-    "Competitive": "bg-yellow-100 text-yellow-800 border-yellow-200", 
-    "Elite": "bg-red-100 text-red-800 border-red-200",
-  }
 
   const canAssign = assignments.length < refsNeeded
 
+  const actions = [
+    ...(canAssign ? [{
+      label: "Assign Referee",
+      icon: Users,
+      onClick: () => onAssignReferee?.(game)
+    }] : []),
+    {
+      label: "View details",
+      icon: Eye,
+      onClick: () => console.log('View details')
+    },
+    {
+      label: "Edit game",
+      icon: Edit,
+      onClick: () => console.log('Edit game')
+    },
+    ...(!isUpForGrabs ? [{
+      label: "Mark as up for grabs",
+      icon: UserCheck,
+      onClick: () => console.log('Mark as up for grabs')
+    }] : [])
+  ]
+
+  const title = (
+    <div>
+      {homeTeamName} <span className="text-muted-foreground">vs</span> {awayTeamName}
+    </div>
+  )
+
   return (
-    <Card className="w-full">
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          {/* Header with selection and game */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3 flex-1">
-              {onSelect && (
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={onSelect}
-                  className="mt-1"
-                />
-              )}
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg leading-tight">
-                  {homeTeamName} <span className="text-muted-foreground">vs</span> {awayTeamName}
-                </h3>
-              </div>
-            </div>
-            
-            {/* Actions menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(game.id)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy game ID
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {canAssign && (
-                  <DropdownMenuItem onClick={() => onAssignReferee?.(game)}>
-                    <Users className="mr-2 h-4 w-4" />
-                    Assign Referee
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View details
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit game
-                </DropdownMenuItem>
-                {game.status !== "up-for-grabs" && (
-                  <DropdownMenuItem>
-                    Mark as up for grabs
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <BaseEntityCard
+      id={game.id}
+      title={title}
+      isSelected={isSelected}
+      onSelect={onSelect}
+      actions={actions}
+      copyIdLabel="Copy game ID"
+    >
 
-          {/* Date and time */}
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="mr-2 h-4 w-4" />
-            <span>{new Date(gameDate).toLocaleDateString()}</span>
-            <span className="mx-2">•</span>
-            <span>{gameTime}</span>
-          </div>
+      {/* Date and time */}
+      <InfoRow icon={Calendar}>
+        <span>{new Date(gameDate).toLocaleDateString()}</span>
+        <span className="mx-2">•</span>
+        <span>{gameTime}</span>
+      </InfoRow>
 
-          {/* Location */}
-          <LocationWithDistance
-            location={gameLocation}
-            postalCode={postalCode}
-            showDistance={true}
-            showMapLink={true}
-            compact={true}
-          />
+      {/* Location */}
+      <LocationWithDistance
+        location={gameLocation}
+        postalCode={postalCode}
+        showDistance={true}
+        showMapLink={true}
+        compact={true}
+      />
 
-          {/* Level and Pay */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-              <Badge 
-                variant="outline" 
-                className={levelColors[game.level as keyof typeof levelColors] || ""}
-              >
-                {game.level}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center text-sm font-medium">
-              <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
-              ${finalAmount.toFixed(2)}
-              {multiplier !== 1 && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  (${payRate} × {multiplier})
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className="flex items-center">
-            <StatusIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-            <Badge variant={statusVariant}>
-              {displayStatus}
-            </Badge>
-          </div>
-
-          {/* Assigned Referees */}
-          <div className="border-t pt-3">
-            <div className="flex items-start space-x-2">
-              <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <span className="text-sm text-muted-foreground">Referees:</span>
-                {assignments.length === 0 ? (
-                  <span className="text-sm text-muted-foreground ml-1">None assigned</span>
-                ) : (
-                  <div className="mt-1 space-y-1">
-                    {assignments.map((assignment: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-sm">{assignment.referee_name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {assignment.position_name}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+      {/* Level and Pay */}
+      <BadgeRow icon={Trophy}>
+        <div className="flex items-center space-x-2">
+          <LevelBadge level={game.level} />
+          <div className="flex items-center text-sm font-medium">
+            <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
+            ${finalAmount.toFixed(2)}
+            {multiplier !== 1 && (
+              <span className="text-xs text-muted-foreground ml-1">
+                (${payRate} × {multiplier})
+              </span>
+            )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </BadgeRow>
+
+      {/* Assignment Status */}
+      <InfoRow icon={UserCheck}>
+        <AssignmentStatusBadge
+          assignedCount={assignedCount}
+          requiredCount={refsNeeded}
+        />
+      </InfoRow>
+
+      {/* Assigned Referees */}
+      <CollapsibleSection
+        icon={Users}
+        label="Referees"
+        isEmpty={assignments.length === 0}
+        emptyText="None assigned"
+      >
+        <div className="space-y-1">
+          {assignments.map((assignment: any, idx: number) => (
+            <div key={idx} className="flex items-center justify-between">
+              <span className="text-sm">{assignment.referee_name}</span>
+              <Badge variant="outline" className="text-xs">
+                {assignment.position_name}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </CollapsibleSection>
+    </BaseEntityCard>
   )
 }
