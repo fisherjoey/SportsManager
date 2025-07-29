@@ -315,4 +315,209 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
   }
 });
 
+// POST /api/games/bulk-import - Bulk import games
+router.post('/bulk-import', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { games } = req.body;
+    
+    if (!Array.isArray(games) || games.length === 0) {
+      return res.status(400).json({ error: 'Games array is required and cannot be empty' });
+    }
+
+    if (games.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 games can be imported at once' });
+    }
+
+    // Validate each game
+    const validationErrors = [];
+    const validatedGames = [];
+
+    for (let i = 0; i < games.length; i++) {
+      const { error, value } = gameSchema.validate(games[i]);
+      if (error) {
+        validationErrors.push({
+          index: i,
+          game: games[i],
+          error: error.details[0].message
+        });
+      } else {
+        validatedGames.push({ ...value, index: i });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed for some games',
+        validationErrors,
+        totalErrors: validationErrors.length,
+        totalGames: games.length
+      });
+    }
+
+    const trx = await db.transaction();
+    
+    try {
+      const createdGames = [];
+      const gameCreationErrors = [];
+
+      for (const gameData of validatedGames) {
+        try {
+          // Get or create teams
+          const homeTeam = await getOrCreateTeam(trx, gameData.homeTeam, gameData.division, gameData.season);
+          const awayTeam = await getOrCreateTeam(trx, gameData.awayTeam, gameData.division, gameData.season);
+
+          // Get or create location
+          const location = await getOrCreateLocation(trx, gameData.location, gameData.postalCode);
+
+          // Create game
+          const [game] = await trx('games')
+            .insert({
+              home_team_id: homeTeam.id,
+              away_team_id: awayTeam.id,
+              game_date: gameData.date,
+              game_time: gameData.time,
+              location_id: location.id,
+              level: gameData.level,
+              game_type: gameData.gameType,
+              pay_rate: gameData.payRate,
+              refs_needed: gameData.refsNeeded,
+              wage_multiplier: gameData.wageMultiplier,
+              wage_multiplier_reason: gameData.wageMultiplierReason || null,
+              status: 'unassigned',
+              created_at: new Date(),
+              updated_at: new Date()
+            })
+            .returning('*');
+
+          createdGames.push({
+            index: gameData.index,
+            game: {
+              ...game,
+              homeTeam: homeTeam.name,
+              awayTeam: awayTeam.name,
+              location: location.name
+            }
+          });
+
+        } catch (gameError) {
+          console.error(`Error creating game at index ${gameData.index}:`, gameError);
+          gameCreationErrors.push({
+            index: gameData.index,
+            game: gameData,
+            error: gameError.message
+          });
+        }
+      }
+
+      if (gameCreationErrors.length > 0 && createdGames.length === 0) {
+        // All games failed, rollback transaction
+        throw new Error('All games failed to import');
+      }
+
+      await trx.commit();
+
+      const response = {
+        success: true,
+        data: {
+          importedGames: createdGames,
+          summary: {
+            totalSubmitted: games.length,
+            successfulImports: createdGames.length,
+            failedImports: gameCreationErrors.length
+          }
+        }
+      };
+
+      if (gameCreationErrors.length > 0) {
+        response.warnings = gameCreationErrors;
+        response.partialSuccess = true;
+      }
+
+      res.status(201).json(response);
+
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error bulk importing games:', error);
+    res.status(500).json({ 
+      error: 'Failed to bulk import games',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Helper function to get or create team
+async function getOrCreateTeam(trx, teamData, division, season) {
+  // First check if league exists
+  let league = await trx('leagues')
+    .where('organization', teamData.organization)
+    .where('age_group', teamData.ageGroup)
+    .where('gender', teamData.gender)
+    .where('division', division)
+    .where('season', season)
+    .first();
+
+  if (!league) {
+    // Create league
+    [league] = await trx('leagues')
+      .insert({
+        name: `${teamData.organization} ${teamData.ageGroup} ${teamData.gender} ${division}`,
+        organization: teamData.organization,
+        age_group: teamData.ageGroup,
+        gender: teamData.gender,
+        division: division,
+        season: season,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
+  }
+
+  // Check if team exists in this league
+  let team = await trx('teams')
+    .where('league_id', league.id)
+    .where('name', teamData.organization)
+    .where('rank', teamData.rank)
+    .first();
+
+  if (!team) {
+    // Create team
+    [team] = await trx('teams')
+      .insert({
+        name: teamData.organization,
+        league_id: league.id,
+        rank: teamData.rank,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
+  }
+
+  return team;
+}
+
+// Helper function to get or create location
+async function getOrCreateLocation(trx, locationName, postalCode) {
+  let location = await trx('locations')
+    .where('name', locationName)
+    .first();
+
+  if (!location) {
+    [location] = await trx('locations')
+      .insert({
+        name: locationName,
+        address: '', // Will need to be filled in later by admin
+        postal_code: postalCode,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
+  }
+
+  return location;
+}
+
 module.exports = router;
