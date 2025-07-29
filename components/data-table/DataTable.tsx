@@ -271,7 +271,7 @@ export function DataTable<TData, TValue>({
       {viewMode === "table" && (
         <div className="hidden lg:block rounded-md border">
           <div className="max-h-[500px] overflow-auto">
-            <Table className="table-fixed">
+            <Table className="table-fixed data-table">
               <TableHeader className="sticky top-0 z-[15] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>

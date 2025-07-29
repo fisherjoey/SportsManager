@@ -812,7 +812,7 @@ export function FilterableTable<T extends Record<string, any>>({
         renderMobileCards()
       ) : (
         <div className="rounded-md border">
-          <Table>
+          <Table className="data-table">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>

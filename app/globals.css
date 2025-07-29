@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,6 +9,13 @@
     /* SyncedSport Light Mode Palette - Based on Teal Brand Icon */
     --background: 0 0% 100%; /* Pure white */
     --foreground: 210 11% 15%; /* Dark gray */
+    
+    /* Inter Font Size Variables */
+    --font-size-xs: 0.75rem;    /* 12px - Table data */
+    --font-size-sm: 0.875rem;   /* 14px - Secondary text */
+    --font-size-base: 1rem;     /* 16px - Body text */
+    --font-size-lg: 1.125rem;   /* 18px - Headings */
+    --font-size-xl: 1.25rem;    /* 20px - Large headings */
     --card: 0 0% 100%; /* Pure white */
     --card-foreground: 210 11% 15%; /* Dark gray */
     --popover: 0 0% 100%;
@@ -96,13 +105,41 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px; /* Prevents iOS zoom on form inputs */
+    line-height: 1.5;
   }
 }
 
-/* Cloudflare system font stack */
-.font-system {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+/* Inter font variations */
+.font-inter {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Data table optimizations */
+.data-table {
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.data-table th {
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Mobile-first responsive font scaling */
+@media (min-width: 768px) {
+  .data-table {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (min-width: 1024px) {
+  .data-table {
+    font-size: 13px;
+  }
 }
 
 /* Custom color utilities */
