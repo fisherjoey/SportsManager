@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Users, Calendar, MapPin, Trophy, DollarSign, Edit2 } from "lucide-react"
+import { LocationWithDistance } from "@/components/ui/location-with-distance"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react"
 import { Game, Team } from "../types"
 import { DataTableColumnHeaderAdvanced } from "./DataTableColumnHeaderAdvanced"
+import { formatTeamName } from "@/lib/team-utils"
 
 interface GameColumnActions {
   onAssignReferee?: (game: Game) => void
@@ -208,20 +210,17 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
       // Handle missing team data
       if (!homeTeam || !homeTeam.organization) {
         return (
-          <div className="font-medium text-muted-foreground">
-            <div className="truncate">No team data</div>
+          <div className="text-muted-foreground text-sm">
+            No team
           </div>
         )
       }
       
-      const teamName = `${homeTeam.organization} ${homeTeam.ageGroup} ${homeTeam.gender} ${homeTeam.rank}`
+      const teamName = formatTeamName(homeTeam)
       
       return (
-        <div className="font-medium">
+        <div className="font-medium text-sm">
           <div className="truncate">{teamName}</div>
-          <div className="text-xs text-muted-foreground">
-            {homeTeam.organization} • {homeTeam.ageGroup}
-          </div>
         </div>
       )
     },
@@ -243,20 +242,17 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
       // Handle missing team data
       if (!awayTeam || !awayTeam.organization) {
         return (
-          <div className="font-medium text-muted-foreground">
-            <div className="truncate">No team data</div>
+          <div className="text-muted-foreground text-sm">
+            No team
           </div>
         )
       }
       
-      const teamName = `${awayTeam.organization} ${awayTeam.ageGroup} ${awayTeam.gender} ${awayTeam.rank}`
+      const teamName = formatTeamName(awayTeam)
       
       return (
-        <div className="font-medium">
+        <div className="font-medium text-sm">
           <div className="truncate">{teamName}</div>
-          <div className="text-xs text-muted-foreground">
-            {awayTeam.organization} • {awayTeam.ageGroup}
-          </div>
         </div>
       )
     },
@@ -337,26 +333,14 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
       const game = row.original
       
       return (
-        <div className="space-y-1">
-          <div className="flex items-center text-sm">
-            <MapPin className="mr-1 h-3 w-3 text-muted-foreground" />
-            <EditableText
-              value={location}
-              onSave={(newValue) => actions?.onEditGame?.(game.id, "location", newValue)}
-              placeholder="Enter location"
-              className="flex-1"
-            />
-          </div>
-          {postalCode && (
-            <div className="text-xs text-muted-foreground">
-              <EditableText
-                value={postalCode}
-                onSave={(newValue) => actions?.onEditGame?.(game.id, "postalCode", newValue)}
-                placeholder="Postal code"
-              />
-            </div>
-          )}
-        </div>
+        <LocationWithDistance
+          location={location}
+          postalCode={postalCode}
+          showDistance={true}
+          showMapLink={true}
+          compact={true}
+          className="max-w-[200px]"
+        />
       )
     },
   },
@@ -462,6 +446,40 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
     },
   },
   {
+    accessorKey: "ageGroup",
+    id: "ageGroup",
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title="Age" 
+        searchable={false}
+        filterable={true}
+        filterOptions={[
+          { label: "U11", value: "U11", id: "age-u11" },
+          { label: "U13", value: "U13", id: "age-u13" },
+          { label: "U15", value: "U15", id: "age-u15" },
+          { label: "U18", value: "U18", id: "age-u18" },
+        ]}
+      />
+    ),
+    cell: ({ row }) => {
+      const homeTeam = row.original.homeTeam
+      const ageGroup = homeTeam?.ageGroup || 'Unknown'
+      
+      return (
+        <Badge variant="outline" className="text-xs font-mono">
+          {ageGroup}
+        </Badge>
+      )
+    },
+    filterFn: (row, id, value) => {
+      const homeTeam = row.original.homeTeam
+      const awayTeam = row.original.awayTeam
+      const ageGroup = homeTeam?.ageGroup || awayTeam?.ageGroup
+      return Array.isArray(value) ? value.includes(ageGroup) : value === ageGroup
+    },
+  },
+  {
     accessorKey: "division",
     id: "division",
     header: ({ column }) => (
@@ -470,68 +488,120 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
         title="Division" 
         searchable={false}
         filterable={true}
-        filterSections={[
-          {
-            title: "Age",
-            options: [
-              { label: "U11", value: "U11", id: "age-u11" },
-              { label: "U13", value: "U13", id: "age-u13" },
-              { label: "U15", value: "U15", id: "age-u15" },
-              { label: "U18", value: "U18", id: "age-u18" },
-            ]
-          },
-          {
-            title: "Division #",
-            options: [
-              { label: "Division 1", value: "Division 1", id: "div-1" },
-              { label: "Division 2", value: "Division 2", id: "div-2" },
-              { label: "Division 3", value: "Division 3", id: "div-3" },
-            ]
-          },
-          {
-            title: "Gender",
-            options: [
-              { label: "Boys Teams", value: "Boys", id: "gender-boys" },
-              { label: "Girls Teams", value: "Girls", id: "gender-girls" },
-            ]
-          }
+        filterOptions={[
+          { label: "Division 1", value: "Division 1", id: "div-1" },
+          { label: "Division 2", value: "Division 2", id: "div-2" },
+          { label: "Division 3", value: "Division 3", id: "div-3" },
+          { label: "Division 4", value: "Division 4", id: "div-4" },
+          { label: "Division 5", value: "Division 5", id: "div-5" },
+          { label: "Division 6", value: "Division 6", id: "div-6" },
+          { label: "Diamond League", value: "Diamond League", id: "div-diamond" },
+          { label: "Diamond Prep League", value: "Diamond Prep League", id: "div-diamond-prep" },
+          { label: "Platinum League", value: "Platinum League", id: "div-platinum" },
+          { label: "Raptors Division", value: "Raptors Division", id: "div-raptors" },
+          { label: "Club Weeknight", value: "Club Weeknight", id: "div-club" },
+          { label: "REC", value: "REC", id: "div-rec" },
         ]}
       />
     ),
     cell: ({ row }) => {
       const division = row.getValue("division") as string
       
+      // Color coding for different division types
+      const getDivisionColor = (div: string) => {
+        if (div.includes('Diamond') || div.includes('Platinum')) return 'bg-yellow-100 text-yellow-800'
+        if (div.includes('Division 1')) return 'bg-red-100 text-red-800'
+        if (div.includes('Division 2')) return 'bg-orange-100 text-orange-800'
+        if (div.includes('Club')) return 'bg-blue-100 text-blue-800'
+        if (div.includes('REC')) return 'bg-green-100 text-green-800'
+        return 'bg-gray-100 text-gray-800'
+      }
+      
       return (
-        <div className="flex items-center">
-          <Trophy className="mr-1 h-3 w-3 text-muted-foreground" />
-          <Badge variant="secondary" className="font-mono text-xs">
-            {division}
-          </Badge>
-        </div>
+        <Badge variant="outline" className={`text-xs ${getDivisionColor(division)}`}>
+          {division.replace('Division ', 'Div ')}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
       const division = row.getValue(id) as string
+      return Array.isArray(value) ? value.includes(division) : value === division
+    },
+  },
+  {
+    accessorKey: "gender",
+    id: "gender",
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title="Gender" 
+        searchable={false}
+        filterable={true}
+        filterOptions={[
+          { label: "Boys", value: "Boys", id: "gender-boys" },
+          { label: "Girls", value: "Girls", id: "gender-girls" },
+        ]}
+      />
+    ),
+    cell: ({ row }) => {
+      const homeTeam = row.original.homeTeam
+      const gender = homeTeam?.gender
+      
+      return (
+        <Badge variant="outline" className={`text-xs ${gender === 'Boys' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
+          {gender}
+        </Badge>
+      )
+    },
+    filterFn: (row, id, value) => {
       const homeTeam = row.original.homeTeam
       const awayTeam = row.original.awayTeam
+      const gender = homeTeam?.gender || awayTeam?.gender
+      return Array.isArray(value) ? value.includes(gender) : value === gender
+    },
+  },
+  {
+    accessorKey: "zone",
+    id: "zone",
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title="Zone" 
+        searchable={false}
+        filterable={true}
+        filterOptions={[
+          { label: "Okotoks", value: "Okotoks", id: "zone-okotoks" },
+          { label: "Airdrie", value: "Airdrie", id: "zone-airdrie" },
+          { label: "Calgary NW", value: "NW", id: "zone-nw" },
+          { label: "Calgary SW", value: "SoCal", id: "zone-socal" },
+          { label: "Calgary NE", value: "NCBC", id: "zone-ncbc" },
+          { label: "Calgary SE", value: "EastPro", id: "zone-eastpro" },
+          { label: "Calgary West", value: "Calwest", id: "zone-calwest" },
+          { label: "Bow River", value: "Bow River", id: "zone-bowriver" },
+          { label: "Cochrane", value: "Cochrane", id: "zone-cochrane" },
+        ]}
+      />
+    ),
+    cell: ({ row }) => {
+      const homeTeam = row.original.homeTeam
+      const zone = homeTeam?.organization || 'Unknown'
       
-      // Group filters by category
-      const ageFilters = value.filter((v: string) => ['U11', 'U13', 'U15', 'U18'].includes(v))
-      const divisionFilters = value.filter((v: string) => v.includes('Division'))
-      const genderFilters = value.filter((v: string) => ['Boys', 'Girls'].includes(v))
+      return (
+        <Badge variant="secondary" className="text-xs">
+          {zone}
+        </Badge>
+      )
+    },
+    filterFn: (row, id, value) => {
+      const homeTeam = row.original.homeTeam
+      const awayTeam = row.original.awayTeam
+      const homeZone = homeTeam?.organization
+      const awayZone = awayTeam?.organization
       
-      // Within each category: OR logic (any match)
-      // Between categories: AND logic (all categories must match)
-      
-      let ageMatch = ageFilters.length === 0 ? true : ageFilters.some((age: string) => division.includes(age))
-      let divisionMatch = divisionFilters.length === 0 ? true : divisionFilters.some((div: string) => division.includes(div))
-      let genderMatch = genderFilters.length === 0 ? true : genderFilters.some((gender: string) => {
-        if (gender === "Boys") return homeTeam?.gender === "Boys" || awayTeam?.gender === "Boys"
-        if (gender === "Girls") return homeTeam?.gender === "Girls" || awayTeam?.gender === "Girls"
-        return false
-      })
-      
-      return ageMatch && divisionMatch && genderMatch
+      if (Array.isArray(value)) {
+        return value.some(v => homeZone?.includes(v) || awayZone?.includes(v))
+      }
+      return homeZone?.includes(value) || awayZone?.includes(value)
     },
   },
   {

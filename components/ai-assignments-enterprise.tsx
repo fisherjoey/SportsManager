@@ -24,6 +24,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
+import { formatTeamName, formatGameMatchup, type Team } from "@/lib/team-utils"
 
 interface OptimizationSettings {
   maxGamesPerRefereePerDay: number
@@ -60,8 +61,8 @@ interface BulkAssignmentResult {
 
 interface Game {
   id: string
-  homeTeam: string
-  awayTeam: string
+  homeTeam: Team | string
+  awayTeam: Team | string
   date: string
   time: string
   division: string
@@ -80,6 +81,7 @@ interface Referee {
   isAvailable: boolean
   preferredDivisions: string[]
 }
+
 
 // Mock data for demonstration
 const mockGames: Game[] = [
@@ -202,7 +204,7 @@ async function generateBulkAssignments(
             confidence: Math.round(ref.confidence * 100),
             role: ref.position || "Referee"
           })),
-          reasoning: assignment.conflicts?.length > 0 
+          reasoning: assignment.conflicts && assignment.conflicts.length > 0 
             ? `Assignment with ${assignment.conflicts.length} minor conflicts` 
             : 'Optimal assignment based on AI algorithm'
         }))
@@ -309,7 +311,17 @@ export function AIAssignmentsEnterprise() {
         ])
 
         if (gamesResponse?.data) {
-          setGames(gamesResponse.data)
+          // Transform backend game data to match our interface
+          const transformedGames = gamesResponse.data.map(game => ({
+            ...game,
+            // Ensure homeTeam and awayTeam are handled correctly
+            homeTeam: typeof game.homeTeam === 'object' ? game.homeTeam : game.homeTeam,
+            awayTeam: typeof game.awayTeam === 'object' ? game.awayTeam : game.awayTeam,
+            time: game.time || (game as any).startTime || 'TBD',
+            division: game.division || 'Unknown',
+            assignedReferees: game.assignedReferees || []
+          }))
+          setGames(transformedGames)
         }
 
         if (refereesResponse?.success && refereesResponse.data?.referees) {
@@ -618,7 +630,7 @@ export function AIAssignmentsEnterprise() {
                     <Label htmlFor={`game-${game.id}`} className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">
-                          {game.homeTeam} vs {game.awayTeam}
+                          {formatGameMatchup(game.homeTeam, game.awayTeam)}
                         </span>
                         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                           <span>{new Date(game.date).toLocaleDateString()}</span>
@@ -884,7 +896,7 @@ export function AIAssignmentsEnterprise() {
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <h4 className="font-medium">
-                                {game?.homeTeam} vs {game?.awayTeam}
+                                {game ? formatGameMatchup(game.homeTeam, game.awayTeam) : 'Unknown vs Unknown'}
                               </h4>
                               <p className="text-sm text-muted-foreground">
                                 {game?.division} • {new Date(game?.date || "").toLocaleDateString()} at {game?.time}
@@ -939,7 +951,7 @@ export function AIAssignmentsEnterprise() {
                           >
                             <div>
                               <span className="font-medium">
-                                {game?.homeTeam} vs {game?.awayTeam}
+                                {game ? formatGameMatchup(game.homeTeam, game.awayTeam) : 'Unknown vs Unknown'}
                               </span>
                               <p className="text-sm text-muted-foreground">{unassigned.reason}</p>
                             </div>

@@ -3,14 +3,20 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/components/auth-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "RefAssign - Referee Management System",
+  title: "CMBA RefAssign - Referee Management System",
   description: "Modern referee assignment and management platform",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/cmba-logo.png',
+    shortcut: '/favicon.ico',
+    apple: '/cmba-logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -21,10 +27,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className} suppressHydrationWarning={true}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

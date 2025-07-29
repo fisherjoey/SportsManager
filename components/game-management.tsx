@@ -27,14 +27,39 @@ import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2 } from "lucide-
 import { useToast } from "@/components/ui/use-toast"
 import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
 import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
+import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
+import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
 
-export function GameManagement() {
+interface GameManagementProps {
+  initialDateFilter?: string
+}
+
+export function GameManagement({ initialDateFilter }: GameManagementProps = {}) {
   const [games, setGames] = useState<Game[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
   const [gameToAssign, setGameToAssign] = useState<Game | null>(null)
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    ageGroups: [],
+    genders: [],
+    divisions: [],
+    zones: [],
+    levels: [],
+    statuses: []
+  })
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || "all")
+
+  // Update date filter when initialDateFilter prop changes
+  useEffect(() => {
+    if (initialDateFilter) {
+      setSelectedDate(initialDateFilter)
+    }
+  }, [initialDateFilter])
   const { toast } = useToast()
 
   // Load mock games data (temporarily using mock data instead of API)
@@ -56,8 +81,6 @@ export function GameManagement() {
     }
     loadGames()
   }, [])
-
-  // Remove old filtering logic - DataTable will handle this
 
   const handleCreateGame = (gameData: any) => {
     const newGame = {
@@ -140,14 +163,6 @@ export function GameManagement() {
     setGameToAssign(null)
   }
 
-  const handleMarkUpForGrabs = (gameId: string) => {
-    setGames(games.map((game) => (game.id === gameId ? { ...game, status: "up-for-grabs" as const } : game)))
-    toast({
-      title: "Game marked as available",
-      description: "Game is now available for referees to pick up.",
-    })
-  }
-
   const handleEditGame = (gameId: string, field: string, value: any) => {
     setGames(games.map((game) => {
       if (game.id === gameId) {
@@ -162,61 +177,53 @@ export function GameManagement() {
     })
   }
 
-  const handleImportGames = (importedGames: Game[]) => {
-    try {
-      // Get existing game IDs to prevent duplicates
-      const existingIds = new Set(games.map(g => g.id))
-      
-      // Filter out games that already exist
-      const newGames = importedGames.filter(g => !existingIds.has(g.id))
-      
-      // Add new games to the existing games
-      setGames(prevGames => [...prevGames, ...newGames])
-      
-      toast({
-        title: "Games imported successfully",
-        description: `Imported ${newGames.length} new games from CSV file.`,
-      })
-    } catch (error) {
-      console.error('Import error:', error)
-      toast({
-        title: "Import failed",
-        description: "There was an error importing the games.",
-        variant: "destructive",
-      })
-    }
-  }
+  // Apply filters to games
+  const baseFilteredGames = applyGameFilters(games, activeFilters)
+  const filteredGames = selectedDate === "all" 
+    ? baseFilteredGames 
+    : baseFilteredGames.filter(game => game.date === selectedDate)
 
-  // Column definitions for the games table - includes all database fields
-  const columns: ColumnDef<Game>[] = [
+  // Stats for the games overview (based on filtered games)
+  const stats = [
     {
-      id: 'game',
-      title: 'Game',
-      filterType: 'search',
-      accessor: (game) => {
-        const homeTeamName = typeof game.homeTeam === 'object' 
-          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-          : game.homeTeam
-        const awayTeamName = typeof game.awayTeam === 'object' 
-          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-          : game.awayTeam
-        
-        return (
-          <div>
-            <p className="font-medium">
-              {homeTeamName} vs {awayTeamName}
-            </p>
-            <p className="text-sm text-muted-foreground">{game.division}</p>
-          </div>
-        )
-      }
+      title: "Total Games",
+      value: filteredGames.length,
+      icon: Calendar,
+      color: "text-blue-600",
     },
+    {
+      title: "Unassigned",
+      value: filteredGames.filter((g) => g.status === "unassigned").length,
+      icon: Clock,
+      color: "text-red-600",
+    },
+    {
+      title: "Assigned",
+      value: filteredGames.filter((g) => g.status === "assigned").length,
+      icon: Users,
+      color: "text-green-600",
+    },
+    {
+      title: "This Week",
+      value: filteredGames.filter((g) => {
+        const gameDate = new Date(g.date)
+        const now = new Date()
+        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+        return gameDate >= now && gameDate <= weekFromNow
+      }).length,
+      icon: Calendar,
+      color: "text-purple-600",
+    },
+  ]
+
+  // Column definitions for the games table - simplified layout as requested
+  const columns: ColumnDef<Game>[] = [
     {
       id: 'id',
       title: 'Game ID',
       filterType: 'search',
       accessor: (game) => (
-        <span className="font-mono text-xs">{game.id}</span>
+        <span className="font-mono text-sm font-medium">{game.id}</span>
       )
     },
     {
@@ -224,10 +231,7 @@ export function GameManagement() {
       title: 'Home Team',
       filterType: 'search',
       accessor: (game) => {
-        const homeTeamName = typeof game.homeTeam === 'object' 
-          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-          : game.homeTeam
-        return <span className="text-sm">{homeTeamName}</span>
+        return <span className="text-sm font-medium">{formatTeamName(game.homeTeam)}</span>
       }
     },
     {
@@ -235,42 +239,35 @@ export function GameManagement() {
       title: 'Away Team',
       filterType: 'search',
       accessor: (game) => {
-        const awayTeamName = typeof game.awayTeam === 'object' 
-          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-          : game.awayTeam
-        return <span className="text-sm">{awayTeamName}</span>
+        return <span className="text-sm font-medium">{formatTeamName(game.awayTeam)}</span>
       }
-    },
-    {
-      id: 'date',
-      title: 'Date',
-      filterType: 'date',
-      accessor: (game) => (
-        <span className="text-sm">{new Date(game.date).toLocaleDateString()}</span>
-      )
-    },
-    {
-      id: 'time',
-      title: 'Time',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-sm">
-          {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
-        </span>
-      )
     },
     {
       id: 'datetime',
       title: 'Date & Time',
       filterType: 'date',
-      accessor: (game) => (
-        <div>
-          <p className="text-sm">{new Date(game.date).toLocaleDateString()}</p>
-          <p className="text-sm text-muted-foreground">
-            {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
-          </p>
-        </div>
-      )
+      accessor: (game) => {
+        const gameDate = new Date(game.date)
+        const startTime = game.startTime || game.time
+        const endTime = game.endTime
+        
+        // Format date as "Jan 14" 
+        const dateStr = gameDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        })
+        
+        // Format time range as "10:00-11:30"
+        const timeStr = startTime && endTime 
+          ? `${startTime}-${endTime}`
+          : startTime || 'TBD'
+        
+        return (
+          <div>
+            <p className="text-sm font-medium">{dateStr}, {timeStr}</p>
+          </div>
+        )
+      }
     },
     {
       id: 'location',
@@ -284,14 +281,6 @@ export function GameManagement() {
       )
     },
     {
-      id: 'postalCode',
-      title: 'Postal Code',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-sm font-mono">{game.postalCode || 'N/A'}</span>
-      )
-    },
-    {
       id: 'level',
       title: 'Level',
       filterType: 'select',
@@ -302,162 +291,9 @@ export function GameManagement() {
         { value: 'Elite', label: 'Elite' }
       ],
       accessor: (game) => (
-        <Badge variant={game.level === 'Elite' ? 'default' : 'secondary'}>
-          {game.level}
+        <Badge variant={game.level?.includes('Division') ? 'default' : 'secondary'}>
+          {game.level || game.division}
         </Badge>
-      )
-    },
-    {
-      id: 'gameType',
-      title: 'Game Type',
-      filterType: 'select',
-      filterOptions: [
-        { value: 'all', label: 'All Types' },
-        { value: 'Community', label: 'Community' },
-        { value: 'Club', label: 'Club' },
-        { value: 'Tournament', label: 'Tournament' },
-        { value: 'Private Tournament', label: 'Private Tournament' }
-      ],
-      accessor: (game) => (
-        <Badge variant="outline">{(game as any).gameType || 'Community'}</Badge>
-      )
-    },
-    {
-      id: 'division',
-      title: 'Division',
-      filterType: 'search',
-      accessor: 'division'
-    },
-    {
-      id: 'season',
-      title: 'Season',
-      filterType: 'search',
-      accessor: 'season'
-    },
-    {
-      id: 'payRate',
-      title: 'Pay Rate',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-sm font-medium">${game.payRate}</span>
-      )
-    },
-    {
-      id: 'wageMultiplier',
-      title: 'Pay Modifier',
-      filterType: 'select',
-      filterOptions: [
-        { value: 'all', label: 'All Modifiers' },
-        { value: '0.8', label: 'Reduced (0.8x)' },
-        { value: '1.0', label: 'Standard (1.0x)' },
-        { value: '1.5', label: 'Time and Half (1.5x)' },
-        { value: '2.0', label: 'Double Time (2.0x)' },
-        { value: '2.5', label: 'Holiday Rate (2.5x)' }
-      ],
-      accessor: (game) => (
-        <span className="text-sm">{game.wageMultiplier}x</span>
-      )
-    },
-    {
-      id: 'wageMultiplierReason',
-      title: 'Pay Reason',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-sm">{game.wageMultiplierReason || 'Standard'}</span>
-      )
-    },
-    {
-      id: 'refsNeeded',
-      title: 'Refs Needed',
-      filterType: 'select',
-      filterOptions: [
-        { value: 'all', label: 'All' },
-        { value: '1', label: '1 Referee' },
-        { value: '2', label: '2 Referees' },
-        { value: '3', label: '3 Referees' },
-        { value: '4', label: '4 Referees' }
-      ],
-      accessor: (game) => (
-        <span className="text-sm font-medium">{game.refsNeeded}</span>
-      )
-    },
-    {
-      id: 'assignedReferees',
-      title: 'Assigned Referees',
-      filterType: 'search',
-      accessor: (game) => (
-        <div>
-          <p className="text-xs text-muted-foreground">
-            {game.assignedReferees?.join(', ') || 'None assigned'}
-          </p>
-        </div>
-      )
-    },
-    {
-      id: 'referees',
-      title: 'Referees',
-      filterType: 'search',
-      accessor: (game) => (
-        <div>
-          <p className="text-sm font-medium">
-            {game.assignedReferees?.length || 0}/{game.refsNeeded}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {game.assignedReferees?.join(', ') || 'None assigned'}
-          </p>
-        </div>
-      )
-    },
-    {
-      id: 'status',
-      title: 'Status',
-      filterType: 'select',
-      filterOptions: [
-        { value: 'all', label: 'All Status' },
-        { value: 'unassigned', label: 'Unassigned' },
-        { value: 'assigned', label: 'Assigned' },
-        { value: 'partial', label: 'Partial' },
-        { value: 'up-for-grabs', label: 'Up for Grabs' }
-      ],
-      accessor: (game) => (
-        <Badge
-          variant={
-            game.status === 'assigned' ? 'default' :
-            game.status === 'unassigned' ? 'destructive' :
-            'secondary'
-          }
-        >
-          {game.status === 'up-for-grabs' ? 'Up for Grabs' : 
-           game.status.charAt(0).toUpperCase() + game.status.slice(1)}
-        </Badge>
-      )
-    },
-    {
-      id: 'notes',
-      title: 'Notes',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-sm">{game.notes || 'No notes'}</span>
-      )
-    },
-    {
-      id: 'createdAt',
-      title: 'Created',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-xs text-muted-foreground">
-          {new Date(game.createdAt).toLocaleDateString()}
-        </span>
-      )
-    },
-    {
-      id: 'updatedAt',
-      title: 'Updated',
-      filterType: 'search',
-      accessor: (game) => (
-        <span className="text-xs text-muted-foreground">
-          {new Date(game.updatedAt).toLocaleDateString()}
-        </span>
       )
     },
     {
@@ -481,46 +317,61 @@ export function GameManagement() {
   ]
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <PageHeader
+        icon={Calendar}
+        title="Game Management"
+        description="Manage all games and assignments"
+      >
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Game
+        </Button>
+      </PageHeader>
+
+      <StatsGrid stats={stats} />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Games</CardTitle>
-              <CardDescription>Manage all games and assignments</CardDescription>
+              <CardTitle>Games Directory</CardTitle>
+              <CardDescription>Search and manage games across all divisions</CardDescription>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Game
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Game</DialogTitle>
-                  <DialogDescription>Add a new game to the system.</DialogDescription>
-                </DialogHeader>
-                <GameForm onSubmit={handleCreateGame} />
-              </DialogContent>
-            </Dialog>
+            <GameFilters 
+              games={games}
+              activeFilters={activeFilters}
+              onFiltersChange={setActiveFilters}
+            />
           </div>
         </CardHeader>
         <CardContent>
           <FilterableTable 
-            data={games} 
+            data={filteredGames} 
             columns={columns} 
-            emptyMessage="No games found matching your criteria."
             loading={loading}
-            onAssignReferee={(game) => setGameToAssign(game)}
-            mobileCardType="game"
+            emptyMessage="No games found. Try adjusting your filters."
             enableViewToggle={true}
             enableCSV={true}
-            onDataImport={handleImportGames}
-            csvFilename="games-export"
+            mobileCardType="game"
+            searchKey="homeTeam"
           />
         </CardContent>
       </Card>
+
+      {/* Create Game Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogTrigger asChild>
+          <div></div>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Game</DialogTitle>
+            <DialogDescription>Add a new game to the system.</DialogDescription>
+          </DialogHeader>
+          <GameForm onSubmit={handleCreateGame} />
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Referee Dialog */}
       {gameToAssign && (
@@ -547,36 +398,53 @@ export function GameManagement() {
           onClose={() => setGameToEdit(null)}
         />
       )}
-    </div>
+    </PageLayout>
   )
 }
 
 function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     homeTeam: "",
     awayTeam: "",
     date: "",
-    time: "",
+    startTime: "",
+    endTime: "",
     location: "",
+    postalCode: "",
     level: "",
-    gameType: "Community",
+    gameType: "Competitive",
     payRate: "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate that end time is after start time
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      toast({
+        title: "Invalid Time Range",
+        description: "End time must be after start time.",
+        variant: "destructive",
+      })
+      return
+    }
+    
     onSubmit({
       ...formData,
+      time: formData.startTime, // Map startTime to time for compatibility
       payRate: Number.parseFloat(formData.payRate),
     })
     setFormData({
       homeTeam: "",
       awayTeam: "",
       date: "",
-      time: "",
+      startTime: "",
+      endTime: "",
       location: "",
+      postalCode: "",
       level: "",
-      gameType: "Community",
+      gameType: "Competitive",
       payRate: "",
     })
   }
@@ -590,6 +458,7 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
             id="homeTeam"
             value={formData.homeTeam}
             onChange={(e) => setFormData({ ...formData, homeTeam: e.target.value })}
+            placeholder="e.g., Okotoks U13B"
             required
           />
         </div>
@@ -599,11 +468,12 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
             id="awayTeam"
             value={formData.awayTeam}
             onChange={(e) => setFormData({ ...formData, awayTeam: e.target.value })}
+            placeholder="e.g., Calgary U13B"
             required
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Date</Label>
           <Input
@@ -615,24 +485,47 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="time">Time</Label>
+          <Label htmlFor="startTime">Start Time</Label>
           <Input
-            id="time"
+            id="startTime"
             type="time"
-            value={formData.time}
-            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            value={formData.startTime}
+            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="endTime">End Time</Label>
+          <Input
+            id="endTime"
+            type="time"
+            value={formData.endTime}
+            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
             required
           />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="location">Location</Label>
-        <Input
-          id="location"
-          value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="location">Location</Label>
+          <Input
+            id="location"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="e.g., Central Park Field 1"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="postalCode">Postal Code</Label>
+          <Input
+            id="postalCode"
+            value={formData.postalCode}
+            onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+            placeholder="e.g., T1S 1A1"
+            required
+          />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -655,6 +548,7 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
               <SelectValue placeholder="Select game type" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="Competitive">Competitive</SelectItem>
               <SelectItem value="Community">Community</SelectItem>
               <SelectItem value="Club">Club</SelectItem>
               <SelectItem value="Tournament">Tournament</SelectItem>
@@ -668,8 +562,10 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
         <Input
           id="payRate"
           type="number"
+          step="0.01"
           value={formData.payRate}
           onChange={(e) => setFormData({ ...formData, payRate: e.target.value })}
+          placeholder="e.g., 75.00"
           required
         />
       </div>
@@ -727,36 +623,12 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
       return !conflictingGame
     }) as Referee[]
     
-    console.log('Filtered referees:', filteredReferees)
     setAvailableReferees(filteredReferees)
-    
-    if (filteredReferees.length === 0) {
-      toast({
-        title: "No Available Referees",
-        description: "No referees are available for this time slot.",
-        variant: "destructive",
-      })
-    }
-    
     setLoading(false)
   }
 
   const handleAssign = () => {
     if (selectedReferee) {
-      const currentReferees = game.assignedReferees || []
-      const refsNeeded = game.refsNeeded || game.refs_needed || 2
-      
-      // Double-check referee limits
-      if (currentReferees.length >= refsNeeded) {
-        toast({
-          title: "Game Full",
-          description: `This game already has the maximum number of referees (${refsNeeded}).`,
-          variant: "destructive",
-        })
-        onClose?.()
-        return
-      }
-      
       onAssign(game.id, selectedReferee)
       setSelectedReferee("")
       onClose?.()
@@ -769,19 +641,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
         <DialogHeader>
           <DialogTitle>Assign Referee</DialogTitle>
           <DialogDescription>
-            Select an available referee for {
-              typeof game.homeTeam === 'object' && game.homeTeam?.organization 
-                ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}` 
-                : game.homeTeam || game.home_team_name
-            } vs {
-              typeof game.awayTeam === 'object' && game.awayTeam?.organization 
-                ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}` 
-                : game.awayTeam || game.away_team_name
-            } on {new Date(game.date || game.game_date).toLocaleDateString()} at {game.time || game.game_time}
-            <br />
-            <span className="text-sm font-medium">
-              Current referees: {(game.assignedReferees || []).length} / {game.refsNeeded || game.refs_needed || 2}
-            </span>
+            Select an available referee for {formatGameMatchup(game.homeTeam, game.awayTeam)} on {new Date(game.date || game.game_date).toLocaleDateString()} at {game.time || game.game_time}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -819,23 +679,17 @@ function EditGameDialog({ game, onSave, onClose }: {
   onSave: (updatedGame: Game) => void; 
   onClose?: () => void;
 }) {
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
-    homeTeam: typeof game.homeTeam === 'object' 
-      ? `${game.homeTeam?.organization} ${game.homeTeam?.ageGroup} ${game.homeTeam?.gender} ${game.homeTeam?.rank}`.trim()
-      : game.homeTeam || '',
-    awayTeam: typeof game.awayTeam === 'object' 
-      ? `${game.awayTeam?.organization} ${game.awayTeam?.ageGroup} ${game.awayTeam?.gender} ${game.awayTeam?.rank}`.trim()
-      : game.awayTeam || '',
+    homeTeam: formatTeamName(game.homeTeam),
+    awayTeam: formatTeamName(game.awayTeam),
     date: game.date ? new Date(game.date).toISOString().split('T')[0] : '',
-    time: game.time || '',
+    startTime: game.startTime || game.time || '',
+    endTime: game.endTime || '',
     location: game.location || '',
     postalCode: game.postalCode || '',
     level: game.level || '',
-    gameType: game.gameType || 'Community',
-    division: game.division || '',
-    season: game.season || '',
-    wageMultiplier: game.wageMultiplier || '1.0',
-    wageMultiplierReason: game.wageMultiplierReason || '',
+    gameType: game.gameType || 'Competitive',
     refsNeeded: (game.refsNeeded || game.refs_needed || 2).toString(),
   })
 
@@ -847,15 +701,13 @@ function EditGameDialog({ game, onSave, onClose }: {
       homeTeam: formData.homeTeam,
       awayTeam: formData.awayTeam,
       date: formData.date,
-      time: formData.time,
+      time: formData.startTime, // Map startTime to time for compatibility
+      startTime: formData.startTime,
+      endTime: formData.endTime,
       location: formData.location,
       postalCode: formData.postalCode,
       level: formData.level,
       gameType: formData.gameType,
-      division: formData.division,
-      season: formData.season,
-      wageMultiplier: formData.wageMultiplier,
-      wageMultiplierReason: formData.wageMultiplierReason,
       refsNeeded: parseInt(formData.refsNeeded),
       refs_needed: parseInt(formData.refsNeeded), // Keep both for compatibility
     }
@@ -894,7 +746,7 @@ function EditGameDialog({ game, onSave, onClose }: {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input
@@ -906,12 +758,22 @@ function EditGameDialog({ game, onSave, onClose }: {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
+              <Label htmlFor="startTime">Start Time</Label>
               <Input
-                id="time"
+                id="startTime"
                 type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                 required
               />
             </div>
@@ -967,72 +829,22 @@ function EditGameDialog({ game, onSave, onClose }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="division">Division</Label>
-              <Input
-                id="division"
-                value={formData.division}
-                onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-                placeholder="e.g., U15 Division 1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="season">Season</Label>
-              <Input
-                id="season"
-                value={formData.season}
-                onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                placeholder="e.g., 2024 Fall"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="wageMultiplier">Pay Modifier</Label>
-              <Select 
-                value={formData.wageMultiplier} 
-                onValueChange={(value) => setFormData({ ...formData, wageMultiplier: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.8">Reduced (0.8x)</SelectItem>
-                  <SelectItem value="1.0">Standard (1.0x)</SelectItem>
-                  <SelectItem value="1.5">Time and Half (1.5x)</SelectItem>
-                  <SelectItem value="2.0">Double Time (2.0x)</SelectItem>
-                  <SelectItem value="2.5">Holiday Rate (2.5x)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="wageMultiplierReason">Reason</Label>
-              <Input
-                id="wageMultiplierReason"
-                value={formData.wageMultiplierReason}
-                onChange={(e) => setFormData({ ...formData, wageMultiplierReason: e.target.value })}
-                placeholder="e.g., Holiday, Overtime"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="refsNeeded">Referees Needed</Label>
-              <Select 
-                value={formData.refsNeeded} 
-                onValueChange={(value) => setFormData({ ...formData, refsNeeded: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Referee</SelectItem>
-                  <SelectItem value="2">2 Referees</SelectItem>
-                  <SelectItem value="3">3 Referees</SelectItem>
-                  <SelectItem value="4">4 Referees</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="refsNeeded">Referees Needed</Label>
+            <Select 
+              value={formData.refsNeeded} 
+              onValueChange={(value) => setFormData({ ...formData, refsNeeded: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Referee</SelectItem>
+                <SelectItem value="2">2 Referees</SelectItem>
+                <SelectItem value="3">3 Referees</SelectItem>
+                <SelectItem value="4">4 Referees</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

@@ -11,9 +11,12 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AutoHidingTabs, AutoHidingTabsContent, AutoHidingTabsList, AutoHidingTabsTrigger } from '@/components/ui/auto-hiding-tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Clock, Play, Pause, Settings, Eye, Calendar, CheckCircle2, XCircle, AlertCircle, BarChart3, Plus, Brain, Calculator } from 'lucide-react'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
 
 
 export default function AIAssignmentsPage() {
@@ -209,28 +212,26 @@ export default function AIAssignmentsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">AI Assignment System</h1>
-          <p className="text-muted-foreground">
-            Automated referee assignments with intelligent scheduling and rule-based logic
-          </p>
-        </div>
+    <PageLayout>
+      <PageHeader
+        icon={Brain}
+        title="AI Assignment System"
+        description="Automated referee assignments with intelligent scheduling and rule-based logic"
+      >
         <Button onClick={() => setShowCreateRule(true)}>
           <Settings className="h-4 w-4 mr-2" />
           Create Rule
         </Button>
-      </div>
+      </PageHeader>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="rules">Assignment Rules</TabsTrigger>
-          <TabsTrigger value="results">Run History</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+      <AutoHidingTabs value={activeTab} onValueChange={setActiveTab} className="w-full" autoHide={true} hideDelay={5000}>
+        <AutoHidingTabsList className="grid w-full grid-cols-3">
+          <AutoHidingTabsTrigger value="rules">Assignment Rules</AutoHidingTabsTrigger>
+          <AutoHidingTabsTrigger value="results">Run History</AutoHidingTabsTrigger>
+          <AutoHidingTabsTrigger value="analytics">Analytics</AutoHidingTabsTrigger>
+        </AutoHidingTabsList>
 
-        <TabsContent value="rules" className="space-y-4">
+        <AutoHidingTabsContent value="rules" className="space-y-4">
           <div className="grid gap-4">
             {rules.map((rule) => (
               <Card key={rule.id} className="relative">
@@ -315,9 +316,9 @@ export default function AIAssignmentsPage() {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </AutoHidingTabsContent>
 
-        <TabsContent value="results" className="space-y-4">
+        <AutoHidingTabsContent value="results" className="space-y-4">
           <div className="grid gap-4">
             {results.map((result) => (
               <Card key={result.id} className="cursor-pointer hover:shadow-md transition-shadow"
@@ -360,9 +361,9 @@ export default function AIAssignmentsPage() {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </AutoHidingTabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
+        <AutoHidingTabsContent value="analytics" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -401,8 +402,8 @@ export default function AIAssignmentsPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
+        </AutoHidingTabsContent>
+      </AutoHidingTabs>
 
       {/* Create Rule Dialog */}
       <Dialog open={showCreateRule} onOpenChange={setShowCreateRule}>
@@ -442,7 +443,7 @@ export default function AIAssignmentsPage() {
           {selectedResult && <ResultDetails result={selectedResult} />}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }
 

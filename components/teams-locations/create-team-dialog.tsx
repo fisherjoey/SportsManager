@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { calgaryVenues } from "@/lib/mock-data"
+import { calgaryBasketballVenues } from "@/lib/mock-data"
 
 interface CreateTeamDialogProps {
   open: boolean
@@ -120,7 +120,7 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
                   <SelectValue placeholder="Select home venue" />
                 </SelectTrigger>
                 <SelectContent>
-                  {calgaryVenues.map((venue) => (
+                  {calgaryBasketballVenues.map((venue) => (
                     <SelectItem key={venue} value={venue}>
                       {venue}
                     </SelectItem>

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent } from "@/components/ui/card"
 import { Clock, MapPin, Users, Phone, Mail, Star, Calendar, AlertTriangle } from "lucide-react"
 import { type Game, type Referee, mockGames } from "@/lib/mock-data"
+import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
 
 interface GameChunk {
   id: string
@@ -102,12 +103,8 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
               </div>
               <div className="mt-3 space-y-1">
                 {chunk.games.map((game) => {
-                  const homeTeamName = typeof game.homeTeam === 'object' 
-                    ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                    : game.homeTeam
-                  const awayTeamName = typeof game.awayTeam === 'object' 
-                    ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-                    : game.awayTeam
+                  const homeTeamName = formatTeamName(game.homeTeam)
+                  const awayTeamName = formatTeamName(game.awayTeam)
 
                   return (
                     <div key={game.id} className="text-sm p-2 bg-gray-50 rounded">
@@ -208,12 +205,8 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
                               <p className="text-red-800 font-medium">Scheduling Conflicts:</p>
                               {conflicts.map((conflict) => {
-                                const conflictHomeTeam = typeof conflict.homeTeam === 'object' 
-                                  ? `${conflict.homeTeam.organization} ${conflict.homeTeam.ageGroup} ${conflict.homeTeam.gender}`
-                                  : conflict.homeTeam
-                                const conflictAwayTeam = typeof conflict.awayTeam === 'object' 
-                                  ? `${conflict.awayTeam.organization} ${conflict.awayTeam.ageGroup} ${conflict.awayTeam.gender}`
-                                  : conflict.awayTeam
+                                const conflictHomeTeam = formatTeamName(conflict.homeTeam)
+                                const conflictAwayTeam = formatTeamName(conflict.awayTeam)
 
                                 return (
                                   <p key={conflict.id} className="text-red-700">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,13 +10,28 @@ import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-tabl
 import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload } from "lucide-react"
 import { mockGames, type Game } from "@/lib/mock-data"
 import { useToast } from "@/components/ui/use-toast"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
 
-export function GamesManagementPage() {
+interface GamesManagementPageProps {
+  initialDateFilter?: string
+}
+
+export function GamesManagementPage({ initialDateFilter }: GamesManagementPageProps = {}) {
   const [games, setGames] = useState<Game[]>(mockGames)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedLevel, setSelectedLevel] = useState<string>("all")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || "all")
   const { toast } = useToast()
+
+  // Update date filter when initialDateFilter prop changes
+  useEffect(() => {
+    if (initialDateFilter) {
+      setSelectedDate(initialDateFilter)
+    }
+  }, [initialDateFilter])
 
   const filteredGames = games.filter((game) => {
     const homeTeamName = typeof game.homeTeam === 'object' 
@@ -32,8 +47,9 @@ export function GamesManagementPage() {
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesLevel = selectedLevel === "all" || game.level === selectedLevel
     const matchesStatus = selectedStatus === "all" || game.status === selectedStatus
+    const matchesDate = selectedDate === "all" || game.date === selectedDate
 
-    return matchesSearch && matchesLevel && matchesStatus
+    return matchesSearch && matchesLevel && matchesStatus && matchesDate
   })
 
   const handleDeleteGame = (gameId: string) => {
@@ -46,33 +62,35 @@ export function GamesManagementPage() {
 
   const stats = [
     {
-      title: "Total Games",
-      value: games.length,
+      title: selectedDate !== "all" ? "Games This Day" : "Total Games",
+      value: filteredGames.length,
       icon: Calendar,
       color: "text-blue-600",
     },
     {
       title: "Unassigned",
-      value: games.filter((g) => g.status === "unassigned").length,
+      value: filteredGames.filter((g) => g.status === "unassigned").length,
       icon: Clock,
       color: "text-red-600",
     },
     {
       title: "Assigned",
-      value: games.filter((g) => g.status === "assigned").length,
+      value: filteredGames.filter((g) => g.status === "assigned").length,
       icon: Users,
       color: "text-green-600",
     },
     {
-      title: "This Week",
-      value: games.filter((g) => {
-        const gameDate = new Date(g.date)
-        const now = new Date()
-        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-        return gameDate >= now && gameDate <= weekFromNow
-      }).length,
+      title: selectedDate !== "all" ? "Up for Grabs" : "This Week",
+      value: selectedDate !== "all" 
+        ? filteredGames.filter((g) => g.status === "up-for-grabs").length
+        : games.filter((g) => {
+            const gameDate = new Date(g.date)
+            const now = new Date()
+            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+            return gameDate >= now && gameDate <= weekFromNow
+          }).length,
       icon: Calendar,
-      color: "text-purple-600",
+      color: selectedDate !== "all" ? "text-orange-600" : "text-purple-600",
     },
   ]
 
@@ -205,42 +223,52 @@ export function GamesManagementPage() {
   ]
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Game Management</h2>
-          <p className="text-muted-foreground">Manage all games across divisions and levels</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Game
-          </Button>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Calendar}
+        title="Game Management"
+        description={
+          selectedDate !== "all" 
+            ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}`
+            : "Manage all games across divisions and levels"
+        }
+      >
+        {selectedDate !== "all" && (
+          <>
+            <Badge variant="outline" className="text-blue-600 border-blue-600">
+              <Calendar className="h-3 w-3 mr-1" />
+              Filtered by Date
+            </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedDate("all")}
+              className="text-gray-600"
+            >
+              Clear Date Filter
+            </Button>
+          </>
+        )}
+        <Button variant="outline">
+          <Upload className="h-4 w-4 mr-2" />
+          Import CSV
+        </Button>
+        <Button variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Game
+        </Button>
+      </PageHeader>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <StatsGrid stats={stats} />
 
       {/* Filters */}
       <Card>
@@ -281,12 +309,31 @@ export function GamesManagementPage() {
                 <SelectItem value="up-for-grabs">Up for Grabs</SelectItem>
               </SelectContent>
             </Select>
+            <div className="relative">
+              <Input
+                type="date"
+                placeholder="Filter by date"
+                value={selectedDate === "all" ? "" : selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value || "all")}
+                className={`w-[150px] ${
+                  selectedDate !== "all" ? "ring-2 ring-blue-500 border-blue-500" : ""
+                }`}
+              />
+              {selectedDate !== "all" && (
+                <Badge 
+                  variant="secondary" 
+                  className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
+                >
+                  Active
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Games Table */}
           <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

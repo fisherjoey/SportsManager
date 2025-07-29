@@ -25,6 +25,7 @@ import { MobileFilterSheet } from "./MobileFilterSheet"
 import { GameMobileCard } from "./GameMobileCard"
 import { RefereeMobileCard } from "./RefereeMobileCard"
 import { Game, Team, Referee } from "./types"
+import { formatTeamName } from "@/lib/team-utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -153,8 +154,8 @@ export function DataTable<TData, TValue>({
         // Game search functionality
         const homeTeam = row.getValue("homeTeam") as Team
         const awayTeam = row.getValue("awayTeam") as Team
-        const homeTeamName = `${homeTeam?.organization} ${homeTeam?.ageGroup} ${homeTeam?.gender} ${homeTeam?.rank}`
-        const awayTeamName = `${awayTeam?.organization} ${awayTeam?.ageGroup} ${awayTeam?.gender} ${awayTeam?.rank}`
+        const homeTeamName = formatTeamName(homeTeam)
+        const awayTeamName = formatTeamName(awayTeam)
         
         const searchableText = [
           homeTeamName,

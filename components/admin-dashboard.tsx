@@ -20,6 +20,7 @@ import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
   const [activeView, setActiveView] = useState("dashboard")
+  const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
 
   const getPageTitle = () => {
     switch (activeView) {
@@ -61,7 +62,7 @@ export function AdminDashboard() {
       case "tournaments":
         return <TournamentGenerator />
       case "games":
-        return <GameManagement />
+        return <GameManagement initialDateFilter={gameManagementDateFilter} />
       case "assigning":
         return <GameAssignmentBoard />
       case "ai-assignments":
@@ -71,7 +72,12 @@ export function AdminDashboard() {
       case "referees":
         return <RefereeManagement />
       case "calendar":
-        return <CalendarView />
+        return <CalendarView 
+          onDateClick={(date: string) => {
+            setGameManagementDateFilter(date)
+            setActiveView("games")
+          }} 
+        />
       case "posts":
         return <PostsManagement />
       case "profile":

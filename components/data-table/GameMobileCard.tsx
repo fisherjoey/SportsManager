@@ -28,6 +28,8 @@ import {
   Clock
 } from "lucide-react"
 import { Game } from "./types"
+import { LocationWithDistance } from "@/components/ui/location-with-distance"
+import { formatTeamName } from "@/lib/team-utils"
 
 interface GameMobileCardProps {
   game: Game
@@ -38,13 +40,8 @@ interface GameMobileCardProps {
 
 export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: GameMobileCardProps) {
   // Handle both data structures - new (homeTeam/awayTeam) and old (home_team_name/away_team_name)
-  const homeTeamName = typeof game.homeTeam === 'object' 
-    ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-    : game.homeTeam || (game as any).home_team_name
-  
-  const awayTeamName = typeof game.awayTeam === 'object'
-    ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-    : game.awayTeam || (game as any).away_team_name
+  const homeTeamName = formatTeamName(game.homeTeam) || (game as any).home_team_name
+  const awayTeamName = formatTeamName(game.awayTeam) || (game as any).away_team_name
 
   const gameDate = game.date || (game as any).game_date
   const gameTime = game.startTime && game.endTime 
@@ -159,16 +156,13 @@ export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: 
           </div>
 
           {/* Location */}
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="mr-2 h-4 w-4" />
-            <span className="truncate">{gameLocation}</span>
-            {postalCode && (
-              <>
-                <span className="mx-2">•</span>
-                <span>{postalCode}</span>
-              </>
-            )}
-          </div>
+          <LocationWithDistance
+            location={gameLocation}
+            postalCode={postalCode}
+            showDistance={true}
+            showMapLink={true}
+            compact={true}
+          />
 
           {/* Level and Pay */}
           <div className="flex items-center justify-between">

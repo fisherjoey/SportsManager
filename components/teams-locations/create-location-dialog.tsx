@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AddressSearch } from "@/components/ui/address-search"
+import { formatPostalCode } from "@/lib/address-utils"
 
 interface CreateLocationDialogProps {
   open: boolean
@@ -34,6 +36,16 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
     notes: "",
     isActive: true,
   })
+
+  const handleAddressSelect = (address: any) => {
+    setFormData(prev => ({
+      ...prev,
+      address: `${address.streetNumber} ${address.streetName}`.trim(),
+      city: address.city,
+      province: address.province,
+      postalCode: formatPostalCode(address.postalCode)
+    }))
+  }
 
   const facilityOptions = [
     "Basketball Court",
@@ -93,7 +105,7 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
     setFormData({
       name: "",
       address: "",
-      city: "",
+      city: "Calgary",
       province: "AB",
       postalCode: "",
       capacity: 0,
@@ -128,22 +140,35 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              required
+            <Label htmlFor="address">Address Search</Label>
+            <AddressSearch
+              onAddressSelect={handleAddressSelect}
+              placeholder="Search for venue address..."
+              className="w-full"
             />
+            <p className="text-xs text-muted-foreground">
+              Start typing an address to search and auto-fill location details
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="address">Street Address</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="123 Main Street"
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="Calgary"
                 required
               />
             </div>
@@ -153,19 +178,21 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
                 id="province"
                 value={formData.province}
                 onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                placeholder="AB"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="postalCode">Postal Code</Label>
-              <Input
-                id="postalCode"
-                placeholder="T2G 5B6"
-                value={formData.postalCode}
-                onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                required
-              />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="postalCode">Postal Code</Label>
+            <Input
+              id="postalCode"
+              placeholder="T2G 5B6"
+              value={formData.postalCode}
+              onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">

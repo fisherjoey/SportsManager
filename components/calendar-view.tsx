@@ -88,10 +88,22 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
       const dailySummary = getDailySummary(date)
       const isToday = date.toDateString() === new Date().toDateString()
 
+      const handleDayClick = () => {
+        if (dailySummary && onDateClick) {
+          onDateClick(date.toISOString().split('T')[0])
+        }
+      }
+
       days.push(
-        <div key={day} className={`h-32 border border-gray-200 p-2 ${
-          isToday ? "bg-blue-50 border-blue-300" : ""
-        } ${dailySummary?.needsAttention ? "border-l-4 border-l-red-400" : ""}`}>
+        <div 
+          key={day} 
+          className={`h-32 border border-gray-200 p-2 ${
+            isToday ? "bg-blue-50 border-blue-300" : ""
+          } ${dailySummary?.needsAttention ? "border-l-4 border-l-red-400" : ""} ${
+            dailySummary && onDateClick ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""
+          }`}
+          onClick={handleDayClick}
+        >
           <div className={`text-sm font-medium mb-2 ${isToday ? "text-blue-600" : ""}`}>{day}</div>
           {dailySummary ? (
             <div className="space-y-1">
@@ -298,6 +310,12 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
                 <div className="w-1 h-4 bg-red-400"></div>
                 <span>Needs attention</span>
               </div>
+              {onDateClick && (
+                <div className="flex items-center space-x-2 text-blue-600">
+                  <Clock className="h-3 w-3" />
+                  <span>Click days with games to view details</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

@@ -11,8 +11,8 @@ export interface Game {
   awayTeam: Team
   date: string
   time?: string
-  startTime?: string
-  endTime?: string
+  startTime: string
+  endTime: string
   location: string
   postalCode?: string
   level: "Recreational" | "Competitive" | "Elite"
@@ -46,17 +46,22 @@ export interface Referee {
   standardPayRate: number
 }
 
-export const calgaryVenues = [
-  "Bowness Community Centre",
-  "Calgary Soccer Centre",
-  "Foothills Athletic Park",
-  "Genesis Centre",
-  "Huntington Hills Community Centre",
-  "Prince's Island Park",
-  "Ralph Klein Park",
-  "Shouldice Athletic Park",
-  "South Glenmore Park",
-  "Village Square Leisure Centre"
+export const calgaryBasketballVenues = [
+  "Calgary Basketball Centre",
+  "Genesis Place",
+  "Bow River Community Centre", 
+  "Airdrie Recreation Complex",
+  "West Calgary Recreation Centre",
+  "North Calgary Basketball Centre",
+  "Okotoks Recreation Centre",
+  "East Calgary Sports Centre",
+  "South Calgary Athletic Centre",
+  "Cochrane Recreation Centre",
+  "NW Calgary Community Centre",
+  "Canada Basketball Academy",
+  "Rise Basketball Academy",
+  "Skills Elite Academy",
+  "Ignite Basketball Centre"
 ]
 
 export const mockTeams = [
@@ -105,35 +110,83 @@ export const mockTeams = [
 export const mockLocations = [
   {
     id: '1',
-    name: 'Saddledome',
-    address: '555 Saddledome Rise SE',
+    name: 'Calgary Basketball Centre',
+    address: '1111 Olympic Way SE',
     city: 'Calgary',
-    postalCode: 'T2G 2W1',
+    postalCode: 'T2G 3E2',
     phone: '403-777-1234',
-    capacity: 19289,
-    type: 'Arena',
-    facilities: ['Parking', 'Concessions', 'Washrooms'],
-    notes: 'Home of the Calgary Flames',
-    hourlyRate: 150,
+    capacity: 2500,
+    type: 'Basketball Arena',
+    facilities: ['Parking', 'Concessions', 'Washrooms', 'Multiple Courts'],
+    notes: 'Premier basketball facility with 4 regulation courts',
+    hourlyRate: 180,
     isActive: true,
     createdAt: '2023-01-01T00:00:00Z',
     updatedAt: '2023-01-02T00:00:00Z',
   },
   {
     id: '2',
-    name: 'Rogers Place',
-    address: '10220 104 Ave NW',
-    city: 'Edmonton',
-    postalCode: 'T5J 2S7',
-    phone: '780-414-4625',
-    capacity: 18347,
-    type: 'Arena',
-    facilities: ['Parking', 'Concessions', 'Washrooms', 'WiFi'],
-    notes: 'Home of the Edmonton Oilers',
-    hourlyRate: 200,
+    name: 'Genesis Place',
+    address: '800 East Chestermere Dr',
+    city: 'Chestermere',
+    postalCode: 'T1X 1A3',
+    phone: '403-207-5900',
+    capacity: 1200,
+    type: 'Recreation Centre',
+    facilities: ['Parking', 'Concessions', 'Washrooms', 'Basketball Courts', 'Pool'],
+    notes: 'Multi-sport recreation facility with 2 basketball courts',
+    hourlyRate: 120,
     isActive: true,
     createdAt: '2023-01-03T00:00:00Z',
     updatedAt: '2023-01-04T00:00:00Z',
+  },
+  {
+    id: '3',
+    name: 'Bow River Community Centre',
+    address: '7921 43 Ave NW',
+    city: 'Calgary',
+    postalCode: 'T3B 1M7',
+    phone: '403-288-2489',
+    capacity: 800,
+    type: 'Community Centre',
+    facilities: ['Parking', 'Washrooms', 'Basketball Court', 'Meeting Rooms'],
+    notes: 'Community basketball facility serving northwest Calgary',
+    hourlyRate: 85,
+    isActive: true,
+    createdAt: '2023-01-05T00:00:00Z',
+    updatedAt: '2023-01-06T00:00:00Z',
+  },
+  {
+    id: '4',
+    name: 'Airdrie Recreation Complex',
+    address: '145 Jensen Dr',
+    city: 'Airdrie',
+    postalCode: 'T4B 3J2',
+    phone: '403-948-8804',
+    capacity: 1000,
+    type: 'Recreation Complex',
+    facilities: ['Parking', 'Concessions', 'Washrooms', 'Multiple Courts'],
+    notes: 'Large recreation complex with 3 basketball courts',
+    hourlyRate: 95,
+    isActive: true,
+    createdAt: '2023-01-07T00:00:00Z',
+    updatedAt: '2023-01-08T00:00:00Z',
+  },
+  {
+    id: '5',
+    name: 'Okotoks Recreation Centre',
+    address: '5 Riverside Dr E',
+    city: 'Okotoks',
+    postalCode: 'T1S 1A1',
+    phone: '403-938-8966',
+    capacity: 900,
+    type: 'Recreation Centre',
+    facilities: ['Parking', 'Concessions', 'Washrooms', 'Basketball Courts'],
+    notes: 'Main basketball facility serving Okotoks area',
+    hourlyRate: 90,
+    isActive: true,
+    createdAt: '2023-01-09T00:00:00Z',
+    updatedAt: '2023-01-10T00:00:00Z',
   }
 ]
 
@@ -184,7 +237,8 @@ export const mockGames: Game[] = [
       rank: 3
     },
     date: "2025-01-16",
-    time: "14:00",
+    startTime: "14:00",
+    endTime: "15:30",
     location: "Westside Sports Complex",
     postalCode: "T2M 4N3",
     level: "Recreational",
@@ -213,7 +267,8 @@ export const mockGames: Game[] = [
       rank: 1
     },
     date: "2025-01-17",
-    time: "11:00",
+    startTime: "11:00",
+    endTime: "12:30",
     location: "Downtown Stadium",
     postalCode: "T2P 3E7",
     level: "Elite",
@@ -243,7 +298,8 @@ export const mockGames: Game[] = [
       rank: 2
     },
     date: "2025-01-18",
-    time: "15:00",
+    startTime: "15:00",
+    endTime: "16:30",
     location: "Eastside Fields",
     postalCode: "T1Y 6A4",
     level: "Competitive",
@@ -273,7 +329,8 @@ export const mockGames: Game[] = [
       rank: 1
     },
     date: "2025-01-19",
-    time: "13:00",
+    startTime: "13:00",
+    endTime: "14:30",
     location: "Northside Park",
     postalCode: "T3K 5V2",
     level: "Recreational",
@@ -302,7 +359,8 @@ export const mockGames: Game[] = [
       rank: 2
     },
     date: "2025-01-20",
-    time: "16:00",
+    startTime: "16:00",
+    endTime: "17:30",
     location: "Central Park Field 2",
     postalCode: "T1S 1A1",
     level: "Elite",
@@ -331,7 +389,8 @@ export const mockGames: Game[] = [
       rank: 1
     },
     date: "2025-01-21",
-    time: "12:00",
+    startTime: "12:00",
+    endTime: "13:30",
     location: "Westside Sports Complex",
     postalCode: "T2M 4N3",
     level: "Competitive",
@@ -361,7 +420,8 @@ export const mockGames: Game[] = [
       rank: 3
     },
     date: "2025-01-22",
-    time: "09:00",
+    startTime: "09:00",
+    endTime: "10:30",
     location: "Downtown Stadium",
     postalCode: "T2P 3E7",
     level: "Recreational",
