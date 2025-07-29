@@ -1,8 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Import security middleware
+const { createSecurityMiddleware, getCorsConfig, enforceHTTPS, securityMonitoring, requestSizeLimit, validateEnvironment } = require('./middleware/security');
+const { sanitizeAll } = require('./middleware/sanitization');
+const { auditMiddleware } = require('./middleware/auditTrail');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
+const { apiLimiter } = require('./middleware/rateLimiting');
 
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/games');
@@ -28,24 +33,31 @@ const calendarRoutes = require('./routes/calendar');
 
 const app = express();
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Increased for development - limit each IP to 1000 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
+// Validate environment variables before starting
+validateEnvironment();
 
-app.use(helmet());
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3002',
-    'http://localhost:3003'
-  ],
-  credentials: true
-}));
-app.use(limiter);
+// Security middleware stack
+app.use(enforceHTTPS);
+app.use(createSecurityMiddleware());
+app.use(cors(getCorsConfig()));
+app.use(apiLimiter);
+app.use(requestSizeLimit('10mb'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Security monitoring and sanitization
+app.use(securityMonitoring);
+app.use(sanitizeAll);
+
+// Audit trail for API requests (exclude health checks and static files)
+app.use(auditMiddleware({
+  logAllRequests: false,
+  logAuthRequests: true,
+  logAdminRequests: true,
+  logFailedRequests: true,
+  excludePaths: ['/api/health', '/uploads'],
+  sensitiveEndpoints: ['/api/auth', '/api/admin', '/api/reports']
+}));
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
@@ -76,16 +88,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
+// Error handling middleware (must be last)
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;

@@ -6,6 +6,10 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 const { getOrganizationSettings } = require('../utils/organization-settings');
+const { validateQuery, validateIdParam } = require('../middleware/sanitization');
+const { asyncHandler } = require('../middleware/errorHandling');
+const { assignmentLimiter } = require('../middleware/rateLimiting');
+const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 
 const assignmentSchema = Joi.object({
   game_id: Joi.string().required(),
@@ -15,7 +19,7 @@ const assignmentSchema = Joi.object({
 });
 
 // GET /api/assignments - Get all assignments with optional filters
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, validateQuery('assignmentFilter'), asyncHandler(async (req, res) => {
   try {
     const { game_id, referee_id, status, page = 1, limit = 50 } = req.query;
     

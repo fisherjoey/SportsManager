@@ -5,6 +5,10 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken } = require('../middleware/auth');
+const { authLimiter, registrationLimiter, passwordResetLimiter } = require('../middleware/rateLimiting');
+const { sanitizeAll } = require('../middleware/sanitization');
+const { asyncHandler, AuthenticationError, ValidationError } = require('../middleware/errorHandling');
+const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -30,162 +34,186 @@ const registerSchema = Joi.object({
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) => {
+  const { error, value } = loginSchema.validate(req.body);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  const { email, password } = value;
+
+  // Find user
+  const user = await db('users').where('email', email).first();
+  if (!user) {
+    await createAuditLog({
+      event_type: AUDIT_EVENTS.AUTH_LOGIN_FAILURE,
+      user_email: email,
+      ip_address: req.headers['x-forwarded-for'] || req.ip,
+      user_agent: req.headers['user-agent'],
+      success: false,
+      error_message: 'Invalid credentials - user not found'
+    });
+    throw new AuthenticationError('Invalid credentials');
+  }
+
+  // Check password
+  const isValidPassword = await bcrypt.compare(password, user.password_hash);
+  if (!isValidPassword) {
+    await createAuditLog({
+      event_type: AUDIT_EVENTS.AUTH_LOGIN_FAILURE,
+      user_id: user.id,
+      user_email: email,
+      ip_address: req.headers['x-forwarded-for'] || req.ip,
+      user_agent: req.headers['user-agent'],
+      success: false,
+      error_message: 'Invalid credentials - wrong password'
+    });
+    throw new AuthenticationError('Invalid credentials');
+  }
+
+  // Generate JWT token (include roles array for new system)
+  const token = jwt.sign(
+    { 
+      userId: user.id, 
+      email: user.email, 
+      role: user.role,  // Keep for backward compatibility
+      roles: user.roles || [user.role] // New roles array
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+
+  // Prepare user data (all referee data is now in the users table)
+  let userData = {
+    id: user.id,
+    email: user.email,
+    role: user.role, // Keep for backward compatibility
+    roles: user.roles || [user.role] // New roles array
+  };
+
+  if (user.role === 'referee' || user.role === 'admin') {
+    // Get referee record to include proper referee_id
+    const referee = await db('referees').where('user_id', user.id).first();
+    if (referee) {
+      userData.referee_id = referee.id;
+      userData.referee = {
+        id: referee.id,
+        user_id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        location: user.location,
+        postal_code: user.postal_code,
+        max_distance: user.max_distance,
+        is_available: user.is_available,
+        wage_per_game: user.wage_per_game,
+        referee_level_id: user.referee_level_id,
+        years_experience: user.years_experience,
+        games_refereed_season: user.games_refereed_season,
+        evaluation_score: user.evaluation_score,
+        notes: user.notes,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      };
+    }
+  }
+
+  // Log successful login
+  await createAuditLog({
+    event_type: AUDIT_EVENTS.AUTH_LOGIN_SUCCESS,
+    user_id: user.id,
+    user_email: email,
+    ip_address: req.headers['x-forwarded-for'] || req.ip,
+    user_agent: req.headers['user-agent'],
+    success: true
+  });
+
+  res.json({
+    token,
+    user: userData
+  });
+}));
+
+// POST /api/auth/register
+router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (req, res) => {
+  const { error, value } = registerSchema.validate(req.body);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  const { email, password, role, referee_data } = value;
+
+  // Check if user already exists
+  const existingUser = await db('users').where('email', email).first();
+  if (existingUser) {
+    throw new ValidationError('Email already registered');
+  }
+
+  // Hash password
+  const saltRounds = 12;
+  const password_hash = await bcrypt.hash(password, saltRounds);
+
+  const trx = await db.transaction();
+  
   try {
-    const { error, value } = loginSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+    // Create user
+    const [user] = await trx('users').insert({
+      email,
+      password_hash,
+      role
+    }).returning('*');
+
+    let userData = {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    };
+
+    // If registering as referee, create referee record
+    if (role === 'referee' && referee_data) {
+      const [referee] = await trx('referees').insert({
+        user_id: user.id,
+        email: email, // Use same email as user
+        ...referee_data
+      }).returning('*');
+      
+      userData.referee = referee;
     }
 
-    const { email, password } = value;
-
-    // Find user
-    const user = await db('users').where('email', email).first();
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    await trx.commit();
 
     // Generate JWT token (include roles array for new system)
     const token = jwt.sign(
       { 
         userId: user.id, 
         email: user.email, 
-        role: user.role,  // Keep for backward compatibility
+        role: user.role, // Keep for backward compatibility
         roles: user.roles || [user.role] // New roles array
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    // Prepare user data (all referee data is now in the users table)
-    let userData = {
-      id: user.id,
-      email: user.email,
-      role: user.role, // Keep for backward compatibility
-      roles: user.roles || [user.role] // New roles array
-    };
+    // Log successful registration
+    await createAuditLog({
+      event_type: AUDIT_EVENTS.AUTH_REGISTER,
+      user_id: user.id,
+      user_email: email,
+      ip_address: req.headers['x-forwarded-for'] || req.ip,
+      user_agent: req.headers['user-agent'],
+      success: true,
+      additional_data: { role: role }
+    });
 
-    if (user.role === 'referee' || user.role === 'admin') {
-      // Get referee record to include proper referee_id
-      const referee = await db('referees').where('user_id', user.id).first();
-      if (referee) {
-        userData.referee_id = referee.id;
-        userData.referee = {
-          id: referee.id,
-          user_id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          location: user.location,
-          postal_code: user.postal_code,
-          max_distance: user.max_distance,
-          is_available: user.is_available,
-          wage_per_game: user.wage_per_game,
-          referee_level_id: user.referee_level_id,
-          years_experience: user.years_experience,
-          games_refereed_season: user.games_refereed_season,
-          evaluation_score: user.evaluation_score,
-          notes: user.notes,
-          created_at: user.created_at,
-          updated_at: user.updated_at
-        };
-      }
-    }
-
-    res.json({
+    res.status(201).json({
       token,
       user: userData
     });
   } catch (error) {
-    console.error('Error during login:', error);
-    res.status(500).json({ error: 'Login failed' });
+    await trx.rollback();
+    throw error;
   }
-});
-
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
-  try {
-    const { error, value } = registerSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    const { email, password, role, referee_data } = value;
-
-    // Check if user already exists
-    const existingUser = await db('users').where('email', email).first();
-    if (existingUser) {
-      return res.status(409).json({ error: 'Email already registered' });
-    }
-
-    // Hash password
-    const saltRounds = 12;
-    const password_hash = await bcrypt.hash(password, saltRounds);
-
-    const trx = await db.transaction();
-    
-    try {
-      // Create user
-      const [user] = await trx('users').insert({
-        email,
-        password_hash,
-        role
-      }).returning('*');
-
-      let userData = {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      };
-
-      // If registering as referee, create referee record
-      if (role === 'referee' && referee_data) {
-        const [referee] = await trx('referees').insert({
-          user_id: user.id,
-          email: email, // Use same email as user
-          ...referee_data
-        }).returning('*');
-        
-        userData.referee = referee;
-      }
-
-      await trx.commit();
-
-      // Generate JWT token (include roles array for new system)
-      const token = jwt.sign(
-        { 
-          userId: user.id, 
-          email: user.email, 
-          role: user.role, // Keep for backward compatibility
-          roles: user.roles || [user.role] // New roles array
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
-
-      res.status(201).json({
-        token,
-        user: userData
-      });
-    } catch (error) {
-      await trx.rollback();
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error during registration:', error);
-    if (error.code === '23505') { // Unique constraint violation
-      res.status(409).json({ error: 'Email already registered' });
-    } else {
-      res.status(500).json({ error: 'Registration failed' });
-    }
-  }
-});
+}));
 
 // GET /api/auth/me - Get current user profile
 router.get('/me', authenticateToken, async (req, res) => {

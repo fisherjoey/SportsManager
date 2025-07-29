@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { validateQuery, validateIdParam } = require('../middleware/sanitization');
+const { asyncHandler, withDatabaseError } = require('../middleware/errorHandling');
+const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 
 const teamSchema = Joi.object({
   organization: Joi.string().required(),
@@ -46,7 +49,7 @@ const gameUpdateSchema = Joi.object({
 });
 
 // GET /api/games - Get all games with optional filters
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(async (req, res) => {
   try {
     const { status, level, game_type, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
     
@@ -160,11 +163,7 @@ router.get('/', async (req, res) => {
         limit: parseInt(limit)
       }
     });
-  } catch (error) {
-    console.error('Error fetching games:', error);
-    res.status(500).json({ error: 'Failed to fetch games' });
-  }
-});
+}));
 
 // GET /api/games/:id - Get specific game
 router.get('/:id', async (req, res) => {
