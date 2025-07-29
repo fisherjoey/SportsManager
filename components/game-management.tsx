@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2 } from "lucide-react"
+import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2, Trophy, DollarSign } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
 import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
@@ -36,6 +36,45 @@ import { LocationSelector } from "@/components/ui/location-selector"
 
 interface GameManagementProps {
   initialDateFilter?: string
+}
+
+// Comprehensive error handling functions as specified in the implementation plan
+const displayTeamName = (team: any) => {
+  if (!team) return 'TBD Team'
+  return formatTeamName(team) || `${team.organization || 'Unknown'} Team`
+}
+
+const displayGameType = (gameType: string | undefined) => {
+  return gameType || 'Standard Game'
+}
+
+const displayWageInfo = (payRate: number, multiplier: number = 1.0) => {
+  const calculatedWage = payRate * multiplier
+  return `$${calculatedWage.toFixed(2)}${multiplier !== 1.0 ? ` (${multiplier}x)` : ''}`
+}
+
+// GameTypeBadge component for consistent display
+function GameTypeBadge({ gameType }: { gameType: string }) {
+  const getGameTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'tournament':
+        return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'private tournament':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      case 'club':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'community':
+        return 'bg-green-100 text-green-800 border-green-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+  
+  return (
+    <Badge className={getGameTypeColor(gameType)}>
+      {displayGameType(gameType)}
+    </Badge>
+  )
 }
 
 export function GameManagement({ initialDateFilter }: GameManagementProps = {}) {
@@ -219,7 +258,7 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
     },
   ]
 
-  // Column definitions for the games table - simplified layout as requested
+  // Enhanced column definitions with all required columns from Phase 1.2
   const columns: ColumnDef<Game>[] = [
     {
       id: 'id',
@@ -234,7 +273,7 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       title: 'Home Team',
       filterType: 'search',
       accessor: (game) => {
-        return <span className="text-sm font-medium">{formatTeamName(game.homeTeam)}</span>
+        return <span className="text-sm font-medium">{displayTeamName(game.homeTeam)}</span>
       }
     },
     {
@@ -242,8 +281,23 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       title: 'Away Team',
       filterType: 'search',
       accessor: (game) => {
-        return <span className="text-sm font-medium">{formatTeamName(game.awayTeam)}</span>
+        return <span className="text-sm font-medium">{displayTeamName(game.awayTeam)}</span>
       }
+    },
+    {
+      id: 'gameType',
+      title: 'Game Type',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Types' },
+        { value: 'Community', label: 'Community' },
+        { value: 'Club', label: 'Club' },
+        { value: 'Tournament', label: 'Tournament' },
+        { value: 'Private Tournament', label: 'Private Tournament' }
+      ],
+      accessor: (game) => (
+        <GameTypeBadge gameType={game.gameType} />
+      )
     },
     {
       id: 'datetime',
@@ -260,14 +314,15 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
           day: 'numeric' 
         })
         
-        // Format time range as "10:00-11:30"
+        // Format time range as "10:00-11:30" with proper error handling
         const timeStr = startTime && endTime 
           ? `${startTime}-${endTime}`
           : startTime || 'TBD'
         
         return (
           <div>
-            <p className="text-sm font-medium">{dateStr}, {timeStr}</p>
+            <p className="text-sm font-medium">{dateStr}</p>
+            <p className="text-xs text-muted-foreground">{timeStr}</p>
           </div>
         )
       }
@@ -276,12 +331,84 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       id: 'location',
       title: 'Location',
       filterType: 'search',
-      accessor: (game) => (
-        <div className="flex items-center">
-          <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-          <span className="text-sm">{game.location}</span>
-        </div>
-      )
+      accessor: (game) => {
+        // Enhanced location display with capacity if available
+        const locationData = game.locationData || {}
+        const capacity = locationData.capacity || 0
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm">{game.location || 'TBD Location'}</span>
+            </div>
+            {capacity > 0 && (
+              <span className="text-xs text-muted-foreground ml-5">
+                Capacity: {capacity}
+              </span>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'assignments',
+      title: 'Referees',
+      filterType: 'none',
+      accessor: (game) => {
+        const assignments = game.assignedReferees || []
+        const refsNeeded = game.refsNeeded || game.refs_needed || 2
+        const assignedCount = assignments.length
+        
+        return (
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {assignedCount}/{refsNeeded}
+              </span>
+              <Badge 
+                variant={assignedCount >= refsNeeded ? "default" : assignedCount > 0 ? "secondary" : "destructive"}
+                className="text-xs"
+              >
+                {assignedCount >= refsNeeded ? "Full" : assignedCount > 0 ? "Partial" : "Empty"}
+              </Badge>
+            </div>
+            {assignments.length > 0 && (
+              <div className="text-xs text-muted-foreground ml-6">
+                {assignments.slice(0, 2).join(', ')}
+                {assignments.length > 2 && ` +${assignments.length - 2} more`}
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'wages',
+      title: 'Wages',
+      filterType: 'none',
+      accessor: (game) => {
+        const payRate = parseFloat(game.payRate || '0')
+        const multiplier = parseFloat(game.wageMultiplier || '1.0')
+        const multiplierReason = game.wageMultiplierReason
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center space-x-1">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {displayWageInfo(payRate, multiplier)}
+              </span>
+            </div>
+            {multiplierReason && multiplier !== 1.0 && (
+              <span className="text-xs text-muted-foreground ml-5">
+                {multiplierReason}
+              </span>
+            )}
+          </div>
+        )
+      }
     },
     {
       id: 'level',
@@ -295,7 +422,7 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       ],
       accessor: (game) => (
         <Badge variant={game.level?.includes('Division') ? 'default' : 'secondary'}>
-          {game.level || game.division}
+          {game.level || game.division || 'TBD'}
         </Badge>
       )
     },
@@ -731,9 +858,10 @@ function EditGameDialog({ game, onSave, onClose }: {
   onClose?: () => void;
 }) {
   const { toast } = useToast()
+  const [selectedLocation, setSelectedLocation] = useState<any>(null)
   const [formData, setFormData] = useState({
-    homeTeam: formatTeamName(game.homeTeam),
-    awayTeam: formatTeamName(game.awayTeam),
+    homeTeam: displayTeamName(game.homeTeam),
+    awayTeam: displayTeamName(game.awayTeam),
     date: game.date ? new Date(game.date).toISOString().split('T')[0] : '',
     startTime: game.startTime || game.time || '',
     endTime: game.endTime || '',
@@ -742,6 +870,7 @@ function EditGameDialog({ game, onSave, onClose }: {
     level: game.level || '',
     gameType: game.gameType || 'Competitive',
     refsNeeded: (game.refsNeeded || game.refs_needed || 2).toString(),
+    locationCost: ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {
