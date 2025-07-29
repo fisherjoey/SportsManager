@@ -46,8 +46,13 @@ import {
   Info,
   AlertTriangle,
   Eye,
-  Plus
+  Plus,
+  Sparkles,
+  TrendingUp,
+  BarChart3
 } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { useApi, League, Team, Tournament, TournamentFormat } from "@/lib/api"
 
 interface TournamentForm {
@@ -283,24 +288,56 @@ export function TournamentGenerator() {
 
   const selectedFormat = tournamentFormats.find(f => f.id === tournamentForm.tournament_type)
 
+  // Stats for tournament overview
+  const stats = [
+    {
+      title: "Available Leagues",
+      value: leagues.length,
+      icon: Trophy,
+      color: "text-blue-600",
+      description: "Leagues ready for tournaments",
+    },
+    {
+      title: "Tournament Formats",
+      value: tournamentFormats.length,
+      icon: Settings,
+      color: "text-green-600",
+      description: "Format options available",
+    },
+    {
+      title: "Total Teams",
+      value: availableTeams.length,
+      icon: Users,
+      color: "text-purple-600",
+      description: "Teams in selected league",
+    },
+    {
+      title: "Estimated Games",
+      value: estimate ? estimate.total_games : "TBD",
+      icon: BarChart3,
+      color: "text-orange-600",
+      description: "Games in current setup",
+    }
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Tournament Generator</h1>
-          <p className="text-muted-foreground">
-            Create tournaments with multiple formats and automatic scheduling
-          </p>
-        </div>
-        
-        <Dialog open={showTournamentDialog} onOpenChange={setShowTournamentDialog}>
-          <DialogTrigger asChild>
-            <Button size="lg">
-              <Trophy className="h-5 w-5 mr-2" />
-              Create Tournament
-            </Button>
-          </DialogTrigger>
+    <PageLayout>
+      <PageHeader
+        icon={Zap}
+        title="Tournament Generator"
+        description="Create competitive tournaments with automated scheduling and multiple formats"
+      >
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Smart Scheduling
+        </Badge>
+        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => setShowTournamentDialog(true)}>
+          <Trophy className="h-5 w-5 mr-2" />
+          Create Tournament
+        </Button>
+      </PageHeader>
+
+      <Dialog open={showTournamentDialog} onOpenChange={setShowTournamentDialog}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Tournament</DialogTitle>
@@ -692,14 +729,32 @@ export function TournamentGenerator() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">{stat.description}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Tournament Formats Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Available Tournament Formats</CardTitle>
+          <CardTitle className="flex items-center">
+            <Crown className="h-5 w-5 mr-2 text-yellow-600" />
+            Tournament Format Library
+          </CardTitle>
           <CardDescription>
-            Choose from various tournament formats to suit your needs
+            Professional tournament formats with automated scheduling and bracket generation
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -875,6 +930,6 @@ export function TournamentGenerator() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }

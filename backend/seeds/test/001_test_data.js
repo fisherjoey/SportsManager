@@ -88,12 +88,12 @@ exports.seed = async function(knex) {
 
   // Insert leagues
   const [league1] = await knex('leagues').insert([{
-    name: 'Test League',
     organization: 'Test Org',
-    age_group: 'Senior',
-    gender: 'Mixed',
+    age_group: 'U15',
+    gender: 'Boys',
     division: 'Division 1',
-    season: '2024/25'
+    season: '2024/25',
+    level: 'Competitive'
   }]).returning('*');
 
   // Insert teams
@@ -107,22 +107,32 @@ exports.seed = async function(knex) {
     {
       home_team_id: team1.id,
       away_team_id: team2.id,
+      league_id: league1.id,
       game_date: new Date('2024-12-01'),
       game_time: '14:00',
       location: 'Test Stadium',
+      postal_code: 'T1S 1A1',
       level: 'Recreational',
+      pay_rate: 45.00,
+      status: 'unassigned',
       refs_needed: 2,
-      wage_multiplier: 1.0
+      wage_multiplier: 1.0,
+      game_type: 'Community'
     },
     {
       home_team_id: team2.id,
       away_team_id: team1.id,
+      league_id: league1.id,
       game_date: new Date('2024-12-15'),
       game_time: '16:00',
       location: 'Test Stadium 2',
+      postal_code: 'T2M 4N3',
       level: 'Competitive',
+      pay_rate: 65.00,
+      status: 'unassigned',
       refs_needed: 3,
-      wage_multiplier: 1.2
+      wage_multiplier: 1.2,
+      game_type: 'Club'
     }
   ]);
 };

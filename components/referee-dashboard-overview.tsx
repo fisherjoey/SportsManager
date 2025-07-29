@@ -3,13 +3,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, DollarSign, MapPin } from "lucide-react"
+import { Calendar, Clock, DollarSign, MapPin, User } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { mockGames, Team } from "@/lib/mock-data"
 import { useAuth } from "@/components/auth-provider"
-
-function formatTeamName(team: Team): string {
-  return `${team.organization} ${team.ageGroup} ${team.gender}`
-}
+import { formatTeamName } from "@/lib/team-utils"
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
@@ -61,13 +60,12 @@ export function RefereeDashboardOverview() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name}!</h2>
-          <p className="text-muted-foreground">Here's what's happening with your assignments</p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={User}
+        title={`Welcome back, ${user?.name}!`}
+        description="Here's what's happening with your assignments"
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
@@ -151,6 +149,6 @@ export function RefereeDashboardOverview() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   )
 }

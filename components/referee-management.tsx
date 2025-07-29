@@ -18,8 +18,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { UserPlus, Calendar, Clock } from "lucide-react"
+import { UserPlus, Calendar, Clock, Users } from "lucide-react"
 import { useApi } from "@/lib/api"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
 import { DataTable } from "@/components/data-table/DataTable"
 import { createRefereeColumns } from "@/components/data-table/columns/referee-columns"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
@@ -173,54 +176,72 @@ export function RefereeManagement() {
     {
       title: "Total Referees",
       value: Array.isArray(referees) ? referees.length : 0,
+      icon: Users,
       color: "text-blue-600",
     },
     {
       title: "Active This Week",
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
+      icon: Calendar,
       color: "text-green-600",
     },
     {
       title: "Available Now",
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.4) : 0,
+      icon: Clock,
       color: "text-orange-600",
     },
     {
       title: "Elite Level",
       value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === "Elite").length : 0,
+      icon: UserPlus,
       color: "text-purple-600",
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Users}
+        title="Referee Management"
+        description="Manage referee profiles and availability"
+      >
+        <Button onClick={() => setIsInviteDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Invite Referee
+        </Button>
+      </PageHeader>
+
+      <StatsGrid stats={stats} />
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Referees</CardTitle>
-              <CardDescription>Manage referee profiles and availability</CardDescription>
-            </div>
-            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Invite Referee
-                </Button>
-              </DialogTrigger>
+          <CardTitle>Referees</CardTitle>
+          <CardDescription>Manage referee profiles and availability</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DataTable 
+            columns={createRefereeColumns({
+              onEditReferee: handleEditReferee,
+              onViewProfile: handleViewProfile,
+              onManageAvailability: handleManageAvailability
+            })} 
+            data={referees} 
+            loading={isLoading}
+            mobileCardType="referee"
+            enableViewToggle={true}
+            onEditReferee={handleEditReferee}
+            onViewProfile={handleViewProfile}
+            searchKey="name"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Invite Referee Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogTrigger asChild>
+          <div></div>
+        </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Invite New Referee</DialogTitle>
@@ -278,27 +299,8 @@ export function RefereeManagement() {
                     <Button type="submit">Send Invitation</Button>
                   </div>
                 </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable 
-            columns={createRefereeColumns({
-              onEditReferee: handleEditReferee,
-              onViewProfile: handleViewProfile,
-              onManageAvailability: handleManageAvailability
-            })} 
-            data={referees} 
-            loading={isLoading}
-            mobileCardType="referee"
-            enableViewToggle={true}
-            onEditReferee={handleEditReferee}
-            onViewProfile={handleViewProfile}
-            searchKey="name"
-          />
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Referee Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -492,6 +494,6 @@ export function RefereeManagement() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }

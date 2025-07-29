@@ -19,8 +19,12 @@ import {
   ParkingMeterIcon as Parking,
   Eye,
 } from "lucide-react"
+import { LocationWithDistance } from "@/components/ui/location-with-distance"
 import { mockLocations } from "@/lib/mock-data"
 import { apiClient } from "@/lib/api"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
 // import { useNotifications } from "@/providers/notification-provider"
 import { TeamDetailsDialog } from "./team-details-dialog"
 import { LocationDetailsDialog } from "./location-details-dialog"
@@ -381,13 +385,16 @@ export function TeamsLocationsPage() {
       title: 'Address',
       filterType: 'search',
       accessor: (location) => (
-        <div className="flex items-center">
-          <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-          <div>
-            <p className="text-sm">{location.address}</p>
-            <p className="text-xs text-muted-foreground">{location.postalCode}</p>
-          </div>
-        </div>
+        <LocationWithDistance
+          location={location.name}
+          address={location.address}
+          city={location.city}
+          province={location.province}
+          postalCode={location.postalCode}
+          showDistance={true}
+          showMapLink={true}
+          compact={true}
+        />
       )
     },
     {
@@ -547,13 +554,12 @@ export function TeamsLocationsPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Teams & Locations</h2>
-          <p className="text-muted-foreground">Manage teams, venues, and facility information</p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Users}
+        title="Teams & Locations"
+        description="Manage teams, venues, and facility information"
+      />
 
       {loading && (
         <div className="flex items-center justify-center py-8">
@@ -577,20 +583,7 @@ export function TeamsLocationsPage() {
         </TabsList>
 
         <TabsContent value="teams" className="space-y-6">
-          {/* Team Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {teamStats.map((stat, index) => (
-              <Card key={index}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <StatsGrid stats={teamStats} />
 
           {/* Teams Management */}
           <Card>
@@ -674,20 +667,7 @@ export function TeamsLocationsPage() {
         </TabsContent>
 
         <TabsContent value="locations" className="space-y-6">
-          {/* Location Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {locationStats.map((stat, index) => (
-              <Card key={index}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <StatsGrid stats={locationStats} />
 
           {/* Locations Management */}
           <Card>
@@ -793,6 +773,6 @@ export function TeamsLocationsPage() {
           location={locations.find((l) => l.id === selectedLocation)}
         />
       )}
-    </div>
+    </PageLayout>
   )
 }

@@ -4,8 +4,11 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, Users, AlertCircle, Plus, Loader2 } from "lucide-react"
+import { Calendar, Clock, Users, AlertCircle, Plus, Loader2, Home, Sparkles, TrendingUp } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { apiClient } from "@/lib/api"
+import { formatTeamName } from "@/lib/team-utils"
 
 interface Game {
   id: string
@@ -36,15 +39,7 @@ interface Game {
 }
 
 const getTeamName = (team: any) => {
-  if (typeof team === 'string') {
-    return team || 'Team'
-  }
-  if (team && typeof team === 'object' && Object.keys(team).length > 0) {
-    if (team.name) return team.name
-    const parts = [team.organization, team.ageGroup, team.gender].filter(Boolean)
-    return parts.length > 0 ? parts.join(' ') : 'Team'
-  }
-  return 'Team'
+  return formatTeamName(team)
 }
 
 export function DashboardOverview() {
@@ -132,35 +127,47 @@ export function DashboardOverview() {
       }).length,
       icon: Calendar,
       color: "text-blue-600",
+      description: "Games scheduled this week",
     },
     {
       title: "Unassigned Games",
       value: unassignedGames.length,
       icon: AlertCircle,
       color: "text-red-600",
+      description: "Games needing referees",
     },
     {
       title: "Up for Grabs",
       value: upForGrabsGames.length,
       icon: Clock,
       color: "text-orange-600",
+      description: "Available for pickup",
     },
     {
       title: "Active Referees",
       value: refereeCount,
       icon: Users,
       color: "text-green-600",
+      description: "Available for assignment",
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+    <PageLayout>
+      <PageHeader
+        icon={Home}
+        title="RefAssign Dashboard"
+        description="Overview of games, assignments, and referee activity"
+      >
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Live Data
+        </Badge>
+        <Button size="lg">
+          <Plus className="h-5 w-5 mr-2" />
           Create Game
         </Button>
-      </div>
+      </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
@@ -171,6 +178,7 @@ export function DashboardOverview() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">{stat.description}</p>
             </CardContent>
           </Card>
         ))}
@@ -179,8 +187,11 @@ export function DashboardOverview() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Games</CardTitle>
-            <CardDescription>Next 5 scheduled games</CardDescription>
+            <CardTitle className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-green-600" />
+              Upcoming Games
+            </CardTitle>
+            <CardDescription>Next 5 scheduled games with assigned referees</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -212,8 +223,11 @@ export function DashboardOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Needs Attention</CardTitle>
-            <CardDescription>Games requiring immediate action</CardDescription>
+            <CardTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
+              Needs Attention
+            </CardTitle>
+            <CardDescription>Games requiring immediate referee assignment</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -233,7 +247,8 @@ export function DashboardOverview() {
                     </div>
                     <div className="text-right">
                       <Badge variant="destructive">Unassigned</Badge>
-                      <Button size="sm" className="mt-1">
+                      <Button size="sm" className="mt-1 bg-green-600 hover:bg-green-700">
+                        <Plus className="h-3 w-3 mr-1" />
                         Assign
                       </Button>
                     </div>
@@ -244,6 +259,6 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   )
 }

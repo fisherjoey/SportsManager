@@ -5,10 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckCircle, XCircle, Clock, MapPin, DollarSign } from "lucide-react"
+import { CheckCircle, XCircle, Clock, MapPin, DollarSign, User } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { useAuth } from "@/components/auth-provider"
 import { useToast } from "@/components/ui/use-toast"
 import { useApi } from "@/lib/api"
+import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
 
 export function MyAssignments() {
   const { user } = useAuth()
@@ -16,6 +20,14 @@ export function MyAssignments() {
   const api = useApi()
   const [assignments, setAssignments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    ageGroups: [],
+    genders: [],
+    divisions: [],
+    zones: [],
+    levels: [],
+    statuses: []
+  })
 
   useEffect(() => {
     if (user?.id) {
@@ -65,18 +77,28 @@ export function MyAssignments() {
     return <div>Loading assignments...</div>
   }
 
-  const upcomingAssignments = assignments.filter((assignment) => 
+  // Apply filters to the games within assignments
+  const filteredAssignments = assignments.filter((assignment) => {
+    if (!assignment.game) return false
+    const games = [assignment.game]
+    const filteredGames = applyGameFilters(games, activeFilters)
+    return filteredGames.length > 0
+  })
+
+  const upcomingAssignments = filteredAssignments.filter((assignment) => 
     assignment.game && new Date(assignment.game.date) > new Date()
   )
-  const pastAssignments = assignments.filter((assignment) => 
+  const pastAssignments = filteredAssignments.filter((assignment) => 
     assignment.game && new Date(assignment.game.date) <= new Date()
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">My Assignments</h2>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={User}
+        title="My Assignments"
+        description="View and manage your assigned games"
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -123,8 +145,17 @@ export function MyAssignments() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Upcoming Assignments</CardTitle>
-          <CardDescription>Your scheduled games</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Upcoming Assignments</CardTitle>
+              <CardDescription>Your scheduled games</CardDescription>
+            </div>
+            <GameFilters 
+              games={assignments.map(a => a.game).filter(Boolean)}
+              activeFilters={activeFilters}
+              onFiltersChange={setActiveFilters}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -151,7 +182,7 @@ export function MyAssignments() {
                   upcomingAssignments.map((assignment) => (
                     <TableRow key={assignment.id}>
                       <TableCell className="font-medium">
-                        {assignment.game?.homeTeam} vs {assignment.game?.awayTeam}
+                        {assignment.game ? formatGameMatchup(assignment.game.homeTeam, assignment.game.awayTeam) : 'Unknown Game'}
                       </TableCell>
                       <TableCell>
                         {assignment.game?.date ? new Date(assignment.game.date).toLocaleDateString() : 'N/A'}
@@ -279,6 +310,6 @@ export function MyAssignments() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

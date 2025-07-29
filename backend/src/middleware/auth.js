@@ -2,9 +2,19 @@ const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  
+  if (!authHeader || !authHeader.trim()) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
 
-  if (!token) {
+  // Check if header starts with 'Bearer ' (case sensitive)
+  if (!authHeader.trim().startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  const token = authHeader.trim().split(' ')[1];
+  
+  if (!token || token.trim() === '') {
     return res.status(401).json({ error: 'Access token required' });
   }
 
@@ -68,7 +78,7 @@ function requireAnyRole(...roles) {
 
 // New function to check specific permissions (for future expansion)
 function hasRole(user, roleName) {
-  if (!user) return false;
+  if (!user || !roleName) return false;
   
   // Handle roles array with proper fallback
   let userRoles;
@@ -80,8 +90,8 @@ function hasRole(user, roleName) {
     return false;
   }
   
-  // Admin always has access
-  if (userRoles.includes('admin') || user.role === 'admin') {
+  // Admin always has access (except to itself - avoid infinite recursion)
+  if (roleName !== 'admin' && (userRoles.includes('admin') || user.role === 'admin')) {
     return true;
   }
   

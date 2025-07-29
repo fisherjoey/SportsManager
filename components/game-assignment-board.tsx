@@ -6,12 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, MapPin, Users, Upload, Download, Plus, Trash2, Bot, History, Zap, TrendingUp, Star, CheckCircle, XCircle, Brain, Repeat, RotateCcw } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, Upload, Download, Plus, Trash2, Bot, History, Zap, TrendingUp, Star, CheckCircle, XCircle, Brain, Repeat, RotateCcw, GamepadIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
 import { useToast } from "@/components/ui/use-toast"
 import { AssignChunkDialog } from "@/components/assign-chunk-dialog"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import Papa from 'papaparse'
+import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
 
 interface GameChunk {
   id: string
@@ -196,12 +199,8 @@ export function GameAssignmentBoard() {
         'Game ID': game.id,
         'Date': game.date,
         'Time': game.time || game.startTime || '',
-        'Home Team': typeof game.homeTeam === 'object' 
-          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-          : game.homeTeam,
-        'Away Team': typeof game.awayTeam === 'object' 
-          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-          : game.awayTeam,
+        'Home Team': formatTeamName(game.homeTeam),
+        'Away Team': formatTeamName(game.awayTeam),
         'Location': game.location,
         'Division': game.division,
         'Level': game.level,
@@ -419,12 +418,8 @@ export function GameAssignmentBoard() {
   }
 
   const filteredGames = games.filter((game) => {
-    const homeTeamName = typeof game.homeTeam === 'object' 
-      ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-      : game.homeTeam
-    const awayTeamName = typeof game.awayTeam === 'object' 
-      ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-      : game.awayTeam
+    const homeTeamName = formatTeamName(game.homeTeam)
+    const awayTeamName = formatTeamName(game.awayTeam)
 
     const matchesSearch =
       homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -440,96 +435,34 @@ export function GameAssignmentBoard() {
   const dates = Array.from(new Set(games.map((game) => game.date)))
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Hidden file input for CSV import */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".csv"
-        onChange={handleFileUpload}
-        style={{ display: 'none' }}
-      />
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Game Assignment Board</h1>
-          <p className="text-gray-600">Manage game assignments and create referee chunks</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={generateAISuggestions}
-            disabled={isGeneratingSuggestions}
-          >
-            {isGeneratingSuggestions ? (
-              <>
-                <Brain className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Bot className="h-4 w-4 mr-2" />
-                AI Suggestions
-              </>
-            )}
-          </Button>
-          <Button variant="outline" onClick={loadHistoricPatterns}>
-            <History className="h-4 w-4 mr-2" />
-            Historic Patterns
-          </Button>
-          <Button variant="outline" onClick={handleImport}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Games</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{games.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chunks Created</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{chunks.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{chunks.filter((c) => c.assignedTo).length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Selected</CardTitle>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{selectedGames.length}</div>
-          </CardContent>
-        </Card>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={GamepadIcon}
+        title="Game Assignment Board"
+        description="Manage game assignments and create referee chunks with intelligent scheduling"
+      >
+        <Button 
+          variant="outline" 
+          onClick={generateAISuggestions}
+          disabled={isGeneratingSuggestions}
+        >
+          {isGeneratingSuggestions ? (
+            <>
+              <Brain className="h-4 w-4 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Bot className="h-4 w-4 mr-2" />
+              AI Suggestions
+            </>
+          )}
+        </Button>
+        <Button variant="outline" onClick={loadHistoricPatterns}>
+          <History className="h-4 w-4 mr-2" />
+          Historic Patterns
+        </Button>
+      </PageHeader>
 
       {/* Navigation Tabs */}
       <div className="border-b">
@@ -585,11 +518,64 @@ export function GameAssignmentBoard() {
         </nav>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Games</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{games.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Chunks Created</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{chunks.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{chunks.filter((c) => c.assignedTo).length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Selected</CardTitle>
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{selectedGames.length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Controls - Show only for games and chunks tabs */}
       {(activeTab === 'games' || activeTab === 'chunks') && (
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input placeholder="Search games..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleImport}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
           <Select value={filterLocation} onValueChange={setFilterLocation}>
             <SelectTrigger className="w-48">
@@ -639,12 +625,8 @@ export function GameAssignmentBoard() {
             <h2 className="text-lg font-semibold">Available Games</h2>
             <div className="grid gap-3">
               {filteredGames.map((game) => {
-                const homeTeamName = typeof game.homeTeam === 'object' 
-                  ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                  : game.homeTeam
-                const awayTeamName = typeof game.awayTeam === 'object' 
-                  ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-                  : game.awayTeam
+                const homeTeamName = formatTeamName(game.homeTeam)
+                const awayTeamName = formatTeamName(game.awayTeam)
 
                 return (
                   <Card
@@ -787,12 +769,8 @@ export function GameAssignmentBoard() {
                   <CardContent>
                     <div className="space-y-2">
                       {chunk.games.map((game) => {
-                        const homeTeamName = typeof game.homeTeam === 'object' 
-                          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                          : game.homeTeam
-                        const awayTeamName = typeof game.awayTeam === 'object' 
-                          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-                          : game.awayTeam
+                        const homeTeamName = formatTeamName(game.homeTeam)
+                        const awayTeamName = formatTeamName(game.awayTeam)
 
                         return (
                           <div key={game.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -856,12 +834,8 @@ export function GameAssignmentBoard() {
                 
                 if (!game || !referee) return null
 
-                const homeTeamName = typeof game.homeTeam === 'object' 
-                  ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                  : game.homeTeam
-                const awayTeamName = typeof game.awayTeam === 'object' 
-                  ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-                  : game.awayTeam
+                const homeTeamName = formatTeamName(game.homeTeam)
+                const awayTeamName = formatTeamName(game.awayTeam)
 
                 return (
                   <Card key={suggestion.id} className="border-l-4 border-l-blue-500">
@@ -1018,6 +992,15 @@ export function GameAssignmentBoard() {
           onAssign={assignChunk}
         />
       )}
-    </div>
+      
+      {/* Hidden file input for CSV import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".csv"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+      />
+    </PageLayout>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun } from "lucide-react"
 
 import {
   Sidebar,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
+import { useTheme } from "next-themes"
 
 interface AppSidebarProps {
   activeView: string
@@ -27,6 +28,7 @@ interface AppSidebarProps {
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { user, logout } = useAuth()
   const { state, toggleSidebar } = useSidebar()
+  const { theme, setTheme } = useTheme()
 
   const adminItems = [
     {
@@ -35,34 +37,19 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: Home,
     },
     {
-      title: "League Management",
-      url: "leagues",
-      icon: Shield,
-    },
-    {
-      title: "Tournament Generator",
-      url: "tournaments",
-      icon: Zap,
-    },
-    {
       title: "Game Management",
       url: "games",
       icon: GamepadIcon,
     },
     {
-      title: "Assigning",
+      title: "Assigning",  
       url: "assigning",
       icon: ClipboardList,
     },
     {
       title: "AI Assignments",
-      url: "ai-assignments",
+      url: "ai-assignments", 
       icon: Bot,
-    },
-    {
-      title: "Teams & Locations",
-      url: "locations",
-      icon: MapPin,
     },
     {
       title: "Referees",
@@ -73,6 +60,21 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Calendar",
       url: "calendar",
       icon: Calendar,
+    },
+    {
+      title: "Teams & Locations",
+      url: "locations",
+      icon: MapPin,
+    },
+    {
+      title: "League Management",
+      url: "leagues",
+      icon: Shield,
+    },
+    {
+      title: "Tournament Generator",
+      url: "tournaments",
+      icon: Zap,
     },
     {
       title: "Posts",
@@ -193,14 +195,24 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             <p className="text-sm font-medium">{user?.name}</p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
-          <SidebarMenuButton 
-            onClick={logout} 
-            className="w-full justify-start bg-transparent border border-sidebar-border hover:bg-sidebar-accent"
-            tooltip="Sign Out"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </SidebarMenuButton>
+          <div className="space-y-1">
+            <SidebarMenuButton 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="w-full justify-start bg-transparent border border-sidebar-border hover:bg-sidebar-accent"
+              tooltip={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            </SidebarMenuButton>
+            <SidebarMenuButton 
+              onClick={logout} 
+              className="w-full justify-start bg-transparent border border-sidebar-border hover:bg-sidebar-accent"
+              tooltip="Sign Out"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
+          </div>
         </div>
       </SidebarFooter>
       <SidebarRail />

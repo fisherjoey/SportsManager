@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { RichTextEditor } from "@/components/rich-text-editor"
 import { apiClient } from "@/lib/api"
 import { useAuth } from "@/components/auth-provider"
@@ -28,7 +30,10 @@ import {
   GraduationCap,
   Info,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Sparkles,
+  TrendingUp
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -230,44 +235,92 @@ export function PostsManagement() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading posts...</span>
-      </div>
+      <PageLayout>
+        <PageHeader
+          icon={FileText}
+          title="Posts Management"
+          description="Create and manage announcements, updates, and organizational communications"
+        />
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading posts...</span>
+        </div>
+      </PageLayout>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-red-600">{error}</p>
-          <Button onClick={fetchPosts} variant="outline" className="mt-2">
-            Try Again
-          </Button>
+      <PageLayout>
+        <PageHeader
+          icon={FileText}
+          title="Posts Management"
+          description="Create and manage announcements, updates, and organizational communications"
+        />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-600">{error}</p>
+            <Button onClick={fetchPosts} variant="outline" className="mt-2">
+              Try Again
+            </Button>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
+  // Stats for posts overview
+  const stats = [
+    {
+      title: "Total Posts",
+      value: posts.length,
+      icon: FileText,
+      color: "text-blue-600",
+      description: "All posts in system",
+    },
+    {
+      title: "Published",
+      value: posts.filter(p => p.status === 'published').length,
+      icon: TrendingUp,
+      color: "text-green-600",
+      description: "Live posts visible to users",
+    },
+    {
+      title: "Drafts",
+      value: posts.filter(p => p.status === 'draft').length,
+      icon: Edit,
+      color: "text-orange-600",
+      description: "Posts in progress",
+    },
+    {
+      title: "Categories",
+      value: categories.length,
+      icon: Tag,
+      color: "text-purple-600",
+      description: "Available categories",
+    }
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Posts Management</h2>
-          <p className="text-muted-foreground">Create and manage announcements, updates, and information</p>
-        </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Post
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <PageLayout>
+      <PageHeader
+        icon={FileText}
+        title="Posts Management"
+        description="Create and manage announcements, updates, and organizational communications"
+      >
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Rich Content
+        </Badge>
+        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+          <Plus className="h-5 w-5 mr-2" />
+          Create Post
+        </Button>
+      </PageHeader>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Post</DialogTitle>
             </DialogHeader>
@@ -281,6 +334,21 @@ export function PostsManagement() {
             />
           </DialogContent>
         </Dialog>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">{stat.description}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
@@ -459,7 +527,7 @@ export function PostsManagement() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }
 
