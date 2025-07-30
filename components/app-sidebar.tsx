@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database } from "lucide-react"
 
 import {
   Sidebar,
@@ -51,7 +51,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     }
   }
 
-  const adminItems = [
+  // Sports Management Section
+  const sportsManagementItems = [
     {
       title: "Dashboard",
       url: "dashboard",
@@ -104,6 +105,92 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     },
   ]
 
+  // Financial Management Section
+  const financialItems = [
+    {
+      title: "Financial Dashboard",
+      url: "financial-dashboard",
+      icon: DollarSign,
+    },
+    {
+      title: "Receipt Processing",
+      url: "financial-receipts",
+      icon: Receipt,
+    },
+    {
+      title: "Budget Management",
+      url: "financial-budgets",
+      icon: BarChart3,
+    },
+    {
+      title: "Expense Tracking",
+      url: "financial-expenses",
+      icon: FileX,
+    },
+    {
+      title: "Financial Reports",
+      url: "financial-reports",
+      icon: FileText,
+    },
+  ]
+
+  // Organization Management Section
+  const organizationItems = [
+    {
+      title: "Organizational Dashboard",
+      url: "organization-dashboard",
+      icon: Building2,
+    },
+    {
+      title: "Employee Management",
+      url: "organization-employees",
+      icon: Users2,
+    },
+    {
+      title: "Asset Tracking",
+      url: "organization-assets",
+      icon: Package,
+    },
+    {
+      title: "Document Repository",
+      url: "organization-documents",
+      icon: FileText,
+    },
+    {
+      title: "Compliance Tracking",
+      url: "organization-compliance",
+      icon: ShieldIcon,
+    },
+  ]
+
+  // Analytics Section
+  const analyticsItems = [
+    {
+      title: "Analytics Dashboard",
+      url: "analytics-dashboard",
+      icon: BarChart3,
+    },
+  ]
+
+  // Administration Section
+  const administrationItems = [
+    {
+      title: "Workflow Management",
+      url: "admin-workflows",
+      icon: Workflow,
+    },
+    {
+      title: "Security & Audit",
+      url: "admin-security",
+      icon: ShieldIcon,
+    },
+    {
+      title: "System Settings",
+      url: "admin-settings",
+      icon: Database,
+    },
+  ]
+
   const refereeItems = [
     {
       title: "Dashboard",
@@ -132,7 +219,13 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     },
   ]
 
-  const items = user?.role === "admin" ? adminItems : refereeItems
+  const allAdminItems = user?.role === "admin" ? [
+    { section: "Sports Management", items: sportsManagementItems },
+    { section: "Financial Management", items: financialItems },
+    { section: "Organization", items: organizationItems },
+    { section: "Analytics", items: analyticsItems },
+    { section: "Administration", items: administrationItems }
+  ] : null
 
   return (
     <Sidebar 
@@ -161,25 +254,54 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-0 py-0">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-0">
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => setActiveView(item.url)} 
-                    isActive={activeView === item.url}
-                    tooltip={item.title}
-                    className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
-                  >
-                    <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
-                    <span className="truncate text-left">{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {user?.role === "admin" ? (
+          <>
+            {allAdminItems?.map((section) => (
+              <SidebarGroup key={section.section}>
+                <SidebarGroupLabel className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.section}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-0">
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          onClick={() => setActiveView(item.url)} 
+                          isActive={activeView === item.url}
+                          tooltip={item.title}
+                          className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
+                        >
+                          <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
+                          <span className="truncate text-left">{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-0">
+                {refereeItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveView(item.url)} 
+                      isActive={activeView === item.url}
+                      tooltip={item.title}
+                      className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
+                    >
+                      <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
+                      <span className="truncate text-left">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>
           <SidebarGroupContent>

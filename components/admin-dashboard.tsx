@@ -16,6 +16,19 @@ import { ProfileSettings } from "@/components/profile-settings"
 import OrganizationSettings from "@/components/organization-settings"
 import { PostsManagement } from "@/components/posts-management"
 import { AIAssignmentsEnterprise } from "@/components/ai-assignments-enterprise"
+import { FinancialDashboard } from "@/components/financial-dashboard"
+import { ReceiptUpload } from "@/components/receipt-upload"
+import { BudgetTracker } from "@/components/budget-tracker"
+import { ExpenseList } from "@/components/expense-list"
+import { OrganizationalDashboard } from "@/components/organizational-dashboard"
+import { EmployeeManagement } from "@/components/employee-management"
+import { AssetTracking } from "@/components/asset-tracking"
+import { DocumentRepository } from "@/components/document-repository"
+import { ComplianceTracking } from "@/components/compliance-tracking"
+import { AnalyticsDashboard } from "@/components/analytics-dashboard"
+import { WorkflowManagement } from "@/components/workflow-management"
+import { SecurityAudit } from "@/components/security-audit"
+import { SystemSettings } from "@/components/system-settings"
 import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
@@ -24,6 +37,7 @@ export function AdminDashboard() {
 
   const getPageTitle = () => {
     switch (activeView) {
+      // Sports Management
       case "dashboard":
         return "Dashboard"
       case "leagues":
@@ -44,10 +58,49 @@ export function AdminDashboard() {
         return "Calendar"
       case "posts":
         return "Posts"
+      
+      // Financial Management
+      case "financial-dashboard":
+        return "Financial Dashboard"
+      case "financial-receipts":
+        return "Receipt Processing"
+      case "financial-budgets":
+        return "Budget Management"
+      case "financial-expenses":
+        return "Expense Tracking"
+      case "financial-reports":
+        return "Financial Reports"
+      
+      // Organization Management
+      case "organization-dashboard":
+        return "Organizational Dashboard"
+      case "organization-employees":
+        return "Employee Management"
+      case "organization-assets":
+        return "Asset Tracking"
+      case "organization-documents":
+        return "Document Repository"
+      case "organization-compliance":
+        return "Compliance Tracking"
+      
+      // Analytics
+      case "analytics-dashboard":
+        return "Analytics Dashboard"
+      
+      // Administration
+      case "admin-workflows":
+        return "Workflow Management"
+      case "admin-security":
+        return "Security & Audit"
+      case "admin-settings":
+        return "System Settings"
+      
+      // Account
       case "profile":
         return "Profile"
       case "organization-settings":
         return "Organization Settings"
+      
       default:
         return "Dashboard"
     }
@@ -55,6 +108,7 @@ export function AdminDashboard() {
 
   const renderContent = () => {
     switch (activeView) {
+      // Sports Management
       case "dashboard":
         return <DashboardOverview />
       case "leagues":
@@ -80,10 +134,49 @@ export function AdminDashboard() {
         />
       case "posts":
         return <PostsManagement />
+      
+      // Financial Management
+      case "financial-dashboard":
+        return <FinancialDashboard />
+      case "financial-receipts":
+        return <ReceiptUpload />
+      case "financial-budgets":
+        return <BudgetTracker />
+      case "financial-expenses":
+        return <ExpenseList />
+      case "financial-reports":
+        return <FinancialDashboard /> // Financial reports are part of the financial dashboard
+      
+      // Organization Management
+      case "organization-dashboard":
+        return <OrganizationalDashboard />
+      case "organization-employees":
+        return <EmployeeManagement />
+      case "organization-assets":
+        return <AssetTracking />
+      case "organization-documents":
+        return <DocumentRepository />
+      case "organization-compliance":
+        return <ComplianceTracking />
+      
+      // Analytics
+      case "analytics-dashboard":
+        return <AnalyticsDashboard />
+      
+      // Administration
+      case "admin-workflows":
+        return <WorkflowManagement />
+      case "admin-security":
+        return <SecurityAudit />
+      case "admin-settings":
+        return <SystemSettings />
+      
+      // Account
       case "profile":
         return <ProfileSettings />
       case "organization-settings":
         return <OrganizationSettings />
+      
       default:
         return <DashboardOverview />
     }

@@ -23,15 +23,20 @@ class AIServices {
         console.warn('Google Vision API credentials not found. OCR will use fallback methods.');
       }
 
-      // Initialize DeepSeek AI
-      if (process.env.DEEPSEEK_API_KEY) {
+      // Initialize OpenAI API
+      if (process.env.OPENAI_API_KEY) {
+        this.openaiClient = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY
+        });
+        console.log('OpenAI API initialized');
+      } else if (process.env.DEEPSEEK_API_KEY) {
         this.openaiClient = new OpenAI({
           apiKey: process.env.DEEPSEEK_API_KEY,
           baseURL: 'https://api.deepseek.com/v1'
         });
         console.log('DeepSeek API initialized');
       } else {
-        console.warn('DeepSeek API key not found. LLM processing will be disabled.');
+        console.warn('OpenAI/DeepSeek API key not found. LLM processing will be disabled.');
       }
     } catch (error) {
       console.error('Error initializing AI services:', error);
