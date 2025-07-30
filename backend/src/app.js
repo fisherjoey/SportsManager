@@ -31,6 +31,7 @@ const locationRoutes = require('./routes/locations');
 const reportsRoutes = require('./routes/reports');
 const calendarRoutes = require('./routes/calendar');
 const healthRoutes = require('./routes/health');
+const expenseRoutes = require('./routes/expenses');
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use('/api/ai-assignment-rules', aiAssignmentRulesRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 // Health check endpoints (no authentication required)
 app.use('/health', healthRoutes);
