@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
 import { useToast } from "@/components/ui/use-toast"
-import { BellIcon as Whistle } from "lucide-react"
+import Image from "next/image"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -45,8 +45,13 @@ export function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-blue-600 rounded-full">
-              <Whistle className="h-8 w-8 text-white" />
+            <div className="w-16 h-16 relative">
+              <Image
+                src="/sportsync-icon.png"
+                alt="SyncedSport Logo"
+                fill
+                className="object-contain"
+              />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">SyncedSport</CardTitle>
@@ -84,13 +89,13 @@ export function LoginForm() {
             <p className="text-sm font-medium mb-2">Demo Accounts:</p>
             <div className="text-xs space-y-1">
               <p>
-                <strong>Admin:</strong> admin@refassign.com
+                <strong>Admin:</strong> admin@cmba.ca
               </p>
               <p>
-                <strong>Referee:</strong> mike@referee.com
+                <strong>Referee:</strong> james.smith@referee.ca
               </p>
               <p>
-                <strong>Password:</strong> password
+                <strong>Password:</strong> password123
               </p>
             </div>
           </div>

@@ -136,7 +136,7 @@ router.get('/', authenticateToken, validateQuery('assignmentFilter'), asyncHandl
     console.error('Error fetching assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });
   }
-});
+}));
 
 // GET /api/assignments/:id - Get specific assignment
 router.get('/:id', async (req, res) => {
