@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -16,10 +18,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { UserPlus, Calendar, Clock } from "lucide-react"
+import { UserPlus, Calendar, Clock, Users } from "lucide-react"
 import { useApi } from "@/lib/api"
-import { DataTable } from "@/components/data-table/DataTable"
-import { createRefereeColumns } from "@/components/data-table/columns/referee-columns"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
+import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
 import { Referee } from "@/components/data-table/types"
 
@@ -28,6 +32,8 @@ export function RefereeManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [selectedReferee, setSelectedReferee] = useState<Referee | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showProfileDialog, setShowProfileDialog] = useState(false)
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
   const [availabilityRefereeId, setAvailabilityRefereeId] = useState<string>("")
   const [inviteForm, setInviteForm] = useState({
@@ -35,6 +41,16 @@ export function RefereeManagement() {
     firstName: "",
     lastName: "",
     role: "referee"
+  })
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    certificationLevel: "",
+    location: "",
+    notes: "",
+    maxDistance: 50,
+    isAvailable: true
   })
   const api = useApi()
   const { toast } = useToast()
@@ -79,8 +95,7 @@ export function RefereeManagement() {
         role: "referee"
       })
       
-      // For testing purposes, show the invitation link
-      console.log('Invitation link:', response.data.invitation_link)
+      // Invitation email sent automatically
     } catch (error) {
       console.error('Failed to send invitation:', error)
       toast({
@@ -93,20 +108,62 @@ export function RefereeManagement() {
 
   const handleEditReferee = (referee: Referee) => {
     setSelectedReferee(referee)
-    // TODO: Open edit dialog
-    toast({
-      title: "Edit Referee",
-      description: `Opening edit form for ${referee.name}`,
+    setEditForm({
+      name: referee.name,
+      email: referee.email,
+      phone: referee.phone,
+      certificationLevel: referee.certificationLevel || "",
+      location: referee.location,
+      notes: referee.notes || "",
+      maxDistance: referee.maxDistance,
+      isAvailable: referee.isAvailable
     })
+    setShowEditDialog(true)
   }
 
   const handleViewProfile = (referee: Referee) => {
     setSelectedReferee(referee)
-    // TODO: Open profile view
-    toast({
-      title: "View Profile",
-      description: `Opening profile for ${referee.name}`,
-    })
+    setShowProfileDialog(true)
+  }
+
+  const handleSaveReferee = async () => {
+    if (!selectedReferee) return
+
+    try {
+      const response = await api.updateReferee(selectedReferee.id, {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        level: editForm.certificationLevel,
+        location: editForm.location,
+        notes: editForm.notes,
+        max_distance: editForm.maxDistance,
+        is_available: editForm.isAvailable
+      })
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Referee updated successfully",
+        })
+        
+        // Update the referee in the list
+        setReferees(prev => prev.map(ref => 
+          ref.id === selectedReferee.id 
+            ? { ...ref, ...response.data.referee }
+            : ref
+        ))
+        
+        setShowEditDialog(false)
+      }
+    } catch (error) {
+      console.error('Failed to update referee:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update referee. Please try again.",
+      })
+    }
   }
 
   const handleManageAvailability = (referee: Referee) => {
@@ -118,54 +175,246 @@ export function RefereeManagement() {
     {
       title: "Total Referees",
       value: Array.isArray(referees) ? referees.length : 0,
+      icon: Users,
       color: "text-blue-600",
     },
     {
       title: "Active This Week",
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
+      icon: Calendar,
       color: "text-green-600",
     },
     {
       title: "Available Now",
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.4) : 0,
+      icon: Clock,
       color: "text-orange-600",
     },
     {
       title: "Elite Level",
       value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === "Elite").length : 0,
+      icon: UserPlus,
       color: "text-purple-600",
     },
   ]
 
+  // Column definitions for the referees table using FilterableTable format
+  const columns: ColumnDef<Referee>[] = [
+    {
+      id: 'name',
+      title: 'Name',
+      filterType: 'search',
+      accessor: (referee) => (
+        <div>
+          <div className="font-medium text-sm truncate">{referee.name}</div>
+          {referee.isWhiteWhistle && (
+            <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
+              <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+              White Whistle
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'contact',
+      title: 'Contact',
+      filterType: 'search',
+      accessor: (referee) => (
+        <div className="space-y-1">
+          <div className="text-sm truncate">{referee.email}</div>
+          <div className="text-xs text-muted-foreground truncate">{referee.phone}</div>
+        </div>
+      )
+    },
+    {
+      id: 'level',
+      title: 'Level',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Levels' },
+        { value: 'Learning', label: 'Learning' },
+        { value: 'Learning+', label: 'Learning+' },
+        { value: 'Growing', label: 'Growing' },
+        { value: 'Growing+', label: 'Growing+' },
+        { value: 'Teaching', label: 'Teaching' },
+        { value: 'Expert', label: 'Expert' },
+      ],
+      accessor: (referee) => {
+        const level = referee.level
+        const levelColors = {
+          "Learning": "bg-green-100 text-green-800 border-green-200",
+          "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
+          "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
+          "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
+          "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
+          "Expert": "bg-red-100 text-red-800 border-red-200",
+        }
+        
+        return (
+          <Badge 
+            variant="outline" 
+            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ""}`}
+          >
+            {level}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Locations' },
+        { value: 'Northwest Calgary', label: 'Northwest Calgary' },
+        { value: 'Northeast Calgary', label: 'Northeast Calgary' },
+        { value: 'Southeast Calgary', label: 'Southeast Calgary' },
+        { value: 'Southwest Calgary', label: 'Southwest Calgary' },
+        { value: 'Downtown Calgary', label: 'Downtown Calgary' },
+        { value: 'Foothills', label: 'Foothills' },
+        { value: 'Bow Valley', label: 'Bow Valley' },
+        { value: 'Fish Creek', label: 'Fish Creek' },
+        { value: 'Olds', label: 'Olds' },
+      ],
+      accessor: (referee) => (
+        <div>
+          <div className="text-sm font-medium truncate">{referee.location}</div>
+          <div className="text-xs text-muted-foreground">
+            {referee.maxDistance}km radius
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'roles',
+      title: 'Roles',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Roles' },
+        { value: 'Referee', label: 'Referee' },
+        { value: 'Evaluator', label: 'Evaluator' },
+        { value: 'Mentor', label: 'Mentor' },
+        { value: 'Trainer', label: 'Trainer' },
+        { value: 'Referee Coach', label: 'Referee Coach' },
+      ],
+      accessor: (referee) => {
+        const roles = referee.roles || ["Referee"]
+        
+        return (
+          <div className="space-y-1">
+            {roles.slice(0, 2).map((role, index) => (
+              <div key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md truncate">
+                {role}
+              </div>
+            ))}
+            {roles.length > 2 && (
+              <div className="text-xs text-muted-foreground">
+                +{roles.length - 2} more
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All' },
+        { value: 'true', label: 'Available' },
+        { value: 'false', label: 'Unavailable' },
+      ],
+      accessor: (referee) => {
+        const isAvailable = referee.isAvailable
+        
+        return (
+          <Badge 
+            variant={isAvailable ? "default" : "secondary"}
+            className={`text-xs ${isAvailable ? "bg-success/10 text-success border-success/20 hover:bg-success/20" : "bg-muted text-muted-foreground border-border"}`}
+          >
+            {isAvailable ? "Available" : "Unavailable"}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (referee) => (
+        <div className="flex items-center space-x-1">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleViewProfile(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleEditReferee(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => handleManageAvailability(referee)}
+            className="h-8 w-8 p-0"
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Users}
+        title="Referee Management"
+        description="Manage referee profiles and availability"
+      >
+        <Button onClick={() => setIsInviteDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Invite Referee
+        </Button>
+      </PageHeader>
+
+      <StatsGrid stats={stats} />
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Referees</CardTitle>
-              <CardDescription>Manage referee profiles and availability</CardDescription>
-            </div>
-            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Invite Referee
-                </Button>
-              </DialogTrigger>
+          <CardTitle>Referees</CardTitle>
+          <CardDescription>Manage referee profiles and availability</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FilterableTable 
+            columns={columns}
+            data={referees} 
+            loading={isLoading}
+            mobileCardType="referee"
+            enableViewToggle={true}
+            enableCSV={true}
+            searchKey="name"
+            emptyMessage="No referees found. Try adjusting your filters."
+            onEditReferee={handleEditReferee}
+            onViewProfile={handleViewProfile}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Invite Referee Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogTrigger asChild>
+          <div></div>
+        </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Invite New Referee</DialogTitle>
@@ -223,27 +472,177 @@ export function RefereeManagement() {
                     <Button type="submit">Send Invitation</Button>
                   </div>
                 </form>
-              </DialogContent>
-            </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Referee Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Referee</DialogTitle>
+            <DialogDescription>
+              Update referee information for {selectedReferee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="certificationLevel">Certification Level</Label>
+              <Select value={editForm.certificationLevel} onValueChange={(value) => setEditForm(prev => ({ ...prev, certificationLevel: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Recreational">Recreational</SelectItem>
+                  <SelectItem value="Competitive">Competitive</SelectItem>
+                  <SelectItem value="Elite">Elite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={editForm.location}
+                onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={editForm.notes}
+                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="maxDistance">Max Distance (miles)</Label>
+              <Input
+                id="maxDistance"
+                type="number"
+                value={editForm.maxDistance}
+                onChange={(e) => setEditForm(prev => ({ ...prev, maxDistance: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isAvailable"
+                checked={editForm.isAvailable}
+                onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isAvailable: checked as boolean }))}
+              />
+              <Label htmlFor="isAvailable">Available for assignments</Label>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable 
-            columns={createRefereeColumns({
-              onEditReferee: handleEditReferee,
-              onViewProfile: handleViewProfile,
-              onManageAvailability: handleManageAvailability
-            })} 
-            data={referees} 
-            loading={isLoading}
-            mobileCardType="referee"
-            enableViewToggle={true}
-            onEditReferee={handleEditReferee}
-            onViewProfile={handleViewProfile}
-            searchKey="name"
-          />
-        </CardContent>
-      </Card>
+          
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveReferee}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile View Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Referee Profile</DialogTitle>
+            <DialogDescription>
+              Detailed information for {selectedReferee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReferee && (
+            <div className="space-y-4">
+              <div>
+                <Label className="font-semibold">Name</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.name}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Email</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.email}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Phone</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.phone}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Certification Level</Label>
+                <Badge variant="secondary">{selectedReferee.certificationLevel}</Badge>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Location</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.location}</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Max Distance</Label>
+                <p className="text-sm text-muted-foreground">{selectedReferee.maxDistance} miles</p>
+              </div>
+              
+              <div>
+                <Label className="font-semibold">Status</Label>
+                <Badge variant={selectedReferee.isAvailable ? "default" : "secondary"}>
+                  {selectedReferee.isAvailable ? "Available" : "Unavailable"}
+                </Badge>
+              </div>
+              
+              {selectedReferee.notes && (
+                <div>
+                  <Label className="font-semibold">Notes</Label>
+                  <p className="text-sm text-muted-foreground">{selectedReferee.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-6">
+            <Button onClick={() => setShowProfileDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Availability Calendar Dialog */}
       <Dialog open={showAvailabilityCalendar} onOpenChange={setShowAvailabilityCalendar}>
@@ -268,6 +667,6 @@ export function RefereeManagement() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }

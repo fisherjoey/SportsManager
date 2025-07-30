@@ -8,13 +8,19 @@ import { DashboardOverview } from "@/components/dashboard-overview"
 import { LeagueCreation } from "@/components/league-creation"
 import { TournamentGenerator } from "@/components/tournament-generator"
 import { GameManagement } from "@/components/game-management"
+import { GameAssignmentBoard } from "@/components/game-assignment-board"
+import { TeamsLocationsPage } from "@/components/teams-locations/teams-locations-page"
 import { RefereeManagement } from "@/components/referee-management"
 import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
+import OrganizationSettings from "@/components/organization-settings"
+import { PostsManagement } from "@/components/posts-management"
+import { AIAssignmentsEnterprise } from "@/components/ai-assignments-enterprise"
 import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
   const [activeView, setActiveView] = useState("dashboard")
+  const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
 
   const getPageTitle = () => {
     switch (activeView) {
@@ -26,12 +32,22 @@ export function AdminDashboard() {
         return "Tournament Generator"
       case "games":
         return "Games"
+      case "assigning":
+        return "Game Assignment"
+      case "ai-assignments":
+        return "AI Assignments"
+      case "locations":
+        return "Teams & Locations"
       case "referees":
         return "Referees"
       case "calendar":
         return "Calendar"
+      case "posts":
+        return "Posts"
       case "profile":
         return "Profile"
+      case "organization-settings":
+        return "Organization Settings"
       default:
         return "Dashboard"
     }
@@ -46,13 +62,28 @@ export function AdminDashboard() {
       case "tournaments":
         return <TournamentGenerator />
       case "games":
-        return <GameManagement />
+        return <GameManagement initialDateFilter={gameManagementDateFilter} />
+      case "assigning":
+        return <GameAssignmentBoard />
+      case "ai-assignments":
+        return <AIAssignmentsEnterprise />
+      case "locations":
+        return <TeamsLocationsPage />
       case "referees":
         return <RefereeManagement />
       case "calendar":
-        return <CalendarView />
+        return <CalendarView 
+          onDateClick={(date: string) => {
+            setGameManagementDateFilter(date)
+            setActiveView("games")
+          }} 
+        />
+      case "posts":
+        return <PostsManagement />
       case "profile":
         return <ProfileSettings />
+      case "organization-settings":
+        return <OrganizationSettings />
       default:
         return <DashboardOverview />
     }
@@ -63,10 +94,10 @@ export function AdminDashboard() {
       <AppSidebar activeView={activeView} setActiveView={setActiveView} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              RefAssign Dashboard
+              SyncedSport Dashboard
               {activeView !== "dashboard" && (
                 <>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

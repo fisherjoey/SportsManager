@@ -1,0 +1,429 @@
+const request = require('supertest');
+const app = require('../../src/app');
+const db = require('../../src/config/database');
+const emailService = require('../../src/services/emailService');
+
+// Mock email service to prevent actual emails during tests
+jest.mock('../../src/services/emailService');
+
+describe('Invitations Integration Tests', () => {
+  let adminUser, refereeUser, adminToken;
+
+  beforeAll(async () => {
+    // Set up test database
+    await db.migrate.latest();
+    await db.seed.run();
+
+    // Create test admin user
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('testpassword', 10);
+    
+    [adminUser] = await db('users').insert({
+      email: 'testadmin@test.com',
+      password_hash: hashedPassword,
+      role: 'admin',
+      name: 'Test Admin'
+    }).returning('*');
+
+    // Generate admin token
+    const jwt = require('jsonwebtoken');
+    adminToken = jwt.sign(
+      { userId: adminUser.id, email: adminUser.email, role: adminUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Mock email service
+    emailService.sendInvitationEmail.mockResolvedValue({ 
+      data: { id: 'mock-email-id' } 
+    });
+  });
+
+  afterAll(async () => {
+    // Clean up database
+    await db('game_assignments').del();
+    await db('invitations').del();
+    await db('users').del();
+    await db.destroy();
+  });
+
+  beforeEach(async () => {
+    // Clean up invitations before each test
+    await db('invitations').del();
+    jest.clearAllMocks();
+  });
+
+  describe('Complete Invitation Flow', () => {
+    it('should handle full invitation lifecycle', async () => {
+      const invitationData = {
+        email: 'newreferee@test.com',
+        first_name: 'New',
+        last_name: 'Referee',
+        role: 'referee'
+      };
+
+      // Step 1: Create invitation
+      const createResponse = await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      expect(createResponse.status).toBe(201);
+      expect(createResponse.body.success).toBe(true);
+
+      // Verify invitation was created in database
+      const invitation = await db('invitations')
+        .where('email', invitationData.email)
+        .first();
+      
+      expect(invitation).toBeTruthy();
+      expect(invitation.used).toBe(false);
+      expect(invitation.first_name).toBe('New');
+      expect(invitation.last_name).toBe('Referee');
+
+      // Step 2: Get invitation by token
+      const getResponse = await request(app)
+        .get(`/api/invitations/${invitation.token}`);
+
+      expect(getResponse.status).toBe(200);
+      expect(getResponse.body.data.invitation.email).toBe(invitationData.email);
+
+      // Step 3: Complete invitation
+      const completeData = {
+        password: 'newpassword123',
+        phone: '555-0123',
+        location: 'Calgary',
+        postal_code: 'T2P 1J9',
+        level: 'Recreational',
+        max_distance: 25
+      };
+
+      const completeResponse = await request(app)
+        .post(`/api/invitations/${invitation.token}/complete`)
+        .send(completeData);
+
+      expect(completeResponse.status).toBe(201);
+      expect(completeResponse.body.success).toBe(true);
+      expect(completeResponse.body.data.token).toBeDefined();
+      expect(completeResponse.body.data.user.email).toBe(invitationData.email);
+
+      // Verify user was created
+      const newUser = await db('users')
+        .where('email', invitationData.email)
+        .first();
+      
+      expect(newUser).toBeTruthy();
+      expect(newUser.role).toBe('referee');
+
+      // Verify invitation was marked as used
+      const usedInvitation = await db('invitations')
+        .where('id', invitation.id)
+        .first();
+      
+      expect(usedInvitation.used).toBe(true);
+      expect(usedInvitation.used_at).toBeTruthy();
+
+      // Step 4: Verify invitation can't be used again
+      const duplicateResponse = await request(app)
+        .post(`/api/invitations/${invitation.token}/complete`)
+        .send(completeData);
+
+      expect(duplicateResponse.status).toBe(404);
+    });
+
+    it('should create referee record for referee invitations', async () => {
+      const invitationData = {
+        email: 'referee2@test.com',
+        first_name: 'Test',
+        last_name: 'Referee',
+        role: 'referee'
+      };
+
+      // Create invitation
+      const createResponse = await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      const invitation = await db('invitations')
+        .where('email', invitationData.email)
+        .first();
+
+      // Complete invitation
+      const completeResponse = await request(app)
+        .post(`/api/invitations/${invitation.token}/complete`)
+        .send({
+          password: 'password123',
+          phone: '555-9999',
+          location: 'Toronto',
+          level: 'Competitive'
+        });
+
+      expect(completeResponse.status).toBe(201);
+
+      // Verify referee record was created
+      const user = await db('users')
+        .where('email', invitationData.email)
+        .first();
+
+      const referee = await db('referees')
+        .where('user_id', user.id)
+        .first();
+
+      expect(referee).toBeTruthy();
+      expect(referee.name).toBe('Test Referee');
+      expect(referee.phone).toBe('555-9999');
+      expect(referee.location).toBe('Toronto');
+      expect(referee.level).toBe('Competitive');
+    });
+
+    it('should not create referee record for admin invitations', async () => {
+      const invitationData = {
+        email: 'admin2@test.com',
+        first_name: 'Test',
+        last_name: 'Admin',
+        role: 'admin'
+      };
+
+      // Create invitation
+      await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      const invitation = await db('invitations')
+        .where('email', invitationData.email)
+        .first();
+
+      // Complete invitation
+      const completeResponse = await request(app)
+        .post(`/api/invitations/${invitation.token}/complete`)
+        .send({ password: 'password123' });
+
+      expect(completeResponse.status).toBe(201);
+
+      // Verify no referee record was created
+      const user = await db('users')
+        .where('email', invitationData.email)
+        .first();
+
+      const referee = await db('referees')
+        .where('user_id', user.id)
+        .first();
+
+      expect(referee).toBeFalsy();
+    });
+  });
+
+  describe('Error Scenarios', () => {
+    it('should prevent duplicate user creation', async () => {
+      // Create a user first
+      const existingEmail = 'existing@test.com';
+      await db('users').insert({
+        email: existingEmail,
+        password_hash: 'hashed',
+        role: 'referee'
+      });
+
+      // Try to create invitation for existing user
+      const response = await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: existingEmail,
+          first_name: 'Test',
+          last_name: 'User',
+          role: 'referee'
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe('User with this email already exists');
+    });
+
+    it('should prevent duplicate pending invitations', async () => {
+      const invitationData = {
+        email: 'duplicate@test.com',
+        first_name: 'Test',
+        last_name: 'User',
+        role: 'referee'
+      };
+
+      // Create first invitation
+      const response1 = await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      expect(response1.status).toBe(201);
+
+      // Try to create duplicate invitation
+      const response2 = await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      expect(response2.status).toBe(409);
+      expect(response2.body.error).toBe('Invitation already sent to this email');
+    });
+
+    it('should handle expired invitations', async () => {
+      // Create expired invitation directly in database
+      const expiredToken = 'expired-token-123';
+      await db('invitations').insert({
+        email: 'expired@test.com',
+        first_name: 'Expired',
+        last_name: 'User',
+        role: 'referee',
+        invited_by: adminUser.id,
+        token: expiredToken,
+        expires_at: new Date(Date.now() - 86400000), // 1 day ago
+        used: false
+      });
+
+      // Try to get expired invitation
+      const getResponse = await request(app)
+        .get(`/api/invitations/${expiredToken}`);
+
+      expect(getResponse.status).toBe(404);
+      expect(getResponse.body.error).toBe('Invalid or expired invitation');
+
+      // Try to complete expired invitation
+      const completeResponse = await request(app)
+        .post(`/api/invitations/${expiredToken}/complete`)
+        .send({ password: 'password123' });
+
+      expect(completeResponse.status).toBe(404);
+      expect(completeResponse.body.error).toBe('Invalid or expired invitation');
+    });
+
+    it('should rollback transaction on user creation failure', async () => {
+      const invitationData = {
+        email: 'rollback@test.com',
+        first_name: 'Rollback',
+        last_name: 'Test',
+        role: 'referee'
+      };
+
+      // Create invitation
+      await request(app)
+        .post('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invitationData);
+
+      const invitation = await db('invitations')
+        .where('email', invitationData.email)
+        .first();
+
+      // Mock database error during user creation
+      const originalInsert = db.insert;
+      db.insert = jest.fn().mockImplementation(() => {
+        throw new Error('Database error');
+      });
+
+      // Try to complete invitation
+      const completeResponse = await request(app)
+        .post(`/api/invitations/${invitation.token}/complete`)
+        .send({ password: 'password123' });
+
+      expect(completeResponse.status).toBe(500);
+
+      // Verify invitation was not marked as used
+      const unchangedInvitation = await db('invitations')
+        .where('id', invitation.id)
+        .first();
+      
+      expect(unchangedInvitation.used).toBe(false);
+
+      // Restore original function
+      db.insert = originalInsert;
+    });
+  });
+
+  describe('List and Manage Invitations', () => {
+    beforeEach(async () => {
+      // Create test invitations
+      await db('invitations').insert([
+        {
+          email: 'pending@test.com',
+          first_name: 'Pending',
+          last_name: 'User',
+          role: 'referee',
+          invited_by: adminUser.id,
+          token: 'pending-token',
+          expires_at: new Date(Date.now() + 86400000),
+          used: false
+        },
+        {
+          email: 'used@test.com',
+          first_name: 'Used',
+          last_name: 'User',
+          role: 'referee',
+          invited_by: adminUser.id,
+          token: 'used-token',
+          expires_at: new Date(Date.now() + 86400000),
+          used: true,
+          used_at: new Date()
+        },
+        {
+          email: 'expired@test.com',
+          first_name: 'Expired',
+          last_name: 'User',
+          role: 'referee',
+          invited_by: adminUser.id,
+          token: 'expired-token',
+          expires_at: new Date(Date.now() - 86400000),
+          used: false
+        }
+      ]);
+    });
+
+    it('should list all invitations', async () => {
+      const response = await request(app)
+        .get('/api/invitations')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.invitations).toHaveLength(3);
+    });
+
+    it('should filter pending invitations', async () => {
+      const response = await request(app)
+        .get('/api/invitations?status=pending')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.invitations).toHaveLength(1);
+      expect(response.body.data.invitations[0].email).toBe('pending@test.com');
+    });
+
+    it('should filter used invitations', async () => {
+      const response = await request(app)
+        .get('/api/invitations?status=used')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.invitations).toHaveLength(1);
+      expect(response.body.data.invitations[0].email).toBe('used@test.com');
+    });
+
+    it('should cancel pending invitation', async () => {
+      const invitation = await db('invitations')
+        .where('email', 'pending@test.com')
+        .first();
+
+      const response = await request(app)
+        .delete(`/api/invitations/${invitation.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Invitation cancelled successfully');
+
+      // Verify invitation was deleted
+      const deletedInvitation = await db('invitations')
+        .where('id', invitation.id)
+        .first();
+      
+      expect(deletedInvitation).toBeFalsy();
+    });
+  });
+});

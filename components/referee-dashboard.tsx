@@ -25,7 +25,10 @@ export function RefereeDashboard() {
       case "available":
         return <AvailableGames />
       case "availability":
-        return <AvailabilityCalendar refereeId={user?.referee_id || ""} canEdit={true} />
+        if (user?.role === "admin") {
+          return <div className="p-4 text-center text-muted-foreground">Availability management is only available for referee users. Use the Referees section to view individual referee availability.</div>
+        }
+        return user?.referee_id ? <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} /> : <div className="p-4 text-center text-muted-foreground">Please complete your referee profile to manage availability.</div>
       case "calendar":
         return <CalendarView />
       case "profile":
@@ -40,7 +43,7 @@ export function RefereeDashboard() {
       <AppSidebar activeView={activeView} setActiveView={setActiveView} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">My Dashboard</h1>
           </div>

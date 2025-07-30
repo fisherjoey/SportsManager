@@ -3,57 +3,80 @@ exports.seed = async function(knex) {
   const existingReferees = await knex('referees').select('email');
   const existingEmails = existingReferees.map(r => r.email);
   
+  // Get referee levels
+  const refereeLevels = await knex('referee_levels').select('*');
+  const learningLevel = refereeLevels.find(l => l.name === 'Learning');
+  const learningPlusLevel = refereeLevels.find(l => l.name === 'Learning+');
+  const growingLevel = refereeLevels.find(l => l.name === 'Growing');
+  const teachingLevel = refereeLevels.find(l => l.name === 'Teaching');
+  const expertLevel = refereeLevels.find(l => l.name === 'Expert');
+
   // Additional referees with different availability patterns
   const additionalReferees = [
     {
       name: 'Emma Wilson',
       email: 'emma@referee.com',
       phone: '(555) 111-2222',
-      level: 'Elite',
+      referee_level_id: teachingLevel?.id,
+      level: 'Teaching', // Keep for backward compatibility
       location: 'Northside',
       postal_code: '67890',
       max_distance: 40,
-      is_available: true
+      is_available: true,
+      roles: ['Referee', 'Evaluator'],
+      is_white_whistle: false
     },
     {
       name: 'Robert Chen',
       email: 'robert@referee.com',
       phone: '(555) 333-4444',
-      level: 'Competitive',
+      referee_level_id: growingLevel?.id,
+      level: 'Growing',
       location: 'Eastside',
       postal_code: '13579',
       max_distance: 35,
-      is_available: true
+      is_available: true,
+      roles: ['Referee'],
+      is_white_whistle: false
     },
     {
       name: 'Maria Rodriguez',
       email: 'maria@referee.com',
       phone: '(555) 555-6666',
-      level: 'Recreational',
+      referee_level_id: learningPlusLevel?.id,
+      level: 'Learning+',
       location: 'Southside',
       postal_code: '24680',
       max_distance: 20,
-      is_available: true
+      is_available: true,
+      roles: ['Referee'],
+      is_white_whistle: true
     },
     {
       name: 'James Kim',
       email: 'james@referee.com',
       phone: '(555) 777-8888',
-      level: 'Elite',
+      referee_level_id: expertLevel?.id,
+      level: 'Expert',
       location: 'Central',
       postal_code: '12345',
       max_distance: 50,
-      is_available: false // Currently unavailable
+      is_available: false, // Currently unavailable
+      roles: ['Referee', 'Trainer', 'Referee Coach'],
+      is_white_whistle: false
     },
     {
       name: 'Lisa Thompson',
       email: 'lisa@referee.com',
       phone: '(555) 999-0000',
-      level: 'Competitive',
+      referee_level_id: learningLevel?.id,
+      level: 'Learning',
       location: 'Westside',
       postal_code: '54321',
       max_distance: 30,
-      is_available: true
+      is_available: true,
+      roles: ['Referee'],
+      is_white_whistle: true
     }
   ];
   
@@ -90,10 +113,13 @@ exports.seed = async function(knex) {
       email: referee.email,
       phone: referee.phone,
       level: referee.level,
+      referee_level_id: referee.referee_level_id,
       location: referee.location,
       postal_code: referee.postal_code,
       max_distance: referee.max_distance,
-      is_available: referee.is_available
+      is_available: referee.is_available,
+      roles: referee.roles,
+      is_white_whistle: referee.is_white_whistle
     });
   }
   

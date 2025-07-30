@@ -31,6 +31,7 @@ import { RefereeMobileCard } from "@/components/data-table/RefereeMobileCard"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isValid, parseISO } from "date-fns"
 import Papa from 'papaparse'
+import { getTeamSearchTerms } from "@/lib/team-utils"
 
 export interface ColumnDef<T> {
   id: string
@@ -645,19 +646,11 @@ export function FilterableTable<T extends Record<string, any>>({
       
       // Handle homeTeam and awayTeam objects
       if (item.homeTeam) {
-        if (typeof item.homeTeam === 'object') {
-          searchTerms.push(`${item.homeTeam.organization} ${item.homeTeam.ageGroup} ${item.homeTeam.gender}`)
-        } else {
-          searchTerms.push(String(item.homeTeam))
-        }
+        searchTerms.push(...getTeamSearchTerms(item.homeTeam))
       }
       
       if (item.awayTeam) {
-        if (typeof item.awayTeam === 'object') {
-          searchTerms.push(`${item.awayTeam.organization} ${item.awayTeam.ageGroup} ${item.awayTeam.gender}`)
-        } else {
-          searchTerms.push(String(item.awayTeam))
-        }
+        searchTerms.push(...getTeamSearchTerms(item.awayTeam))
       }
       
       // Handle arrays (like assignedReferees)
@@ -714,7 +707,7 @@ export function FilterableTable<T extends Record<string, any>>({
               <RefereeMobileCard
                 key={row.id}
                 referee={item as any}
-                onEdit={onEditReferee}
+                onEditReferee={onEditReferee}
                 onViewProfile={onViewProfile}
               />
             )
@@ -819,7 +812,7 @@ export function FilterableTable<T extends Record<string, any>>({
         renderMobileCards()
       ) : (
         <div className="rounded-md border">
-          <Table>
+          <Table className="data-table">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>

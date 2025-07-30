@@ -1,0 +1,136 @@
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> } 
+ */
+exports.seed = async function(knex) {
+  // Clear existing entries
+  await knex('locations').del();
+
+  // Insert all CMBA locations
+  const locations = [
+    { name: '7 Chiefs Sportsplex - Jim Starlight Centre Court 1', abbreviation: '7CS1', address: '9911 Chiila Boulevard', city: 'Tsuut\'ina Nation', province: 'AB', postal_code: 'T2W 6H6', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: '7 Chiefs Sportsplex - Jim Starlight Centre Court 2', abbreviation: '7CS2', address: '9911 Chiila Boulevard', city: 'Tsuut\'ina Nation', province: 'AB', postal_code: 'T2W 6H6', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: '7 Chiefs Sportsplex - Jim Starlight Centre Court 3', abbreviation: '7CS3', address: '9911 Chiila Boulevard', city: 'Tsuut\'ina Nation', province: 'AB', postal_code: 'T2W 6H6', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: '7 Chiefs Sportsplex - Jim Starlight Centre Court 4', abbreviation: '7CS4', address: '9911 Chiila Boulevard', city: 'Tsuut\'ina Nation', province: 'AB', postal_code: 'T2W 6H6', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: 'Abbeydale School', abbreviation: 'ASG', address: '320 Abergale Drive NE', city: 'Calgary', province: 'AB', postal_code: 'T2A 6L4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Alberta Bible College', abbreviation: 'ABCG', address: '635 Northmount Dr NW', city: 'Calgary', province: 'AB', postal_code: 'T2K 3J6', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: 'All Saints High School Court 1', abbreviation: 'ASHS1', address: '729 Legacy Village Road SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 2A8', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'All Saints High School Court 3', abbreviation: 'ASHS3', address: '729 Legacy Village Road SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 2A8', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Ambrose University', abbreviation: 'AUG', address: '150 Ambrose Cir SW', city: 'Calgary', province: 'AB', postal_code: 'T3H 0L5', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'Annie Gale', abbreviation: 'AGG', address: '577 Whiteridge Way NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 1W7', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: 'Arbour Lake School', abbreviation: 'ALSG', address: '27 Arbour Crest Drive NW', city: 'Calgary', province: 'AB', postal_code: 'T3G 4G8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Arbour Lake School Aux', abbreviation: 'ALSAG', address: '27 Arbour Crest Dr NW', city: 'Calgary', province: 'AB', postal_code: 'T3G 4G8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Ascension of Our Lord School Gym', abbreviation: 'AOLS', address: '509 Harvest Hills Dr NE', city: 'Calgary', province: 'AB', postal_code: 'T3K 4J4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Bearspaw Christian MPF East', abbreviation: 'MPFE', address: '15001- 69 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'Multiple Courts'] },
+    { name: 'Bearspaw Christian MPF West', abbreviation: 'MPFW', address: '15001- 69 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'Multiple Courts'] },
+    { name: 'Bearspaw Christian School', abbreviation: 'BCSG', address: '15001- 69 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Bearspaw Christian School West Gym', abbreviation: 'BCSWG', address: '15001- 69 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Bearspaw Christian-Mross Gym', abbreviation: 'BCMG', address: '15001 69 St NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Bearspaw Christian-Mross Gym - Court 1', abbreviation: 'BCMG1', address: '15001 69 St NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'Multiple Courts'] },
+    { name: 'Bearspaw Christian-Mross Gym - Court 2', abbreviation: 'BCMG2', address: '15001 69 St NW', city: 'Calgary', province: 'AB', postal_code: 'T3L 0C8', type: 'Gym', facilities: ['Basketball Court', 'Multiple Courts'] },
+    { name: 'Bert Church High School', abbreviation: 'BCHS', address: '1010 E Lake Blvd SE', city: 'Airdrie', province: 'AB', postal_code: 'T4A 2G7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop Carroll HS', abbreviation: 'BCHS', address: '4624 Richard Road SW', city: 'Calgary', province: 'AB', postal_code: 'T3E 6K2', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop Grandin High School', abbreviation: 'BGHS', address: '111 Haddon Rd SW', city: 'Calgary', province: 'AB', postal_code: 'T2V 2Y9', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop McNally High School', abbreviation: 'BMHS', address: '5700 Falconridge Blvd NE', city: 'Calgary', province: 'AB', postal_code: 'T3J 0N9', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop O\' Bryne High School Court #3', abbreviation: 'BOBHS-3', address: '333 Shawville Blvd SE', city: 'Calgary', province: 'AB', postal_code: 'T2Y 4H2', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop O\' Bryne Main (High School)', abbreviation: 'BOBM', address: '333 Shawville Blvd SE', city: 'Calgary', province: 'AB', postal_code: 'T2Y 4H2', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bishop Pinkham Gym', abbreviation: 'BPK', address: '3304 - 63 Avenue S.W.', city: 'Calgary', province: 'AB', postal_code: 'T3E 5M2', type: 'Gym', facilities: ['Basketball Court'] },
+    { name: 'Blessed Cardinal Newman Elem/Jnr High', abbreviation: 'BCNG', address: '16201 McKenzie Lake Blvd SE', city: 'Calgary', province: 'AB', postal_code: 'T2Z 4S2', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Bowness HS Aux', abbreviation: 'BHSA', address: '4627 - 77 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3B 2L5', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Bowness HS Main', abbreviation: 'BHSM', address: '4627 - 77 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T3B 2L5', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'C.W Perry Middle School', abbreviation: 'CWP', address: 'C.W Perry Middle School', city: 'Airdrie', province: 'AB', postal_code: 'T4B 0M8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Calgary Central Sportslplex Rise HQ - Surge Court', abbreviation: 'RSHQSC', address: '401 33 St NE #6', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Calgary Central Sportsplex Blue', abbreviation: 'CCSB', address: '#8, 401 33rd St NE', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Calgary Central Sportsplex Red', abbreviation: 'CCSG', address: '#8, 401 33rd St NE', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Calgary Central Sportsplex Rise HQ - Court 3', abbreviation: 'RSHQC3', address: '401 33 St NE #6', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Calgary Central Sportsplex YYC Active - Court 1', abbreviation: 'YYCAC1', address: '401 33 St NE #6', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Calgary Christian Elementary School', abbreviation: 'CCES', address: '2839 49 Street SW', city: 'Calgary', province: 'AB', postal_code: 'T3E 3M6', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Calgary Christian School', abbreviation: 'CCSG', address: '5029 - 26 Avenue SW', city: 'Calgary', province: 'AB', postal_code: 'T3E 0L5', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Cardel Rec-Gym', abbreviation: 'CRG', address: '333 Shawville Blvd SE', city: 'Calgary', province: 'AB', postal_code: 'T2Y 4H2', type: 'Gym', facilities: ['Basketball Court', 'Recreation Centre'] },
+    { name: 'Cedarbrae Community League Rink', abbreviation: 'CCL', address: '11024 Oakfield Dr. SW', city: 'Calgary', province: 'AB', postal_code: 'T2W 3W6', type: 'Arena', facilities: ['Arena', 'Hockey Rink'] },
+    { name: 'Cedarbrae School Court 1', abbreviation: 'CSC1', address: '10631 Oakfield Drive SW', city: 'Calgary', province: 'AB', postal_code: 'T2W 1J7', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Cedarbrae School Court 2', abbreviation: 'CSC2', address: '10631 Oakfield Drive SW', city: 'Calgary', province: 'AB', postal_code: 'T2W 1J7', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Cedarbrae School Main', abbreviation: 'CSM', address: '10631 Oakfield Drive SW', city: 'Calgary', province: 'AB', postal_code: 'T2W 1J7', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Centennial High School Court 1', abbreviation: 'CHS', address: '55 Sun Valley Boulevard SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 4G7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Centennial High School Court 2', abbreviation: 'Chsc2', address: '55 Sun Valley Boulevard SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 4G7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Centennial HS', abbreviation: 'CHSG', address: '55 Sun Valley Boulevard SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 4G7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Central Memorial HS', abbreviation: 'CMHS', address: '5111 - 21 Street SW', city: 'Calgary', province: 'AB', postal_code: 'T2T 4Z9', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Christ The King Catholic School', abbreviation: 'CTKCS', address: '333 Cranston Way SE', city: 'Calgary', province: 'AB', postal_code: 'T3M 0S2', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Clearwater Academy', abbreviation: 'CWAG', address: '(Currie Barracks) 2521 Dieppe Ave SW', city: 'Calgary', province: 'AB', postal_code: 'T3H 2A8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Crescent Heights HS Main', abbreviation: 'CHHSM', address: '1019 - 1 Street NW', city: 'Calgary', province: 'AB', postal_code: 'T2M 2V4', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Crossing Park Elem', abbreviation: 'CPE', address: '500 Martindale Blvd NE', city: 'Calgary', province: 'AB', postal_code: 'T3J 2W5', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Deer Run Community Association', abbreviation: 'DRCA', address: '2223 146th Avenue SE', city: 'Calgary', province: 'AB', postal_code: 'T2J 7C5', type: 'Gym', facilities: ['Basketball Court', 'Community Centre'] },
+    { name: 'Deer Run School', abbreviation: 'DRS', address: '2127 146 Ave SE', city: 'Calgary', province: 'AB', postal_code: 'T2J 7C5', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Don Bosco Jr High', abbreviation: 'DBJH', address: '13615 Deer Ridge Dr SE', city: 'Calgary', province: 'AB', postal_code: 'T2J 7A4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Don Hartman NESS', abbreviation: 'DHN', address: '5206 - 68 Street NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 3N8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Don Hartman NESS Court 1', abbreviation: 'HDNC1', address: '5206 - 68 Street NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 3N8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Don Hartman NESS Court 2', abbreviation: 'DHNC2', address: '5206 - 68 Street NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 3N8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Dr E P Scarlett HS', abbreviation: 'DEPSHS', address: '220 Canterbury Drive SW', city: 'Calgary', province: 'AB', postal_code: 'T2W 1H4', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Dr Gordon Higgins School Court 1', abbreviation: 'DGHSC1', address: '155 Rundlehill Drive NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 2K4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Dr Gordon Higgins School Court 2', abbreviation: 'DGHS2', address: '155 Rundlehill Drive NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 2K4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Dr. Martha Cohen School Aux Gym', abbreviation: 'DMA', address: '116 Brightondale Pk SE', city: 'Calgary', province: 'AB', postal_code: 'T2Z 0L4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Dr. Martha Cohen School Main Gym', abbreviation: 'DMM', address: '116 Brightondale Pk SE', city: 'Calgary', province: 'AB', postal_code: 'T2Z 0L4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Edgemont Centre', abbreviation: 'EDC', address: '33 Edgevalley Circle NW', city: 'Calgary', province: 'AB', postal_code: 'T3A 4G8', type: 'Gym', facilities: ['Basketball Court', 'Community Centre'] },
+    { name: 'Edgemont Centre 1', abbreviation: 'EDC1', address: '33 Edgevalley Circle NW', city: 'Calgary', province: 'AB', postal_code: 'T3A 4G8', type: 'Gym', facilities: ['Basketball Court', 'Community Centre'] },
+    { name: 'Ernest Manning Aux', abbreviation: 'EMA', address: '20 Springborough Blvd SW', city: 'Calgary', province: 'AB', postal_code: 'T3H 4N7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Ernest Manning Main', abbreviation: 'EMM', address: '20 Springborough Blvd SW', city: 'Calgary', province: 'AB', postal_code: 'T3H 4N7', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Ethel M Johnson Elementary - Gym', abbreviation: 'EMJG', address: '255 Sackville Dr SW', city: 'Calgary', province: 'AB', postal_code: 'T3C 4B2', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Father Doucet Elem School', abbreviation: 'FDES', address: '65 Shannon Drive SW', city: 'Calgary', province: 'AB', postal_code: 'T2Y 2M5', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Father James Whelihan El/ Jr High School', abbreviation: 'FJW', address: '70 Sunmills Drive SE', city: 'Calgary', province: 'AB', postal_code: 'T2X 3N4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Father Lacombe HS', abbreviation: 'FLHS', address: '3615 Radcliffe Drive SE', city: 'Calgary', province: 'AB', postal_code: 'T2A 6R4', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Father Lacombe HS Aux', abbreviation: 'FLHSA', address: '3615 Radcliffe Drive SE', city: 'Calgary', province: 'AB', postal_code: 'T2A 6R4', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Fish Creek Elementary-gym', abbreviation: 'FCEG', address: '1039 Suncastle Drive Southeast', city: 'Calgary', province: 'AB', postal_code: 'T2X 3N4', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Foothills Alliance Church', abbreviation: 'FAC', address: '333 Edgepark Blvd NW', city: 'Calgary', province: 'AB', postal_code: 'T3A 2X1', type: 'Gym', facilities: ['Basketball Court', 'Church'] },
+    { name: 'Forest Lawn HS', abbreviation: 'FLHS', address: '1304 - 44 Street SE', city: 'Calgary', province: 'AB', postal_code: 'T2A 1M5', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'George McDougall HS', abbreviation: 'GMHS', address: '412 3 Ave NE', city: 'Airdrie', province: 'AB', postal_code: 'T4B 2C3', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Glenmore Christian Academy East Gym Court 1', abbreviation: 'GCAEC1', address: '16520 24 St SW', city: 'Calgary', province: 'AB', postal_code: 'T2T 5X6', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Glenmore Christian Academy East Gym Court 2', abbreviation: 'GCAEC2', address: '16520 24 St SW', city: 'Calgary', province: 'AB', postal_code: 'T2T 5X6', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Glenmore Christian Academy West Gym Court 1', abbreviation: 'GCAWC1', address: '16520 24 St SW', city: 'Calgary', province: 'AB', postal_code: 'T2T 5X6', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Glenmore Christian Academy West Gym Court 2', abbreviation: 'GCAWC2', address: '16520 24 St SW', city: 'Calgary', province: 'AB', postal_code: 'T2T 5X6', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Haultain Memorial School Court 1', abbreviation: 'HMSC1', address: '605 Queensland Drive SE', city: 'Calgary', province: 'AB', postal_code: 'T2J 4A8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Haultain Memorial School Court 2', abbreviation: 'HMSC2', address: '605 Queensland Drive SE', city: 'Calgary', province: 'AB', postal_code: 'T2J 4A8', type: 'Gym', facilities: ['Basketball Court', 'School Gym'] },
+    { name: 'Henry Wisewood HS', abbreviation: 'HWW', address: '910 - 75 Avenue SW', city: 'Calgary', province: 'AB', postal_code: 'T2V 4V2', type: 'Gym', facilities: ['Basketball Court', 'High School'] },
+    { name: 'Mount Royal University Kenyon Court 1', abbreviation: 'MRUKC1', address: 'U235, 4825 Mt Royal Gate SW', city: 'Calgary', province: 'AB', postal_code: 'T3E 6K6', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'Mount Royal University Kenyon Court 2', abbreviation: 'MRUKC2', address: 'U235, 4825 Mt Royal Gate SW', city: 'Calgary', province: 'AB', postal_code: 'T3E 6K6', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'SAIT Campus Centre Main Court 1', abbreviation: 'SAITCCM1', address: '1301 16 Ave. NW', city: 'Calgary', province: 'AB', postal_code: 'T2M 0L4', type: 'Gym', facilities: ['Basketball Court', 'College'] },
+    { name: 'SAIT Campus Centre Main Court 2', abbreviation: 'SAITCCM2', address: '1301 16 Ave NW', city: 'Calgary', province: 'AB', postal_code: 'T2M 0L4', type: 'Gym', facilities: ['Basketball Court', 'College'] },
+    { name: 'University of Calgary Gold Gym Court 1', abbreviation: 'UCGC1', address: '2500 University Drive Northwest', city: 'Calgary', province: 'AB', postal_code: 'T2N 1N4', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'University of Calgary Gold Gym Court 2', abbreviation: 'UCGC2', address: '2500 University Drive Northwest', city: 'Calgary', province: 'AB', postal_code: 'T2N 1N4', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'University of Calgary Jack Simpson Gym Court 1', abbreviation: 'UCJSC1', address: '2500 University Drive Northwest', city: 'Calgary', province: 'AB', postal_code: 'T2N 1N4', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'University of Calgary Jack Simpson Gym Court 2', abbreviation: 'UCJSC2', address: '2500 University Drive Northwest', city: 'Calgary', province: 'AB', postal_code: 'T2N 1N4', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'University of Calgary Jack Simpson Gym Court 3', abbreviation: 'UCJSC3', address: '2500 University Drive Northwest', city: 'Calgary', province: 'AB', postal_code: 'T2N 1N4', type: 'Gym', facilities: ['Basketball Court', 'University'] },
+    { name: 'VIVO Blue Gym', abbreviation: 'VIVObluegym', address: '11950 Country Village Link NE', city: 'Calgary', province: 'AB', postal_code: 'T3K 6E3', type: 'Gym', facilities: ['Basketball Court', 'Recreation Centre'] },
+    { name: 'VIVO Yellow Gym', abbreviation: 'VIVO', address: '11950 Country Village Link NE', city: 'Calgary', province: 'AB', postal_code: 'T3K 6E3', type: 'Gym', facilities: ['Basketball Court', 'Recreation Centre'] },
+    { name: 'WinSport Canada Bob Niven Centre', abbreviation: 'BNC', address: '140 Canada Olympic Road SW', city: 'Calgary', province: 'AB', postal_code: 'T3B 5R5', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Rise Court 1', abbreviation: 'RSCT1', address: '401 33 St NE', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Rise Court 2', abbreviation: 'RSCT2', address: '401 33 St NE', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Rise Court 3', abbreviation: 'RISE3', address: '401 33 St NE', city: 'Calgary', province: 'AB', postal_code: 'T2E 6X6', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Prolific Sports House South - Court 1', abbreviation: 'PSH1', address: '8489 40 ST S.E.', city: 'Calgary', province: 'AB', postal_code: 'T2C 2P7', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Prolific Sports House South - Court 2', abbreviation: 'PSH2', address: '8489 40 ST S.E.', city: 'Calgary', province: 'AB', postal_code: 'T2C 2P7', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Prolific Sports House South - Court 3', abbreviation: 'PSH3', address: '8489 40 ST S.E.', city: 'Calgary', province: 'AB', postal_code: 'T2C 2P7', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Makin Hoops Court 1', abbreviation: 'MKHC1', address: '5-3805 34 St NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 6W9', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Makin Hoops Court 2', abbreviation: 'MKHC2', address: '5-3805 34 St NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 6W9', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] },
+    { name: 'Makin Hoops Court 3', abbreviation: 'MKHC3', address: '5-3805 34 St NE', city: 'Calgary', province: 'AB', postal_code: 'T1Y 6W9', type: 'Gym', facilities: ['Basketball Court', 'Sports Complex'] }
+  ];
+
+  // Insert all locations in batches for better performance
+  const batchSize = 50;
+  for (let i = 0; i < locations.length; i += batchSize) {
+    const batch = locations.slice(i, i + batchSize);
+    await knex('locations').insert(
+      batch.map(location => ({
+        name: location.name,
+        address: location.address,
+        city: location.city,
+        province: location.province,
+        postal_code: location.postal_code,
+        country: 'Canada',
+        facilities: JSON.stringify(location.facilities || ['Basketball Court']),
+        notes: location.abbreviation ? `Abbreviation: ${location.abbreviation}` : null,
+        is_active: true
+      }))
+    );
+  }
+
+  console.log(`✅ Seeded ${locations.length} CMBA locations`);
+};

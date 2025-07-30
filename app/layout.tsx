@@ -1,16 +1,19 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/components/auth-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 
-const inter = Inter({ subsets: ["latin"] })
-
 export const metadata: Metadata = {
-  title: "RefAssign - Referee Management System",
-  description: "Modern referee assignment and management platform",
-    generator: 'v0.dev'
+  title: "SyncedSport - Sports Management System",
+  description: "Modern sports league and referee management platform",
+  generator: 'v0.dev',
+  icons: {
+    icon: '/sportsync-icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/sportsync-icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -19,12 +22,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className} suppressHydrationWarning={true}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-inter" suppressHydrationWarning={true}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

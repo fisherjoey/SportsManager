@@ -1,6 +1,7 @@
 "use client"
 
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, BellIcon as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react"
+import { useRef } from "react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun } from "lucide-react"
 
 import {
   Sidebar,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
+import { useTheme } from "next-themes"
 
 interface AppSidebarProps {
   activeView: string
@@ -26,13 +28,64 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { user, logout } = useAuth()
-  const { state, toggleSidebar } = useSidebar()
+  const { state, toggleSidebar, setOpen } = useSidebar()
+  const { theme, setTheme } = useTheme()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Auto-hide functionality with delay
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (state === "collapsed") {
+      setOpen(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (state === "expanded") {
+      timeoutRef.current = setTimeout(() => {
+        setOpen(false)
+      }, 200) // 200ms delay before auto-collapsing
+    }
+  }
 
   const adminItems = [
     {
       title: "Dashboard",
       url: "dashboard",
       icon: Home,
+    },
+    {
+      title: "Game Management",
+      url: "games",
+      icon: GamepadIcon,
+    },
+    {
+      title: "Assigning",  
+      url: "assigning",
+      icon: ClipboardList,
+    },
+    {
+      title: "AI Assignments",
+      url: "ai-assignments", 
+      icon: Bot,
+    },
+    {
+      title: "Referees",
+      url: "referees",
+      icon: Users,
+    },
+    {
+      title: "Calendar",
+      url: "calendar",
+      icon: Calendar,
+    },
+    {
+      title: "Teams & Locations",
+      url: "locations",
+      icon: MapPin,
     },
     {
       title: "League Management",
@@ -45,19 +98,9 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: Zap,
     },
     {
-      title: "Game Management",
-      url: "games",
-      icon: GamepadIcon,
-    },
-    {
-      title: "Referees",
-      url: "referees",
-      icon: Users,
-    },
-    {
-      title: "Calendar",
-      url: "calendar",
-      icon: Calendar,
+      title: "Posts",
+      url: "posts",
+      icon: FileText,
     },
   ]
 
@@ -92,45 +135,45 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const items = user?.role === "admin" ? adminItems : refereeItems
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-4">
-          <div className="p-2 bg-blue-600 rounded-lg">
-            <Whistle className="h-6 w-6 text-white" />
+    <Sidebar 
+      collapsible="icon" 
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex items-center gap-3 px-6 py-6 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <img 
+              src="/sportsync-icon.png" 
+              alt="SyncedSport Icon" 
+              className="h-7 w-7 object-contain transition-all duration-150 group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6"
+            />
+            <div className="group-data-[collapsible=icon]:hidden overflow-hidden transition-all duration-150">
+              <h2 className="text-lg font-bold text-foreground">SyncedSport</h2>
+            </div>
           </div>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="text-lg font-bold">RefAssign</h2>
-            <p className="text-sm text-muted-foreground capitalize">{user?.role}</p>
+        </div>
+        <div className="px-6 pb-4 group-data-[collapsible=icon]:hidden">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span className="capitalize">{user?.email}</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="ml-auto h-7 w-7 group-data-[collapsible=icon]:hidden"
-          >
-            {state === "expanded" ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-            <span className="sr-only">Toggle Sidebar</span>
-          </Button>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-0 py-0">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-0">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     onClick={() => setActiveView(item.url)} 
                     isActive={activeView === item.url}
                     tooltip={item.title}
+                    className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
                   >
-                    <item.icon />
-                    <span>{item.title}</span>
+                    <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
+                    <span className="truncate text-left">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -151,24 +194,51 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                   <span>Profile</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {user?.role === "admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => setActiveView("organization-settings")} 
+                    isActive={activeView === "organization-settings"}
+                    tooltip="Organization Settings"
+                  >
+                    <Settings />
+                    <span>Organization Settings</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="p-2">
-          <div className="mb-2 px-2 group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-medium">{user?.name}</p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="p-3">
+          <div className="space-y-1 group-data-[collapsible=icon]:hidden">
+            <SidebarMenuButton 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-9 px-3 text-[15px] font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors duration-100"
+              tooltip={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === "dark" ? <Sun className="h-[18px] w-[18px] mr-3 text-muted-foreground" /> : <Moon className="h-[18px] w-[18px] mr-3 text-muted-foreground" />}
+              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            </SidebarMenuButton>
+            <SidebarMenuButton 
+              onClick={logout} 
+              className="h-9 px-3 text-[15px] font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors duration-100"
+              tooltip="Sign Out"
+            >
+              <LogOut className="h-[18px] w-[18px] mr-3 text-muted-foreground" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
           </div>
-          <SidebarMenuButton 
-            onClick={logout} 
-            className="w-full justify-start bg-transparent border border-sidebar-border hover:bg-sidebar-accent"
-            tooltip="Sign Out"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </SidebarMenuButton>
+          <div className="mt-3 px-3 py-2 group-data-[collapsible=icon]:hidden">
+            <button
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors duration-100"
+              onClick={toggleSidebar}
+            >
+              <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+              <span>Collapse sidebar</span>
+            </button>
+          </div>
         </div>
       </SidebarFooter>
       <SidebarRail />

@@ -43,8 +43,13 @@ import {
   ChevronRight,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Shield,
+  Sparkles,
+  BarChart3
 } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { useApi, League, Team } from "@/lib/api"
 
 interface BulkLeagueForm {
@@ -147,6 +152,11 @@ export function LeagueCreation() {
       setFilterOptions(response.data)
     } catch (error) {
       console.error('Error fetching filter options:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load filter options. Some features may not work properly.",
+      })
     }
   }
 
@@ -335,27 +345,58 @@ export function LeagueCreation() {
     }))
   }
 
+  // Stats for leagues overview
+  const stats = [
+    {
+      title: "Active Leagues",
+      value: leagues.length,
+      icon: Shield,
+      color: "text-blue-600",
+      description: "Currently active leagues",
+    },
+    {
+      title: "Total Teams",
+      value: leagues.reduce((sum, league) => sum + (league.team_count || 0), 0),
+      icon: Users,
+      color: "text-green-600", 
+      description: "Teams across all leagues",
+    },
+    {
+      title: "Total Games",
+      value: leagues.reduce((sum, league) => sum + (league.game_count || 0), 0),
+      icon: Calendar,
+      color: "text-purple-600",
+      description: "Games scheduled or played",
+    },
+    {
+      title: "Organizations",
+      value: new Set(leagues.map(l => l.organization)).size,
+      icon: BarChart3,
+      color: "text-orange-600",
+      description: "Different organizations",
+    }
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">League & Team Management</h1>
-          <p className="text-muted-foreground">
-            Create leagues, manage teams, and set up tournaments
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Dialog open={showBulkLeagueDialog} onOpenChange={setShowBulkLeagueDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Leagues
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+    <PageLayout>
+      <PageHeader
+        icon={Shield}
+        title="League Management"
+        description="Create leagues, organize teams, and manage competitive structures"
+      >
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Bulk Operations
+        </Badge>
+        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => setShowBulkLeagueDialog(true)}>
+          <Plus className="h-5 w-5 mr-2" />
+          Create Leagues
+        </Button>
+      </PageHeader>
+
+      <Dialog open={showBulkLeagueDialog} onOpenChange={setShowBulkLeagueDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
                 <DialogTitle>Bulk Create Leagues</DialogTitle>
                 <DialogDescription>
                   Create multiple leagues at once by selecting combinations of age groups, genders, and divisions
@@ -536,9 +577,23 @@ export function LeagueCreation() {
                   {loading ? 'Creating...' : 'Create Leagues'}
                 </Button>
               </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">{stat.description}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Leagues List */}
@@ -546,9 +601,12 @@ export function LeagueCreation() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Existing Leagues</CardTitle>
+              <CardTitle className="flex items-center">
+                <Trophy className="h-5 w-5 mr-2 text-yellow-600" />
+                Active Leagues
+              </CardTitle>
               <CardDescription>
-                Manage your leagues and teams
+                Manage existing leagues and their teams across all organizations
               </CardDescription>
             </div>
             <Badge variant="secondary">{leagues.length} leagues</Badge>
@@ -1156,6 +1214,6 @@ export function LeagueCreation() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   )
 }

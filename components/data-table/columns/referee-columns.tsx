@@ -60,9 +60,10 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       return (
         <div>
           <div className="font-medium text-sm truncate">{referee.name}</div>
-          {referee.certificationLevel && (
-            <div className="text-xs text-muted-foreground truncate">
-              {referee.certificationLevel}
+          {referee.isWhiteWhistle && (
+            <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
+              <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+              White Whistle
             </div>
           )}
         </div>
@@ -100,18 +101,24 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={false}
         filterable={true}
         filterOptions={[
-          { label: "Recreational", value: "Recreational" },
-          { label: "Competitive", value: "Competitive" },
-          { label: "Elite", value: "Elite" },
+          { label: "Learning", value: "Learning" },
+          { label: "Learning+", value: "Learning+" },
+          { label: "Growing", value: "Growing" },
+          { label: "Growing+", value: "Growing+" },
+          { label: "Teaching", value: "Teaching" },
+          { label: "Expert", value: "Expert" },
         ]}
       />
     ),
     cell: ({ row }) => {
       const level = row.getValue("level") as string
       const levelColors = {
-        "Recreational": "bg-green-100 text-green-800 border-green-200",
-        "Competitive": "bg-yellow-100 text-yellow-800 border-yellow-200", 
-        "Elite": "bg-red-100 text-red-800 border-red-200",
+        "Learning": "bg-green-100 text-green-800 border-green-200",
+        "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
+        "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
+        "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
+        "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
+        "Expert": "bg-red-100 text-red-800 border-red-200",
       }
       
       return (
@@ -167,33 +174,44 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     },
   },
   {
-    accessorKey: "certifications",
-    id: "certifications",
+    accessorKey: "roles",
+    id: "roles",
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
-        title="Certifications" 
+        title="Roles" 
         searchable={false}
-        filterable={false}
+        filterable={true}
+        filterOptions={[
+          { label: "Referee", value: "Referee" },
+          { label: "Evaluator", value: "Evaluator" },
+          { label: "Mentor", value: "Mentor" },
+          { label: "Trainer", value: "Trainer" },
+          { label: "Referee Coach", value: "Referee Coach" },
+        ]}
       />
     ),
     cell: ({ row }) => {
-      const certifications = row.getValue("certifications") as string[]
+      const roles = row.getValue("roles") as string[] || ["Referee"]
       
       return (
         <div className="space-y-1">
-          {certifications.slice(0, 2).map((cert, index) => (
+          {roles.slice(0, 2).map((role, index) => (
             <div key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md truncate">
-              {cert}
+              {role}
             </div>
           ))}
-          {certifications.length > 2 && (
+          {roles.length > 2 && (
             <div className="text-xs text-muted-foreground">
-              +{certifications.length - 2} more
+              +{roles.length - 2} more
             </div>
           )}
         </div>
       )
+    },
+    filterFn: (row, id, value) => {
+      const roles = row.getValue(id) as string[] || []
+      return value.some((v: string) => roles.includes(v))
     },
   },
   {
@@ -217,7 +235,7 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       return (
         <Badge 
           variant={isAvailable ? "default" : "secondary"}
-          className={`text-xs ${isAvailable ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-100" : "bg-gray-100 text-gray-600 border-gray-200"}`}
+          className={`text-xs ${isAvailable ? "bg-success/10 text-success border-success/20 hover:bg-success/20" : "bg-muted text-muted-foreground border-border"}`}
         >
           {isAvailable ? "Available" : "Unavailable"}
         </Badge>

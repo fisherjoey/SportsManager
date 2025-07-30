@@ -1,7 +1,6 @@
 exports.seed = async function(knex) {
   // Deletes ALL existing entries
   await knex('game_assignments').del();
-  await knex('referees').del();
   await knex('users').del();
 
   const bcrypt = require('bcryptjs');
@@ -80,31 +79,47 @@ exports.seed = async function(knex) {
     refereeUsers.push({ ...user, name: referee.name, organization: referee.organization });
   }
 
-  // Basketball referee details data for CMBA
-  const levels = ['Recreational', 'Competitive', 'Elite'];
-  const calgaryLocations = [
-    'Northwest Calgary', 'Northeast Calgary', 'Southeast Calgary', 'Southwest Calgary',
-    'Downtown Calgary', 'Foothills', 'Bow Valley', 'Fish Creek', 'Olds'
-  ];
-  const basketballCertifications = [
-    ['NCCP Level 1 Basketball', 'SafeSport Certified'],
-    ['NCCP Level 2 Basketball', 'Basketball Alberta Certified'],
-    ['NCCP Level 1 Basketball', 'Youth Basketball Specialist'],
-    ['NCCP Level 3 Basketball', 'Basketball Canada Certified', 'Tournament Official'],
-    ['NCCP Level 1 Basketball', 'New Official Training'],
-    ['NCCP Level 2 Basketball', 'Basketball Alberta Certified', 'SafeSport Certified'],
-    ['NCCP Level 3 Basketball', 'Professional League Certified'],
-    ['NCCP Level 2 Basketball', 'Tournament Official', 'Basketball Alberta Certified'],
-    ['NCCP Level 1 Basketball', 'Youth Development Specialist'],
-    ['NCCP Level 2 Basketball', 'SafeSport Certified', 'Basketball Canada Certified'],
-    ['NCCP Level 3 Basketball', 'Elite Tournament Official'],
-    ['NCCP Level 1 Basketball', 'Community Basketball Certified']
+  // Get the referee level IDs from the database
+  const levels = await knex('referee_levels').select('id', 'name');
+  const rookieLevel = levels.find(l => l.name === 'Rookie');
+  const juniorLevel = levels.find(l => l.name === 'Junior');
+  const seniorLevel = levels.find(l => l.name === 'Senior');
+
+  if (!rookieLevel || !juniorLevel || !seniorLevel) {
+    throw new Error('Required referee levels (Rookie, Junior, Senior) not found in database');
+  }
+
+  const refereeRoles = [
+    ['Referee'],
+    ['Referee'],
+    ['Referee'],
+    ['Referee', 'Mentor'],
+    ['Referee', 'Evaluator'],
+    ['Referee', 'Mentor', 'Evaluator']
   ];
 
-  // Generate referee profiles based on CMBA structure
-  const refereeProfiles = refereeUsers.map((user, index) => {
+  // Update referee users with profile data
+  for (let index = 0; index < refereeUsers.length; index++) {
+    const user = refereeUsers[index];
     const isAvailable = Math.random() > 0.2; // 80% available
-    const level = levels[Math.floor(Math.random() * levels.length)];
+    
+    // Assign level based on index to ensure distribution
+    let selectedLevel, wageAmount, isWhiteWhistle = false;
+    if (index % 3 === 0) {
+      selectedLevel = rookieLevel;
+      wageAmount = 30.00;
+      isWhiteWhistle = Math.random() > 0.4; // 60% of rookies have white whistle
+    } else if (index % 3 === 1) {
+      selectedLevel = juniorLevel;
+      wageAmount = 45.00;
+      isWhiteWhistle = Math.random() > 0.7; // 30% of juniors have white whistle
+    } else {
+      selectedLevel = seniorLevel;
+      wageAmount = 75.00;
+      isWhiteWhistle = false; // Senior referees don't have white whistle
+    }
+    
+    const selectedRoles = refereeRoles[Math.floor(Math.random() * refereeRoles.length)];
     
     // Map organization to appropriate Calgary location
     let location;
@@ -140,39 +155,35 @@ exports.seed = async function(knex) {
         location = 'Olds';
         break;
       default:
-        location = calgaryLocations[Math.floor(Math.random() * calgaryLocations.length)];
+        location = 'Calgary Area';
     }
     
     const maxDistance = [15, 20, 25, 30, 35, 40][Math.floor(Math.random() * 6)];
-    const phone = `(403) ${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const phone = `+1 (403) ${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     
     // Calgary postal codes start with T (T1A-T3R)
     const postalCodeAreas = ['T1A', 'T1B', 'T1C', 'T1E', 'T1G', 'T1H', 'T1J', 'T1K', 'T1L', 'T1M', 'T1N', 'T1P', 'T1R', 'T1S', 'T1V', 'T1W', 'T1X', 'T1Y', 'T2A', 'T2B', 'T2C', 'T2E', 'T2G', 'T2H', 'T2J', 'T2K', 'T2L', 'T2M', 'T2N', 'T2P', 'T2R', 'T2S', 'T2T', 'T2V', 'T2W', 'T2X', 'T2Y', 'T2Z', 'T3A', 'T3B', 'T3C', 'T3E', 'T3G', 'T3H', 'T3J', 'T3K', 'T3L', 'T3M', 'T3N', 'T3P', 'T3R'];
     const postalCode = `${postalCodeAreas[Math.floor(Math.random() * postalCodeAreas.length)]} ${Math.floor(Math.random() * 10)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 10)}`;
     
-    const refCertifications = basketballCertifications[Math.floor(Math.random() * basketballCertifications.length)];
-    
-    // Basketball-specific positions
-    const basketballPositions = ['Lead Official', 'Trail Official', 'Center Official'];
-    const yearsExperience = Math.floor(Math.random() * 15) + 1;
+    const yearsExperience = selectedLevel.name === 'Rookie' ? Math.floor(Math.random() * 2) + 1 : 
+                           selectedLevel.name === 'Junior' ? Math.floor(Math.random() * 3) + 2 : 
+                           Math.floor(Math.random() * 10) + 5;
 
-    return {
-      user_id: user.id,
+    // Update the user record with referee data
+    await knex('users').where('id', user.id).update({
       name: user.name,
-      email: user.email,
       phone: phone,
-      level: level,
-      location: location,
       postal_code: postalCode,
       max_distance: maxDistance,
       is_available: isAvailable,
-      certifications: JSON.stringify(refCertifications),
-      preferred_positions: JSON.stringify([basketballPositions[Math.floor(Math.random() * basketballPositions.length)], basketballPositions[Math.floor(Math.random() * basketballPositions.length)]]),
-      wage_per_game: level === 'Elite' ? 85 : level === 'Competitive' ? 65 : 45,
-      notes: `${yearsExperience} years officiating basketball in ${user.organization}. Specializes in ${level.toLowerCase()} level games.`
-    };
-  });
+      wage_per_game: wageAmount,
+      referee_level_id: selectedLevel.id,
+      roles: selectedRoles,
+      is_white_whistle: isWhiteWhistle,
+      years_experience: yearsExperience,
+      notes: `${yearsExperience} years officiating basketball in ${user.organization}. Specializes in ${selectedLevel.name.toLowerCase()} level games.`
+    });
+  }
 
-  // Insert referee profiles
-  await knex('referees').insert(refereeProfiles);
+  console.log(`Updated ${refereeUsers.length} CMBA referee profiles with new level system`);
 };

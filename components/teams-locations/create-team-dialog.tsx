@@ -3,13 +3,13 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CustomFormDialog } from "@/components/ui/form-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { calgaryVenues } from "@/lib/mock-data"
+import { ContactFieldGroup } from "@/components/ui/contact-field-group"
+import { calgaryBasketballVenues } from "@/lib/mock-data"
 
 interface CreateTeamDialogProps {
   open: boolean
@@ -34,15 +34,16 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
     isActive: true,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onCreateTeam({
+  const handleSubmit = async (data: any) => {
+    const teamData = {
       ...formData,
+      ...data,
       colors: {
         primary: formData.primaryColor,
         secondary: formData.secondaryColor,
       },
-    })
+    }
+    await onCreateTeam(teamData)
     setFormData({
       name: "",
       division: "",
@@ -61,13 +62,22 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Team</DialogTitle>
-          <DialogDescription>Create a new team in the system</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <CustomFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add New Team"
+      description="Create a new team in the system"
+      onSubmit={handleSubmit}
+      submitText="Create Team"
+      maxWidth="sm:max-w-[600px] max-h-[80vh] overflow-y-auto"
+    >
+      {({ loading, handleSubmit: submitForm }) => (
+        <form id="dialog-form" onSubmit={(e) => {
+          e.preventDefault()
+          const formData = new FormData(e.target as HTMLFormElement)
+          const data = Object.fromEntries(formData.entries())
+          submitForm(data)
+        }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Team Name</Label>
@@ -120,7 +130,7 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
                   <SelectValue placeholder="Select home venue" />
                 </SelectTrigger>
                 <SelectContent>
-                  {calgaryVenues.map((venue) => (
+                  {calgaryBasketballVenues.map((venue) => (
                     <SelectItem key={venue} value={venue}>
                       {venue}
                     </SelectItem>
@@ -130,39 +140,19 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contactName">Contact Name</Label>
-            <Input
-              id="contactName"
-              value={formData.contactName}
-              onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                value={formData.contactEmail}
-                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
-              <Input
-                id="contactPhone"
-                type="tel"
-                placeholder="(403) 555-0123"
-                value={formData.contactPhone}
-                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+          <ContactFieldGroup
+            nameValue={formData.contactName}
+            emailValue={formData.contactEmail}
+            phoneValue={formData.contactPhone}
+            onNameChange={(value) => setFormData({ ...formData, contactName: value })}
+            onEmailChange={(value) => setFormData({ ...formData, contactEmail: value })}
+            onPhoneChange={(value) => setFormData({ ...formData, contactPhone: value })}
+            nameRequired
+            emailRequired
+            phoneRequired
+            layout="grid"
+            disabled={loading}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -238,14 +228,8 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Team</Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      )}
+    </CustomFormDialog>
   )
 }

@@ -1,22 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
 import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload } from "lucide-react"
 import { mockGames, type Game } from "@/lib/mock-data"
 import { useToast } from "@/components/ui/use-toast"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatsGrid } from "@/components/ui/stats-grid"
 
-export function GamesManagementPage() {
+interface GamesManagementPageProps {
+  initialDateFilter?: string
+}
+
+export function GamesManagementPage({ initialDateFilter }: GamesManagementPageProps = {}) {
   const [games, setGames] = useState<Game[]>(mockGames)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedLevel, setSelectedLevel] = useState<string>("all")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || "all")
   const { toast } = useToast()
+
+  // Update date filter when initialDateFilter prop changes
+  useEffect(() => {
+    if (initialDateFilter) {
+      setSelectedDate(initialDateFilter)
+    }
+  }, [initialDateFilter])
 
   const filteredGames = games.filter((game) => {
     const homeTeamName = typeof game.homeTeam === 'object' 
@@ -32,8 +47,9 @@ export function GamesManagementPage() {
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesLevel = selectedLevel === "all" || game.level === selectedLevel
     const matchesStatus = selectedStatus === "all" || game.status === selectedStatus
+    const matchesDate = selectedDate === "all" || game.date === selectedDate
 
-    return matchesSearch && matchesLevel && matchesStatus
+    return matchesSearch && matchesLevel && matchesStatus && matchesDate
   })
 
   const handleDeleteGame = (gameId: string) => {
@@ -46,73 +62,213 @@ export function GamesManagementPage() {
 
   const stats = [
     {
-      title: "Total Games",
-      value: games.length,
+      title: selectedDate !== "all" ? "Games This Day" : "Total Games",
+      value: filteredGames.length,
       icon: Calendar,
       color: "text-blue-600",
     },
     {
       title: "Unassigned",
-      value: games.filter((g) => g.status === "unassigned").length,
+      value: filteredGames.filter((g) => g.status === "unassigned").length,
       icon: Clock,
       color: "text-red-600",
     },
     {
       title: "Assigned",
-      value: games.filter((g) => g.status === "assigned").length,
+      value: filteredGames.filter((g) => g.status === "assigned").length,
       icon: Users,
       color: "text-green-600",
     },
     {
-      title: "This Week",
-      value: games.filter((g) => {
-        const gameDate = new Date(g.date)
-        const now = new Date()
-        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-        return gameDate >= now && gameDate <= weekFromNow
-      }).length,
+      title: selectedDate !== "all" ? "Up for Grabs" : "This Week",
+      value: selectedDate !== "all" 
+        ? filteredGames.filter((g) => g.status === "up-for-grabs").length
+        : games.filter((g) => {
+            const gameDate = new Date(g.date)
+            const now = new Date()
+            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+            return gameDate >= now && gameDate <= weekFromNow
+          }).length,
       icon: Calendar,
-      color: "text-purple-600",
+      color: selectedDate !== "all" ? "text-orange-600" : "text-purple-600",
     },
   ]
 
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+  // Column definitions for the games table
+  const columns: ColumnDef<Game>[] = [
+    {
+      id: 'game',
+      title: 'Game',
+      filterType: 'search',
+      accessor: (game) => {
+        const homeTeamName = typeof game.homeTeam === 'object' 
+          ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+          : game.homeTeam
+        const awayTeamName = typeof game.awayTeam === 'object' 
+          ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+          : game.awayTeam
+        
+        return (
+          <div>
+            <p className="font-medium">
+              {homeTeamName} vs {awayTeamName}
+            </p>
+            <p className="text-sm text-muted-foreground">{game.division}</p>
+          </div>
+        )
+      }
+    },
+    {
+      id: 'datetime',
+      title: 'Date & Time',
+      filterType: 'search',
+      accessor: (game) => (
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Game Management</h2>
-          <p className="text-muted-foreground">Manage all games across divisions and levels</p>
+          <p className="text-sm">{new Date(game.date).toLocaleDateString()}</p>
+          <p className="text-sm text-muted-foreground">
+            {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
+          </p>
         </div>
+      )
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      filterType: 'search',
+      accessor: (game) => (
+        <div className="flex items-center">
+          <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+          <span className="text-sm">{game.location}</span>
+        </div>
+      )
+    },
+    {
+      id: 'level',
+      title: 'Level',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Levels' },
+        { value: 'Recreational', label: 'Recreational' },
+        { value: 'Competitive', label: 'Competitive' },
+        { value: 'Elite', label: 'Elite' }
+      ],
+      accessor: (game) => (
+        <Badge variant={game.level === 'Elite' ? 'default' : 'secondary'}>
+          {game.level}
+        </Badge>
+      )
+    },
+    {
+      id: 'division',
+      title: 'Division',
+      filterType: 'search',
+      accessor: 'division'
+    },
+    {
+      id: 'referees',
+      title: 'Referees',
+      filterType: 'search',
+      accessor: (game) => (
+        <div>
+          <p className="text-sm font-medium">
+            {game.assignedReferees?.length || 0}/{game.refsNeeded}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {game.assignedReferees?.join(', ') || 'None assigned'}
+          </p>
+        </div>
+      )
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Status' },
+        { value: 'unassigned', label: 'Unassigned' },
+        { value: 'assigned', label: 'Assigned' },
+        { value: 'up-for-grabs', label: 'Up for Grabs' }
+      ],
+      accessor: (game) => (
+        <Badge
+          variant={
+            game.status === 'assigned' ? 'default' :
+            game.status === 'unassigned' ? 'destructive' :
+            'secondary'
+          }
+        >
+          {game.status === 'up-for-grabs' ? 'Up for Grabs' : 
+           game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+        </Badge>
+      )
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (game) => (
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
+          <Button variant="ghost" size="sm">
+            <Eye className="h-4 w-4" />
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <Button variant="ghost" size="sm">
+            <Edit className="h-4 w-4" />
           </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Game
+          <Button variant="ghost" size="sm" onClick={() => handleDeleteGame(game.id)}>
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      )
+    }
+  ]
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+  return (
+    <PageLayout>
+      <PageHeader
+        icon={Calendar}
+        title="Game Management"
+        description={
+          selectedDate !== "all" 
+            ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}`
+            : "Manage all games across divisions and levels"
+        }
+      >
+        {selectedDate !== "all" && (
+          <>
+            <Badge variant="outline" className="text-blue-600 border-blue-600">
+              <Calendar className="h-3 w-3 mr-1" />
+              Filtered by Date
+            </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedDate("all")}
+              className="text-gray-600"
+            >
+              Clear Date Filter
+            </Button>
+          </>
+        )}
+        <Button variant="outline">
+          <Upload className="h-4 w-4 mr-2" />
+          Import CSV
+        </Button>
+        <Button variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Game
+        </Button>
+      </PageHeader>
+
+      <StatsGrid stats={stats} />
 
       {/* Filters */}
       <Card>
@@ -153,110 +309,31 @@ export function GamesManagementPage() {
                 <SelectItem value="up-for-grabs">Up for Grabs</SelectItem>
               </SelectContent>
             </Select>
+            <div className="relative">
+              <Input
+                type="date"
+                placeholder="Filter by date"
+                value={selectedDate === "all" ? "" : selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value || "all")}
+                className={`w-[150px] ${
+                  selectedDate !== "all" ? "ring-2 ring-blue-500 border-blue-500" : ""
+                }`}
+              />
+              {selectedDate !== "all" && (
+                <Badge 
+                  variant="secondary" 
+                  className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
+                >
+                  Active
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Games Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Game</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Referees</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredGames.map((game) => {
-                  const homeTeamName = typeof game.homeTeam === 'object' 
-                    ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
-                    : game.homeTeam
-                  const awayTeamName = typeof game.awayTeam === 'object' 
-                    ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
-                    : game.awayTeam
-
-                  return (
-                    <TableRow key={game.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {homeTeamName} vs {awayTeamName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{game.division}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm">{new Date(game.date).toLocaleDateString()}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {game.time || game.startTime} {game.endTime ? `- ${game.endTime}` : ''}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-                          {game.location}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{game.level}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">{game.division}</p>
-                          <p className="text-xs text-muted-foreground">{game.season}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Users className="h-4 w-4 mr-1 text-muted-foreground" />
-                          {(game.assignedReferees || []).length}/{game.refsNeeded}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            game.status === "assigned"
-                              ? "default"
-                              : game.status === "up-for-grabs"
-                                ? "outline"
-                                : "destructive"
-                          }
-                        >
-                          {game.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteGame(game.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

@@ -14,8 +14,7 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/backend/'
   ],
-  moduleNameMapping: {
-    // Handle module aliases (same as your tsconfig.json paths)
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
   collectCoverageFrom: [

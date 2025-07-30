@@ -5,6 +5,11 @@ const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
+const { getOrganizationSettings } = require('../utils/organization-settings');
+const { validateQuery, validateIdParam } = require('../middleware/sanitization');
+const { asyncHandler } = require('../middleware/errorHandling');
+const { assignmentLimiter } = require('../middleware/rateLimiting');
+const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 
 const assignmentSchema = Joi.object({
   game_id: Joi.string().required(),
@@ -14,7 +19,7 @@ const assignmentSchema = Joi.object({
 });
 
 // GET /api/assignments - Get all assignments with optional filters
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, validateQuery('assignmentFilter'), asyncHandler(async (req, res) => {
   try {
     const { game_id, referee_id, status, page = 1, limit = 50 } = req.query;
     
@@ -22,10 +27,12 @@ router.get('/', async (req, res) => {
       .join('games', 'game_assignments.game_id', 'games.id')
       .join('users', 'game_assignments.user_id', 'users.id')
       .join('positions', 'game_assignments.position_id', 'positions.id')
+      .join('teams as home_team', 'games.home_team_id', 'home_team.id')
+      .join('teams as away_team', 'games.away_team_id', 'away_team.id')
       .select(
         'game_assignments.*',
-        'games.home_team_name',
-        'games.away_team_name',
+        'home_team.name as home_team_name',
+        'away_team.name as away_team_name',
         'games.game_date',
         'games.game_time',
         'games.location',
@@ -43,7 +50,7 @@ router.get('/', async (req, res) => {
     }
     
     if (referee_id) {
-      query = query.where('game_assignments.referee_id', referee_id);
+      query = query.where('game_assignments.user_id', referee_id);
     }
     
     if (status) {
@@ -55,11 +62,38 @@ router.get('/', async (req, res) => {
 
     const assignments = await query;
     
+    // Get organization settings for wage calculations
+    const orgSettings = await getOrganizationSettings();
+    
+    // Get referee counts per game for flat rate calculation
+    const gameRefereeCounts = {};
+    if (orgSettings.payment_model === 'FLAT_RATE') {
+      const gameIds = [...new Set(assignments.map(a => a.game_id))];
+      const refereeCounts = await db('game_assignments')
+        .whereIn('game_id', gameIds)
+        .whereIn('status', ['pending', 'accepted'])
+        .groupBy('game_id')
+        .select('game_id')
+        .count('* as count');
+      
+      refereeCounts.forEach(rc => {
+        gameRefereeCounts[rc.game_id] = parseInt(rc.count);
+      });
+    }
+    
     // Transform assignments to include game object and wage calculations
     const transformedAssignments = assignments.map(assignment => {
       const baseWage = assignment.calculated_wage || assignment.pay_rate || 0;
       const multiplier = assignment.wage_multiplier || 1.0;
-      const finalWage = assignment.calculated_wage || calculateFinalWage(baseWage, multiplier);
+      const assignedRefereesCount = gameRefereeCounts[assignment.game_id] || 1;
+      
+      const finalWage = assignment.calculated_wage || calculateFinalWage(
+        baseWage, 
+        multiplier, 
+        orgSettings.payment_model, 
+        orgSettings.default_game_rate, 
+        assignedRefereesCount
+      );
       
       return {
         id: assignment.id,
@@ -102,18 +136,22 @@ router.get('/', async (req, res) => {
     console.error('Error fetching assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });
   }
-});
+}));
 
 // GET /api/assignments/:id - Get specific assignment
 router.get('/:id', async (req, res) => {
   try {
     const assignment = await db('game_assignments')
       .join('games', 'game_assignments.game_id', 'games.id')
-      .join('referees', 'game_assignments.referee_id', 'referees.id')
+      .join('users', 'game_assignments.user_id', 'users.id')
       .join('positions', 'game_assignments.position_id', 'positions.id')
+      .join('teams as home_team', 'games.home_team_id', 'home_team.id')
+      .join('teams as away_team', 'games.away_team_id', 'away_team.id')
       .select(
         'game_assignments.*',
         'games.*',
+        'home_team.name as home_team_name',
+        'away_team.name as away_team_name',
         'users.name as referee_name',
         'users.email as referee_email',
         'positions.name as position_name'
@@ -229,9 +267,8 @@ router.post('/', async (req, res) => {
     }
 
     // Check availability windows for the game time
-    const availabilityWindows = await db('referee_availability')
-      .where('referee_id', value.user_id)
-      .where('date', game.game_date);
+    // DISABLED: referee_availability table no longer exists
+    const availabilityWindows = []; // await db('referee_availability').where('referee_id', value.user_id).where('date', game.game_date);
 
     // Calculate game end time (assuming 2-hour duration if not specified)
     const gameStartTime = game.game_time;
@@ -278,9 +315,35 @@ router.post('/', async (req, res) => {
       availabilityWarning = 'Note: Referee has not set any availability windows for this date';
     }
 
-    // Calculate final wage using referee's base wage and game multiplier
-    const finalWage = calculateFinalWage(referee.wage_per_game, game.wage_multiplier);
-    const wageBreakdown = getWageBreakdown(referee.wage_per_game, game.wage_multiplier, game.wage_multiplier_reason);
+    // Get organization settings and existing assignments count for wage calculation
+    const orgSettings = await getOrganizationSettings();
+    
+    // Get current referee count for this game (including this new assignment)
+    const existingAssignments = await db('game_assignments')
+      .where('game_id', value.game_id)
+      .whereIn('status', ['pending', 'accepted'])
+      .count('* as count')
+      .first();
+    
+    const assignedRefereesCount = parseInt(existingAssignments.count) + 1; // +1 for this new assignment
+    
+    // Calculate final wage using organization payment model
+    const finalWage = calculateFinalWage(
+      referee.wage_per_game, 
+      game.wage_multiplier, 
+      orgSettings.payment_model, 
+      orgSettings.default_game_rate, 
+      assignedRefereesCount
+    );
+    
+    const wageBreakdown = getWageBreakdown(
+      referee.wage_per_game, 
+      game.wage_multiplier, 
+      game.wage_multiplier_reason, 
+      orgSettings.payment_model, 
+      orgSettings.default_game_rate, 
+      assignedRefereesCount
+    );
     
     // Create assignment with pending status and calculated wage
     const assignmentData = {
@@ -332,6 +395,289 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error creating assignment:', error);
     res.status(500).json({ error: 'Failed to create assignment' });
+  }
+});
+
+// POST /api/assignments/bulk-update - Bulk update assignment statuses
+router.post('/bulk-update', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array is required and cannot be empty' });
+    }
+
+    if (updates.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 assignments can be updated at once' });
+    }
+
+    // Validation schema for bulk updates
+    const bulkUpdateSchema = Joi.object({
+      assignment_id: Joi.string().uuid().required(),
+      status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required(),
+      calculated_wage: Joi.number().min(0).optional()
+    });
+
+    // Validate each update
+    const validationErrors = [];
+    const validatedUpdates = [];
+
+    for (let i = 0; i < updates.length; i++) {
+      const { error, value } = bulkUpdateSchema.validate(updates[i]);
+      if (error) {
+        validationErrors.push({
+          index: i,
+          update: updates[i],
+          error: error.details[0].message
+        });
+      } else {
+        validatedUpdates.push({ ...value, index: i });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed for some updates',
+        validationErrors,
+        totalErrors: validationErrors.length,
+        totalUpdates: updates.length
+      });
+    }
+
+    const trx = await db.transaction();
+    
+    try {
+      const updatedAssignments = [];
+      const updateErrors = [];
+
+      for (const updateData of validatedUpdates) {
+        try {
+          // Check if assignment exists
+          const existingAssignment = await trx('game_assignments')
+            .where('id', updateData.assignment_id)
+            .first();
+
+          if (!existingAssignment) {
+            updateErrors.push({
+              index: updateData.index,
+              assignmentId: updateData.assignment_id,
+              error: 'Assignment not found'
+            });
+            continue;
+          }
+
+          // Prepare update data
+          const updateFields = {
+            status: updateData.status,
+            updated_at: new Date()
+          };
+
+          if (updateData.calculated_wage !== undefined) {
+            updateFields.calculated_wage = updateData.calculated_wage;
+          }
+
+          // Update assignment
+          const [updatedAssignment] = await trx('game_assignments')
+            .where('id', updateData.assignment_id)
+            .update(updateFields)
+            .returning('*');
+
+          // Update game status based on new assignment statuses
+          const game = await trx('games').where('id', existingAssignment.game_id).first();
+          const activeAssignments = await trx('game_assignments')
+            .where('game_id', existingAssignment.game_id)
+            .whereIn('status', ['pending', 'accepted'])
+            .count('* as count')
+            .first();
+
+          let gameStatus = 'unassigned';
+          if (parseInt(activeAssignments.count) > 0 && parseInt(activeAssignments.count) < game.refs_needed) {
+            gameStatus = 'assigned'; // Partially assigned
+          } else if (parseInt(activeAssignments.count) >= game.refs_needed) {
+            gameStatus = 'assigned'; // Fully assigned
+          }
+
+          await trx('games')
+            .where('id', existingAssignment.game_id)
+            .update({ status: gameStatus, updated_at: new Date() });
+
+          updatedAssignments.push({
+            index: updateData.index,
+            assignment: updatedAssignment
+          });
+
+        } catch (updateError) {
+          console.error(`Error updating assignment ${updateData.assignment_id}:`, updateError);
+          updateErrors.push({
+            index: updateData.index,
+            assignmentId: updateData.assignment_id,
+            error: updateError.message
+          });
+        }
+      }
+
+      if (updateErrors.length > 0 && updatedAssignments.length === 0) {
+        // All updates failed, rollback transaction
+        throw new Error('All assignment updates failed');
+      }
+
+      await trx.commit();
+
+      const response = {
+        success: true,
+        data: {
+          updatedAssignments,
+          summary: {
+            totalSubmitted: updates.length,
+            successfulUpdates: updatedAssignments.length,
+            failedUpdates: updateErrors.length
+          }
+        }
+      };
+
+      if (updateErrors.length > 0) {
+        response.warnings = updateErrors;
+        response.partialSuccess = true;
+      }
+
+      res.json(response);
+
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error bulk updating assignments:', error);
+    res.status(500).json({ 
+      error: 'Failed to bulk update assignments',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// DELETE /api/assignments/bulk-remove - Bulk remove assignments
+router.delete('/bulk-remove', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { assignment_ids } = req.body;
+    
+    if (!Array.isArray(assignment_ids) || assignment_ids.length === 0) {
+      return res.status(400).json({ error: 'Assignment IDs array is required and cannot be empty' });
+    }
+
+    if (assignment_ids.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 assignments can be removed at once' });
+    }
+
+    // Validate all assignment IDs are UUIDs
+    const uuidSchema = Joi.string().uuid();
+    const invalidIds = [];
+    const validIds = [];
+
+    for (let i = 0; i < assignment_ids.length; i++) {
+      const { error, value } = uuidSchema.validate(assignment_ids[i]);
+      if (error) {
+        invalidIds.push({
+          index: i,
+          id: assignment_ids[i],
+          error: error.details[0].message
+        });
+      } else {
+        validIds.push(value);
+      }
+    }
+
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: 'Invalid assignment IDs provided',
+        invalidIds,
+        totalInvalid: invalidIds.length,
+        totalProvided: assignment_ids.length
+      });
+    }
+
+    const trx = await db.transaction();
+    
+    try {
+      // Get assignments before deletion to update game statuses
+      const assignmentsToDelete = await trx('game_assignments')
+        .whereIn('id', validIds)
+        .select('id', 'game_id');
+
+      if (assignmentsToDelete.length === 0) {
+        await trx.rollback();
+        return res.status(404).json({ error: 'No assignments found with provided IDs' });
+      }
+
+      // Group assignments by game_id for status updates
+      const gameIds = [...new Set(assignmentsToDelete.map(a => a.game_id))];
+      
+      // Delete assignments
+      const deletedCount = await trx('game_assignments')
+        .whereIn('id', validIds)
+        .del();
+
+      // Update game statuses for affected games
+      for (const gameId of gameIds) {
+        const remainingAssignments = await trx('game_assignments')
+          .where('game_id', gameId)
+          .whereIn('status', ['pending', 'accepted'])
+          .count('* as count')
+          .first();
+
+        const game = await trx('games').where('id', gameId).first();
+        
+        let gameStatus = 'unassigned';
+        if (parseInt(remainingAssignments.count) > 0 && parseInt(remainingAssignments.count) < game.refs_needed) {
+          gameStatus = 'assigned'; // Partially assigned
+        } else if (parseInt(remainingAssignments.count) >= game.refs_needed) {
+          gameStatus = 'assigned'; // Fully assigned
+        }
+
+        await trx('games')
+          .where('id', gameId)
+          .update({ status: gameStatus, updated_at: new Date() });
+      }
+
+      await trx.commit();
+
+      const notFoundIds = validIds.filter(id => 
+        !assignmentsToDelete.find(a => a.id === id)
+      );
+
+      const response = {
+        success: true,
+        data: {
+          deletedCount,
+          affectedGames: gameIds.length,
+          summary: {
+            totalRequested: assignment_ids.length,
+            successfullyDeleted: deletedCount,
+            notFound: notFoundIds.length
+          }
+        }
+      };
+
+      if (notFoundIds.length > 0) {
+        response.warnings = [{
+          message: 'Some assignment IDs were not found',
+          notFoundIds
+        }];
+      }
+
+      res.json(response);
+
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error bulk removing assignments:', error);
+    res.status(500).json({ 
+      error: 'Failed to bulk remove assignments',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -437,12 +783,12 @@ router.post('/bulk', async (req, res) => {
       const createdAssignments = [];
       
       for (const assignment of assignments) {
-        const { referee_id, position_id } = assignment;
+        const { user_id, position_id } = assignment;
         
         // Validate each assignment
-        const referee = await trx('referees').where('id', referee_id).first();
+        const referee = await trx('users').where('id', user_id).where('role', 'referee').first();
         if (!referee || !referee.is_available) {
-          throw new Error(`Referee ${referee_id} not found or not available`);
+          throw new Error(`Referee ${user_id} not found or not available`);
         }
         
         const position = await trx('positions').where('id', position_id).first();
@@ -454,7 +800,7 @@ router.post('/bulk', async (req, res) => {
         const existingAssignment = await trx('game_assignments')
           .where('game_id', game_id)
           .where(function() {
-            this.where('referee_id', referee_id).orWhere('position_id', position_id);
+            this.where('user_id', user_id).orWhere('position_id', position_id);
           })
           .first();
         
@@ -465,20 +811,20 @@ router.post('/bulk', async (req, res) => {
         // Check if referee has time conflict with other games
         const timeConflictAssignment = await trx('game_assignments')
           .join('games', 'game_assignments.game_id', 'games.id')
-          .where('game_assignments.referee_id', referee_id)
+          .where('game_assignments.user_id', user_id)
           .where('games.game_date', game.game_date)
           .where('games.game_time', game.game_time)
           .where('games.id', '!=', game_id)
           .first();
         
         if (timeConflictAssignment) {
-          throw new Error(`Referee ${referee_id} has a time conflict with another game`);
+          throw new Error(`Referee ${user_id} has a time conflict with another game`);
         }
         
         const [newAssignment] = await trx('game_assignments')
           .insert({
             game_id,
-            referee_id,
+            user_id,
             position_id,
             assigned_by
           })
@@ -543,10 +889,9 @@ router.get('/available-referees/:game_id', async (req, res) => {
       .select('*');
 
     // Get availability windows for all potential referees
+    // DISABLED: referee_availability table no longer exists
     const refereeIds = potentialReferees.map(ref => ref.id);
-    const availabilityWindows = await db('referee_availability')
-      .whereIn('referee_id', refereeIds)
-      .where('date', game.game_date);
+    const availabilityWindows = []; // await db('referee_availability').whereIn('referee_id', refereeIds).where('date', game.game_date);
 
     // Group availability by referee
     const availabilityByReferee = {};
@@ -631,6 +976,289 @@ router.get('/available-referees/:game_id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching available referees:', error);
     res.status(500).json({ error: 'Failed to fetch available referees' });
+  }
+});
+
+// POST /api/assignments/bulk-update - Bulk update assignment statuses
+router.post('/bulk-update', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array is required and cannot be empty' });
+    }
+
+    if (updates.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 assignments can be updated at once' });
+    }
+
+    // Validation schema for bulk updates
+    const bulkUpdateSchema = Joi.object({
+      assignment_id: Joi.string().uuid().required(),
+      status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required(),
+      calculated_wage: Joi.number().min(0).optional()
+    });
+
+    // Validate each update
+    const validationErrors = [];
+    const validatedUpdates = [];
+
+    for (let i = 0; i < updates.length; i++) {
+      const { error, value } = bulkUpdateSchema.validate(updates[i]);
+      if (error) {
+        validationErrors.push({
+          index: i,
+          update: updates[i],
+          error: error.details[0].message
+        });
+      } else {
+        validatedUpdates.push({ ...value, index: i });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed for some updates',
+        validationErrors,
+        totalErrors: validationErrors.length,
+        totalUpdates: updates.length
+      });
+    }
+
+    const trx = await db.transaction();
+    
+    try {
+      const updatedAssignments = [];
+      const updateErrors = [];
+
+      for (const updateData of validatedUpdates) {
+        try {
+          // Check if assignment exists
+          const existingAssignment = await trx('game_assignments')
+            .where('id', updateData.assignment_id)
+            .first();
+
+          if (!existingAssignment) {
+            updateErrors.push({
+              index: updateData.index,
+              assignmentId: updateData.assignment_id,
+              error: 'Assignment not found'
+            });
+            continue;
+          }
+
+          // Prepare update data
+          const updateFields = {
+            status: updateData.status,
+            updated_at: new Date()
+          };
+
+          if (updateData.calculated_wage !== undefined) {
+            updateFields.calculated_wage = updateData.calculated_wage;
+          }
+
+          // Update assignment
+          const [updatedAssignment] = await trx('game_assignments')
+            .where('id', updateData.assignment_id)
+            .update(updateFields)
+            .returning('*');
+
+          // Update game status based on new assignment statuses
+          const game = await trx('games').where('id', existingAssignment.game_id).first();
+          const activeAssignments = await trx('game_assignments')
+            .where('game_id', existingAssignment.game_id)
+            .whereIn('status', ['pending', 'accepted'])
+            .count('* as count')
+            .first();
+
+          let gameStatus = 'unassigned';
+          if (parseInt(activeAssignments.count) > 0 && parseInt(activeAssignments.count) < game.refs_needed) {
+            gameStatus = 'assigned'; // Partially assigned
+          } else if (parseInt(activeAssignments.count) >= game.refs_needed) {
+            gameStatus = 'assigned'; // Fully assigned
+          }
+
+          await trx('games')
+            .where('id', existingAssignment.game_id)
+            .update({ status: gameStatus, updated_at: new Date() });
+
+          updatedAssignments.push({
+            index: updateData.index,
+            assignment: updatedAssignment
+          });
+
+        } catch (updateError) {
+          console.error(`Error updating assignment ${updateData.assignment_id}:`, updateError);
+          updateErrors.push({
+            index: updateData.index,
+            assignmentId: updateData.assignment_id,
+            error: updateError.message
+          });
+        }
+      }
+
+      if (updateErrors.length > 0 && updatedAssignments.length === 0) {
+        // All updates failed, rollback transaction
+        throw new Error('All assignment updates failed');
+      }
+
+      await trx.commit();
+
+      const response = {
+        success: true,
+        data: {
+          updatedAssignments,
+          summary: {
+            totalSubmitted: updates.length,
+            successfulUpdates: updatedAssignments.length,
+            failedUpdates: updateErrors.length
+          }
+        }
+      };
+
+      if (updateErrors.length > 0) {
+        response.warnings = updateErrors;
+        response.partialSuccess = true;
+      }
+
+      res.json(response);
+
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error bulk updating assignments:', error);
+    res.status(500).json({ 
+      error: 'Failed to bulk update assignments',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// DELETE /api/assignments/bulk-remove - Bulk remove assignments
+router.delete('/bulk-remove', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { assignment_ids } = req.body;
+    
+    if (!Array.isArray(assignment_ids) || assignment_ids.length === 0) {
+      return res.status(400).json({ error: 'Assignment IDs array is required and cannot be empty' });
+    }
+
+    if (assignment_ids.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 assignments can be removed at once' });
+    }
+
+    // Validate all assignment IDs are UUIDs
+    const uuidSchema = Joi.string().uuid();
+    const invalidIds = [];
+    const validIds = [];
+
+    for (let i = 0; i < assignment_ids.length; i++) {
+      const { error, value } = uuidSchema.validate(assignment_ids[i]);
+      if (error) {
+        invalidIds.push({
+          index: i,
+          id: assignment_ids[i],
+          error: error.details[0].message
+        });
+      } else {
+        validIds.push(value);
+      }
+    }
+
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: 'Invalid assignment IDs provided',
+        invalidIds,
+        totalInvalid: invalidIds.length,
+        totalProvided: assignment_ids.length
+      });
+    }
+
+    const trx = await db.transaction();
+    
+    try {
+      // Get assignments before deletion to update game statuses
+      const assignmentsToDelete = await trx('game_assignments')
+        .whereIn('id', validIds)
+        .select('id', 'game_id');
+
+      if (assignmentsToDelete.length === 0) {
+        await trx.rollback();
+        return res.status(404).json({ error: 'No assignments found with provided IDs' });
+      }
+
+      // Group assignments by game_id for status updates
+      const gameIds = [...new Set(assignmentsToDelete.map(a => a.game_id))];
+      
+      // Delete assignments
+      const deletedCount = await trx('game_assignments')
+        .whereIn('id', validIds)
+        .del();
+
+      // Update game statuses for affected games
+      for (const gameId of gameIds) {
+        const remainingAssignments = await trx('game_assignments')
+          .where('game_id', gameId)
+          .whereIn('status', ['pending', 'accepted'])
+          .count('* as count')
+          .first();
+
+        const game = await trx('games').where('id', gameId).first();
+        
+        let gameStatus = 'unassigned';
+        if (parseInt(remainingAssignments.count) > 0 && parseInt(remainingAssignments.count) < game.refs_needed) {
+          gameStatus = 'assigned'; // Partially assigned
+        } else if (parseInt(remainingAssignments.count) >= game.refs_needed) {
+          gameStatus = 'assigned'; // Fully assigned
+        }
+
+        await trx('games')
+          .where('id', gameId)
+          .update({ status: gameStatus, updated_at: new Date() });
+      }
+
+      await trx.commit();
+
+      const notFoundIds = validIds.filter(id => 
+        !assignmentsToDelete.find(a => a.id === id)
+      );
+
+      const response = {
+        success: true,
+        data: {
+          deletedCount,
+          affectedGames: gameIds.length,
+          summary: {
+            totalRequested: assignment_ids.length,
+            successfullyDeleted: deletedCount,
+            notFound: notFoundIds.length
+          }
+        }
+      };
+
+      if (notFoundIds.length > 0) {
+        response.warnings = [{
+          message: 'Some assignment IDs were not found',
+          notFoundIds
+        }];
+      }
+
+      res.json(response);
+
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error bulk removing assignments:', error);
+    res.status(500).json({ 
+      error: 'Failed to bulk remove assignments',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

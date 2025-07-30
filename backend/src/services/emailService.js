@@ -1,10 +1,33 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key is available
+let resend = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+  console.warn('RESEND_API_KEY not set - email functionality will be disabled');
+}
 
 class EmailService {
   async sendInvitationEmail({ email, firstName, lastName, role, invitationLink, invitedBy }) {
     try {
+      // If Resend is not configured, log the invitation details and return
+      if (!resend) {
+        console.log('Email service not configured - invitation details:');
+        console.log(`To: ${email}`);
+        console.log(`Name: ${firstName} ${lastName}`);
+        console.log(`Role: ${role}`);
+        console.log(`Invitation Link: ${invitationLink}`);
+        console.log(`Invited By: ${invitedBy}`);
+        return { success: true, message: 'Email service not configured - invitation logged to console' };
+      }
+
+      // In development/testing mode, log details for any email restrictions
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📧 Sending invitation email to: ${email}`);
+        console.log(`🔗 Invitation link: ${invitationLink}`);
+      }
+
       const subject = `Invitation to join Sports Management System`;
       
       const htmlContent = `
@@ -103,16 +126,81 @@ If you didn't expect this invitation, you can safely ignore this email.
         text: textContent,
       });
 
+      // Check if the result contains an error (Resend API can return errors without throwing)
+      if (result.error) {
+        const errorMessage = result.error.error || result.error.message || '';
+        if (result.error.statusCode === 403 && (errorMessage.includes('testing emails') || errorMessage.includes('verify a domain'))) {
+          console.warn(`📧 Resend testing restriction: ${errorMessage}`);
+          console.log(`🔗 Invitation link for ${email}: ${invitationLink}`);
+          console.log(`👤 Invited by: ${invitedBy}`);
+          // Return success but indicate it's logged instead of sent
+          return { 
+            success: true, 
+            message: 'Email logged due to testing restrictions - see console for invitation link',
+            logged: true,
+            invitationLink,
+            recipientEmail: email
+          };
+        } else {
+          console.error('Failed to send invitation email:', result.error);
+          return {
+            success: false,
+            error: errorMessage,
+            logged: true,
+            invitationLink,
+            recipientEmail: email
+          };
+        }
+      }
+
       console.log('Invitation email sent successfully:', result.data?.id);
       return result;
     } catch (error) {
+      // Handle Resend API restrictions gracefully
+      const errorMessage = error.error || error.message || '';
+      if (error.statusCode === 403 && (errorMessage.includes('testing emails') || errorMessage.includes('verify a domain'))) {
+        console.warn(`📧 Resend testing restriction: ${errorMessage}`);
+        console.log(`🔗 Invitation link for ${email}: ${invitationLink}`);
+        console.log(`👤 Invited by: ${invitedBy}`);
+        // Return success but indicate it's logged instead of sent
+        return { 
+          success: true, 
+          message: 'Email logged due to testing restrictions - see console for invitation link',
+          logged: true,
+          invitationLink,
+          recipientEmail: email
+        };
+      }
+      
       console.error('Failed to send invitation email:', error);
-      throw error;
+      // Don't throw the error - let invitation creation succeed even if email fails
+      return {
+        success: false,
+        error: error.message,
+        logged: true,
+        invitationLink,
+        recipientEmail: email
+      };
     }
   }
 
   async sendPasswordResetEmail({ email, firstName, resetLink }) {
     try {
+      // If Resend is not configured, log the reset details and return
+      if (!resend) {
+        console.log('Email service not configured - password reset details:');
+        console.log(`To: ${email}`);
+        console.log(`Name: ${firstName}`);
+        console.log(`Reset Link: ${resetLink}`);
+        return { success: true, message: 'Email service not configured - reset logged to console' };
+      }
+
+      // In development/testing mode, log details for any email restrictions
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔐 Sending password reset email to: ${email}`);
+        console.log(`🔗 Reset link: ${resetLink}`);
+      }
+
       const subject = `Password Reset - Sports Management System`;
       
       const htmlContent = `
@@ -201,11 +289,61 @@ If you didn't request a password reset, you can safely ignore this email.
         text: textContent,
       });
 
+      // Check if the result contains an error (Resend API can return errors without throwing)
+      if (result.error) {
+        const errorMessage = result.error.error || result.error.message || '';
+        if (result.error.statusCode === 403 && (errorMessage.includes('testing emails') || errorMessage.includes('verify a domain'))) {
+          console.warn(`🔐 Resend testing restriction: ${errorMessage}`);
+          console.log(`🔗 Password reset link for ${email}: ${resetLink}`);
+          console.log(`👤 User: ${firstName}`);
+          // Return success but indicate it's logged instead of sent
+          return { 
+            success: true, 
+            message: 'Email logged due to testing restrictions - see console for reset link',
+            logged: true,
+            resetLink,
+            recipientEmail: email
+          };
+        } else {
+          console.error('Failed to send password reset email:', result.error);
+          return {
+            success: false,
+            error: errorMessage,
+            logged: true,
+            resetLink,
+            recipientEmail: email
+          };
+        }
+      }
+
       console.log('Password reset email sent successfully:', result.data?.id);
       return result;
     } catch (error) {
+      // Handle Resend API restrictions gracefully
+      const errorMessage = error.error || error.message || '';
+      if (error.statusCode === 403 && (errorMessage.includes('testing emails') || errorMessage.includes('verify a domain'))) {
+        console.warn(`🔐 Resend testing restriction: ${errorMessage}`);
+        console.log(`🔗 Password reset link for ${email}: ${resetLink}`);
+        console.log(`👤 User: ${firstName}`);
+        // Return success but indicate it's logged instead of sent
+        return { 
+          success: true, 
+          message: 'Email logged due to testing restrictions - see console for reset link',
+          logged: true,
+          resetLink,
+          recipientEmail: email
+        };
+      }
+      
       console.error('Failed to send password reset email:', error);
-      throw error;
+      // Don't throw the error - let password reset creation succeed even if email fails
+      return {
+        success: false,
+        error: error.message,
+        logged: true,
+        resetLink,
+        recipientEmail: email
+      };
     }
   }
 }

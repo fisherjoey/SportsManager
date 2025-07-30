@@ -4,11 +4,18 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
-import { mockGames } from "@/lib/mock-data"
+import { ChevronLeft, ChevronRight, CalendarIcon, Calendar, Users, Clock, AlertTriangle, Sparkles } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
+import { mockGames, Team } from "@/lib/mock-data"
 import { useAuth } from "@/components/auth-provider"
+import { formatTeamName } from "@/lib/team-utils"
 
-export function CalendarView() {
+interface CalendarViewProps {
+  onDateClick?: (date: string) => void
+}
+
+export function CalendarView({ onDateClick }: CalendarViewProps) {
   const { user } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
 
@@ -32,6 +39,27 @@ export function CalendarView() {
     })
   }
 
+  const getDailySummary = (date: Date) => {
+    const gamesForDay = getGamesForDate(date)
+    if (gamesForDay.length === 0) return null
+
+    const startTimes = gamesForDay.map(game => game.startTime).sort()
+    const endTimes = gamesForDay.map(game => game.endTime).sort()
+    const assigned = gamesForDay.filter(game => game.status === 'assigned').length
+    const unassigned = gamesForDay.filter(game => game.status === 'unassigned').length
+    const upForGrabs = gamesForDay.filter(game => game.status === 'up-for-grabs').length
+
+    return {
+      totalGames: gamesForDay.length,
+      startTime: startTimes[0],
+      endTime: endTimes[endTimes.length - 1],
+      assigned,
+      unassigned,
+      upForGrabs,
+      needsAttention: unassigned > 0 || upForGrabs > 0
+    }
+  }
+
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev)
@@ -51,36 +79,64 @@ export function CalendarView() {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 border border-gray-200"></div>)
+      days.push(<div key={`empty-${i}`} className="h-32 border border-gray-200"></div>)
     }
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-      const gamesForDay = getGamesForDate(date)
+      const dailySummary = getDailySummary(date)
       const isToday = date.toDateString() === new Date().toDateString()
 
+      const handleDayClick = () => {
+        if (dailySummary && onDateClick) {
+          onDateClick(date.toISOString().split('T')[0])
+        }
+      }
+
       days.push(
-        <div key={day} className={`h-24 border border-gray-200 p-1 ${isToday ? "bg-blue-50 border-blue-300" : ""}`}>
-          <div className={`text-sm font-medium mb-1 ${isToday ? "text-blue-600" : ""}`}>{day}</div>
-          <div className="space-y-1">
-            {gamesForDay.slice(0, 2).map((game) => (
-              <div
-                key={game.id}
-                className={`text-xs p-1 rounded truncate ${
-                  game.status === "assigned"
-                    ? "bg-green-100 text-green-800"
-                    : game.status === "up-for-grabs"
-                      ? "bg-orange-100 text-orange-800"
-                      : "bg-red-100 text-red-800"
-                }`}
-                title={`${game.homeTeam} vs ${game.awayTeam} at ${game.time}`}
-              >
-                {game.homeTeam} vs {game.awayTeam}
+        <div 
+          key={day} 
+          className={`h-32 border border-gray-200 p-2 ${
+            isToday ? "bg-blue-50 border-blue-300" : ""
+          } ${dailySummary?.needsAttention ? "border-l-4 border-l-red-400" : ""} ${
+            dailySummary && onDateClick ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""
+          }`}
+          onClick={handleDayClick}
+        >
+          <div className={`text-sm font-medium mb-2 ${isToday ? "text-blue-600" : ""}`}>{day}</div>
+          {dailySummary ? (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-gray-700">{dailySummary.totalGames} games</span>
+                {dailySummary.needsAttention && (
+                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                )}
               </div>
-            ))}
-            {gamesForDay.length > 2 && <div className="text-xs text-gray-500">+{gamesForDay.length - 2} more</div>}
-          </div>
+              <div className="text-xs text-gray-600">
+                {dailySummary.startTime} - {dailySummary.endTime}
+              </div>
+              <div className="flex space-x-1">
+                {dailySummary.assigned > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 text-green-700">
+                    {dailySummary.assigned}✓
+                  </Badge>
+                )}
+                {dailySummary.unassigned > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 text-red-700">
+                    {dailySummary.unassigned}!
+                  </Badge>
+                )}
+                {dailySummary.upForGrabs > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 text-orange-700">
+                    {dailySummary.upForGrabs}?
+                  </Badge>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400">No games</div>
+          )}
         </div>,
       )
     }
@@ -106,20 +162,25 @@ export function CalendarView() {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <div className="flex items-center space-x-2">
+    <PageLayout>
+      <PageHeader
+        icon={Calendar}
+        title="Game Calendar"
+        description={isAdmin ? "Overview of all scheduled games and assignments" : "Your game assignments and available opportunities"}
+      >
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        </Badge>
+        <div className="flex items-center space-x-1">
           <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-lg font-semibold min-w-[200px] text-center">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </div>
           <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -139,16 +200,16 @@ export function CalendarView() {
                 }).length
               }
             </div>
-            <p className="text-xs text-muted-foreground">games scheduled</p>
+            <p className="text-xs text-muted-foreground">games scheduled this month</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-            <Badge variant="secondary" className="h-4 w-4 p-0"></Badge>
+            <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold">
               {
                 relevantGames.filter((game) => {
                   const gameDate = new Date(game.date)
@@ -160,15 +221,16 @@ export function CalendarView() {
                 }).length
               }
             </div>
+            <p className="text-xs text-muted-foreground">games with referees assigned</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Available</CardTitle>
-            <Badge variant="outline" className="h-4 w-4 p-0 border-orange-600"></Badge>
+            <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold">
               {
                 relevantGames.filter((game) => {
                   const gameDate = new Date(game.date)
@@ -180,15 +242,16 @@ export function CalendarView() {
                 }).length
               }
             </div>
+            <p className="text-xs text-muted-foreground">games available for pickup</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Unassigned</CardTitle>
-            <Badge variant="destructive" className="h-4 w-4 p-0"></Badge>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold">
               {
                 relevantGames.filter((game) => {
                   const gameDate = new Date(game.date)
@@ -200,15 +263,19 @@ export function CalendarView() {
                 }).length
               }
             </div>
+            <p className="text-xs text-muted-foreground">games needing referees</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Calendar View</CardTitle>
+          <CardTitle className="flex items-center">
+            <CalendarIcon className="h-5 w-5 mr-2 text-purple-600" />
+            Interactive Calendar
+          </CardTitle>
           <CardDescription>
-            {isAdmin ? "All games in the system" : "Your assignments and available games"}
+            {isAdmin ? "All games across the organization with assignment status" : "Your assigned games and opportunities for additional work"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -224,22 +291,35 @@ export function CalendarView() {
             {renderCalendarDays()}
           </div>
 
-          <div className="mt-4 flex items-center space-x-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-              <span>Assigned</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-              <span>Available</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-              <span>Unassigned</span>
+          <div className="mt-4 space-y-2">
+            <div className="text-sm font-medium text-gray-700">Legend:</div>
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 text-green-700">3✓</Badge>
+                <span>Assigned games</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 text-orange-700">2?</Badge>
+                <span>Up for grabs</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 text-red-700">1!</Badge>
+                <span>Unassigned</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-1 h-4 bg-red-400"></div>
+                <span>Needs attention</span>
+              </div>
+              {onDateClick && (
+                <div className="flex items-center space-x-2 text-blue-600">
+                  <Clock className="h-3 w-3" />
+                  <span>Click days with games to view details</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

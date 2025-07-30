@@ -7,10 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, MapPin, DollarSign, Clock, CheckCircle, AlertCircle } from "lucide-react"
+import { Search, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, Trophy } from "lucide-react"
+import { PageLayout } from "@/components/ui/page-layout"
+import { PageHeader } from "@/components/ui/page-header"
 import { useAuth } from "@/components/auth-provider"
 import { useToast } from "@/components/ui/use-toast"
 import { useApi, type Game } from "@/lib/api"
+import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
 
 export function AvailableGames() {
   const { user } = useAuth()
@@ -23,6 +27,14 @@ export function AvailableGames() {
   const [distanceFilter, setDistanceFilter] = useState("all")
   const [refereeLevel, setRefereeLevel] = useState<string>("")
   const [allowedDivisions, setAllowedDivisions] = useState<string[]>([])
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    ageGroups: [],
+    genders: [],
+    divisions: [],
+    zones: [],
+    levels: [],
+    statuses: []
+  })
 
   useEffect(() => {
     if (user?.role === 'referee') {
@@ -58,7 +70,10 @@ export function AvailableGames() {
     }
   }
 
-  const filteredGames = games.filter((game) => {
+  // First apply GameFilters, then apply the existing search/level/distance filters
+  const gameFilteredGames = applyGameFilters(games, activeFilters)
+  
+  const filteredGames = gameFilteredGames.filter((game) => {
     const matchesSearch =
       game.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,29 +112,26 @@ export function AvailableGames() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Available Games</h2>
-        </div>
+      <PageLayout>
+        <PageHeader
+          icon={Trophy}
+          title="Available Games"
+          description="Games available for self-assignment"
+        />
         <div className="text-center py-8">
           <p>Loading available games...</p>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Available Games</h2>
-          {refereeLevel && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Your level: <Badge variant="outline">{refereeLevel}</Badge> - Qualified for: {allowedDivisions.join(", ")}
-            </p>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Trophy}
+        title="Available Games"
+        description={refereeLevel ? `Your level: ${refereeLevel} - Qualified for: ${allowedDivisions.join(", ")}` : "Games available for self-assignment"}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -163,8 +175,17 @@ export function AvailableGames() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Available Games</CardTitle>
-          <CardDescription>Games you can pick up on a first-come, first-served basis</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Available Games</CardTitle>
+              <CardDescription>Games you can pick up on a first-come, first-served basis</CardDescription>
+            </div>
+            <GameFilters 
+              games={games}
+              activeFilters={activeFilters}
+              onFiltersChange={setActiveFilters}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4 mb-6">
@@ -218,7 +239,7 @@ export function AvailableGames() {
                 {filteredGames.map((game) => (
                   <TableRow key={game.id}>
                     <TableCell className="font-medium">
-                      {game.homeTeam} vs {game.awayTeam}
+                      {formatGameMatchup(game.homeTeam, game.awayTeam)}
                     </TableCell>
                     <TableCell>
                       {new Date(game.date).toLocaleDateString()}
@@ -275,6 +296,6 @@ export function AvailableGames() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

@@ -183,6 +183,7 @@ erDiagram
 - UUID primary keys throughout for better distribution
 - Unique constraints on critical combinations
 - Foreign key constraints with proper cascade rules
+- **Critical Constraint**: `teams.league_id` is NOT NULL (Migration 021)
 - Enum types for controlled vocabulary
 
 ### 🚀 **Performance Optimizations**
@@ -191,11 +192,19 @@ erDiagram
 - Efficient many-to-many relationships through junction tables
 
 ### 🔄 **Recent Schema Evolution**
-1. **Team/League Restructuring**: Migrated from JSON to proper entities
-2. **User Consolidation**: Merged referees into users table
-3. **Enhanced Roles**: Added array-based role system
-4. **Availability Patterns**: Support for recurring availability rules
-5. **Game Types**: Added Community, Club, Tournament classifications
+1. **Team/League Restructuring** (Migrations 020, 021): 
+   - Migrated from JSON team data in games table to proper normalized entities
+   - Added `LEAGUES` table with organization, age_group, gender, division, season
+   - Updated `TEAMS` table with mandatory `league_id` foreign key (NOT NULL)
+   - Removed JSON `home_team`/`away_team` fields from games
+   - Added proper foreign key constraints for data integrity
+   - **API Layer Updated**: Assignment queries now properly join with teams table
+2. **User Consolidation** (Migration 015): Merged referees into users table
+3. **Enhanced Roles** (Migration 022): Added array-based role system
+4. **Availability Patterns** (Migration 023): Support for recurring availability rules
+5. **Game Types** (Latest Migration): Added Community, Club, Tournament classifications
+6. **Email Integration**: Added invitation system with email notifications
+7. **API Consistency**: Updated all assignment endpoints to use proper team relationships
 
 ### 💡 **Advanced Features**
 - **Flexible Availability**: Both single dates and recurring patterns

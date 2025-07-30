@@ -72,6 +72,7 @@ class ApiClient {
     }
   }
 
+
   // Auth endpoints
   async login(email: string, password: string) {
     return this.request<{ token: string; user: any }>('/auth/login', {
@@ -117,17 +118,17 @@ class ApiClient {
     // Transform backend response to frontend format
     const transformedGames = response.data.map((game: any) => ({
       id: game.id,
-      homeTeam: game.home_team_name,
-      awayTeam: game.away_team_name,
-      date: game.game_date,
-      time: game.game_time,
+      homeTeam: game.homeTeam || game.home_team_name || 'Home Team',
+      awayTeam: game.awayTeam || game.away_team_name || 'Away Team',
+      date: game.date || game.game_date,
+      time: game.time || game.game_time,
       location: game.location,
       level: game.level,
-      payRate: game.pay_rate,
+      payRate: game.payRate || game.pay_rate,
       status: game.status,
-      notes: game.notes,
-      createdAt: game.created_at,
-      updatedAt: game.updated_at
+      notes: game.notes || '',
+      createdAt: game.createdAt || game.created_at,
+      updatedAt: game.updatedAt || game.updated_at
     }));
     
     return { data: transformedGames, pagination: response.pagination };
@@ -244,6 +245,7 @@ class ApiClient {
       certificationLevel: referee.level,
       location: referee.location,
       isAvailable: referee.is_available,
+      availabilityStrategy: referee.availability_strategy || 'BLACKLIST',
       certifications: referee.certifications || [],
       preferredPositions: referee.preferred_positions || [],
       wagePerGame: referee.wage_per_game,
@@ -270,6 +272,7 @@ class ApiClient {
       certificationLevel: response.data.referee.level,
       location: response.data.referee.location,
       isAvailable: response.data.referee.is_available,
+      availabilityStrategy: response.data.referee.availability_strategy || 'BLACKLIST',
       certifications: response.data.referee.certifications || [],
       preferredPositions: response.data.referee.preferred_positions || [],
       wagePerGame: response.data.referee.wage_per_game,
@@ -296,6 +299,7 @@ class ApiClient {
     if (refereeData.certificationLevel) transformedData.level = refereeData.certificationLevel;
     if (refereeData.location) transformedData.location = refereeData.location;
     if (refereeData.isAvailable !== undefined) transformedData.is_available = refereeData.isAvailable;
+    if (refereeData.availabilityStrategy) transformedData.availability_strategy = refereeData.availabilityStrategy;
     
     return this.request<{ success: boolean; data: { referee: Referee } }>(`/referees/${id}`, {
       method: 'PUT',
@@ -321,6 +325,12 @@ class ApiClient {
     return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/referees/${refereeId}`, {
       method: 'POST',
       body: JSON.stringify(window),
+    });
+  }
+  async createBulkAvailabilityWindows(refereeId: string, windows: Partial<AvailabilityWindow>[]) {
+    return this.request<{ success: boolean; data: { created: number; windows: AvailabilityWindow[] } }>('/availability/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ referee_id: refereeId, windows }),
     });
   }
 
@@ -896,9 +906,272 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Organization settings endpoints
+  async getOrganizationSettings() {
+    return this.request<{ success: boolean; data: OrganizationSettings }>('/organization/settings');
+  }
+
+  async updateOrganizationSettings(settings: {
+    organization_name: string;
+    payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
+    default_game_rate?: number;
+    availability_strategy?: 'WHITELIST' | 'BLACKLIST';
+  }) {
+    return this.request<{ success: boolean; data: OrganizationSettings; message: string }>('/organization/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  // Posts endpoints
+  async getPosts(includeDrafts = false) {
+    const params = includeDrafts ? '?include_drafts=true' : '';
+    return this.request<{ success: boolean; data: { posts: Post[] } }>(`/posts${params}`);
+  }
+
+  async getPostCategories() {
+    return this.request<{ success: boolean; data: PostCategory[] }>('/posts/categories');
+  }
+
+  async createPost(postData: {
+    title: string;
+    content: string;
+    category: string;
+    status?: 'draft' | 'published' | 'archived';
+    excerpt?: string;
+    tags?: string[];
+  }) {
+    return this.request<{ success: boolean; data: Post }>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async updatePost(id: string, postData: Partial<{
+    title: string;
+    content: string;
+    category: string;
+    status: 'draft' | 'published' | 'archived';
+    excerpt: string;
+    tags: string[];
+  }>) {
+    return this.request<{ success: boolean; data: Post }>(`/posts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async deletePost(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/posts/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // AI Assignment Rules endpoints
+  async getAIAssignmentRules(params?: {
+    enabled?: boolean;
+    aiSystemType?: 'algorithmic' | 'llm';
+    page?: number;
+    limit?: number;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return this.request<{ success: boolean; data: AIAssignmentRule[] }>(`/ai-assignment-rules${query ? `?${query}` : ''}`);
+  }
+
+  async createAIAssignmentRule(ruleData: {
+    name: string;
+    description?: string;
+    enabled?: boolean;
+    schedule: {
+      type: 'manual' | 'recurring' | 'one-time';
+      frequency?: 'daily' | 'weekly' | 'monthly';
+      dayOfWeek?: string;
+      dayOfMonth?: number;
+      time?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    criteria: {
+      gameTypes: string[];
+      ageGroups: string[];
+      maxDaysAhead: number;
+      minRefereeLevel: string;
+      prioritizeExperience: boolean;
+      avoidBackToBack: boolean;
+      maxDistance: number;
+    };
+    aiSystem: {
+      type: 'algorithmic' | 'llm';
+      algorithmicSettings?: {
+        distanceWeight: number;
+        skillWeight: number;
+        experienceWeight: number;
+        partnerPreferenceWeight: number;
+        preferredPairs: Array<{
+          referee1Id: string;
+          referee2Id: string;
+          preference: 'preferred' | 'avoid';
+        }>;
+      };
+      llmSettings?: {
+        model: string;
+        temperature: number;
+        contextPrompt: string;
+        includeComments: boolean;
+      };
+    };
+  }) {
+    return this.request<{ success: boolean; data: AIAssignmentRule }>('/ai-assignment-rules', {
+      method: 'POST',
+      body: JSON.stringify(ruleData),
+    });
+  }
+
+  async getAIAssignmentRule(id: string) {
+    return this.request<{ success: boolean; data: AIAssignmentRule & { partnerPreferences: any[] } }>(`/ai-assignment-rules/${id}`);
+  }
+
+  async updateAIAssignmentRule(id: string, ruleData: any) {
+    return this.request<{ success: boolean; data: AIAssignmentRule }>(`/ai-assignment-rules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(ruleData),
+    });
+  }
+
+  async deleteAIAssignmentRule(id: string) {
+    return this.request<{ success: boolean }>(`/ai-assignment-rules/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleAIAssignmentRule(id: string) {
+    return this.request<{ success: boolean; data: AIAssignmentRule }>(`/ai-assignment-rules/${id}/toggle`, {
+      method: 'POST',
+    });
+  }
+
+  async runAIAssignmentRule(id: string, params: {
+    dryRun?: boolean;
+    gameIds?: string[];
+    contextComments?: string[];
+  }) {
+    return this.request<{ success: boolean; data: AIAssignmentResult }>(`/ai-assignment-rules/${id}/run`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async getAIAssignmentRuleRuns(id: string, params?: {
+    status?: 'success' | 'error' | 'partial';
+    page?: number;
+    limit?: number;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return this.request<{ success: boolean; data: AIAssignmentRuleRun[] }>(`/ai-assignment-rules/${id}/runs${query ? `?${query}` : ''}`);
+  }
+
+  async getAIAssignmentRuleRunDetails(runId: string) {
+    return this.request<{ success: boolean; data: AIAssignmentRuleRun }>(`/ai-assignment-rules/runs/${runId}`);
+  }
+
+  async getAIAssignmentAnalytics(params?: { days?: number }) {
+    const query = params ? new URLSearchParams(
+      Object.entries(params)
+        .filter(([, value]) => value !== undefined && value !== '')
+        .map(([key, value]) => [key, String(value)])
+    ).toString() : '';
+    
+    return this.request<{ 
+      success: boolean; 
+      data: {
+        summary: {
+          totalAssignments: number;
+          assignmentGrowth: string;
+          successRate: number;
+          successRateGrowth: string;
+          activeRules: number;
+          totalRules: number;
+          period: string;
+        };
+        performance: {
+          averageDuration: number;
+          totalRuns: number;
+          successfulRuns: number;
+          runSuccessRate: number;
+        };
+        trends: {
+          performanceOverTime: Array<{
+            date: string;
+            assignments: number;
+            games: number;
+            successRate: number;
+            avgDuration: number;
+            runs: number;
+          }>;
+        };
+        aiSystems: Array<{
+          type: string;
+          runs: number;
+          assignments: number;
+          avgDuration: number;
+          successRate: number;
+        }>;
+        conflicts: {
+          totalConflicts: number;
+          avgConflictsPerRun: number;
+          conflictRate: number;
+          runsWithConflicts: number;
+        };
+      }
+    }>(`/ai-assignment-rules/analytics${query ? `?${query}` : ''}`);
+  }
+
+  async addPartnerPreference(ruleId: string, preference: {
+    referee1Id: string;
+    referee2Id: string;
+    preferenceType: 'preferred' | 'avoid';
+  }) {
+    return this.request<{ success: boolean; data: any }>(`/ai-assignment-rules/${ruleId}/partner-preferences`, {
+      method: 'POST',
+      body: JSON.stringify(preference),
+    });
+  }
+
+  async deletePartnerPreference(ruleId: string, prefId: string) {
+    return this.request<{ success: boolean }>(`/ai-assignment-rules/${ruleId}/partner-preferences/${prefId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Types (updated to match backend schema)
+export interface OrganizationSettings {
+  id: string;
+  organization_name: string;
+  payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
+  default_game_rate: number | null;
+  availability_strategy: 'WHITELIST' | 'BLACKLIST';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Game {
   id: string;
   homeTeam: string;
@@ -927,6 +1200,7 @@ export interface Referee {
   certificationLevel: "Level 1" | "Level 2" | "Level 3" | "Level 4";
   location?: string;
   isAvailable: boolean;
+  availabilityStrategy?: "WHITELIST" | "BLACKLIST";
   createdAt?: string;
   updatedAt?: string;
 }
@@ -1061,8 +1335,134 @@ export interface TournamentFormat {
   suitable_for: string;
 }
 
+export interface Post {
+  id: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  status: 'draft' | 'published' | 'archived';
+  category: string;
+  tags: string[];
+  author_id: string;
+  author_name?: string;
+  author_email?: string;
+  category_name?: string;
+  category_color?: string;
+  category_icon?: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  hasRead?: boolean;
+  readCount?: number;
+  media?: any[];
+}
+
+export interface PostCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
 // Create and export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
+
+// AI Assignment Rule interfaces
+export interface AIAssignmentRule {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  schedule_type: 'manual' | 'recurring' | 'one-time';
+  frequency?: 'daily' | 'weekly' | 'monthly';
+  day_of_week?: string;
+  day_of_month?: number;
+  schedule_time?: string;
+  start_date?: string;
+  end_date?: string;
+  next_run?: string;
+  game_types: string[];
+  age_groups: string[];
+  max_days_ahead: number;
+  min_referee_level: string;
+  prioritize_experience: boolean;
+  avoid_back_to_back: boolean;
+  max_distance: number;
+  ai_system_type: 'algorithmic' | 'llm';
+  distance_weight?: number;
+  skill_weight?: number;
+  experience_weight?: number;
+  partner_preference_weight?: number;
+  llm_model?: string;
+  temperature?: number;
+  context_prompt?: string;
+  include_comments?: boolean;
+  last_run?: string;
+  last_run_status?: 'success' | 'error' | 'partial';
+  assignments_created: number;
+  conflicts_found: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIAssignmentRuleRun {
+  id: string;
+  rule_id: string;
+  run_date: string;
+  status: 'success' | 'error' | 'partial';
+  ai_system_used: 'algorithmic' | 'llm';
+  games_processed: number;
+  assignments_created: number;
+  conflicts_found: number;
+  duration_seconds: number;
+  context_comments: string[];
+  run_details: {
+    assignments: any[];
+    conflicts: any[];
+    algorithmicScores?: any;
+    llmAnalysis?: any;
+  };
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIAssignmentResult {
+  runId: string;
+  status: 'success' | 'error' | 'partial';
+  gamesProcessed: number;
+  assignmentsCreated: number;
+  conflictsFound: number;
+  duration: number;
+  aiSystemUsed: 'algorithmic' | 'llm';
+  assignments: {
+    gameId: string;
+    gameInfo: string;
+    assignedReferees: {
+      refereeId: string;
+      refereeName: string;
+      position: string;
+      confidence: number;
+      reasoning?: string;
+    }[];
+    conflicts?: string[];
+    notes?: string;
+  }[];
+  algorithmicScores?: {
+    weights: any;
+    averageConfidence: number;
+  };
+  llmAnalysis?: {
+    model: string;
+    temperature: number;
+    contextUsed: boolean;
+    processingTime: number;
+  };
+}
 
 // Hook for easy React integration
 export function useApi() {
