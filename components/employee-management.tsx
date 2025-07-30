@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 import { 
   Search, 
   Filter, 
@@ -50,104 +51,73 @@ import {
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { apiClient, Employee, Department, JobPosition } from '@/lib/api'
 
-interface Employee {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  phone?: string
-  position: {
-    id: string
-    title: string
-    department: string
-  }
-  department: {
-    id: string
-    name: string
-    code: string
-  }
-  status: 'active' | 'inactive' | 'terminated' | 'on_leave'
-  hireDate: string
-  salary?: number
-  manager?: {
-    id: string
-    name: string
-  }
-  location: {
-    id: string
-    name: string
-    address: string
-  }
-  profilePicture?: string
-  skills: string[]
-  certifications: Array<{
-    id: string
-    name: string
-    issuer: string
-    issuedDate: string
-    expiryDate?: string
-    status: 'valid' | 'expired' | 'expiring_soon'
-  }>
-  performance: {
-    rating: number
-    lastReviewDate: string
-    nextReviewDate: string
-  }
-  trainingCompleted: number
-  trainingRequired: number
-  emergencyContact?: {
-    name: string
-    relationship: string
-    phone: string
-  }
-}
+// Employee interface now imported from api.ts - using backend schema
 
 interface EmployeeFilters {
   search: string
-  department: string
-  position: string
-  status: string
-  location: string
-  manager: string
+  department_id: string
+  position_id: string
+  employment_status: string
+  manager_id: string
+}
+
+interface EmployeeStats {
+  totalEmployees: number
+  activeEmployees: number
+  departmentBreakdown: any[]
+  positionBreakdown: any[]
+  newHiresThisMonth: number
+  upcomingEvaluations: number
+  activeTrainingPrograms: number
+  averageTenure: number
 }
 
 export function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [positions, setPositions] = useState<JobPosition[]>([])
+  const [stats, setStats] = useState<EmployeeStats | null>(null)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
   const [filters, setFilters] = useState<EmployeeFilters>({
     search: '',
-    department: '',
-    position: '',
-    status: '',
-    location: '',
-    manager: ''
+    department_id: '',
+    position_id: '',
+    employment_status: '',
+    manager_id: ''
   })
 
   useEffect(() => {
-    loadEmployees()
+    loadInitialData()
   }, [])
 
   useEffect(() => {
-    applyFilters()
-  }, [employees, filters])
+    loadEmployees()
+  }, [filters, pagination.page, pagination.limit])
 
-  const loadEmployees = async () => {
+  const loadInitialData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/employees')
-      if (!response.ok) throw new Error('Failed to load employees')
-      
-      const data = await response.json()
-      setEmployees(data)
+      await Promise.all([
+        loadEmployees(),
+        loadDepartments(),
+        loadPositions(),
+        loadStats()
+      ])
     } catch (error) {
-      console.error('Error loading employees:', error)
+      console.error('Error loading initial data:', error)
       toast({
         title: 'Error',
-        description: 'Failed to load employees',
+        description: 'Failed to load initial data',
         variant: 'destructive',
       })
     } finally {
@@ -155,39 +125,160 @@ export function EmployeeManagement() {
     }
   }
 
-  const applyFilters = () => {
-    let filtered = employees
-
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      filtered = filtered.filter(employee => 
-        `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(searchLower) ||
-        employee.email.toLowerCase().includes(searchLower) ||
-        employee.position.title.toLowerCase().includes(searchLower)
-      )
+  const loadEmployees = async (retryCount = 0) => {
+    try {
+      const params: any = {
+        page: pagination.page,
+        limit: pagination.limit
+      }
+      
+      if (filters.search) params.search = filters.search
+      if (filters.department_id) params.department_id = filters.department_id
+      if (filters.position_id) params.position_id = filters.position_id
+      if (filters.employment_status) params.employment_status = filters.employment_status
+      if (filters.manager_id) params.manager_id = filters.manager_id
+      
+      const response = await apiClient.getEmployees(params)
+      setEmployees(response.employees)
+      setPagination(prev => ({
+        ...prev,
+        total: response.pagination.total,
+        totalPages: response.pagination.totalPages
+      }))
+    } catch (error: any) {
+      console.error('Error loading employees:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
+      
+      // Retry logic for temporary failures
+      if (retryCount < 2 && (error?.message?.includes('network') || error?.message?.includes('timeout'))) {
+        setTimeout(() => loadEmployees(retryCount + 1), 1000 * (retryCount + 1))
+        return
+      }
+      
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to load employees. Please try again.',
+        variant: 'destructive',
+        action: {
+          label: 'Retry',
+          onClick: () => loadEmployees()
+        }
+      })
     }
+  }
 
-    if (filters.department) {
-      filtered = filtered.filter(employee => employee.department.id === filters.department)
+  const loadDepartments = async () => {
+    try {
+      const response = await apiClient.getEmployeeDepartments()
+      setDepartments(response)
+    } catch (error: any) {
+      console.error('Error loading departments:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
     }
+  }
 
-    if (filters.position) {
-      filtered = filtered.filter(employee => employee.position.id === filters.position)
+  const loadPositions = async () => {
+    try {
+      const response = await apiClient.getEmployeePositions()
+      setPositions(response)
+    } catch (error: any) {
+      console.error('Error loading positions:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
     }
+  }
 
-    if (filters.status) {
-      filtered = filtered.filter(employee => employee.status === filters.status)
+  const loadStats = async () => {
+    try {
+      const response = await apiClient.getEmployeeStats()
+      setStats(response.data)
+    } catch (error: any) {
+      console.error('Error loading stats:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
     }
+  }
 
-    if (filters.location) {
-      filtered = filtered.filter(employee => employee.location.id === filters.location)
+  const handleFilterChange = (key: keyof EmployeeFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page when filtering
+  }
+
+  const handleCreateEmployee = async (employeeData: any) => {
+    try {
+      await apiClient.createEmployee(employeeData)
+      toast({
+        title: 'Success',
+        description: 'Employee created successfully',
+      })
+      setShowAddDialog(false)
+      await loadEmployees() // Refresh data
+      await loadStats() // Refresh stats
+    } catch (error: any) {
+      console.error('Error creating employee:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
+      
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to create employee. Please try again.',
+        variant: 'destructive',
+      })
     }
+  }
 
-    if (filters.manager) {
-      filtered = filtered.filter(employee => employee.manager?.id === filters.manager)
+  const handleUpdateEmployee = async (id: string, employeeData: any) => {
+    try {
+      await apiClient.updateEmployee(id, employeeData)
+      toast({
+        title: 'Success',
+        description: 'Employee updated successfully',
+      })
+      await loadEmployees() // Refresh data
+      await loadStats() // Refresh stats
+    } catch (error: any) {
+      console.error('Error updating employee:', error)
+      
+      // Handle authentication errors
+      if (error?.message?.includes('401') || error?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
+      
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to update employee. Please try again.',
+        variant: 'destructive',
+      })
     }
-
-    setFilteredEmployees(filtered)
   }
 
   const getStatusBadge = (status: string) => {
@@ -195,7 +286,9 @@ export function EmployeeManagement() {
       active: { variant: 'default', text: 'Active', color: 'bg-green-100 text-green-800' },
       inactive: { variant: 'secondary', text: 'Inactive', color: 'bg-gray-100 text-gray-800' },
       terminated: { variant: 'destructive', text: 'Terminated', color: 'bg-red-100 text-red-800' },
-      on_leave: { variant: 'secondary', text: 'On Leave', color: 'bg-yellow-100 text-yellow-800' }
+      on_leave: { variant: 'secondary', text: 'On Leave', color: 'bg-yellow-100 text-yellow-800' },
+      probation: { variant: 'secondary', text: 'Probation', color: 'bg-orange-100 text-orange-800' },
+      suspended: { variant: 'destructive', text: 'Suspended', color: 'bg-red-100 text-red-800' }
     }
 
     const config = variants[status as keyof typeof variants] || variants.active
@@ -206,20 +299,30 @@ export function EmployeeManagement() {
     )
   }
 
-  const getCertificationStatusBadge = (status: string) => {
-    const variants = {
-      valid: { variant: 'default', icon: CheckCircle, text: 'Valid', color: 'text-green-600' },
-      expired: { variant: 'destructive', icon: AlertTriangle, text: 'Expired', color: 'text-red-600' },
-      expiring_soon: { variant: 'secondary', icon: Clock, text: 'Expiring Soon', color: 'text-yellow-600' }
+  const getTrainingProgressBadge = (completed: number, total: number) => {
+    if (total === 0) {
+      return (
+        <Badge variant="secondary">
+          No Training Required
+        </Badge>
+      )
     }
-
-    const config = variants[status as keyof typeof variants] || variants.valid
-    const Icon = config.icon
-
+    
+    const percentage = (completed / total) * 100
+    let variant: 'default' | 'secondary' | 'destructive' = 'default'
+    let color = 'bg-green-100 text-green-800'
+    
+    if (percentage < 50) {
+      variant = 'destructive'
+      color = 'bg-red-100 text-red-800'
+    } else if (percentage < 80) {
+      variant = 'secondary'
+      color = 'bg-yellow-100 text-yellow-800'
+    }
+    
     return (
-      <Badge variant={config.variant as any} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {config.text}
+      <Badge variant={variant} className={color}>
+        {completed}/{total} ({Math.round(percentage)}%)
       </Badge>
     )
   }
@@ -234,9 +337,13 @@ export function EmployeeManagement() {
     }).format(salary)
   }
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+  const getInitials = (name: string) => {
+    const parts = name.split(' ')
+    return parts.length >= 2 
+      ? `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
+      : name.substring(0, 2).toUpperCase()
   }
+
 
   const columns = [
     {
@@ -247,64 +354,66 @@ export function EmployeeManagement() {
         return (
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={employee.profilePicture} />
-              <AvatarFallback>{getInitials(employee.firstName, employee.lastName)}</AvatarFallback>
+              <AvatarFallback>{getInitials(employee.employee_name || 'Unknown')}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{employee.firstName} {employee.lastName}</p>
-              <p className="text-sm text-muted-foreground">{employee.email}</p>
+              <p className="font-medium">{employee.employee_name || 'Unknown'}</p>
+              <p className="text-sm text-muted-foreground">{employee.employee_email}</p>
             </div>
           </div>
         )
       }
     },
     {
-      accessorKey: 'position.title',
+      accessorKey: 'position_title',
       header: 'Position',
       cell: ({ row }: any) => {
         const employee: Employee = row.original
         return (
           <div>
-            <p className="font-medium">{employee.position.title}</p>
-            <p className="text-sm text-muted-foreground">{employee.department.name}</p>
+            <p className="font-medium">{employee.position_title || 'Not assigned'}</p>
+            <p className="text-sm text-muted-foreground">{employee.department_name || 'No department'}</p>
           </div>
         )
       }
     },
     {
-      accessorKey: 'status',
+      accessorKey: 'employment_status',
       header: 'Status',
       cell: ({ row }: any) => {
         const employee: Employee = row.original
-        return getStatusBadge(employee.status)
+        return getStatusBadge(employee.employment_status)
       }
     },
     {
-      accessorKey: 'location.name',
+      accessorKey: 'work_location',
       header: 'Location',
       cell: ({ row }: any) => {
         const employee: Employee = row.original
         return (
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span>{employee.location.name}</span>
+            <span>{employee.work_location || 'Not specified'}</span>
           </div>
         )
       }
     },
     {
-      accessorKey: 'hireDate',
+      accessorKey: 'hire_date',
       header: 'Hire Date',
       cell: ({ row }: any) => {
         const employee: Employee = row.original
-        return new Date(employee.hireDate).toLocaleDateString()
+        return new Date(employee.hire_date).toLocaleDateString()
       }
     },
     {
-      accessorKey: 'performance.rating',
+      id: 'performance',
       header: 'Performance',
       cell: ({ row }: any) => {
         const employee: Employee = row.original
+        if (!employee.latest_overall_rating) {
+          return <span className="text-sm text-muted-foreground">No rating</span>
+        }
         return (
           <div className="flex items-center gap-2">
             <div className="flex">
@@ -312,16 +421,26 @@ export function EmployeeManagement() {
                 <Award 
                   key={star} 
                   className={`h-4 w-4 ${
-                    star <= employee.performance.rating 
+                    star <= employee.latest_overall_rating! 
                       ? 'text-yellow-400 fill-current' 
                       : 'text-gray-300'
                   }`} 
                 />
               ))}
             </div>
-            <span className="text-sm">{employee.performance.rating}/5</span>
+            <span className="text-sm">{employee.latest_overall_rating}/5</span>
           </div>
         )
+      }
+    },
+    {
+      id: 'training',
+      header: 'Training',
+      cell: ({ row }: any) => {
+        const employee: Employee = row.original
+        const completed = employee.completed_trainings || 0
+        const active = employee.active_trainings || 0
+        return getTrainingProgressBadge(completed, completed + active)
       }
     },
     {
@@ -363,32 +482,95 @@ export function EmployeeManagement() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner className="h-8 w-8" />
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">Employee Management</h2>
+            <p className="text-muted-foreground">
+              Loading employee data...
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <LoadingSpinner className="h-8 w-8" />
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Employee Management</h2>
-          <p className="text-muted-foreground">
-            Manage employee information, performance, and organizational structure
-          </p>
+      {/* Header with Stats Overview */}
+      <div className="space-y-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">Employee Management</h2>
+            <p className="text-muted-foreground">
+              Manage employee information, performance, and organizational structure
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Employee
+            </Button>
+          </div>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Employee
-          </Button>
-        </div>
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                    <p className="text-2xl font-bold">{stats.totalEmployees}</p>
+                  </div>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Active Employees</p>
+                    <p className="text-2xl font-bold">{stats.activeEmployees}</p>
+                  </div>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">New Hires This Month</p>
+                    <p className="text-2xl font-bold">{stats.newHiresThisMonth}</p>
+                  </div>
+                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Upcoming Evaluations</p>
+                    <p className="text-2xl font-bold">{stats.upcomingEvaluations}</p>
+                  </div>
+                  <Calendar className="h-4 w-4 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -408,7 +590,7 @@ export function EmployeeManagement() {
                 <Input
                   placeholder="Search employees..."
                   value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -416,24 +598,24 @@ export function EmployeeManagement() {
 
             <div className="space-y-2">
               <Label>Department</Label>
-              <Select value={filters.department} onValueChange={(value) => setFilters(prev => ({ ...prev, department: value }))}>
+              <Select value={filters.department_id} onValueChange={(value) => handleFilterChange('department_id', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All departments" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All departments</SelectItem>
-                  <SelectItem value="engineering">Engineering</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+              <Label>Employment Status</Label>
+              <Select value={filters.employment_status} onValueChange={(value) => handleFilterChange('employment_status', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
@@ -443,22 +625,25 @@ export function EmployeeManagement() {
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="on_leave">On Leave</SelectItem>
                   <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="probation">Probation</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Location</Label>
-              <Select value={filters.location} onValueChange={(value) => setFilters(prev => ({ ...prev, location: value }))}>
+              <Label>Position</Label>
+              <Select value={filters.position_id} onValueChange={(value) => handleFilterChange('position_id', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All locations" />
+                  <SelectValue placeholder="All positions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All locations</SelectItem>
-                  <SelectItem value="hq">Headquarters</SelectItem>
-                  <SelectItem value="remote">Remote</SelectItem>
-                  <SelectItem value="branch1">Branch Office 1</SelectItem>
-                  <SelectItem value="branch2">Branch Office 2</SelectItem>
+                  <SelectItem value="">All positions</SelectItem>
+                  {positions.map((position) => (
+                    <SelectItem key={position.id} value={position.id}>
+                      {position.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -468,11 +653,46 @@ export function EmployeeManagement() {
 
       {/* Employees Table */}
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Employees ({pagination.total})</span>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              Page {pagination.page} of {pagination.totalPages}
+            </div>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
           <DataTable
-            data={filteredEmployees}
+            data={employees}
             columns={columns}
           />
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                {pagination.total} results
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  disabled={pagination.page <= 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  disabled={pagination.page >= pagination.totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -483,17 +703,16 @@ export function EmployeeManagement() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={selectedEmployee.profilePicture} />
                   <AvatarFallback>
-                    {getInitials(selectedEmployee.firstName, selectedEmployee.lastName)}
+                    {getInitials(selectedEmployee.employee_name || 'Unknown')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="text-xl font-bold">
-                    {selectedEmployee.firstName} {selectedEmployee.lastName}
+                    {selectedEmployee.employee_name || 'Unknown Employee'}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {selectedEmployee.position.title} • {selectedEmployee.department.name}
+                    {selectedEmployee.position_title || 'No position'} • {selectedEmployee.department_name || 'No department'}
                   </div>
                 </div>
               </DialogTitle>
@@ -516,21 +735,12 @@ export function EmployeeManagement() {
                     <CardContent className="space-y-3">
                       <div className="flex items-center gap-3">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span>{selectedEmployee.email}</span>
+                        <span>{selectedEmployee.employee_email}</span>
                       </div>
-                      {selectedEmployee.phone && (
-                        <div className="flex items-center gap-3">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{selectedEmployee.phone}</span>
-                        </div>
-                      )}
                       <div className="flex items-center gap-3">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <p>{selectedEmployee.location.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedEmployee.location.address}
-                          </p>
+                          <p>{selectedEmployee.work_location || 'Not specified'}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -542,43 +752,58 @@ export function EmployeeManagement() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        {getStatusBadge(selectedEmployee.status)}
+                        <p className="text-sm text-muted-foreground">Employment Status</p>
+                        {getStatusBadge(selectedEmployee.employment_status)}
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Hire Date</p>
-                        <p>{new Date(selectedEmployee.hireDate).toLocaleDateString()}</p>
+                        <p>{new Date(selectedEmployee.hire_date).toLocaleDateString()}</p>
                       </div>
-                      {selectedEmployee.manager && (
+                      {selectedEmployee.manager_name && (
                         <div>
                           <p className="text-sm text-muted-foreground">Reports To</p>
-                          <p>{selectedEmployee.manager.name}</p>
+                          <p>{selectedEmployee.manager_name}</p>
                         </div>
                       )}
-                      {selectedEmployee.salary && (
+                      {selectedEmployee.base_salary && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Salary</p>
-                          <p className="font-semibold">{formatSalary(selectedEmployee.salary)}</p>
+                          <p className="text-sm text-muted-foreground">Base Salary</p>
+                          <p className="font-semibold">{formatSalary(selectedEmployee.base_salary)}</p>
+                        </div>
+                      )}
+                      {selectedEmployee.employment_type && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Employment Type</p>
+                          <p>{selectedEmployee.employment_type}</p>
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 </div>
 
-                {selectedEmployee.skills.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Skills</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedEmployee.skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary">{skill}</Badge>
-                        ))}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Additional Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Employee ID</p>
+                      <p>{selectedEmployee.employee_id || 'Not assigned'}</p>
+                    </div>
+                    {selectedEmployee.position_level && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Position Level</p>
+                        <p>{selectedEmployee.position_level}</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
+                    )}
+                    {selectedEmployee.hourly_rate && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hourly Rate</p>
+                        <p>{formatSalary(selectedEmployee.hourly_rate)}/hour</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="performance" className="space-y-6">
@@ -587,18 +812,18 @@ export function EmployeeManagement() {
                     <CardTitle className="text-lg">Performance Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="text-center">
                         <div className="text-3xl font-bold mb-2">
-                          {selectedEmployee.performance.rating}/5
+                          {selectedEmployee.latest_overall_rating || 0}/5
                         </div>
-                        <p className="text-sm text-muted-foreground">Current Rating</p>
+                        <p className="text-sm text-muted-foreground">Latest Rating</p>
                         <div className="flex justify-center mt-2">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Award 
                               key={star} 
                               className={`h-5 w-5 ${
-                                star <= selectedEmployee.performance.rating 
+                                star <= (selectedEmployee.latest_overall_rating || 0) 
                                   ? 'text-yellow-400 fill-current' 
                                   : 'text-gray-300'
                               }`} 
@@ -608,15 +833,11 @@ export function EmployeeManagement() {
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-semibold mb-2">
-                          {new Date(selectedEmployee.performance.lastReviewDate).toLocaleDateString()}
+                          {selectedEmployee.latest_evaluation_date 
+                            ? new Date(selectedEmployee.latest_evaluation_date).toLocaleDateString()
+                            : 'No evaluation'}
                         </div>
-                        <p className="text-sm text-muted-foreground">Last Review</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold mb-2">
-                          {new Date(selectedEmployee.performance.nextReviewDate).toLocaleDateString()}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Next Review</p>
+                        <p className="text-sm text-muted-foreground">Last Evaluation</p>
                       </div>
                     </div>
                   </CardContent>
@@ -626,40 +847,18 @@ export function EmployeeManagement() {
               <TabsContent value="certifications" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Certifications</CardTitle>
+                    <CardTitle className="text-lg">Certifications & Training Records</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {selectedEmployee.certifications.length > 0 ? (
-                      <div className="space-y-4">
-                        {selectedEmployee.certifications.map((cert, index) => (
-                          <div key={index} className="p-4 border rounded-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h4 className="font-semibold">{cert.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Issued by {cert.issuer}
-                                </p>
-                              </div>
-                              {getCertificationStatusBadge(cert.status)}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Issued</p>
-                                <p>{new Date(cert.issuedDate).toLocaleDateString()}</p>
-                              </div>
-                              {cert.expiryDate && (
-                                <div>
-                                  <p className="text-muted-foreground">Expires</p>
-                                  <p>{new Date(cert.expiryDate).toLocaleDateString()}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">No certifications recorded</p>
-                    )}
+                    <div className="text-center py-8">
+                      <Award className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Training and certification records will be loaded from the training module.
+                      </p>
+                      <Button variant="outline" className="mt-4" disabled>
+                        View Training Records
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -674,30 +873,34 @@ export function EmployeeManagement() {
                       <div>
                         <div className="text-center mb-4">
                           <div className="text-3xl font-bold text-green-600">
-                            {selectedEmployee.trainingCompleted}
+                            {selectedEmployee.completed_trainings || 0}
                           </div>
-                          <p className="text-sm text-muted-foreground">Completed</p>
+                          <p className="text-sm text-muted-foreground">Completed Trainings</p>
                         </div>
                       </div>
                       <div>
                         <div className="text-center mb-4">
-                          <div className="text-3xl font-bold text-orange-600">
-                            {selectedEmployee.trainingRequired}
+                          <div className="text-3xl font-bold text-blue-600">
+                            {selectedEmployee.active_trainings || 0}
                           </div>
-                          <p className="text-sm text-muted-foreground">Required</p>
+                          <p className="text-sm text-muted-foreground">Active Trainings</p>
                         </div>
                       </div>
                     </div>
                     
                     <div className="mt-4">
                       <div className="flex justify-between text-sm mb-2">
-                        <span>Training Completion</span>
+                        <span>Training Progress</span>
                         <span>
-                          {Math.round((selectedEmployee.trainingCompleted / (selectedEmployee.trainingCompleted + selectedEmployee.trainingRequired)) * 100)}%
+                          {(selectedEmployee.completed_trainings || 0) + (selectedEmployee.active_trainings || 0) > 0
+                            ? Math.round(((selectedEmployee.completed_trainings || 0) / ((selectedEmployee.completed_trainings || 0) + (selectedEmployee.active_trainings || 0))) * 100)
+                            : 0}%
                         </span>
                       </div>
                       <Progress 
-                        value={(selectedEmployee.trainingCompleted / (selectedEmployee.trainingCompleted + selectedEmployee.trainingRequired)) * 100} 
+                        value={(selectedEmployee.completed_trainings || 0) + (selectedEmployee.active_trainings || 0) > 0
+                          ? ((selectedEmployee.completed_trainings || 0) / ((selectedEmployee.completed_trainings || 0) + (selectedEmployee.active_trainings || 0))) * 100
+                          : 0} 
                       />
                     </div>
                   </CardContent>
@@ -717,55 +920,30 @@ export function EmployeeManagement() {
               Create a new employee record in the system
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" placeholder="John" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" placeholder="Doe" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john.doe@company.com" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="position">Position</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="developer">Software Developer</SelectItem>
-                  <SelectItem value="designer">UI/UX Designer</SelectItem>
-                  <SelectItem value="manager">Project Manager</SelectItem>
-                  <SelectItem value="analyst">Business Analyst</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="engineering">Engineering</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="text-center py-8">
+            <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Add New Employee</h3>
+            <p className="text-muted-foreground mb-4">
+              This feature requires integration with user management.<br />
+              Employees must first be created as users, then assigned employee records.
+            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>Steps to add an employee:</p>
+              <ol className="list-decimal list-inside space-y-1 text-left max-w-md mx-auto">
+                <li>Create user account via User Management</li>
+                <li>Assign department and position</li>
+                <li>Set employment details</li>
+                <li>Configure salary and benefits</li>
+              </ol>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              Cancel
+              Close
             </Button>
-            <Button>Add Employee</Button>
+            <Button disabled>
+              Feature Coming Soon
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

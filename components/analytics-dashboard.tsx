@@ -51,6 +51,7 @@ import {
 } from 'recharts'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { apiClient } from '@/lib/api'
 
 interface AnalyticsMetrics {
   organizationalHealth: {
@@ -157,15 +158,30 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
   const loadAnalyticsData = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/organizational-analytics?timeRange=${timeRange}`)
-      if (!response.ok) throw new Error('Failed to load analytics data')
       
-      const data = await response.json()
-      setMetrics(data)
+      // Use the API client to get organizational analytics
+      const response = await apiClient.getOrganizationalAnalytics({ timeRange })
+      
+      // The response should already match the AnalyticsMetrics interface
+      setMetrics(response)
       setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analytics data')
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to load analytics data'
+      setError(errorMessage)
       console.error('Error loading analytics data:', err)
+      
+      // Handle authentication errors
+      if (err?.message?.includes('401') || err?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }

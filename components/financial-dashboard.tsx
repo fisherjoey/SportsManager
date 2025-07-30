@@ -41,6 +41,8 @@ import { ReceiptUpload } from './receipt-upload'
 import { ExpenseList } from './expense-list'
 import { BudgetTracker } from './budget-tracker'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
+import { apiClient } from '@/lib/api'
 
 interface FinancialMetrics {
   totalExpenses: number
@@ -72,15 +74,42 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
   const loadFinancialMetrics = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/financial/metrics?period=${dateRange}`)
-      if (!response.ok) throw new Error('Failed to load financial metrics')
       
-      const data = await response.json()
+      // Use the API client to get financial reports
+      const response = await apiClient.getFinancialReports({ period: dateRange })
+      
+      // Transform the response to match the expected FinancialMetrics interface
+      const data: FinancialMetrics = {
+        totalExpenses: response.totalExpenses || 0,
+        totalBudget: response.totalBudget || 0,
+        pendingApprovals: response.pendingApprovals || 0,
+        monthlySpend: response.monthlySpend || 0,
+        budgetUtilization: response.budgetUtilization || 0,
+        expensesByCategory: response.expensesByCategory || [],
+        monthlyTrends: response.monthlyTrends || [],
+        topExpenses: response.topExpenses || [],
+        recentReceipts: response.recentReceipts || []
+      }
+      
       setMetrics(data)
       setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load financial data')
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to load financial data'
+      setError(errorMessage)
       console.error('Error loading financial metrics:', err)
+      
+      // Handle authentication errors
+      if (err?.message?.includes('401') || err?.status === 401) {
+        apiClient.removeToken()
+        window.location.href = '/login'
+        return
+      }
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }

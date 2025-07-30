@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -47,145 +49,123 @@ import {
 } from 'recharts'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { apiClient, ComplianceItem, ComplianceIncident, RiskAssessment } from '@/lib/api'
 
-interface ComplianceArea {
-  id: string
-  name: string
-  description: string
-  category: 'legal' | 'financial' | 'hr' | 'safety' | 'data_privacy' | 'environmental' | 'industry_specific'
-  status: 'compliant' | 'warning' | 'critical' | 'not_assessed'
-  score: number
-  lastAssessmentDate: string
-  nextAssessmentDate: string
-  requirements: ComplianceRequirement[]
+interface ComplianceDashboard {
+  overview: {
+    totalItems: number
+    overdue: number
+    dueSoon: number
+    completed: number
+  }
+  incidents: {
+    totalIncidents: number
+    openIncidents: number
+    criticalIncidents: number
+  }
+  risks: {
+    totalRisks: number
+    highRisks: number
+    mediumRisks: number
+    lowRisks: number
+  }
   trends: Array<{
     date: string
     score: number
     issues: number
-  }>
-}
-
-interface ComplianceRequirement {
-  id: string
-  name: string
-  description: string
-  type: 'policy' | 'training' | 'certification' | 'audit' | 'documentation' | 'system'
-  status: 'met' | 'partial' | 'not_met' | 'overdue'
-  priority: 'high' | 'medium' | 'low'
-  dueDate?: string
-  completedDate?: string
-  assignedTo: {
-    id: string
-    name: string
-    email: string
-  }
-  evidence: Array<{
-    id: string
-    type: 'document' | 'certificate' | 'audit_report' | 'training_record'
-    name: string
-    uploadedAt: string
-    expiryDate?: string
-  }>
-  comments?: string
-}
-
-interface ComplianceMetrics {
-  overallScore: number
-  totalRequirements: number
-  metRequirements: number
-  overdueRequirements: number
-  upcomingDeadlines: number
-  riskAreas: number
-  areaBreakdown: Array<{
-    area: string
-    score: number
-    requirements: number
-    color: string
-  }>
-  monthlyTrends: Array<{
-    month: string
-    score: number
-    issues: number
     resolved: number
   }>
-  requirementsByStatus: Array<{
-    status: string
-    count: number
-    percentage: number
+  upcomingDeadlines: Array<{
+    id: string
+    title: string
+    due_date: string
+    priority: string
+    category: string
   }>
+}
+
+interface ComplianceFilters {
+  category?: string
+  status?: string
+  priority?: string
+  assigned_to?: string
+  page?: number
+  limit?: number
 }
 
 export function ComplianceTracking() {
-  const [complianceAreas, setComplianceAreas] = useState<ComplianceArea[]>([])
-  const [metrics, setMetrics] = useState<ComplianceMetrics | null>(null)
+  const [complianceItems, setComplianceItems] = useState<ComplianceItem[]>([])
+  const [complianceIncidents, setComplianceIncidents] = useState<ComplianceIncident[]>([])
+  const [riskAssessments, setRiskAssessments] = useState<RiskAssessment[]>([])
+  const [dashboard, setDashboard] = useState<ComplianceDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [selectedArea, setSelectedArea] = useState<ComplianceArea | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<ComplianceFilters>({})
 
   useEffect(() => {
     loadComplianceData()
-  }, [])
+  }, [filters])
 
   const loadComplianceData = async () => {
     try {
       setLoading(true)
-      const [areasResponse, metricsResponse] = await Promise.all([
-        fetch('/api/compliance/areas'),
-        fetch('/api/compliance/metrics')
+      setError(null)
+
+      const [itemsResponse, incidentsResponse, risksResponse, dashboardResponse] = await Promise.all([
+        apiClient.getComplianceTracking(filters),
+        apiClient.getComplianceIncidents({ limit: 10 }),
+        apiClient.getRiskAssessments({ limit: 10 }),
+        apiClient.getComplianceDashboard()
       ])
 
-      if (!areasResponse.ok || !metricsResponse.ok) {
-        throw new Error('Failed to load compliance data')
-      }
-
-      const areasData = await areasResponse.json()
-      const metricsData = await metricsResponse.json()
-
-      setComplianceAreas(areasData)
-      setMetrics(metricsData)
-      setError(null)
+      setComplianceItems(itemsResponse.items)
+      setComplianceIncidents(incidentsResponse.incidents)
+      setRiskAssessments(risksResponse.assessments)
+      setDashboard(dashboardResponse.data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load compliance data')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load compliance data'
+      setError(errorMessage)
       console.error('Error loading compliance data:', err)
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const getStatusBadge = (status: string, score?: number) => {
+  const getStatusBadge = (status: string) => {
     const variants = {
-      compliant: { variant: 'default', icon: CheckCircle, text: 'Compliant', color: 'bg-green-100 text-green-800' },
-      warning: { variant: 'secondary', icon: AlertTriangle, text: 'Warning', color: 'bg-yellow-100 text-yellow-800' },
-      critical: { variant: 'destructive', icon: AlertTriangle, text: 'Critical', color: 'bg-red-100 text-red-800' },
-      not_assessed: { variant: 'outline', icon: Clock, text: 'Not Assessed', color: 'bg-gray-100 text-gray-800' }
+      pending: { variant: 'secondary', icon: Clock, text: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+      in_progress: { variant: 'default', icon: Clock, text: 'In Progress', color: 'bg-blue-100 text-blue-800' },
+      completed: { variant: 'default', icon: CheckCircle, text: 'Completed', color: 'bg-green-100 text-green-800' },
+      overdue: { variant: 'destructive', icon: AlertTriangle, text: 'Overdue', color: 'bg-red-100 text-red-800' },
+      cancelled: { variant: 'outline', icon: Clock, text: 'Cancelled', color: 'bg-gray-100 text-gray-800' }
     }
 
-    const config = variants[status as keyof typeof variants] || variants.not_assessed
+    const config = variants[status as keyof typeof variants] || variants.pending
     const Icon = config.icon
 
     return (
-      <div className="flex items-center gap-2">
-        <Badge variant={config.variant as any} className={`${config.color} flex items-center gap-1`}>
-          <Icon className="w-3 h-3" />
-          {config.text}
-        </Badge>
-        {score !== undefined && (
-          <span className="text-sm font-semibold">{score}%</span>
-        )}
-      </div>
+      <Badge variant={config.variant as any} className={`${config.color} flex items-center gap-1`}>
+        <Icon className="w-3 h-3" />
+        {config.text}
+      </Badge>
     )
   }
 
-  const getRequirementStatusBadge = (status: string) => {
+  const getSeverityBadge = (severity: string) => {
     const variants = {
-      met: { variant: 'default', icon: CheckCircle, text: 'Met', color: 'bg-green-100 text-green-800' },
-      partial: { variant: 'secondary', icon: Clock, text: 'Partial', color: 'bg-yellow-100 text-yellow-800' },
-      not_met: { variant: 'outline', icon: AlertTriangle, text: 'Not Met', color: 'bg-gray-100 text-gray-800' },
-      overdue: { variant: 'destructive', icon: AlertTriangle, text: 'Overdue', color: 'bg-red-100 text-red-800' }
+      low: { variant: 'outline', icon: CheckCircle, text: 'Low', color: 'bg-green-100 text-green-800' },
+      medium: { variant: 'secondary', icon: AlertTriangle, text: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
+      high: { variant: 'destructive', icon: AlertTriangle, text: 'High', color: 'bg-red-100 text-red-800' },
+      critical: { variant: 'destructive', icon: AlertTriangle, text: 'Critical', color: 'bg-red-100 text-red-800' }
     }
 
-    const config = variants[status as keyof typeof variants] || variants.not_met
+    const config = variants[severity as keyof typeof variants] || variants.low
     const Icon = config.icon
 
     return (
@@ -230,7 +210,93 @@ export function ComplianceTracking() {
     )
   }
 
-  if (!metrics) return null
+  if (!dashboard) return null
+
+  const handleCreateItem = async () => {
+    // TODO: Implement create item modal
+    toast({
+      title: 'Coming Soon',
+      description: 'Create compliance item functionality will be implemented.',
+    })
+  }
+
+  const handleUpdateItemStatus = async (itemId: string, status: string) => {
+    try {
+      await apiClient.updateComplianceItem(itemId, { status })
+      await loadComplianceData()
+      toast({
+        title: 'Success',
+        description: 'Compliance item status updated successfully.',
+      })
+    } catch (error) {
+      console.error('Error updating compliance item:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update compliance item status.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleCreateIncident = async (incidentData: {
+    title: string
+    description: string
+    severity: string
+    category: string
+    incident_date: string
+    location?: string
+  }) => {
+    try {
+      await apiClient.createComplianceIncident(incidentData)
+      await loadComplianceData()
+      toast({
+        title: 'Success',
+        description: 'Compliance incident created successfully.',
+      })
+    } catch (error) {
+      console.error('Error creating compliance incident:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create compliance incident.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleCreateRiskAssessment = async (riskData: {
+    title: string
+    description?: string
+    category: string
+    probability: number
+    impact: number
+    current_controls?: string
+    additional_controls?: string
+    responsible_person?: string
+  }) => {
+    try {
+      await apiClient.createRiskAssessment(riskData)
+      await loadComplianceData()
+      toast({
+        title: 'Success',
+        description: 'Risk assessment created successfully.',
+      })
+    } catch (error) {
+      console.error('Error creating risk assessment:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create risk assessment.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleExportReport = async () => {
+    // TODO: Implement export functionality
+    toast({
+      title: 'Coming Soon',
+      description: 'Export report functionality will be implemented.',
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -243,13 +309,13 @@ export function ComplianceTracking() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportReport}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>
-          <Button>
+          <Button onClick={handleCreateItem}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Requirement
+            Add Item
           </Button>
         </div>
       </div>
@@ -262,10 +328,19 @@ export function ComplianceTracking() {
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.overallScore}%</div>
-            <Progress value={metrics.overallScore} className="mt-2" />
+            <div className="text-2xl font-bold">
+              {dashboard.overview.totalItems > 0 
+                ? Math.round((dashboard.overview.completed / dashboard.overview.totalItems) * 100)
+                : 0}%
+            </div>
+            <Progress 
+              value={dashboard.overview.totalItems > 0 
+                ? (dashboard.overview.completed / dashboard.overview.totalItems) * 100
+                : 0} 
+              className="mt-2" 
+            />
             <p className="text-xs text-muted-foreground mt-2">
-              {metrics.metRequirements} of {metrics.totalRequirements} requirements met
+              {dashboard.overview.completed} of {dashboard.overview.totalItems} items completed
             </p>
           </CardContent>
         </Card>
@@ -276,7 +351,7 @@ export function ComplianceTracking() {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{metrics.overdueRequirements}</div>
+            <div className="text-2xl font-bold text-red-600">{dashboard.overview.overdue}</div>
             <p className="text-xs text-muted-foreground">
               Require immediate attention
             </p>
@@ -289,7 +364,7 @@ export function ComplianceTracking() {
             <Calendar className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{metrics.upcomingDeadlines}</div>
+            <div className="text-2xl font-bold text-yellow-600">{dashboard.overview.dueSoon}</div>
             <p className="text-xs text-muted-foreground">
               Due within 30 days
             </p>
@@ -302,45 +377,25 @@ export function ComplianceTracking() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.riskAreas}</div>
+            <div className="text-2xl font-bold">{dashboard.risks.highRisks + dashboard.risks.mediumRisks}</div>
             <p className="text-xs text-muted-foreground">
-              Areas needing attention
+              High & medium risks
             </p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full lg:w-auto">
+        <TabsList className="grid grid-cols-4 w-full lg:w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="areas">Compliance Areas</TabsTrigger>
-          <TabsTrigger value="requirements">Requirements</TabsTrigger>
+          <TabsTrigger value="items">Compliance Items</TabsTrigger>
+          <TabsTrigger value="incidents">Incidents</TabsTrigger>
+          <TabsTrigger value="risks">Risk Assessments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Compliance by Area */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Compliance by Area
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={metrics.areaBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="area" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="score" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Monthly Trends */}
+            {/* Compliance Trends */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -349,223 +404,136 @@ export function ComplianceTracking() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={metrics.monthlyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="#8884d8" 
-                      strokeWidth={2}
-                      name="Compliance Score"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="resolved" 
-                      stroke="#82ca9d" 
-                      strokeWidth={2}
-                      name="Resolved Issues"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {dashboard.trends.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={dashboard.trends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="score" 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        name="Compliance Score"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="resolved" 
+                        stroke="#82ca9d" 
+                        strokeWidth={2}
+                        name="Resolved Issues"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    No trend data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Incidents Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Incidents Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total Incidents</span>
+                    <span className="font-semibold">{dashboard.incidents.totalIncidents}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Open Incidents</span>
+                    <span className="font-semibold text-yellow-600">{dashboard.incidents.openIncidents}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Critical Incidents</span>
+                    <span className="font-semibold text-red-600">{dashboard.incidents.criticalIncidents}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Requirements Status Distribution */}
+          {/* Upcoming Deadlines */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Requirements Status Distribution
+                <Calendar className="h-5 w-5" />
+                Upcoming Deadlines
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={metrics.requirementsByStatus}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                      label={({ status, percentage }) => `${status}: ${percentage}%`}
-                    >
-                      {metrics.requirementsByStatus.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-
+              {dashboard.upcomingDeadlines.length > 0 ? (
                 <div className="space-y-4">
-                  {metrics.requirementsByStatus.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        />
-                        <span className="capitalize">{item.status.replace('_', ' ')}</span>
+                  {dashboard.upcomingDeadlines.slice(0, 5).map((deadline) => (
+                    <div key={deadline.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{deadline.title}</h4>
+                        <p className="text-sm text-muted-foreground capitalize">{deadline.category}</p>
                       </div>
-                      <div className="text-right">
-                        <span className="font-semibold">{item.count}</span>
-                        <span className="text-sm text-muted-foreground ml-2">({item.percentage}%)</span>
+                      <div className="flex items-center gap-3">
+                        {getPriorityBadge(deadline.priority)}
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(deadline.due_date).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No upcoming deadlines
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="areas" className="space-y-6">
-          <div className="grid gap-6">
-            {complianceAreas.map((area) => (
-              <Card key={area.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{area.name}</h3>
-                        {getStatusBadge(area.status, area.score)}
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {area.description}
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Category</p>
-                          <p className="font-medium capitalize">{area.category.replace('_', ' ')}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Last Assessment</p>
-                          <p className="font-medium">{new Date(area.lastAssessmentDate).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Next Assessment</p>
-                          <p className="font-medium">{new Date(area.nextAssessmentDate).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => setSelectedArea(area)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit Area
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Generate Report
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Compliance Score</span>
-                      <span>{area.score}%</span>
-                    </div>
-                    <Progress value={area.score} />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-green-600">
-                        {area.requirements.filter(r => r.status === 'met').length}
-                      </div>
-                      <p className="text-muted-foreground">Met</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-yellow-600">
-                        {area.requirements.filter(r => r.status === 'partial').length}
-                      </div>
-                      <p className="text-muted-foreground">Partial</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-gray-600">
-                        {area.requirements.filter(r => r.status === 'not_met').length}
-                      </div>
-                      <p className="text-muted-foreground">Not Met</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-red-600">
-                        {area.requirements.filter(r => r.status === 'overdue').length}
-                      </div>
-                      <p className="text-muted-foreground">Overdue</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="requirements" className="space-y-6">
+        <TabsContent value="items" className="space-y-6">
           <div className="grid gap-4">
-            {complianceAreas.flatMap(area => 
-              area.requirements.map(requirement => (
-                <Card key={requirement.id} className="hover:shadow-md transition-shadow">
+            {complianceItems.length > 0 ? (
+              complianceItems.map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold">{requirement.name}</h4>
-                          {getRequirementStatusBadge(requirement.status)}
-                          {getPriorityBadge(requirement.priority)}
+                          <h4 className="font-semibold">{item.title}</h4>
+                          {getStatusBadge(item.status)}
+                          {getPriorityBadge(item.priority)}
                         </div>
                         
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {requirement.description}
-                        </p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {item.description}
+                          </p>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <p className="text-muted-foreground">Type</p>
-                            <p className="font-medium capitalize">{requirement.type}</p>
+                            <p className="text-muted-foreground">Category</p>
+                            <p className="font-medium capitalize">{item.category}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Due Date</p>
+                            <p className={`font-medium ${
+                              new Date(item.due_date) < new Date() ? 'text-red-600' : ''
+                            }`}>
+                              {new Date(item.due_date).toLocaleDateString()}
+                            </p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Assigned To</p>
-                            <p className="font-medium">{requirement.assignedTo.name}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">
-                              {requirement.dueDate ? 'Due Date' : 'Completed'}
-                            </p>
-                            <p className={`font-medium ${
-                              requirement.dueDate && new Date(requirement.dueDate) < new Date() 
-                                ? 'text-red-600' 
-                                : ''
-                            }`}>
-                              {requirement.dueDate 
-                                ? new Date(requirement.dueDate).toLocaleDateString()
-                                : requirement.completedDate 
-                                  ? new Date(requirement.completedDate).toLocaleDateString()
-                                  : 'Not completed'
-                              }
-                            </p>
+                            <p className="font-medium">{item.assigned_to_name || 'Unassigned'}</p>
                           </div>
                         </div>
                       </div>
@@ -584,46 +552,222 @@ export function ComplianceTracking() {
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Edit3 className="h-4 w-4 mr-2" />
-                            Edit Requirement
+                            Edit Item
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleUpdateItemStatus(item.id, item.status === 'completed' ? 'pending' : 'completed')}
+                          >
                             <FileText className="h-4 w-4 mr-2" />
-                            Upload Evidence
+                            {item.status === 'completed' ? 'Mark as Pending' : 'Mark as Completed'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
 
-                    {requirement.evidence.length > 0 && (
+                    {item.evidence_required && (
                       <div className="mt-3 p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-medium mb-2">Evidence ({requirement.evidence.length})</p>
-                        <div className="space-y-1">
-                          {requirement.evidence.slice(0, 2).map((evidence) => (
-                            <div key={evidence.id} className="flex items-center justify-between text-sm">
-                              <span>{evidence.name}</span>
-                              <span className="text-muted-foreground">
-                                {new Date(evidence.uploadedAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          ))}
-                          {requirement.evidence.length > 2 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{requirement.evidence.length - 2} more files
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {requirement.comments && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm font-medium mb-1">Comments</p>
-                        <p className="text-sm text-muted-foreground">{requirement.comments}</p>
+                        <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Evidence Required
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.evidence_provided ? 'Evidence provided' : 'Evidence pending'}
+                        </p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No compliance items found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="incidents" className="space-y-6">
+          <div className="grid gap-4">
+            {complianceIncidents.length > 0 ? (
+              complianceIncidents.map((incident) => (
+                <Card key={incident.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-semibold">{incident.title}</h4>
+                          {getSeverityBadge(incident.severity)}
+                          {getStatusBadge(incident.status)}
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {incident.description}
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Category</p>
+                            <p className="font-medium capitalize">{incident.category}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Incident Date</p>
+                            <p className="font-medium">
+                              {new Date(incident.incident_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Reported By</p>
+                            <p className="font-medium">{incident.reported_by_name || 'Unknown'}</p>
+                          </div>
+                        </div>
+
+                        {incident.location && (
+                          <div className="mt-2">
+                            <p className="text-muted-foreground text-sm">Location</p>
+                            <p className="font-medium text-sm">{incident.location}</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Update Incident
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Generate Report
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {incident.immediate_actions && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Immediate Actions</p>
+                        <p className="text-sm text-muted-foreground">{incident.immediate_actions}</p>
+                      </div>
+                    )}
+
+                    {incident.root_cause && (
+                      <div className="mt-3 p-3 bg-yellow-50 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Root Cause</p>
+                        <p className="text-sm text-muted-foreground">{incident.root_cause}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No incidents found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="risks" className="space-y-6">
+          <div className="grid gap-4">
+            {riskAssessments.length > 0 ? (
+              riskAssessments.map((risk) => (
+                <Card key={risk.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-semibold">{risk.title}</h4>
+                          {getSeverityBadge(risk.risk_level)}
+                          {getStatusBadge(risk.status)}
+                        </div>
+                        
+                        {risk.description && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {risk.description}
+                          </p>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Category</p>
+                            <p className="font-medium capitalize">{risk.category}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Probability</p>
+                            <p className="font-medium">{risk.probability}/5</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Impact</p>
+                            <p className="font-medium">{risk.impact}/5</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Risk Score</p>
+                            <p className="font-medium">{risk.probability * risk.impact}/25</p>
+                          </div>
+                        </div>
+
+                        {risk.responsible_person_name && (
+                          <div className="mt-2">
+                            <p className="text-muted-foreground text-sm">Responsible Person</p>
+                            <p className="font-medium text-sm">{risk.responsible_person_name}</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Update Assessment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Review Controls
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {risk.current_controls && (
+                      <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Current Controls</p>
+                        <p className="text-sm text-muted-foreground">{risk.current_controls}</p>
+                      </div>
+                    )}
+
+                    {risk.additional_controls && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Additional Controls</p>
+                        <p className="text-sm text-muted-foreground">{risk.additional_controls}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No risk assessments found
+              </div>
             )}
           </div>
         </TabsContent>

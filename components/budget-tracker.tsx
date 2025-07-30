@@ -38,6 +38,7 @@ import {
   LineChart,
   Line,
   PieChart as RechartsPieChart,
+  Pie,
   Cell,
   XAxis, 
   YAxis, 
@@ -48,48 +49,39 @@ import {
 } from 'recharts'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { apiClient, Budget, BudgetPeriod, BudgetCategory, BudgetAllocation } from '@/lib/api'
 
-interface Budget {
-  id: string
-  name: string
-  description?: string
-  category: {
+// Using Budget interface from API client
+interface BudgetWithDetails extends Budget {
+  category?: {
     id: string
     name: string
     code: string
     color: string
   }
-  period: {
+  period?: {
     id: string
     name: string
     startDate: string
     endDate: string
   }
-  allocatedAmount: number
-  spentAmount: number
-  committedAmount: number
-  remainingAmount: number
-  utilizationPercent: number
-  status: 'active' | 'exceeded' | 'completed' | 'draft'
-  owner: {
+  owner?: {
     id: string
     name: string
   }
-  createdAt: string
-  updatedAt: string
-  monthlyAllocations: Array<{
+  monthlyAllocations?: Array<{
     month: string
     allocated: number
     spent: number
     remaining: number
   }>
-  topExpenses: Array<{
+  topExpenses?: Array<{
     id: string
     description: string
     amount: number
     date: string
   }>
-  forecastData: Array<{
+  forecastData?: Array<{
     month: string
     projected: number
     trend: 'up' | 'down' | 'stable'
@@ -119,43 +111,123 @@ interface BudgetSummary {
 }
 
 export function BudgetTracker() {
-  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
+  const [budgetPeriods, setBudgetPeriods] = useState<BudgetPeriod[]>([])
+  const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
   const [summary, setSummary] = useState<BudgetSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedPeriod, setSelectedPeriod] = useState('current')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('')
   const [activeTab, setActiveTab] = useState('overview')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadBudgetData()
+    loadInitialData()
+  }, [])
+
+  useEffect(() => {
+    if (selectedPeriod) {
+      loadBudgetData()
+    }
   }, [selectedPeriod])
 
-  const loadBudgetData = async () => {
+  const loadInitialData = async () => {
     try {
       setLoading(true)
-      const [budgetsResponse, summaryResponse] = await Promise.all([
-        fetch(`/api/budgets?period=${selectedPeriod}`),
-        fetch(`/api/budgets/summary?period=${selectedPeriod}`)
+      const [periodsResponse, categoriesResponse] = await Promise.all([
+        apiClient.getBudgetPeriods(),
+        apiClient.getBudgetCategories()
       ])
 
-      if (!budgetsResponse.ok || !summaryResponse.ok) {
-        throw new Error('Failed to load budget data')
+      if (periodsResponse.success && periodsResponse.data.length > 0) {
+        setBudgetPeriods(periodsResponse.data)
+        // Set the first active period as default
+        const activePeriod = periodsResponse.data.find(p => p.status === 'active') || periodsResponse.data[0]
+        setSelectedPeriod(activePeriod.id)
       }
 
-      const budgetsData = await budgetsResponse.json()
-      const summaryData = await summaryResponse.json()
+      if (categoriesResponse.success) {
+        setBudgetCategories(categoriesResponse.data)
+      }
 
-      setBudgets(budgetsData)
-      setSummary(summaryData)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load budget data')
-      console.error('Error loading budget data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load initial data')
+      console.error('Error loading initial data:', err)
+      toast({
+        title: "Error",
+        description: "Failed to load budget periods and categories",
+        variant: "destructive"
+      })
     } finally {
       setLoading(false)
     }
   }
 
+  const loadBudgetData = async () => {
+    try {
+      setLoading(true)
+      const budgetsResponse = await apiClient.getBudgets({
+        period_id: selectedPeriod,
+        page: 1,
+        limit: 100
+      })
+
+      if (budgetsResponse.success) {
+        // Transform budget data to include additional fields for the UI
+        const transformedBudgets: BudgetWithDetails[] = budgetsResponse.budgets.map(budget => {
+          const utilizationRate = budget.utilization_rate || 0
+          const spentAmount = budget.spent_amount || 0
+          const remainingAmount = budget.remaining_amount || (budget.allocated_amount - spentAmount)
+          
+          return {
+            ...budget,
+            category: {
+              id: budget.category_id || '',
+              name: budget.category_name || 'Unknown',
+              code: budget.category_name || 'UNK',
+              color: getRandomColor() // We'll implement this helper
+            },
+            period: {
+              id: budget.period_id,
+              name: budget.period_name || 'Unknown Period',
+              startDate: new Date().toISOString(),
+              endDate: new Date().toISOString()
+            },
+            owner: {
+              id: budget.responsible_person || '',
+              name: budget.responsible_person_name || 'Unassigned'
+            },
+            // Add mock data for additional fields that aren't in the API yet
+            monthlyAllocations: generateMonthlyAllocations(budget.allocated_amount, spentAmount),
+            topExpenses: [],
+            forecastData: generateForecastData()
+          }
+        })
+
+        setBudgets(transformedBudgets)
+        
+        // Generate summary data from budgets
+        const summaryData = generateBudgetSummary(transformedBudgets)
+        setSummary(summaryData)
+      } else {
+        throw new Error('Failed to load budgets')
+      }
+
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load budget data')
+      console.error('Error loading budget data:', err)
+      toast({
+        title: "Error",
+        description: "Failed to load budget data",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Helper functions
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -163,7 +235,84 @@ export function BudgetTracker() {
     }).format(amount)
   }
 
-  const getBudgetStatus = (utilization: number, status: string) => {
+  const getRandomColor = () => {
+    const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+    return colors[Math.floor(Math.random() * colors.length)]
+  }
+
+  const generateMonthlyAllocations = (total: number, spent: number) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+    return months.map(month => ({
+      month,
+      allocated: total / 12,
+      spent: (spent / 12) + (Math.random() - 0.5) * (total / 24),
+      remaining: (total - spent) / 12
+    }))
+  }
+
+  const generateForecastData = () => {
+    const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return months.map(month => ({
+      month,
+      projected: Math.random() * 10000 + 5000,
+      trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable'
+    }))
+  }
+
+  const generateBudgetSummary = (budgets: BudgetWithDetails[]): BudgetSummary => {
+    const totalBudget = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
+    const totalSpent = budgets.reduce((sum, b) => sum + (b.spent_amount || 0), 0)
+    const totalRemaining = totalBudget - totalSpent
+    const averageUtilization = budgets.length > 0 
+      ? budgets.reduce((sum, b) => sum + (b.utilization_rate || 0), 0) / budgets.length
+      : 0
+    const budgetsOverLimit = budgets.filter(b => (b.utilization_rate || 0) >= 100).length
+    const budgetsNearLimit = budgets.filter(b => (b.utilization_rate || 0) >= 90 && (b.utilization_rate || 0) < 100).length
+
+    // Generate category breakdown
+    const categoryMap = new Map<string, any>()
+    budgets.forEach(budget => {
+      const categoryName = budget.category?.name || 'Unknown'
+      if (!categoryMap.has(categoryName)) {
+        categoryMap.set(categoryName, {
+          category: categoryName,
+          allocated: 0,
+          spent: 0,
+          utilization: 0,
+          color: budget.category?.color || getRandomColor()
+        })
+      }
+      const category = categoryMap.get(categoryName)!
+      category.allocated += budget.allocated_amount
+      category.spent += budget.spent_amount || 0
+    })
+
+    const categoryBreakdown = Array.from(categoryMap.values()).map(cat => ({
+      ...cat,
+      utilization: cat.allocated > 0 ? (cat.spent / cat.allocated) * 100 : 0
+    }))
+
+    // Generate monthly trends (mock data)
+    const monthlyTrends = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map(month => ({
+      month,
+      budgeted: totalBudget / 6,
+      spent: (totalSpent / 6) + (Math.random() - 0.5) * (totalBudget / 12),
+      variance: Math.random() * 2000 - 1000
+    }))
+
+    return {
+      totalBudget,
+      totalSpent,
+      totalRemaining,
+      averageUtilization,
+      budgetsOverLimit,
+      budgetsNearLimit,
+      monthlyTrends,
+      categoryBreakdown
+    }
+  }
+
+  const getBudgetStatus = (utilization: number, status?: string) => {
     if (status === 'exceeded' || utilization >= 100) {
       return { color: 'destructive', icon: AlertTriangle, text: 'Over Budget', bgColor: 'bg-red-50 border-red-200' }
     }
@@ -181,6 +330,42 @@ export function BudgetTracker() {
       case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />
       case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />
       default: return <div className="h-4 w-4" />
+    }
+  }
+
+  const handleCreateBudget = async () => {
+    // TODO: Implement budget creation modal/form
+    toast({
+      title: "Budget Creation",
+      description: "Budget creation functionality coming soon",
+    })
+  }
+
+  const handleEditBudget = async (budgetId: string) => {
+    // TODO: Implement budget editing
+    toast({
+      title: "Edit Budget",
+      description: "Budget editing functionality coming soon",
+    })
+  }
+
+  const handleDeleteBudget = async (budgetId: string) => {
+    if (!confirm('Are you sure you want to delete this budget?')) {
+      return
+    }
+    
+    try {
+      // TODO: Implement budget deletion API call
+      toast({
+        title: "Delete Budget",
+        description: "Budget deletion functionality coming soon",
+      })
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to delete budget",
+        variant: "destructive"
+      })
     }
   }
 
@@ -217,17 +402,18 @@ export function BudgetTracker() {
         
         <div className="flex flex-wrap gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="current">Current Period</SelectItem>
-              <SelectItem value="last">Last Period</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
+              {budgetPeriods.map((period) => (
+                <SelectItem key={period.id} value={period.id}>
+                  {period.name} ({period.fiscal_year})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Button>
+          <Button onClick={handleCreateBudget}>
             <Plus className="h-4 w-4 mr-2" />
             New Budget
           </Button>
@@ -403,7 +589,8 @@ export function BudgetTracker() {
         <TabsContent value="budgets" className="space-y-6">
           <div className="grid gap-6">
             {budgets.map((budget) => {
-              const status = getBudgetStatus(budget.utilizationPercent, budget.status)
+              const utilizationPercent = budget.utilization_rate || 0
+              const status = getBudgetStatus(utilizationPercent, budget.status)
               const StatusIcon = status.icon
 
               return (
@@ -421,8 +608,9 @@ export function BudgetTracker() {
                         
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>{budget.description}</p>
-                          <p>Period: {budget.period.name}</p>
-                          <p>Owner: {budget.owner.name}</p>
+                          <p>Period: {budget.period?.name || budget.period_name || 'Unknown'}</p>
+                          <p>Category: {budget.category?.name || budget.category_name || 'Unknown'}</p>
+                          <p>Owner: {budget.owner?.name || budget.responsible_person_name || 'Unassigned'}</p>
                         </div>
                       </div>
                       
@@ -434,16 +622,19 @@ export function BudgetTracker() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditBudget(budget.id)}>
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Budget
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast({ title: "Analytics", description: "Analytics view coming soon" })}>
                             <BarChart3 className="h-4 w-4 mr-2" />
                             View Analytics
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem 
+                            className="text-red-600" 
+                            onClick={() => handleDeleteBudget(budget.id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
@@ -451,23 +642,19 @@ export function BudgetTracker() {
                       </DropdownMenu>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Allocated</p>
-                        <p className="text-xl font-bold">{formatCurrency(budget.allocatedAmount)}</p>
+                        <p className="text-xl font-bold">{formatCurrency(budget.allocated_amount)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Spent</p>
-                        <p className="text-xl font-bold">{formatCurrency(budget.spentAmount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Committed</p>
-                        <p className="text-xl font-bold">{formatCurrency(budget.committedAmount)}</p>
+                        <p className="text-xl font-bold">{formatCurrency(budget.spent_amount || 0)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Remaining</p>
                         <p className="text-xl font-bold text-green-600">
-                          {formatCurrency(budget.remainingAmount)}
+                          {formatCurrency(budget.remaining_amount || (budget.allocated_amount - (budget.spent_amount || 0)))}
                         </p>
                       </div>
                     </div>
@@ -475,9 +662,9 @@ export function BudgetTracker() {
                     <div className="mb-4">
                       <div className="flex justify-between text-sm mb-2">
                         <span>Budget Utilization</span>
-                        <span>{budget.utilizationPercent.toFixed(1)}%</span>
+                        <span>{utilizationPercent.toFixed(1)}%</span>
                       </div>
-                      <Progress value={budget.utilizationPercent} />
+                      <Progress value={utilizationPercent} />
                     </div>
 
                     {/* Monthly breakdown */}
@@ -590,19 +777,19 @@ export function BudgetTracker() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {budgets.filter(b => b.utilizationPercent < 75).length}
+                    {budgets.filter(b => (b.utilization_rate || 0) < 75).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets Under 75%</p>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {budgets.filter(b => b.utilizationPercent >= 75 && b.utilizationPercent < 90).length}
+                    {budgets.filter(b => (b.utilization_rate || 0) >= 75 && (b.utilization_rate || 0) < 90).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets 75-90%</p>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {budgets.filter(b => b.utilizationPercent >= 90).length}
+                    {budgets.filter(b => (b.utilization_rate || 0) >= 90).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets Over 90%</p>
                 </div>
