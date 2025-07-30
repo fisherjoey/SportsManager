@@ -13,8 +13,15 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+  			sans: ['Roboto', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+  			roboto: ['Roboto', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
   			mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+  		},
+  		fontWeight: {
+  			light: '300',
+  			normal: '400',
+  			medium: '500',
+  			bold: '700',
   		},
   		fontSize: {
   			'xs': 'var(--font-size-xs)',

@@ -23,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-inter" suppressHydrationWarning={true}>
+      <body className="font-roboto" suppressHydrationWarning={true}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

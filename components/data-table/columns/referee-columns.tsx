@@ -92,7 +92,7 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     },
   },
   {
-    accessorKey: "level",
+    accessorKey: "certificationLevel",
     id: "level",
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
@@ -101,24 +101,18 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={false}
         filterable={true}
         filterOptions={[
-          { label: "Learning", value: "Learning" },
-          { label: "Learning+", value: "Learning+" },
-          { label: "Growing", value: "Growing" },
-          { label: "Growing+", value: "Growing+" },
-          { label: "Teaching", value: "Teaching" },
-          { label: "Expert", value: "Expert" },
+          { label: "Rookie", value: "Rookie" },
+          { label: "Junior", value: "Junior" },
+          { label: "Senior", value: "Senior" },
         ]}
       />
     ),
     cell: ({ row }) => {
       const level = row.getValue("level") as string
       const levelColors = {
-        "Learning": "bg-green-100 text-green-800 border-green-200",
-        "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
-        "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
-        "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
-        "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
-        "Expert": "bg-red-100 text-red-800 border-red-200",
+        "Rookie": "bg-green-100 text-green-800 border-green-200",
+        "Junior": "bg-blue-100 text-blue-800 border-blue-200", 
+        "Senior": "bg-purple-100 text-purple-800 border-purple-200",
       }
       
       return (

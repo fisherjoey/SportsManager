@@ -242,7 +242,7 @@ class ApiClient {
       email: referee.email,
       phone: referee.phone,
       role: 'referee' as const,
-      certificationLevel: referee.level,
+      certificationLevel: referee.level_name,
       location: referee.location,
       isAvailable: referee.is_available,
       availabilityStrategy: referee.availability_strategy || 'BLACKLIST',
@@ -252,6 +252,8 @@ class ApiClient {
       notes: referee.notes,
       maxDistance: referee.max_distance,
       postalCode: referee.postal_code,
+      roles: referee.roles || ['Referee'],
+      isWhiteWhistle: referee.is_white_whistle || false,
       createdAt: referee.created_at,
       updatedAt: referee.updated_at
     }));

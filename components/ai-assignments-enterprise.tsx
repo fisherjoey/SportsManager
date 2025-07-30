@@ -318,8 +318,8 @@ export function AIAssignmentsEnterprise() {
             homeTeam: typeof game.homeTeam === 'object' ? game.homeTeam : game.homeTeam,
             awayTeam: typeof game.awayTeam === 'object' ? game.awayTeam : game.awayTeam,
             time: game.time || (game as any).startTime || 'TBD',
-            division: game.division || 'Unknown',
-            assignedReferees: game.assignedReferees || []
+            division: (game as any).division || 'Unknown',
+            assignedReferees: (game as any).assignedReferees || []
           }))
           setGames(transformedGames)
         }

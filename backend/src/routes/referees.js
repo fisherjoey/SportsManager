@@ -41,22 +41,31 @@ const adminRefereeUpdateSchema = Joi.object({
 // GET /api/referees - Get all referees with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { level, postal_code, is_available, page = 1, limit = 50 } = req.query;
+    const { level, postal_code, is_available, page = 1, limit = 50, search } = req.query;
     
-    let query = db('referees')
-      .select('*')
-      .orderBy('name', 'asc');
+    let query = db('users')
+      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+      .select('users.*', 'referee_levels.name as level_name')
+      .where('users.role', 'referee')
+      .orderBy('users.name', 'asc');
 
     if (level) {
-      query = query.where('level', level);
+      query = query.where('referee_levels.name', level);
     }
     
     if (postal_code) {
-      query = query.where('postal_code', postal_code);
+      query = query.where('users.postal_code', postal_code);
     }
     
     if (is_available !== undefined) {
-      query = query.where('is_available', is_available === 'true');
+      query = query.where('users.is_available', is_available === 'true');
+    }
+
+    if (search) {
+      query = query.where(function() {
+        this.where('users.name', 'ilike', `%${search}%`)
+            .orWhere('users.email', 'ilike', `%${search}%`);
+      });
     }
 
     const offset = (page - 1) * limit;
@@ -80,7 +89,12 @@ router.get('/', async (req, res) => {
 // GET /api/referees/:id - Get specific referee
 router.get('/:id', async (req, res) => {
   try {
-    const referee = await db('referees').where('id', req.params.id).first();
+    const referee = await db('users')
+      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+      .select('users.*', 'referee_levels.name as level_name')
+      .where('users.id', req.params.id)
+      .where('users.role', 'referee')
+      .first();
     
     if (!referee) {
       return res.status(404).json({ error: 'Referee not found' });
@@ -112,12 +126,18 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     }
 
     // Check if email already exists
-    const existingReferee = await db('referees').where('email', value.email).first();
+    const existingReferee = await db('users').where('email', value.email).first();
     if (existingReferee) {
       return res.status(409).json({ error: 'Email already exists' });
     }
 
-    const [referee] = await db('referees').insert(value).returning('*');
+    // Create user with referee role
+    const userData = {
+      ...value,
+      role: 'referee',
+      password_hash: await require('bcryptjs').hash('defaultpassword', 12) // Should be changed on first login
+    };
+    const [referee] = await db('users').insert(userData).returning('*');
     res.status(201).json(referee);
   } catch (error) {
     console.error('Error creating referee:', error);
@@ -143,18 +163,21 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Check if email already exists for another referee
-    const existingReferee = await db('referees')
-      .where('email', value.email)
-      .where('id', '!=', req.params.id)
-      .first();
-    
-    if (existingReferee) {
-      return res.status(409).json({ error: 'Email already exists' });
+    // Check if email already exists for another user
+    if (value.email) {
+      const existingUser = await db('users')
+        .where('email', value.email)
+        .where('id', '!=', req.params.id)
+        .first();
+      
+      if (existingUser) {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
     }
 
-    const [referee] = await db('referees')
+    const [referee] = await db('users')
       .where('id', req.params.id)
+      .where('role', 'referee')
       .update({ ...value, updated_at: new Date() })
       .returning('*');
 
@@ -203,13 +226,15 @@ router.get('/available/:gameId', async (req, res) => {
     }
 
     // Get available referees for the game
-    const availableReferees = await db('referees')
-      .select('referees.*')
-      .where('referees.is_available', true)
+    const availableReferees = await db('users')
+      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+      .select('users.*', 'referee_levels.name as level_name')
+      .where('users.role', 'referee')
+      .where('users.is_available', true)
       .whereNotExists(function() {
         this.select('*')
           .from('game_assignments')
-          .whereRaw('game_assignments.referee_id = referees.id')
+          .whereRaw('game_assignments.referee_id = users.id')
           .where('game_assignments.game_id', req.params.gameId);
       });
 
@@ -223,7 +248,7 @@ router.get('/available/:gameId', async (req, res) => {
 // DELETE /api/referees/:id - Delete referee
 router.delete('/:id', async (req, res) => {
   try {
-    const deletedCount = await db('referees').where('id', req.params.id).del();
+    const deletedCount = await db('users').where('id', req.params.id).where('role', 'referee').del();
     
     if (deletedCount === 0) {
       return res.status(404).json({ error: 'Referee not found' });

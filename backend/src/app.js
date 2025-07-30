@@ -30,6 +30,7 @@ const aiAssignmentRulesRoutes = require('./routes/ai-assignment-rules');
 const locationRoutes = require('./routes/locations');
 const reportsRoutes = require('./routes/reports');
 const calendarRoutes = require('./routes/calendar');
+const healthRoutes = require('./routes/health');
 
 const app = express();
 
@@ -84,9 +85,9 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/calendar', calendarRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// Health check endpoints (no authentication required)
+app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
