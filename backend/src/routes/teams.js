@@ -171,7 +171,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/teams - Create new team
-router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = teamSchema.validate(req.body);
     if (error) {
@@ -210,7 +210,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
 });
 
 // POST /api/teams/bulk - Create multiple teams
-router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/bulk', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = bulkTeamSchema.validate(req.body);
     if (error) {
@@ -278,7 +278,7 @@ router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res)
 });
 
 // POST /api/teams/generate - Generate teams with pattern
-router.post('/generate', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/generate', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = bulkGenerateSchema.validate(req.body);
     if (error) {
@@ -354,7 +354,7 @@ router.post('/generate', authenticateToken, requireRole(['admin']), async (req, 
 });
 
 // PUT /api/teams/:id - Update team
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = teamSchema.validate(req.body);
     if (error) {
@@ -397,7 +397,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
 });
 
 // DELETE /api/teams/:id - Delete team
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const team = await db('teams').where('id', req.params.id).first();
     if (!team) {

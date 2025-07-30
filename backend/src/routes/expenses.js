@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const db = require('../config/database');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
 const { receiptUploader, fileUploadSecurity, handleUploadErrors, virusScan } = require('../middleware/fileUpload');
 const receiptProcessingService = require('../services/receiptProcessingService');
 const Queue = require('bull');
@@ -79,7 +79,7 @@ const approvalSchema = Joi.object({
  * Upload a receipt file
  */
 router.post('/receipts/upload', 
-  authenticate,
+  authenticateToken,
   receiptUploader.single('receipt'),
   handleUploadErrors,
   fileUploadSecurity,
@@ -150,7 +150,7 @@ router.post('/receipts/upload',
  * GET /api/expenses/receipts
  * List receipts with filtering and pagination
  */
-router.get('/receipts', authenticate, async (req, res) => {
+router.get('/receipts', authenticateToken, async (req, res) => {
   try {
     const { error, value } = querySchema.validate(req.query);
     if (error) {
@@ -241,7 +241,7 @@ router.get('/receipts', authenticate, async (req, res) => {
  * GET /api/expenses/receipts/:id
  * Get detailed receipt information
  */
-router.get('/receipts/:id', authenticate, async (req, res) => {
+router.get('/receipts/:id', authenticateToken, async (req, res) => {
   try {
     const receiptId = req.params.id;
 
@@ -289,7 +289,7 @@ router.get('/receipts/:id', authenticate, async (req, res) => {
  * POST /api/expenses/receipts/:id/process
  * Trigger manual processing of a receipt
  */
-router.post('/receipts/:id/process', authenticate, async (req, res) => {
+router.post('/receipts/:id/process', authenticateToken, async (req, res) => {
   try {
     const receiptId = req.params.id;
 
@@ -336,8 +336,8 @@ router.post('/receipts/:id/process', authenticate, async (req, res) => {
  * Approve or reject an expense
  */
 router.post('/receipts/:id/approve', 
-  authenticate, 
-  authorize(['admin', 'manager']),
+  authenticateToken, 
+  requireAnyRole('admin', 'manager'),
   async (req, res) => {
     try {
       const receiptId = req.params.id;
@@ -404,7 +404,7 @@ router.post('/receipts/:id/approve',
  * DELETE /api/expenses/receipts/:id
  * Delete a receipt
  */
-router.delete('/receipts/:id', authenticate, async (req, res) => {
+router.delete('/receipts/:id', authenticateToken, async (req, res) => {
   try {
     const receiptId = req.params.id;
     
@@ -432,7 +432,7 @@ router.delete('/receipts/:id', authenticate, async (req, res) => {
  * GET /api/expenses/categories
  * Get expense categories
  */
-router.get('/categories', authenticate, async (req, res) => {
+router.get('/categories', authenticateToken, async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
 
@@ -457,8 +457,8 @@ router.get('/categories', authenticate, async (req, res) => {
  * Generate expense reports
  */
 router.get('/reports', 
-  authenticate,
-  authorize(['admin', 'manager']),
+  authenticateToken,
+  requireAnyRole('admin', 'manager'),
   async (req, res) => {
     try {
       const organizationId = req.user.organization_id || req.user.id;
@@ -554,8 +554,8 @@ router.get('/reports',
  * Get processing queue status
  */
 router.get('/queue/status', 
-  authenticate,
-  authorize(['admin']),
+  authenticateToken,
+  requireRole('admin'),
   async (req, res) => {
     try {
       const waiting = await receiptQueue.waiting();

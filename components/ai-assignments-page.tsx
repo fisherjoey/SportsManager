@@ -163,7 +163,6 @@ export default function AIAssignmentsPage() {
         {
         id: '1',
         rule_id: '1',
-        rule_name: 'Weekly Community Games',
         run_date: '2024-12-01 10:00',
         status: 'success',
         games_processed: 26,
@@ -210,7 +209,8 @@ export default function AIAssignmentsPage() {
               conflicts: ['No available referees for Referee 2 position - all other refs assigned or unavailable'],
               notes: 'Partial assignment - need to find second referee manually'
             }
-          ]
+          ],
+          conflicts: ['No available referees for Referee 2 position - all other refs assigned or unavailable']
         }
       }
     ])

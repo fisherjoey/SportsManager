@@ -32,6 +32,20 @@ const reportsRoutes = require('./routes/reports');
 const calendarRoutes = require('./routes/calendar');
 const healthRoutes = require('./routes/health');
 const expenseRoutes = require('./routes/expenses');
+const budgetRoutes = require('./routes/budgets');
+const financialTransactionRoutes = require('./routes/financial-transactions');
+const financialApprovalRoutes = require('./routes/financial-approvals');
+const accountingIntegrationRoutes = require('./routes/accounting-integration');
+const financialReportRoutes = require('./routes/financial-reports');
+
+// Import organizational management routes
+const employeeRoutes = require('./routes/employees');
+const assetRoutes = require('./routes/assets');
+const documentRoutes = require('./routes/documents');
+const complianceRoutes = require('./routes/compliance');
+const communicationRoutes = require('./routes/communications');
+const organizationalAnalyticsRoutes = require('./routes/organizational-analytics');
+const workflowRoutes = require('./routes/workflows');
 
 const app = express();
 
@@ -58,7 +72,7 @@ app.use(auditMiddleware({
   logAdminRequests: true,
   logFailedRequests: true,
   excludePaths: ['/api/health', '/uploads'],
-  sensitiveEndpoints: ['/api/auth', '/api/admin', '/api/reports']
+  sensitiveEndpoints: ['/api/auth', '/api/admin', '/api/reports', '/api/employees', '/api/compliance', '/api/analytics/organizational']
 }));
 
 // Serve uploaded files
@@ -86,6 +100,20 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/financial', financialTransactionRoutes);
+app.use('/api/approvals', financialApprovalRoutes);
+app.use('/api/accounting', accountingIntegrationRoutes);
+app.use('/api/financial-reports', financialReportRoutes);
+
+// Organizational management routes
+app.use('/api/employees', employeeRoutes);
+app.use('/api/assets', assetRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/compliance', complianceRoutes);
+app.use('/api/communications', communicationRoutes);
+app.use('/api/analytics/organizational', organizationalAnalyticsRoutes);
+app.use('/api/workflows', workflowRoutes);
 
 // Health check endpoints (no authentication required)
 app.use('/health', healthRoutes);

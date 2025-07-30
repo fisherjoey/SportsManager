@@ -134,7 +134,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/leagues - Create new league
-router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = leagueSchema.validate(req.body);
     if (error) {
@@ -172,7 +172,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
 });
 
 // POST /api/leagues/bulk - Create multiple leagues
-router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/bulk', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = bulkLeagueSchema.validate(req.body);
     if (error) {
@@ -237,7 +237,7 @@ router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res)
 });
 
 // PUT /api/leagues/:id - Update league
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = leagueSchema.validate(req.body);
     if (error) {
@@ -265,7 +265,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
 });
 
 // DELETE /api/leagues/:id - Delete league
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const league = await db('leagues').where('id', req.params.id).first();
     if (!league) {

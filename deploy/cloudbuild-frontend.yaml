@@ -24,7 +24,7 @@ steps:
       '--memory', '1Gi',
       '--cpu', '1',
       '--max-instances', '5',
-      '--set-env-vars', 'NODE_ENV=production,NEXT_PUBLIC_API_URL=https://sports-management-backend-mf3blk7wsq-uc.a.run.app/api',
+      '--set-env-vars', 'NODE_ENV=production,NEXT_PUBLIC_API_URL=https://sports-management-backend-140708809250.us-central1.run.app/api',
       '--timeout', '300'
     ]
 
