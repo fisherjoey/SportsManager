@@ -23,14 +23,15 @@ class AIServices {
         console.warn('Google Vision API credentials not found. OCR will use fallback methods.');
       }
 
-      // Initialize OpenAI
-      if (process.env.OPENAI_API_KEY) {
+      // Initialize DeepSeek AI
+      if (process.env.DEEPSEEK_API_KEY) {
         this.openaiClient = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY
+          apiKey: process.env.DEEPSEEK_API_KEY,
+          baseURL: 'https://api.deepseek.com/v1'
         });
-        console.log('OpenAI API initialized');
+        console.log('DeepSeek API initialized');
       } else {
-        console.warn('OpenAI API key not found. LLM processing will be disabled.');
+        console.warn('DeepSeek API key not found. LLM processing will be disabled.');
       }
     } catch (error) {
       console.error('Error initializing AI services:', error);
@@ -97,7 +98,7 @@ class AIServices {
    */
   async extractReceiptData(receiptText, fileName = '') {
     if (!this.openaiClient) {
-      throw new Error('OpenAI API not configured');
+      throw new Error('DeepSeek API not configured');
     }
 
     const prompt = this.buildExtractionPrompt(receiptText, fileName);
@@ -106,7 +107,7 @@ class AIServices {
       const startTime = Date.now();
       
       const completion = await this.openaiClient.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -166,7 +167,7 @@ class AIServices {
     
     try {
       const completion = await this.openaiClient.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -182,7 +183,20 @@ class AIServices {
       });
 
       const response = completion.choices[0].message.content;
-      const result = JSON.parse(response);
+      
+      // Parse the JSON response
+      let result;
+      try {
+        result = JSON.parse(response);
+      } catch (parseError) {
+        // Try to extract JSON from response if it's wrapped in markdown
+        const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[1]);
+        } else {
+          throw new Error('Invalid JSON response from LLM');
+        }
+      }
       
       return {
         categoryId: result.categoryId,

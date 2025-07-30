@@ -8,7 +8,7 @@ The AI-Powered Receipt Processing System is a comprehensive expense management s
 
 ### 🤖 AI-Powered Processing
 - **OCR Processing**: Google Vision API integration for accurate text extraction from receipts
-- **Data Extraction**: OpenAI GPT-4 integration for structured data extraction
+- **Data Extraction**: DeepSeek Chat integration for structured data extraction
 - **Smart Categorization**: AI-powered expense categorization with fallback keyword matching
 - **Confidence Scoring**: Quality assessment for extracted data with manual review triggers
 
@@ -143,8 +143,8 @@ Create a `.env` file with the following variables:
 # AI Services
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
 GOOGLE_CLOUD_KEY_FILE=path/to/service-account.json
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_MODEL=gpt-4o-mini
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_MODEL=deepseek-chat
 
 # Redis (Job Queues)
 REDIS_HOST=localhost

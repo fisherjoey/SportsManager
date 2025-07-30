@@ -241,7 +241,7 @@ class ReceiptProcessingService {
         user_id: receipt.user_id,
         organization_id: receipt.organization_id,
         service_type: 'llm',
-        service_provider: 'openai',
+        service_provider: 'deepseek',
         status: 'started',
         input_data: ocrText.substring(0, 1000), // First 1000 chars
         started_at: new Date()
@@ -258,7 +258,7 @@ class ReceiptProcessingService {
           processing_time_ms: processingTime,
           confidence_score: results.confidence,
           tokens_used: results.tokensUsed,
-          cost_usd: this.estimateOpenAICost(results.tokensUsed, results.model),
+          cost_usd: this.estimateDeepSeekCost(results.tokensUsed, results.model),
           completed_at: new Date()
         });
 
@@ -295,7 +295,7 @@ class ReceiptProcessingService {
         user_id: receipt.user_id,
         organization_id: receipt.organization_id,
         service_type: 'categorization',
-        service_provider: aiServices.openaiClient ? 'openai' : 'keyword_matching',
+        service_provider: aiServices.openaiClient ? 'deepseek' : 'keyword_matching',
         status: 'started',
         started_at: new Date()
       });
@@ -311,7 +311,7 @@ class ReceiptProcessingService {
           processing_time_ms: processingTime,
           confidence_score: results.confidence,
           tokens_used: results.tokensUsed || 0,
-          cost_usd: results.tokensUsed ? this.estimateOpenAICost(results.tokensUsed, 'gpt-4o-mini') : 0,
+          cost_usd: results.tokensUsed ? this.estimateDeepSeekCost(results.tokensUsed, 'deepseek-chat') : 0,
           completed_at: new Date()
         });
 
@@ -460,19 +460,17 @@ class ReceiptProcessingService {
   }
 
   /**
-   * Estimate OpenAI API costs
+   * Estimate DeepSeek API costs
    * @private
    */
-  estimateOpenAICost(tokens, model) {
-    // Rough cost estimates in USD (as of 2024)
+  estimateDeepSeekCost(tokens, model) {
+    // DeepSeek cost estimates in USD (as of 2025)
     const costPerToken = {
-      'gpt-4o': 0.000015,
-      'gpt-4o-mini': 0.00000015,
-      'gpt-4': 0.00003,
-      'gpt-3.5-turbo': 0.000002
+      'deepseek-chat': 0.0000002,  // $0.2 per 1M tokens
+      'deepseek-coder': 0.0000002  // $0.2 per 1M tokens
     };
     
-    return tokens * (costPerToken[model] || costPerToken['gpt-4o-mini']);
+    return tokens * (costPerToken[model] || costPerToken['deepseek-chat']);
   }
 
   /**
