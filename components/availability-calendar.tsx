@@ -707,10 +707,10 @@ export function AvailabilityCalendar({
                     </SelectContent>
                   </Select>
                   <Button 
-                    size="sm" 
+                    size="mobileSm" 
                     variant={isSelectionMode ? "default" : "outline"}
                     onClick={toggleSelectionMode}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto touch-manipulation"
                   >
                     {isSelectionMode ? (
                       <X className="h-4 w-4 mr-2" />
@@ -728,7 +728,7 @@ export function AvailabilityCalendar({
                   {!isSelectionMode && (
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="w-full sm:w-auto">
+                        <Button size="mobileSm" className="w-full sm:w-auto touch-manipulation">
                           <Plus className="h-4 w-4 mr-2" />
                           <span className="hidden sm:inline">Add Window</span>
                           <span className="sm:hidden">Add</span>
@@ -886,14 +886,14 @@ export function AvailabilityCalendar({
                               <div
                                 key={slotKey}
                                 className={`
-                                  p-3 border rounded-lg cursor-pointer transition-colors select-none text-center relative
+                                  p-4 border rounded-lg cursor-pointer transition-colors select-none text-center relative min-h-[48px] touch-manipulation
                                   ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400 ring-opacity-50' : ''}
                                   ${!isSelectionMode && isSelected ? 'bg-blue-200 border-blue-400' : ''}
                                   ${!isSelected && hasWindow ? (
-                                    isAvailable ? 'bg-green-100 border-green-300' :
-                                    isUnavailable ? 'bg-red-100 border-red-300' :
-                                    'bg-yellow-100 border-yellow-300'
-                                  ) : !isSelected ? 'bg-background border-border hover:bg-muted/50' : ''}
+                                    isAvailable ? 'bg-green-100 border-green-300 active:bg-green-200' :
+                                    isUnavailable ? 'bg-red-100 border-red-300 active:bg-red-200' :
+                                    'bg-yellow-100 border-yellow-300 active:bg-yellow-200'
+                                  ) : !isSelected ? 'bg-background border-border hover:bg-muted/50 active:bg-muted' : ''}
                                 `}
                                 onClick={() => handleSlotClick(dateStr, time)}
                                 onTouchStart={(e) => {
@@ -1091,27 +1091,27 @@ export function AvailabilityCalendar({
             </span>
             <div className="flex gap-2">
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white touch-manipulation"
                 onClick={() => applyAvailabilityToSelected(true)}
               >
                 <Check className="h-4 w-4 mr-1" />
                 Available
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white touch-manipulation"
                 onClick={() => applyAvailabilityToSelected(false)}
               >
                 <X className="h-4 w-4 mr-1" />
                 Unavailable
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-gray-600 hover:bg-gray-700 text-white"
+                className="bg-gray-600 hover:bg-gray-700 active:bg-gray-800 text-white touch-manipulation"
                 onClick={clearAvailabilityForSelected}
                 title="Remove availability entries (reset to undefined)"
               >
@@ -1119,8 +1119,9 @@ export function AvailabilityCalendar({
                 Clear
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="outline"
+                className="touch-manipulation"
                 onClick={() => setSelectedSlots(new Set())}
                 title="Cancel selection"
               >

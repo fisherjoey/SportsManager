@@ -98,44 +98,72 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(as
 
     const games = await query;
     
-    // Transform games to match frontend expectations
-    const transformedGames = await Promise.all(games.map(async (game) => {
-      // Get assignments for each game
-      const assignments = await db('game_assignments')
-        .join('users', 'game_assignments.user_id', 'users.id')
-        .join('positions', 'game_assignments.position_id', 'positions.id')
-        .select('users.name as referee_name', 'positions.name as position_name', 'game_assignments.status')
-        .where('game_assignments.game_id', game.id);
-      
-      // Get home and away team details with league info
-      const homeTeam = await db('teams')
-        .join('leagues', 'teams.league_id', 'leagues.id')
-        .select('teams.*', 'leagues.organization', 'leagues.age_group', 'leagues.gender')
-        .where('teams.id', game.home_team_id)
-        .first();
-        
-      const awayTeam = await db('teams')
-        .join('leagues', 'teams.league_id', 'leagues.id')
-        .select('teams.*', 'leagues.organization', 'leagues.age_group', 'leagues.gender')
-        .where('teams.id', game.away_team_id)
-        .first();
+    // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
+    const gameIds = games.map(game => game.id);
+    const teamIds = [...new Set([
+      ...games.map(game => game.home_team_id).filter(Boolean),
+      ...games.map(game => game.away_team_id).filter(Boolean)
+    ])];
+    
+    // Fetch all assignments in one query
+    const allAssignments = gameIds.length > 0 ? await db('game_assignments')
+      .join('users', 'game_assignments.user_id', 'users.id')
+      .join('positions', 'game_assignments.position_id', 'positions.id')
+      .select(
+        'game_assignments.game_id',
+        'users.name as referee_name', 
+        'positions.name as position_name', 
+        'game_assignments.status'
+      )
+      .whereIn('game_assignments.game_id', gameIds) : [];
+    
+    // Fetch all teams with league info in one query
+    const allTeams = teamIds.length > 0 ? await db('teams')
+      .join('leagues', 'teams.league_id', 'leagues.id')
+      .select(
+        'teams.id',
+        'teams.name',
+        'teams.rank',
+        'leagues.organization',
+        'leagues.age_group',
+        'leagues.gender'
+      )
+      .whereIn('teams.id', teamIds) : [];
+    
+    // Create lookup maps for O(1) access
+    const assignmentsByGameId = {};
+    allAssignments.forEach(assignment => {
+      if (!assignmentsByGameId[assignment.game_id]) {
+        assignmentsByGameId[assignment.game_id] = [];
+      }
+      assignmentsByGameId[assignment.game_id].push({
+        referee_name: assignment.referee_name,
+        position_name: assignment.position_name,
+        status: assignment.status
+      });
+    });
+    
+    const teamsById = {};
+    allTeams.forEach(team => {
+      teamsById[team.id] = {
+        organization: team.organization,
+        ageGroup: team.age_group,
+        gender: team.gender,
+        rank: team.rank,
+        name: team.name
+      };
+    });
+    
+    // Transform games using lookup maps (no async operations needed)
+    const transformedGames = games.map(game => {
+      const homeTeam = teamsById[game.home_team_id] || {};
+      const awayTeam = teamsById[game.away_team_id] || {};
+      const assignments = assignmentsByGameId[game.id] || [];
       
       return {
         id: game.id,
-        homeTeam: homeTeam ? {
-          organization: homeTeam.organization,
-          ageGroup: homeTeam.age_group,
-          gender: homeTeam.gender,
-          rank: homeTeam.rank,
-          name: homeTeam.name
-        } : {},
-        awayTeam: awayTeam ? {
-          organization: awayTeam.organization,
-          ageGroup: awayTeam.age_group,
-          gender: awayTeam.gender,
-          rank: awayTeam.rank,
-          name: awayTeam.name
-        } : {},
+        homeTeam,
+        awayTeam,
         date: game.game_date,
         time: game.game_time,
         location: game.location,
@@ -149,12 +177,12 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(as
         refsNeeded: game.refs_needed,
         wageMultiplier: game.wage_multiplier,
         wageMultiplierReason: game.wage_multiplier_reason,
-        assignments: assignments,
+        assignments,
         notes: '', // placeholder
         createdAt: game.created_at,
         updatedAt: game.updated_at
       };
-    }));
+    });
 
     res.json({
       data: transformedGames,

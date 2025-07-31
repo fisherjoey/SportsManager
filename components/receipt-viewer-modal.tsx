@@ -18,8 +18,6 @@ import {
   Brain,
   Image as ImageIcon,
   Receipt as ReceiptIcon,
-  ChevronDown,
-  ChevronUp
 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
@@ -65,11 +63,9 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
   const [receipt, setReceipt] = useState<ReceiptDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [imageError, setImageError] = useState(false)
-  const [showAllItems, setShowAllItems] = useState(false)
 
   useEffect(() => {
     if (open && receiptId) {
-      setShowAllItems(false) // Reset to collapsed state
       loadReceiptDetails()
     }
   }, [open, receiptId])
@@ -82,6 +78,12 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
       const response = await apiClient.getReceiptDetails(receiptId)
       // Handle the nested receipt structure from backend
       const receiptData = response.receipt.receipt || response.receipt
+      console.log('Receipt API Response:', response)
+      console.log('Receipt Data:', receiptData)
+      console.log('Line Items Raw:', receiptData.line_items)
+      console.log('Line Items Type:', typeof receiptData.line_items)
+      console.log('Line Items Parsed:', JSON.stringify(receiptData.line_items, null, 2))
+      
       setReceipt({
         id: receiptData.id,
         originalFilename: receiptData.original_filename,
@@ -234,6 +236,30 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
                 </CardContent>
               </Card>
 
+              {/* Line Items - Moved to bottom left */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Line Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {console.log('Rendering items:', receipt.extractedData.items)}
+                  {(receipt.extractedData.items && receipt.extractedData.items.length > 0) ? (
+                    <div className="space-y-1">
+                      {receipt.extractedData.items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span>{item.description}</span>
+                          <span>{formatCurrency(item.totalPrice || item.amount || 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No line items found for this receipt. Items data: {JSON.stringify(receipt.extractedData.items)}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* OCR Text */}
               {receipt.ocrText && (
                 <Card>
@@ -308,55 +334,6 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
                 </CardContent>
               </Card>
 
-              {/* Line Items */}
-              {receipt.extractedData.items && receipt.extractedData.items.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">
-                      Line Items ({receipt.extractedData.items.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {(showAllItems ? receipt.extractedData.items : receipt.extractedData.items.slice(0, 3)).map((item, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{item.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.quantity} × {formatCurrency(item.unitPrice)}
-                            </p>
-                          </div>
-                          <p className="font-medium">{formatCurrency(item.totalPrice)}</p>
-                        </div>
-                      ))}
-                      
-                      {/* Show More/Less Button */}
-                      {receipt.extractedData.items.length > 3 && (
-                        <div className="pt-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowAllItems(!showAllItems)}
-                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center justify-center gap-2"
-                          >
-                            {showAllItems ? (
-                              <>
-                                <ChevronUp className="h-4 w-4" />
-                                Show Less
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4" />
-                                Show {receipt.extractedData.items.length - 3} More Items
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Processing Info */}
               {receipt.processingLogs && receipt.processingLogs.length > 0 && (

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, DollarSign, MapPin, User } from "lucide-react"
+import { Calendar, Clock, DollarSign, MapPin, User, CheckCircle, CalendarClock, Trophy } from "lucide-react"
 import { PageLayout } from "@/components/ui/page-layout"
 import { PageHeader } from "@/components/ui/page-header"
 import { mockGames, Team } from "@/lib/mock-data"
@@ -12,6 +12,12 @@ import { formatTeamName } from "@/lib/team-utils"
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
+
+  const handleQuickNavigation = (view: string) => {
+    // This would normally navigate to the specific view
+    // For now, we'll just log it
+    console.log(`Navigating to: ${view}`)
+  }
 
   const myAssignments = mockGames.filter((game) => game.assignedReferees?.includes(user?.name || ""))
 

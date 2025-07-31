@@ -123,14 +123,18 @@ class ApiClient {
     // Transform backend response to frontend format
     const transformedGames = response.data.map((game: any) => ({
       id: game.id,
-      homeTeam: game.homeTeam || game.home_team_name || 'Home Team',
-      awayTeam: game.awayTeam || game.away_team_name || 'Away Team',
+      homeTeam: game.homeTeam || { name: game.home_team_name } || 'Home Team',
+      awayTeam: game.awayTeam || { name: game.away_team_name } || 'Away Team',
       date: game.date || game.game_date,
       time: game.time || game.game_time,
       location: game.location,
       level: game.level,
       payRate: game.payRate || game.pay_rate,
       status: game.status,
+      assignments: game.assignments || [],
+      refsNeeded: game.refsNeeded || game.refs_needed,
+      wageMultiplier: game.wageMultiplier || game.wage_multiplier,
+      gameType: game.gameType || game.game_type,
       notes: game.notes || '',
       createdAt: game.createdAt || game.created_at,
       updatedAt: game.updatedAt || game.updated_at

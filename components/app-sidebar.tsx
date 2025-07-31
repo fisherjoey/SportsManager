@@ -269,7 +269,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                           onClick={() => setActiveView(item.url)} 
                           isActive={activeView === item.url}
                           tooltip={item.title}
-                          className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
+                          className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation"
                         >
                           <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
                           <span className="truncate text-left">{item.title}</span>
@@ -291,7 +291,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                       onClick={() => setActiveView(item.url)} 
                       isActive={activeView === item.url}
                       tooltip={item.title}
-                      className="relative h-8 px-3 text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start"
+                      className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation"
                     >
                       <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
                       <span className="truncate text-left">{item.title}</span>

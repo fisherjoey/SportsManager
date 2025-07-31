@@ -158,7 +158,113 @@ export function MyAssignments() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {upcomingAssignments.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No upcoming assignments
+              </div>
+            ) : (
+              upcomingAssignments.map((assignment) => (
+                <Card key={assignment.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Game Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base leading-tight">
+                            {assignment.game ? formatGameMatchup(assignment.game.homeTeam, assignment.game.awayTeam) : 'Unknown Game'}
+                          </h3>
+                          <div className="flex items-center text-sm text-muted-foreground mt-1">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {assignment.game?.location}
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
+                          className={
+                            assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
+                            assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
+                            'text-red-600 border-red-600'
+                          }
+                        >
+                          {assignment.status === 'pending' ? 'Pending' : 
+                           assignment.status === 'accepted' ? 'Accepted' : 
+                           assignment.status === 'declined' ? 'Declined' : assignment.status}
+                        </Badge>
+                      </div>
+
+                      {/* Date, Time, Level */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {assignment.game?.date ? new Date(assignment.game.date).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <div className="text-muted-foreground">{assignment.game?.time}</div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary" className="mb-1">{assignment.game?.level}</Badge>
+                          <div className="flex items-center justify-end">
+                            <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                            <span className="font-medium">
+                              {assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Wage Multiplier Info */}
+                      {assignment.game?.wageMultiplier && assignment.game?.wageMultiplier !== 1.0 && (
+                        <div className="text-xs text-muted-foreground bg-yellow-50 p-2 rounded">
+                          {assignment.game.wageMultiplier}x multiplier
+                          {assignment.game.wageMultiplierReason && (
+                            <span> - {assignment.game.wageMultiplierReason}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      {assignment.status === 'pending' && (
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="mobile"
+                            variant="outline"
+                            onClick={() => handleAcceptDecline(assignment.id, "accept")}
+                            className="flex-1 text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Accept Assignment
+                          </Button>
+                          <Button
+                            size="mobile"
+                            variant="outline"
+                            onClick={() => handleAcceptDecline(assignment.id, "decline")}
+                            className="flex-1 text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Decline
+                          </Button>
+                        </div>
+                      )}
+                      {assignment.status === 'accepted' && (
+                        <div className="text-center text-green-600 font-medium pt-2">
+                          ✓ Assignment Confirmed
+                        </div>
+                      )}
+                      {assignment.status === 'declined' && (
+                        <div className="text-center text-red-600 font-medium pt-2">
+                          ✗ Assignment Declined
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -230,24 +336,24 @@ export function MyAssignments() {
                       </TableCell>
                       <TableCell>
                         {assignment.status === 'pending' && (
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 md:space-x-2">
                             <Button
-                              size="sm"
+                              size="mobileSm"
                               variant="outline"
                               onClick={() => handleAcceptDecline(assignment.id, "accept")}
-                              className="text-green-600 border-green-600 hover:bg-green-50"
+                              className="text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100 min-w-[44px] touch-manipulation"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Accept
+                              <CheckCircle className="h-4 w-4 md:mr-1" />
+                              <span className="hidden md:inline">Accept</span>
                             </Button>
                             <Button
-                              size="sm"
+                              size="mobileSm"
                               variant="outline"
                               onClick={() => handleAcceptDecline(assignment.id, "decline")}
-                              className="text-red-600 border-red-600 hover:bg-red-50"
+                              className="text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100 min-w-[44px] touch-manipulation"
                             >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Decline
+                              <XCircle className="h-4 w-4 md:mr-1" />
+                              <span className="hidden md:inline">Decline</span>
                             </Button>
                           </div>
                         )}

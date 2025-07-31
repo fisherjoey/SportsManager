@@ -42,10 +42,10 @@ export function RefereeDashboard() {
     <SidebarProvider>
       <AppSidebar activeView={activeView} setActiveView={setActiveView} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+        <header className="flex h-16 md:h-16 shrink-0 items-center gap-2 border-b px-4 touch-manipulation">
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center" />
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">My Dashboard</h1>
+            <h1 className="text-xl md:text-lg font-semibold">My Dashboard</h1>
           </div>
         </header>
         <div className="flex-1 overflow-auto p-4">{renderContent()}</div>

@@ -501,7 +501,7 @@ class BudgetCalculationService {
   }
 
   /**
-   * Update all budget amounts for an organization
+   * Update all budget amounts for an organization (optimized for performance)
    */
   async updateAllBudgetAmounts(organizationId) {
     try {
@@ -509,13 +509,32 @@ class BudgetCalculationService {
         .where('organization_id', organizationId)
         .select('id');
 
-      const updatePromises = budgets.map(budget => 
-        this.updateBudgetAmounts(budget.id)
-      );
+      // Use batch processing with controlled concurrency to avoid overwhelming the database
+      const batchSize = 5; // Process 5 budgets at a time
+      const results = [];
+      
+      for (let i = 0; i < budgets.length; i += batchSize) {
+        const batch = budgets.slice(i, i + batchSize);
+        const batchPromises = batch.map(budget => 
+          this.updateBudgetAmounts(budget.id).catch(error => {
+            console.error(`Failed to update budget ${budget.id}:`, error);
+            return { id: budget.id, error: error.message };
+          })
+        );
+        
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      }
 
-      await Promise.all(updatePromises);
+      const successful = results.filter(r => !r.error).length;
+      const failed = results.filter(r => r.error).length;
 
-      return { updated_budgets: budgets.length };
+      return { 
+        updated_budgets: successful,
+        failed_budgets: failed,
+        total_budgets: budgets.length,
+        errors: results.filter(r => r.error)
+      };
     } catch (error) {
       console.error('Bulk budget update error:', error);
       throw error;

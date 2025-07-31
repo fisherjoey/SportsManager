@@ -380,7 +380,9 @@ router.get('/receipts', authenticateToken, async (req, res) => {
         amount: receipt.total_amount,
         category: receipt.category_name,
         confidence: receipt.extraction_confidence,
-        items: receipt.line_items || []
+        items: receipt.line_items ? 
+          (typeof receipt.line_items === 'string' ? JSON.parse(receipt.line_items) : receipt.line_items) 
+          : []
       } : null,
       processedAt: receipt.processed_at,
       errorMessage: receipt.processing_notes && receipt.processing_status === 'failed' 
@@ -487,7 +489,9 @@ router.get('/receipts/:id', authenticateToken, async (req, res) => {
         transaction_date: receipt.transaction_date,
         category_name: receipt.category_name,
         extraction_confidence: receipt.extraction_confidence,
-        line_items: receipt.line_items || []
+        line_items: receipt.line_items ? 
+          (typeof receipt.line_items === 'string' ? JSON.parse(receipt.line_items) : receipt.line_items) 
+          : []
       }
     };
 
