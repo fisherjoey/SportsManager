@@ -8,46 +8,68 @@ class BudgetCalculationService {
    * Update budget amounts based on financial transactions
    */
   async updateBudgetAmounts(budgetId) {
-    try {
-      const budget = await db('budgets').where('id', budgetId).first();
-      if (!budget) {
-        throw new Error('Budget not found');
+    return await db.transaction(async (trx) => {
+      try {
+        const budget = await trx('budgets').where('id', budgetId).first();
+        if (!budget) {
+          throw new Error('Budget not found');
+        }
+
+        // Calculate actual spent from posted transactions
+        const [{ actual_spent }] = await trx('financial_transactions')
+          .where('budget_id', budgetId)
+          .where('status', 'posted')
+          .sum('amount as actual_spent');
+
+        // Calculate committed amount from approved/pending transactions
+        const [{ committed_amount }] = await trx('financial_transactions')
+          .where('budget_id', budgetId)
+          .whereIn('status', ['approved', 'pending_approval'])
+          .sum('amount as committed_amount');
+
+        // Update budget with calculated amounts
+        const [updatedBudget] = await trx('budgets')
+          .where('id', budgetId)
+          .update({
+            actual_spent: parseFloat(actual_spent) || 0,
+            committed_amount: parseFloat(committed_amount) || 0,
+            updated_at: trx.fn.now()
+          })
+          .returning('*');
+
+        // Check for budget alerts within the same transaction
+        await this.checkBudgetAlertsInTransaction(budgetId, trx);
+
+        return updatedBudget;
+      } catch (error) {
+        console.error('Budget amount update error:', error);
+        throw error;
       }
+    });
+  }
 
-      // Calculate actual spent from posted transactions
-      const [{ actual_spent }] = await db('financial_transactions')
-        .where('budget_id', budgetId)
-        .where('status', 'posted')
-        .sum('amount as actual_spent');
+  /**
+   * Check for budget alerts and create them if needed (transaction-aware version)
+   */
+  async checkBudgetAlertsInTransaction(budgetId, trx) {
+    try {
+      const budget = await trx('budgets as b')
+        .join('budget_categories as bc', 'b.category_id', 'bc.id')
+        .where('b.id', budgetId)
+        .select('b.*', 'bc.name as category_name')
+        .first();
 
-      // Calculate committed amount from approved/pending transactions
-      const [{ committed_amount }] = await db('financial_transactions')
-        .where('budget_id', budgetId)
-        .whereIn('status', ['approved', 'pending_approval'])
-        .sum('amount as committed_amount');
+      if (!budget) return;
 
-      // Update budget with calculated amounts
-      const [updatedBudget] = await db('budgets')
-        .where('id', budgetId)
-        .update({
-          actual_spent: parseFloat(actual_spent) || 0,
-          committed_amount: parseFloat(committed_amount) || 0,
-          updated_at: db.fn.now()
-        })
-        .returning('*');
-
-      // Check for budget alerts
-      await this.checkBudgetAlerts(budgetId);
-
-      return updatedBudget;
+      await this._processAlerts(budget, budgetId, trx);
     } catch (error) {
-      console.error('Budget amount update error:', error);
-      throw error;
+      console.error('Budget alert check error:', error);
+      // Don't throw - alerts are not critical
     }
   }
 
   /**
-   * Check for budget alerts and create them if needed
+   * Check for budget alerts and create them if needed (legacy version)
    */
   async checkBudgetAlerts(budgetId) {
     try {
@@ -59,100 +81,106 @@ class BudgetCalculationService {
 
       if (!budget) return;
 
-      const allocated = parseFloat(budget.allocated_amount) || 0;
-      const spent = parseFloat(budget.actual_spent) || 0;
-      const committed = parseFloat(budget.committed_amount) || 0;
-      const totalUsed = spent + committed;
-      const available = allocated - totalUsed;
-      const utilizationRate = allocated > 0 ? (totalUsed / allocated) * 100 : 0;
-
-      const alerts = [];
-
-      // Overspend alerts
-      if (spent > allocated) {
-        const overspendAmount = spent - allocated;
-        const overspendPercentage = allocated > 0 ? (overspendAmount / allocated) * 100 : 0;
-        
-        alerts.push({
-          alert_type: overspendPercentage > 25 ? 'overspend_critical' : 'overspend_warning',
-          title: `${budget.category_name} Budget Overspend`,
-          message: `Budget exceeded by $${overspendAmount.toFixed(2)} (${overspendPercentage.toFixed(1)}%)`,
-          threshold_value: allocated,
-          current_value: spent,
-          variance_percentage: overspendPercentage,
-          severity: overspendPercentage > 25 ? 'critical' : 'high'
-        });
-      }
-
-      // High utilization warning
-      if (utilizationRate > 90 && spent <= allocated) {
-        alerts.push({
-          alert_type: 'overspend_warning',
-          title: `${budget.category_name} Budget Nearly Exhausted`,
-          message: `Budget is ${utilizationRate.toFixed(1)}% utilized with $${available.toFixed(2)} remaining`,
-          threshold_value: allocated * 0.9,
-          current_value: totalUsed,
-          variance_percentage: utilizationRate,
-          severity: utilizationRate > 95 ? 'high' : 'medium'
-        });
-      }
-
-      // Underutilization alert (if period is >75% complete)
-      const budgetPeriod = await db('budget_periods').where('id', budget.budget_period_id).first();
-      if (budgetPeriod) {
-        const periodStart = new Date(budgetPeriod.start_date);
-        const periodEnd = new Date(budgetPeriod.end_date);
-        const now = new Date();
-        const periodProgress = (now - periodStart) / (periodEnd - periodStart);
-
-        if (periodProgress > 0.75 && utilizationRate < 25) {
-          alerts.push({
-            alert_type: 'underspend_warning',
-            title: `${budget.category_name} Budget Underutilized`,
-            message: `Only ${utilizationRate.toFixed(1)}% of budget used with ${((1 - periodProgress) * 100).toFixed(0)}% of period remaining`,
-            threshold_value: allocated * 0.5,
-            current_value: totalUsed,
-            variance_percentage: utilizationRate,
-            severity: 'low'
-          });
-        }
-      }
-
-      // Parse variance rules if they exist
-      if (budget.variance_rules) {
-        const rules = typeof budget.variance_rules === 'string' 
-          ? JSON.parse(budget.variance_rules) 
-          : budget.variance_rules;
-        
-        // Custom alert thresholds
-        if (rules.warning_threshold && utilizationRate > rules.warning_threshold) {
-          alerts.push({
-            alert_type: 'forecast_variance',
-            title: `${budget.category_name} Custom Threshold Exceeded`,
-            message: `Budget utilization (${utilizationRate.toFixed(1)}%) exceeded custom warning threshold (${rules.warning_threshold}%)`,
-            threshold_value: allocated * (rules.warning_threshold / 100),
-            current_value: totalUsed,
-            variance_percentage: utilizationRate,
-            severity: rules.severity || 'medium'
-          });
-        }
-      }
-
-      // Insert new alerts
-      for (const alert of alerts) {
-        await db('budget_alerts')
-          .insert({
-            organization_id: budget.organization_id,
-            budget_id: budgetId,
-            ...alert
-          })
-          .onConflict(['budget_id', 'alert_type'])
-          .merge(['message', 'current_value', 'variance_percentage', 'created_at']);
-      }
-
+      await this._processAlerts(budget, budgetId, db);
     } catch (error) {
       console.error('Budget alert check error:', error);
       // Don't throw - alerts are not critical
+    }
+  }
+
+  /**
+   * Process alerts for a budget (shared between transaction and non-transaction contexts)
+   */
+  async _processAlerts(budget, budgetId, dbContext) {
+    const allocated = parseFloat(budget.allocated_amount) || 0;
+    const spent = parseFloat(budget.actual_spent) || 0;
+    const committed = parseFloat(budget.committed_amount) || 0;
+    const totalUsed = spent + committed;
+    const available = allocated - totalUsed;
+    const utilizationRate = allocated > 0 ? (totalUsed / allocated) * 100 : 0;
+
+    const alerts = [];
+
+    // Overspend alerts
+    if (spent > allocated) {
+      const overspendAmount = spent - allocated;
+      const overspendPercentage = allocated > 0 ? (overspendAmount / allocated) * 100 : 0;
+      
+      alerts.push({
+        alert_type: overspendPercentage > 25 ? 'overspend_critical' : 'overspend_warning',
+        title: `${budget.category_name} Budget Overspend`,
+        message: `Budget exceeded by $${overspendAmount.toFixed(2)} (${overspendPercentage.toFixed(1)}%)`,
+        threshold_value: allocated,
+        current_value: spent,
+        variance_percentage: overspendPercentage,
+        severity: overspendPercentage > 25 ? 'critical' : 'high'
+      });
+    }
+
+    // High utilization warning
+    if (utilizationRate > 90 && spent <= allocated) {
+      alerts.push({
+        alert_type: 'overspend_warning',
+        title: `${budget.category_name} Budget Nearly Exhausted`,
+        message: `Budget is ${utilizationRate.toFixed(1)}% utilized with $${available.toFixed(2)} remaining`,
+        threshold_value: allocated * 0.9,
+        current_value: totalUsed,
+        variance_percentage: utilizationRate,
+        severity: utilizationRate > 95 ? 'high' : 'medium'
+      });
+    }
+
+    // Underutilization alert (if period is >75% complete)
+    const budgetPeriod = await dbContext('budget_periods').where('id', budget.budget_period_id).first();
+    if (budgetPeriod) {
+      const periodStart = new Date(budgetPeriod.start_date);
+      const periodEnd = new Date(budgetPeriod.end_date);
+      const now = new Date();
+      const periodProgress = (now - periodStart) / (periodEnd - periodStart);
+
+      if (periodProgress > 0.75 && utilizationRate < 25) {
+        alerts.push({
+          alert_type: 'underspend_warning',
+          title: `${budget.category_name} Budget Underutilized`,
+          message: `Only ${utilizationRate.toFixed(1)}% of budget used with ${((1 - periodProgress) * 100).toFixed(0)}% of period remaining`,
+          threshold_value: allocated * 0.5,
+          current_value: totalUsed,
+          variance_percentage: utilizationRate,
+          severity: 'low'
+        });
+      }
+    }
+
+    // Parse variance rules if they exist
+    if (budget.variance_rules) {
+      const rules = typeof budget.variance_rules === 'string' 
+        ? JSON.parse(budget.variance_rules) 
+        : budget.variance_rules;
+      
+      // Custom alert thresholds
+      if (rules.warning_threshold && utilizationRate > rules.warning_threshold) {
+        alerts.push({
+          alert_type: 'forecast_variance',
+          title: `${budget.category_name} Custom Threshold Exceeded`,
+          message: `Budget utilization (${utilizationRate.toFixed(1)}%) exceeded custom warning threshold (${rules.warning_threshold}%)`,
+          threshold_value: allocated * (rules.warning_threshold / 100),
+          current_value: totalUsed,
+          variance_percentage: utilizationRate,
+          severity: rules.severity || 'medium'
+        });
+      }
+    }
+
+    // Insert new alerts
+    for (const alert of alerts) {
+      await dbContext('budget_alerts')
+        .insert({
+          organization_id: budget.organization_id,
+          budget_id: budgetId,
+          ...alert
+        })
+        .onConflict(['budget_id', 'alert_type'])
+        .merge(['message', 'current_value', 'variance_percentage', 'created_at']);
     }
   }
 

@@ -5,6 +5,7 @@ const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
+const { checkAssignmentConflicts } = require('../services/conflictDetectionService');
 const { getOrganizationSettings } = require('../utils/organization-settings');
 const { validateQuery, validateIdParam } = require('../middleware/sanitization');
 const { asyncHandler } = require('../middleware/errorHandling');
@@ -206,22 +207,6 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Position not found' });
     }
 
-    // Check if referee is available
-    if (!referee.is_available) {
-      return res.status(400).json({ error: 'Referee is not available' });
-    }
-    
-    // Check referee level eligibility (for admin assignments, show warning but allow)
-    let levelWarning = null;
-    if (referee.allowed_divisions) {
-      const allowedDivisions = JSON.parse(referee.allowed_divisions);
-      if (!allowedDivisions.includes(game.level)) {
-        levelWarning = `Warning: Referee level "${referee.level_name}" is not typically qualified for ${game.level} games. Allowed divisions: ${allowedDivisions.join(', ')}`;
-      }
-    } else if (referee.referee_level_id === null) {
-      levelWarning = 'Warning: Referee has no assigned level. Consider assigning a level.';
-    }
-
     // Check if position is already filled for this game
     const existingPositionAssignment = await db('game_assignments')
       .where('game_id', value.game_id)
@@ -253,66 +238,16 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Game has reached maximum number of referees' });
     }
 
-    // Check if referee has time conflict with other games
-    const timeConflictAssignment = await db('game_assignments')
-      .join('games', 'game_assignments.game_id', 'games.id')
-      .where('game_assignments.user_id', value.user_id)
-      .where('games.game_date', game.game_date)
-      .where('games.game_time', game.game_time)
-      .where('games.id', '!=', value.game_id)
-      .first();
+    // Run comprehensive conflict detection
+    const conflictAnalysis = await checkAssignmentConflicts(value);
     
-    if (timeConflictAssignment) {
-      return res.status(409).json({ error: 'Referee has a time conflict with another game' });
-    }
-
-    // Check availability windows for the game time
-    // DISABLED: referee_availability table no longer exists
-    const availabilityWindows = []; // await db('referee_availability').where('referee_id', value.user_id).where('date', game.game_date);
-
-    // Calculate game end time (assuming 2-hour duration if not specified)
-    const gameStartTime = game.game_time;
-    const gameEndTime = game.end_time || (() => {
-      const [hours, minutes] = gameStartTime.split(':').map(Number);
-      const endHours = (hours + 2) % 24;
-      return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    })();
-
-    // Check for availability conflicts
-    let availabilityWarning = null;
-    if (availabilityWindows.length > 0) {
-      const gameTime = { start: gameStartTime, end: gameEndTime };
-      const hasConflict = hasSchedulingConflict(availabilityWindows, gameTime);
-      
-      if (hasConflict) {
-        // Find the conflicting window for details
-        const conflictingWindow = availabilityWindows.find(window => {
-          if (!window.is_available && checkTimeOverlap(window, { start_time: gameStartTime, end_time: gameEndTime })) {
-            return true;
-          }
-          return false;
-        });
-        
-        if (conflictingWindow) {
-          const conflictReason = conflictingWindow.reason ? ` (${conflictingWindow.reason})` : '';
-          return res.status(409).json({ 
-            error: `Referee is unavailable during game time: ${conflictingWindow.start_time}-${conflictingWindow.end_time}${conflictReason}` 
-          });
-        }
-      }
-      
-      // Check if referee has marked availability for this time (positive indicator)
-      const hasAvailabilityWindow = availabilityWindows.some(window => 
-        window.is_available && 
-        gameStartTime >= window.start_time && 
-        gameEndTime <= window.end_time
-      );
-      
-      if (!hasAvailabilityWindow) {
-        availabilityWarning = 'Note: Referee has not specifically marked availability for this game time';
-      }
-    } else {
-      availabilityWarning = 'Note: Referee has not set any availability windows for this date';
+    // Handle conflicts - block assignment if there are serious conflicts
+    if (conflictAnalysis.hasConflicts) {
+      return res.status(409).json({ 
+        error: 'Assignment conflicts detected',
+        details: conflictAnalysis.errors,
+        conflicts: conflictAnalysis.conflicts
+      });
     }
 
     // Get organization settings and existing assignments count for wage calculation
@@ -381,14 +316,10 @@ router.post('/', async (req, res) => {
       }
     };
     
-    // Combine warnings
-    const warnings = [];
-    if (levelWarning) warnings.push(levelWarning);
-    if (availabilityWarning) warnings.push(availabilityWarning);
-    
-    if (warnings.length > 0) {
-      response.warnings = warnings;
-      response.warning = warnings.join('; '); // For backward compatibility
+    // Include warnings from conflict analysis
+    if (conflictAnalysis.warnings && conflictAnalysis.warnings.length > 0) {
+      response.warnings = conflictAnalysis.warnings;
+      response.warning = conflictAnalysis.warnings.join('; '); // For backward compatibility
     }
     
     res.status(201).json(response);
@@ -850,6 +781,33 @@ router.post('/bulk', async (req, res) => {
     res.status(500).json({ error: error.message || 'Failed to create bulk assignments' });
   }
 });
+
+// POST /api/assignments/check-conflicts - Check for conflicts before assignment
+router.post('/check-conflicts', authenticateToken, asyncHandler(async (req, res) => {
+  const { error, value } = assignmentSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const conflictAnalysis = await checkAssignmentConflicts(value);
+    
+    res.json({
+      success: true,
+      data: {
+        hasConflicts: conflictAnalysis.hasConflicts,
+        conflicts: conflictAnalysis.conflicts || [],
+        warnings: conflictAnalysis.warnings || [],
+        errors: conflictAnalysis.errors || [],
+        isQualified: conflictAnalysis.isQualified || true,
+        canAssign: !conflictAnalysis.hasConflicts
+      }
+    });
+  } catch (error) {
+    console.error('Error checking assignment conflicts:', error);
+    res.status(500).json({ error: 'Failed to check conflicts' });
+  }
+}));
 
 // GET /api/assignments/available-referees/:game_id - Get available referees for a specific game
 router.get('/available-referees/:game_id', async (req, res) => {

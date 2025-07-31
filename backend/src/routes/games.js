@@ -6,6 +6,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { validateQuery, validateIdParam } = require('../middleware/sanitization');
 const { asyncHandler, withDatabaseError } = require('../middleware/errorHandling');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
+const { checkGameSchedulingConflicts } = require('../services/conflictDetectionService');
 
 const teamSchema = Joi.object({
   organization: Joi.string().required(),
@@ -196,6 +197,13 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
+    // Check for venue scheduling conflicts
+    const conflictCheck = await checkGameSchedulingConflicts({
+      location: value.location,
+      game_date: value.date,
+      game_time: value.time
+    });
+
     // Transform frontend data to database format
     const dbData = {
       home_team: JSON.stringify(value.homeTeam),
@@ -240,7 +248,18 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       updatedAt: game.updated_at
     };
     
-    res.status(201).json(transformedGame);
+    const response = {
+      success: true,
+      data: transformedGame
+    };
+
+    // Include venue conflict warnings if any
+    if (conflictCheck.hasConflicts) {
+      response.warnings = [`Venue conflict detected: ${conflictCheck.errors.join('; ')}`];
+      response.conflicts = conflictCheck.conflicts;
+    }
+    
+    res.status(201).json(response);
   } catch (error) {
     console.error('Error creating game:', error);
     res.status(500).json({ error: 'Failed to create game' });
@@ -255,6 +274,22 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
       return res.status(400).json({ error: error.details[0].message });
     }
 
+    // Check for venue scheduling conflicts if location, date, or time is being updated
+    let conflictCheck = { hasConflicts: false };
+    if (value.location || value.date || value.time) {
+      // Get current game data to merge with updates
+      const currentGame = await db('games').where('id', req.params.id).first();
+      if (!currentGame) {
+        return res.status(404).json({ error: 'Game not found' });
+      }
+
+      conflictCheck = await checkGameSchedulingConflicts({
+        location: value.location || currentGame.location,
+        game_date: value.date || currentGame.game_date,
+        game_time: value.time || currentGame.game_time
+      }, req.params.id);
+    }
+
     const [game] = await db('games')
       .where('id', req.params.id)
       .update({ ...value, updated_at: new Date() })
@@ -264,7 +299,18 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    res.json(game);
+    const response = {
+      success: true,
+      data: game
+    };
+
+    // Include venue conflict warnings if any
+    if (conflictCheck.hasConflicts) {
+      response.warnings = [`Venue conflict detected: ${conflictCheck.errors.join('; ')}`];
+      response.conflicts = conflictCheck.conflicts;
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error updating game:', error);
     res.status(500).json({ error: 'Failed to update game' });

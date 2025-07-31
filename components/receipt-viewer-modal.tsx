@@ -17,7 +17,9 @@ import {
   Store, 
   Brain,
   Image as ImageIcon,
-  Receipt as ReceiptIcon
+  Receipt as ReceiptIcon,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
@@ -63,9 +65,11 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
   const [receipt, setReceipt] = useState<ReceiptDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [showAllItems, setShowAllItems] = useState(false)
 
   useEffect(() => {
     if (open && receiptId) {
+      setShowAllItems(false) // Reset to collapsed state
       loadReceiptDetails()
     }
   }, [open, receiptId])
@@ -314,7 +318,7 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {receipt.extractedData.items.map((item, index) => (
+                      {(showAllItems ? receipt.extractedData.items : receipt.extractedData.items.slice(0, 3)).map((item, index) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
                           <div className="flex-1">
                             <p className="font-medium text-sm">{item.description}</p>
@@ -325,6 +329,30 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
                           <p className="font-medium">{formatCurrency(item.totalPrice)}</p>
                         </div>
                       ))}
+                      
+                      {/* Show More/Less Button */}
+                      {receipt.extractedData.items.length > 3 && (
+                        <div className="pt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAllItems(!showAllItems)}
+                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center justify-center gap-2"
+                          >
+                            {showAllItems ? (
+                              <>
+                                <ChevronUp className="h-4 w-4" />
+                                Show Less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-4 w-4" />
+                                Show {receipt.extractedData.items.length - 3} More Items
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

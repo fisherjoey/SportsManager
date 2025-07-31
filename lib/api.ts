@@ -1755,6 +1755,12 @@ class ApiClient {
     });
   }
 
+  async deleteBudget(id: string) {
+    return this.request<{ success: boolean; message?: string }>(`/budgets/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Expense Management API endpoints
   async uploadReceipt(formData: FormData) {
     return this.request<{

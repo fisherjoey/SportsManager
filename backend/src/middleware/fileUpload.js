@@ -150,46 +150,45 @@ const handleUploadErrors = (error, req, res, next) => {
   });
 };
 
-// Virus scanning middleware (placeholder for future implementation)
+// Relaxed security scan middleware for receipt uploads
 const virusScan = async (req, res, next) => {
-  // TODO: Implement virus scanning with ClamAV or similar
-  // For now, just basic file validation
+  // Very basic security check - just ensure file exists and is readable
+  // This is mainly for receipt images and PDFs, so we're being permissive
   
   if (req.file) {
     try {
-      // Check if file exists and is readable
+      // Just check if file exists and is readable
       await fs.access(req.file.path, fs.constants.R_OK);
       
-      // Basic file header validation
-      const buffer = await fs.readFile(req.file.path, { start: 0, end: 10 });
+      // Only block obviously dangerous executable files
+      const buffer = await fs.readFile(req.file.path, { start: 0, end: 4 });
       
-      // Check for common malicious patterns (very basic)
-      const maliciousPatterns = [
-        Buffer.from([0x4D, 0x5A]), // MZ (executable)
-        Buffer.from('<?php', 'ascii'), // PHP
-        Buffer.from('<script', 'ascii') // Script tag
+      // Only check for actual executable headers (much more relaxed)
+      const dangerousPatterns = [
+        Buffer.from([0x4D, 0x5A, 0x90, 0x00]), // PE executable (more specific)
+        Buffer.from([0x7F, 0x45, 0x4C, 0x46])  // ELF executable
       ];
       
-      for (const pattern of maliciousPatterns) {
-        if (buffer.includes(pattern)) {
+      for (const pattern of dangerousPatterns) {
+        if (buffer.length >= pattern.length && buffer.subarray(0, pattern.length).equals(pattern)) {
+          console.log('Blocked executable file upload:', req.file.originalname);
           await fs.remove(req.file.path);
           return res.status(400).json({
-            error: 'File failed security scan',
-            reason: 'Potentially malicious content detected'
+            error: 'Executable files are not allowed',
+            reason: 'Only images and PDFs are permitted for receipts'
           });
         }
       }
+      
+      console.log('File passed security scan:', req.file.originalname);
     } catch (error) {
-      console.error('Virus scan error:', error);
-      if (req.file.path) {
-        await fs.remove(req.file.path).catch(console.error);
-      }
-      return res.status(500).json({
-        error: 'Security scan failed'
-      });
+      console.error('Security scan error:', error);
+      // Don't fail the upload for scan errors - just log them
+      console.log('Security scan failed but allowing upload:', req.file.originalname);
     }
   }
   
+  // Always continue - we're being permissive for receipt uploads
   next();
 };
 

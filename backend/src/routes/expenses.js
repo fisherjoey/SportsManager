@@ -486,7 +486,8 @@ router.get('/receipts/:id', authenticateToken, async (req, res) => {
         total_amount: receipt.total_amount,
         transaction_date: receipt.transaction_date,
         category_name: receipt.category_name,
-        extraction_confidence: receipt.extraction_confidence
+        extraction_confidence: receipt.extraction_confidence,
+        line_items: receipt.line_items || []
       }
     };
 

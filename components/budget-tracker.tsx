@@ -75,9 +75,9 @@ class BudgetErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error to application logging service instead of console
-    // In production, this should be sent to your error tracking service
-    // console.error('Budget tracker error:', error, errorInfo)
+    // Log error to application logging service
+    // In production, this should be sent to your error tracking service (e.g., Sentry)
+    // Production logging would go here
   }
 
   render() {
@@ -233,7 +233,7 @@ function BudgetTrackerInner() {
       return await operation()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      console.warn(`Safe operation "${operationName}" failed:`, errorMessage)
+      // Log to error tracking service in production
       
       toast({
         title: `${operationName} Warning`,
@@ -806,7 +806,15 @@ function BudgetTrackerInner() {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Budget Management</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">Budget Management</h2>
+            {formLoading && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <LoadingSpinner className="h-3 w-3" />
+                <span>Processing...</span>
+              </div>
+            )}
+          </div>
           <p className="text-muted-foreground">
             Track budget performance and spending across categories
           </p>
@@ -1457,4 +1465,13 @@ function BudgetTrackerInner() {
   )
 }
 
-export { BudgetTrackerInner as BudgetTracker }
+// Main component export with error boundary
+export default function BudgetTracker() {
+  return (
+    <BudgetErrorBoundary>
+      <BudgetTrackerInner />
+    </BudgetErrorBoundary>
+  )
+}
+
+export { BudgetTrackerInner, BudgetTracker }
