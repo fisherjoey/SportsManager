@@ -55,6 +55,63 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient, Budget, BudgetPeriod, BudgetCategory, BudgetAllocation } from '@/lib/api'
 
+// Simple Error Boundary for the budget tracker
+interface BudgetErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+class BudgetErrorBoundary extends React.Component<
+  { children: React.ReactNode; onRetry?: () => void },
+  BudgetErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode; onRetry?: () => void }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): BudgetErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log error to application logging service instead of console
+    // In production, this should be sent to your error tracking service
+    // console.error('Budget tracker error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6">
+          <Alert className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              An unexpected error occurred in the budget tracker. {this.state.error?.message}
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                this.setState({ hasError: false, error: undefined })
+                this.props.onRetry?.()
+              }}
+              variant="outline"
+            >
+              Try Again
+            </Button>
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 // Enhanced Budget interface with additional display data
 interface BudgetWithDetails extends Budget {
   category?: {
@@ -114,7 +171,7 @@ interface BudgetSummary {
   }>
 }
 
-export function BudgetTracker() {
+function BudgetTrackerInner() {
   const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
   const [budgetPeriods, setBudgetPeriods] = useState<BudgetPeriod[]>([])
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
@@ -129,6 +186,7 @@ export function BudgetTracker() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [formLoading, setFormLoading] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -148,37 +206,89 @@ export function BudgetTracker() {
     }
   }, [selectedPeriod])
 
+  // Retry mechanism for failed API calls
+  const retryApiCall = async (apiCall: () => Promise<any>, maxRetries = 2) => {
+    let lastError: Error | null = null
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        return await apiCall()
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error occurred')
+        if (i < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000))
+        }
+      }
+    }
+    throw lastError
+  }
+
+  // Safe operation wrapper with TypeScript error handling
+  const safeOperation = async <T>(
+    operation: () => Promise<T>,
+    fallback: T,
+    operationName: string
+  ): Promise<T> => {
+    try {
+      return await operation()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.warn(`Safe operation "${operationName}" failed:`, errorMessage)
+      
+      toast({
+        title: `${operationName} Warning`,
+        description: "Some data may not be fully loaded. Please refresh if issues persist.",
+        variant: "destructive"
+      })
+      
+      return fallback
+    }
+  }
+
   const loadInitialData = async () => {
     try {
       setLoading(true)
       
       const [periodsResponse, categoriesResponse] = await Promise.all([
-        apiClient.getBudgetPeriods(),
-        apiClient.getBudgetCategories()
+        retryApiCall(() => apiClient.getBudgetPeriods()),
+        retryApiCall(() => apiClient.getBudgetCategories())
       ])
 
-      // Handle periods response - the backend returns { periods, pagination } not { success, data }
-      if (periodsResponse.periods && periodsResponse.periods.length > 0) {
+      // Handle periods response with type safety
+      if (isValidPeriodResponse(periodsResponse) && periodsResponse.periods.length > 0) {
         setBudgetPeriods(periodsResponse.periods)
         // Set the first active period as default
-        const activePeriod = periodsResponse.periods.find(p => p.status === 'active') || periodsResponse.periods[0]
+        const activePeriod = periodsResponse.periods.find((p: BudgetPeriod) => p.status === 'active') || periodsResponse.periods[0]
         setSelectedPeriod(activePeriod.id)
       } else {
-        setError('No budget periods found. Please create budget periods first.')
+        setError('No budget periods available. Please contact your administrator to set up budget periods before creating budgets.')
       }
 
-      // Handle categories response - the backend returns { categories, pagination } not { success, data }
-      if (categoriesResponse.categories && categoriesResponse.categories.length > 0) {
+      // Handle categories response with type safety
+      if (isValidCategoryResponse(categoriesResponse) && categoriesResponse.categories.length > 0) {
         setBudgetCategories(categoriesResponse.categories)
       }
 
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load initial data')
-      console.error('Error loading budget data:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      
+      // Provide specific error messages based on the error type
+      let userMessage = "Failed to load budget periods and categories."
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userMessage = "Network error: Please check your internet connection and try again."
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        userMessage = "Session expired: Please log in again to continue."
+      } else if (errorMessage.includes('404')) {
+        userMessage = "Budget configuration not found: Please contact your administrator."
+      } else if (errorMessage.includes('500')) {
+        userMessage = "Server error: Please try again in a few minutes or contact support."
+      }
+      
+      setError(`Unable to load budget setup data: ${errorMessage}`)
       toast({
-        title: "Error",
-        description: "Failed to load budget periods and categories",
+        title: "Initial Data Loading Failed",
+        description: userMessage,
         variant: "destructive"
       })
     } finally {
@@ -190,15 +300,15 @@ export function BudgetTracker() {
     try {
       setLoading(true)
       
-      const budgetsResponse = await apiClient.getBudgets({
+      const budgetsResponse = await retryApiCall(() => apiClient.getBudgets({
         period_id: selectedPeriod,
         page: 1,
         limit: 100
-      })
+      }))
 
-      if (budgetsResponse && budgetsResponse.budgets) {
-        // Transform budget data to include additional fields for the UI
-        const transformedBudgets: BudgetWithDetails[] = budgetsResponse.budgets.map(budget => {
+      if (isValidBudgetResponse(budgetsResponse) && budgetsResponse.budgets.length > 0) {
+        // Transform budget data to include additional fields for the UI with type safety
+        const transformedBudgets: BudgetWithDetails[] = budgetsResponse.budgets.map((budget: Budget) => {
           // Calculate utilization rate from actual values
           const allocatedAmount = budget.allocated_amount || 0
           const spentAmount = budget.actual_spent || 0
@@ -257,11 +367,26 @@ export function BudgetTracker() {
 
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load budget data')
-      console.error('Error loading budget data:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      
+      // Provide specific error messages based on the error type
+      let userMessage = "Failed to load budget data."
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userMessage = "Network connection error: Please check your internet connection and refresh the page."
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        userMessage = "Authentication error: Please log in again to view budget data."
+      } else if (errorMessage.includes('403')) {
+        userMessage = "Access denied: You don't have permission to view these budgets."
+      } else if (errorMessage.includes('404')) {
+        userMessage = "Budget period not found: The selected period may have been deleted."
+      } else if (errorMessage.includes('500')) {
+        userMessage = "Server error: Our servers are experiencing issues. Please try again later."
+      }
+      
+      setError(`Unable to load budget information: ${errorMessage}`)
       toast({
-        title: "Error",
-        description: "Failed to load budget data",
+        title: "Budget Data Loading Failed",
+        description: userMessage,
         variant: "destructive"
       })
     } finally {
@@ -269,12 +394,32 @@ export function BudgetTracker() {
     }
   }
 
-  // Helper functions
-  const formatCurrency = (amount: number) => {
+  // Helper functions with TypeScript safety
+  const formatCurrency = (amount: number | undefined | null): string => {
+    const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount)
+    }).format(safeAmount)
+  }
+
+  // Type guard functions
+  const isValidBudgetResponse = (response: any): response is { budgets: Budget[] } => {
+    return response && 
+           typeof response === 'object' && 
+           Array.isArray(response.budgets)
+  }
+
+  const isValidPeriodResponse = (response: any): response is { periods: BudgetPeriod[] } => {
+    return response && 
+           typeof response === 'object' && 
+           Array.isArray(response.periods)
+  }
+
+  const isValidCategoryResponse = (response: any): response is { categories: BudgetCategory[] } => {
+    return response && 
+           typeof response === 'object' && 
+           Array.isArray(response.categories)
   }
 
   const getCategoryColor = (categoryId: string, categoryName: string) => {
@@ -297,7 +442,6 @@ export function BudgetTracker() {
         forecastData: []
       }
     } catch (error) {
-      console.error('Error loading budget details:', error)
       return {
         monthlyAllocations: [],
         topExpenses: [],
@@ -407,11 +551,33 @@ export function BudgetTracker() {
     setShowCreateModal(true)
   }
 
+  const validateBudgetForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = []
+    
+    if (!formData.name?.trim()) {
+      errors.push("Budget Name is required")
+    }
+    if (!formData.period_id) {
+      errors.push("Budget Period must be selected")
+    }
+    if (!formData.category_id) {
+      errors.push("Category must be selected")
+    }
+    if (!formData.allocated_amount || isNaN(parseFloat(formData.allocated_amount))) {
+      errors.push("Valid Allocated Amount is required")
+    } else if (parseFloat(formData.allocated_amount) <= 0) {
+      errors.push("Allocated Amount must be greater than zero")
+    }
+    
+    return { isValid: errors.length === 0, errors }
+  }
+
   const handleSaveNewBudget = async () => {
-    if (!formData.name || !formData.period_id || !formData.category_id || !formData.allocated_amount) {
+    const validation = validateBudgetForm()
+    if (!validation.isValid) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: validation.errors.join(", "),
         variant: "destructive"
       })
       return
@@ -443,10 +609,24 @@ export function BudgetTracker() {
         throw new Error('Failed to create budget')
       }
     } catch (error) {
-      console.error('Error creating budget:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      let userMessage = "Failed to create budget."
+      if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+        userMessage = "A budget with this name already exists in the selected period."
+      } else if (errorMessage.includes('validation')) {
+        userMessage = "Please check all required fields and ensure the amount is valid."
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        userMessage = "Session expired: Please log in again to create budgets."
+      } else if (errorMessage.includes('403')) {
+        userMessage = "Permission denied: You don't have permission to create budgets."
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userMessage = "Network error: Please check your connection and try again."
+      }
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create budget",
+        title: "Budget Creation Failed",
+        description: userMessage,
         variant: "destructive"
       })
     } finally {
@@ -471,10 +651,20 @@ export function BudgetTracker() {
   }
 
   const handleSaveEditBudget = async () => {
-    if (!editingBudget || !formData.name || !formData.period_id || !formData.category_id || !formData.allocated_amount) {
+    if (!editingBudget) {
+      toast({
+        title: "Error",
+        description: "No budget selected for editing",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const validation = validateBudgetForm()
+    if (!validation.isValid) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: validation.errors.join(", "),
         variant: "destructive"
       })
       return
@@ -507,10 +697,26 @@ export function BudgetTracker() {
         throw new Error('Failed to update budget')
       }
     } catch (error) {
-      console.error('Error updating budget:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      let userMessage = "Failed to update budget."
+      if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+        userMessage = "A budget with this name already exists in the selected period."
+      } else if (errorMessage.includes('validation')) {
+        userMessage = "Please check all required fields and ensure the amount is valid."
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        userMessage = "Session expired: Please log in again to update budgets."
+      } else if (errorMessage.includes('403')) {
+        userMessage = "Permission denied: You don't have permission to update this budget."
+      } else if (errorMessage.includes('404')) {
+        userMessage = "Budget not found: It may have been deleted by another user."
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userMessage = "Network error: Please check your connection and try again."
+      }
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update budget",
+        title: "Budget Update Failed",
+        description: userMessage,
         variant: "destructive"
       })
     } finally {
@@ -522,8 +728,8 @@ export function BudgetTracker() {
     const budget = budgets.find(b => b.id === budgetId)
     if (!budget) {
       toast({
-        title: "Error",
-        description: "Budget not found",
+        title: "Budget Not Found",
+        description: "The selected budget could not be found. Please refresh the page and try again.",
         variant: "destructive"
       })
       return
@@ -531,43 +737,35 @@ export function BudgetTracker() {
 
     // Show custom confirmation dialog instead of browser confirm
     const confirmed = window.confirm(
-      `Are you sure you want to delete the budget "${budget.name}"?\n\nThis action cannot be undone.`
+      `Are you sure you want to delete the budget "${budget.name}"?\n\nThis action cannot be undone and will remove all associated data.`
     )
     
     if (!confirmed) return
     
     try {
-      setLoading(true)
+      // Use form loading instead of general loading to avoid disabling entire interface
+      setFormLoading(true)
       
-      // Since there's no delete endpoint in the API client yet, 
-      // we'll show an informative message about the limitation
-      toast({
-        title: "Feature Not Available",
-        description: "Budget deletion is not yet supported by the backend API. Please contact your administrator to remove this budget.",
-        variant: "destructive"
-      })
-      
-      // TODO: Uncomment when delete API is available
-      // const response = await apiClient.deleteBudget(budgetId)
-      // if (response.success) {
-      //   toast({
-      //     title: "Success",
-      //     description: "Budget deleted successfully"
-      //   })
-      //   await loadBudgetData()
-      // } else {
-      //   throw new Error('Failed to delete budget')
-      // }
+      const response = await retryApiCall(() => apiClient.deleteBudget(budgetId))
+      if (response.success) {
+        toast({
+          title: "Budget Deleted",
+          description: `"${budget.name}" has been successfully deleted.`
+        })
+        await loadBudgetData()
+      } else {
+        throw new Error(response.message || `Failed to delete budget "${budget.name}". Please try again.`)
+      }
       
     } catch (err) {
-      console.error('Error deleting budget:', err)
+      const errorMessage = err instanceof Error ? err.message : `Failed to delete budget "${budget.name}". Please check your connection and try again.`
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to delete budget",
+        title: "Deletion Failed",
+        description: errorMessage,
         variant: "destructive"
       })
     } finally {
-      setLoading(false)
+      setFormLoading(false)
     }
   }
 
@@ -591,19 +789,13 @@ export function BudgetTracker() {
   }
 
   if (!summary) {
-    console.log('Summary is null, summary:', summary)
-    console.log('budgets:', budgets)
-    console.log('budgetPeriods:', budgetPeriods)
-    console.log('budgetCategories:', budgetCategories)
     return (
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4">Budget Management</h2>
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            No budget summary available. Loading data...
-            <br />
-            Periods: {budgetPeriods.length}, Categories: {budgetCategories.length}, Budgets: {budgets.length}
+            Unable to load budget summary. Please try refreshing the page or contact support if the issue persists.
           </AlertDescription>
         </Alert>
       </div>
@@ -621,7 +813,7 @@ export function BudgetTracker() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod} disabled={formLoading}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
@@ -633,9 +825,9 @@ export function BudgetTracker() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleCreateBudget}>
+          <Button onClick={handleCreateBudget} disabled={formLoading}>
             <Plus className="h-4 w-4 mr-2" />
-            New Budget
+            {formLoading ? 'Processing...' : 'New Budget'}
           </Button>
         </div>
       </div>
@@ -836,13 +1028,16 @@ export function BudgetTracker() {
                       
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" disabled={formLoading}>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditBudget(budget.id)}>
+                          <DropdownMenuItem 
+                            onClick={() => handleEditBudget(budget.id)}
+                            disabled={formLoading}
+                          >
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Budget
                           </DropdownMenuItem>
@@ -854,9 +1049,10 @@ export function BudgetTracker() {
                           <DropdownMenuItem 
                             className="text-red-600" 
                             onClick={() => handleDeleteBudget(budget.id)}
+                            disabled={formLoading}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {formLoading ? 'Deleting...' : 'Delete'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1260,3 +1456,5 @@ export function BudgetTracker() {
     </div>
   )
 }
+
+export { BudgetTrackerInner as BudgetTracker }

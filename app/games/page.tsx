@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
 import { useAuth } from "@/components/auth-provider"
 import { LoginForm } from "@/components/login-form"
-import { BudgetTracker } from '@/components/budget-tracker'
+import { GamesManagementPage } from "@/components/games-management-page"
 
-export default function BudgetPage() {
+export default function GamesPage() {
   const { isAuthenticated } = useAuth()
 
   if (!isAuthenticated) {
@@ -12,8 +12,8 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="container mx-auto p-6" data-testid="budget">
-      <BudgetTracker />
+    <div data-testid="games">
+      <GamesManagementPage />
     </div>
   )
 }
