@@ -1,0 +1,17 @@
+Basic text receipt for testing:
+
+STARBUCKS RECEIPT
+Store #1234
+123 Main Street
+Date: 2024-01-15
+Time: 14:30
+
+Coffee Large    .50
+Muffin         .25
+
+Subtotal:      .75
+Tax:           /bin/zsh.62
+Total:         .37
+
+Card Payment
+Thank you!

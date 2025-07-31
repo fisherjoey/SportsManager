@@ -40,9 +40,14 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type to application/json if it's not a FormData request
+    // and no Content-Type is already specified
+    if (!(options.body instanceof FormData) && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
@@ -1765,7 +1770,7 @@ class ApiClient {
     }>('/expenses/receipts/upload', {
       method: 'POST',
       body: formData,
-      headers: {}, // Let browser set content-type for FormData
+      // Don't set headers at all - let browser set multipart/form-data automatically
     });
   }
 
@@ -1797,6 +1802,11 @@ class ApiClient {
       receipt: Receipt;
       processingLogs: ProcessingLog[];
     }>(`/expenses/receipts/${id}`);
+  }
+
+  // Alias for getReceipt - used by receipt upload component
+  async getReceiptDetails(id: string) {
+    return this.getReceipt(id);
   }
 
   async processReceipt(id: string) {

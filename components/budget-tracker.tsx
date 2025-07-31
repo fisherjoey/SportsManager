@@ -151,26 +151,37 @@ export function BudgetTracker() {
   const loadInitialData = async () => {
     try {
       setLoading(true)
+      console.log('BudgetTracker: Starting to load initial data...')
+      
       const [periodsResponse, categoriesResponse] = await Promise.all([
         apiClient.getBudgetPeriods(),
         apiClient.getBudgetCategories()
       ])
+
+      console.log('BudgetTracker: API responses received:', { periodsResponse, categoriesResponse })
 
       if (periodsResponse.success && periodsResponse.data.length > 0) {
         setBudgetPeriods(periodsResponse.data)
         // Set the first active period as default
         const activePeriod = periodsResponse.data.find(p => p.status === 'active') || periodsResponse.data[0]
         setSelectedPeriod(activePeriod.id)
+        console.log('BudgetTracker: Set selected period:', activePeriod.id)
+      } else {
+        console.warn('BudgetTracker: No budget periods found or API call failed:', periodsResponse)
+        setError('No budget periods found. Please create budget periods first.')
       }
 
       if (categoriesResponse.success) {
         setBudgetCategories(categoriesResponse.data)
+        console.log('BudgetTracker: Set budget categories:', categoriesResponse.data)
+      } else {
+        console.warn('BudgetTracker: No budget categories found or API call failed:', categoriesResponse)
       }
 
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load initial data')
-      console.error('Error loading initial data:', err)
+      console.error('BudgetTracker: Error loading initial data:', err)
       toast({
         title: "Error",
         description: "Failed to load budget periods and categories",
@@ -184,13 +195,17 @@ export function BudgetTracker() {
   const loadBudgetData = async () => {
     try {
       setLoading(true)
+      console.log('BudgetTracker: Loading budget data for period:', selectedPeriod)
+      
       const budgetsResponse = await apiClient.getBudgets({
         period_id: selectedPeriod,
         page: 1,
         limit: 100
       })
 
-      if (budgetsResponse.success) {
+      console.log('BudgetTracker: Budget data response:', budgetsResponse)
+
+      if (budgetsResponse && budgetsResponse.budgets) {
         // Transform budget data to include additional fields for the UI
         const transformedBudgets: BudgetWithDetails[] = budgetsResponse.budgets.map(budget => {
           const utilizationRate = budget.utilization_rate || 0
@@ -222,19 +237,33 @@ export function BudgetTracker() {
           }
         })
 
+        console.log('BudgetTracker: Transformed budgets:', transformedBudgets)
         setBudgets(transformedBudgets)
         
         // Generate summary data from budgets
         const summaryData = generateBudgetSummary(transformedBudgets)
         setSummary(summaryData)
+        console.log('BudgetTracker: Generated summary:', summaryData)
       } else {
-        throw new Error('Failed to load budgets')
+        console.warn('BudgetTracker: No budgets found in response:', budgetsResponse)
+        setBudgets([])
+        // Create an empty summary for when there are no budgets
+        setSummary({
+          totalBudget: 0,
+          totalSpent: 0,
+          totalRemaining: 0,
+          averageUtilization: 0,
+          budgetsOverLimit: 0,
+          budgetsNearLimit: 0,
+          monthlyTrends: [],
+          categoryBreakdown: []
+        })
       }
 
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load budget data')
-      console.error('Error loading budget data:', err)
+      console.error('BudgetTracker: Error loading budget data:', err)
       toast({
         title: "Error",
         description: "Failed to load budget data",

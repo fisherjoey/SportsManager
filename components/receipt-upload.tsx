@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { apiClient } from '@/lib/api'
 
 interface ReceiptData {
   id: string
@@ -55,6 +56,13 @@ interface UploadProgress {
   status: 'uploading' | 'processing' | 'completed' | 'error'
   receiptId?: string
   error?: string
+  finalStatus?: 'processed' | 'manual_review' | 'failed'
+  processingDetails?: {
+    status: string
+    confidence?: number
+    processingNotes?: string
+    processingTime?: number
+  }
 }
 
 export function ReceiptUpload() {
@@ -73,17 +81,31 @@ export function ReceiptUpload() {
 
   const loadReceipts = async () => {
     try {
-      const response = await fetch('/api/expenses/receipts')
-      if (!response.ok) throw new Error('Failed to load receipts')
-      const data = await response.json()
-      setReceipts(data)
+      const response = await apiClient.getReceipts()
+      setReceipts(response.receipts || [])
+      console.log(`Loaded ${response.receipts?.length || 0} receipts successfully`)
     } catch (error) {
       console.error('Error loading receipts:', error)
+      
+      let errorMessage = 'Failed to load receipts'
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          errorMessage = 'Session expired. Please log in again.'
+        } else if (error.message.includes('500') || error.message.includes('server')) {
+          errorMessage = 'Server error. Please try again later.'
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage = 'Network connection failed. Please check your internet connection.'
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to load receipts',
+        title: 'Error Loading Receipts',
+        description: errorMessage,
         variant: 'destructive',
       })
+      
+      // Set empty array to prevent UI issues
+      setReceipts([])
     }
   }
 
@@ -162,101 +184,175 @@ export function ReceiptUpload() {
     formData.append('businessPurpose', '')
 
     try {
-      const xhr = new XMLHttpRequest()
+      // Create FormData for the API client
+      const formData = new FormData()
+      formData.append('receipt', file)
+      formData.append('description', '')
+      formData.append('businessPurpose', '')
       
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = (e.loaded / e.total) * 100
-          setUploads(prev => prev.map((upload, i) => 
-            i === index ? { ...upload, progress } : upload
-          ))
-        }
-      })
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText)
-          setUploads(prev => prev.map((upload, i) => 
-            i === index ? { 
-              ...upload, 
-              status: 'processing', 
-              progress: 100,
-              receiptId: response.receiptId 
-            } : upload
-          ))
-          
-          // Start polling for processing status
-          pollProcessingStatus(response.receiptId, index)
-          
-          toast({
-            title: 'Upload successful',
-            description: `${file.name} uploaded and processing started`,
-          })
-        } else {
-          throw new Error(`Upload failed: ${xhr.statusText}`)
-        }
-      })
-
-      xhr.addEventListener('error', () => {
+      // Use the API client for upload
+      const response = await apiClient.uploadReceipt(formData)
+      
+      // Check if processing was completed immediately (synchronous processing)
+      if (response.processing?.success !== undefined) {
+        const finalStatus = response.receipt.status
+        
         setUploads(prev => prev.map((upload, i) => 
           i === index ? { 
             ...upload, 
-            status: 'error',
-            error: 'Upload failed' 
+            status: 'completed',
+            progress: 100,
+            receiptId: response.receipt.id,
+            finalStatus: finalStatus,
+            processingDetails: {
+              status: finalStatus,
+              confidence: response.processing.confidence,
+              processingNotes: response.processing.error || 'Processing completed',
+              processingTime: response.processing.processingTime
+            }
           } : upload
         ))
         
+        // Show appropriate notification based on processing result
+        if (response.processing.success) {
+          const confidence = Math.round((response.processing.confidence || 0) * 100)
+          toast({
+            title: 'Upload and processing complete',
+            description: `${file.name} processed successfully with ${confidence}% confidence`,
+          })
+        } else {
+          toast({
+            title: 'Upload successful, processing failed',
+            description: response.processing.fallbackMessage || 'Manual data entry may be required',
+            variant: 'destructive',
+          })
+        }
+        
+        // Refresh receipts list immediately
+        await loadReceipts()
+      } else {
+        // Fallback to polling if processing is asynchronous
+        setUploads(prev => prev.map((upload, i) => 
+          i === index ? { 
+            ...upload, 
+            status: 'processing', 
+            progress: 100,
+            receiptId: response.receipt.id 
+          } : upload
+        ))
+        
+        // Start polling for processing status  
+        pollProcessingStatus(response.receipt.id, index)
+        
         toast({
-          title: 'Upload failed',
-          description: `Failed to upload ${file.name}`,
-          variant: 'destructive',
+          title: 'Upload successful',
+          description: `${file.name} uploaded and processing started`,
         })
-      })
-
-      xhr.open('POST', '/api/expenses/receipts/upload')
-      xhr.send(formData)
+      }
 
     } catch (error) {
       console.error('Upload error:', error)
+      
+      let errorMessage = 'Upload failed'
+      let errorTitle = 'Upload Error'
+      
+      if (error instanceof Error) {
+        // Parse different types of errors for better user feedback
+        if (error.message.includes('413') || error.message.includes('too large')) {
+          errorMessage = 'File is too large. Please choose a file smaller than 10MB.'
+          errorTitle = 'File Too Large'
+        } else if (error.message.includes('415') || error.message.includes('file type')) {
+          errorMessage = 'File type not supported. Please upload an image (JPG, PNG, GIF, WebP) or PDF.'
+          errorTitle = 'Unsupported File Type'
+        } else if (error.message.includes('409') || error.message.includes('duplicate')) {
+          errorMessage = 'This receipt has already been uploaded.'
+          errorTitle = 'Duplicate Receipt'
+        } else if (error.message.includes('500') || error.message.includes('server')) {
+          errorMessage = 'Server error occurred. Please try again later.'
+          errorTitle = 'Server Error'
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage = 'Network connection failed. Please check your internet connection.'
+          errorTitle = 'Connection Error'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
       setUploads(prev => prev.map((upload, i) => 
         i === index ? { 
           ...upload, 
           status: 'error',
-          error: error instanceof Error ? error.message : 'Upload failed' 
+          error: errorMessage
         } : upload
       ))
+      
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: 'destructive',
+      })
     }
   }
 
   const pollProcessingStatus = async (receiptId: string, uploadIndex: number) => {
-    const maxAttempts = 30 // 30 seconds max
+    const maxAttempts = 60 // Increased to 60 seconds for AI processing
     let attempts = 0
+    let pollInterval = 1000 // Start with 1 second
+    const maxInterval = 3000 // Max 3 seconds between polls
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/expenses/receipts/${receiptId}`)
-        if (!response.ok) throw new Error('Failed to check status')
+        const response = await apiClient.getReceiptDetails(receiptId)
+        const data = response.receipt
+        const receipt = data.receipt || data
         
-        const receipt = await response.json()
+        // Update upload progress with more detailed status
+        setUploads(prev => prev.map((upload, i) => {
+          if (i === uploadIndex) {
+            return {
+              ...upload,
+              status: receipt.processing_status === 'processing' ? 'processing' : upload.status,
+              processingDetails: {
+                status: receipt.processing_status,
+                confidence: receipt.extraction_confidence,
+                processingNotes: receipt.processing_notes,
+                processingTime: receipt.processing_time_ms
+              }
+            }
+          }
+          return upload
+        }))
         
-        if (receipt.status === 'completed' || receipt.status === 'error' || receipt.status === 'manual_review') {
+        // Check for completion states
+        const completedStates = ['processed', 'manual_review', 'failed']
+        if (completedStates.includes(receipt.processing_status)) {
           setUploads(prev => prev.map((upload, i) => 
-            i === uploadIndex ? { ...upload, status: 'completed' } : upload
+            i === uploadIndex ? { 
+              ...upload, 
+              status: 'completed',
+              finalStatus: receipt.processing_status
+            } : upload
           ))
           
           // Refresh receipts list
-          loadReceipts()
+          await loadReceipts()
           
-          if (receipt.status === 'completed') {
+          // Show appropriate notification
+          if (receipt.processing_status === 'processed') {
             toast({
               title: 'Processing complete',
-              description: `Receipt processed with ${Math.round(receipt.extractedData?.confidence * 100)}% confidence`,
+              description: `Receipt processed successfully with ${Math.round((receipt.extraction_confidence || 0) * 100)}% confidence`,
             })
-          } else if (receipt.status === 'manual_review') {
+          } else if (receipt.processing_status === 'manual_review') {
             toast({
               title: 'Manual review required',
-              description: 'Receipt requires manual review due to low confidence',
+              description: 'Receipt needs manual review. Check the processed receipts tab.',
+              variant: 'destructive',
+            })
+          } else if (receipt.processing_status === 'failed') {
+            toast({
+              title: 'Processing failed',
+              description: receipt.processing_notes || 'Receipt processing failed. Please try again.',
               variant: 'destructive',
             })
           }
@@ -264,30 +360,56 @@ export function ReceiptUpload() {
           return
         }
         
+        // Continue polling with exponential backoff
         attempts++
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000) // Check again in 1 second
+          // Exponential backoff: increase interval gradually
+          if (attempts > 10) {
+            pollInterval = Math.min(pollInterval * 1.2, maxInterval)
+          }
+          setTimeout(poll, pollInterval)
+        } else {
+          // Timeout - mark as error but don't give up completely
+          setUploads(prev => prev.map((upload, i) => 
+            i === uploadIndex ? { 
+              ...upload, 
+              status: 'error',
+              error: 'Processing timeout - check receipts list for status' 
+            } : upload
+          ))
+          
+          toast({
+            title: 'Processing timeout',
+            description: 'Processing is taking longer than expected. Check the receipts list for updates.',
+            variant: 'destructive',
+          })
+        }
+      } catch (error) {
+        console.error('Status polling error:', error)
+        attempts++
+        
+        if (attempts < maxAttempts) {
+          // Retry with longer interval on error
+          setTimeout(poll, Math.min(pollInterval * 2, maxInterval))
         } else {
           setUploads(prev => prev.map((upload, i) => 
             i === uploadIndex ? { 
               ...upload, 
               status: 'error',
-              error: 'Processing timeout' 
+              error: error instanceof Error ? error.message : 'Failed to check processing status' 
             } : upload
           ))
+          
+          toast({
+            title: 'Status check failed',
+            description: 'Unable to check processing status. Please check the receipts list manually.',
+            variant: 'destructive',
+          })
         }
-      } catch (error) {
-        console.error('Status polling error:', error)
-        setUploads(prev => prev.map((upload, i) => 
-          i === uploadIndex ? { 
-            ...upload, 
-            status: 'error',
-            error: 'Failed to check processing status' 
-          } : upload
-        ))
       }
     }
 
+    // Start polling immediately
     poll()
   }
 
@@ -442,11 +564,40 @@ export function ReceiptUpload() {
                         {upload.status === 'processing' && (
                           <>
                             <Brain className="h-4 w-4 text-blue-500" />
-                            <span className="text-sm">Processing...</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm">Processing...</span>
+                              {upload.processingDetails?.status && (
+                                <span className="text-xs text-muted-foreground">
+                                  {upload.processingDetails.status}
+                                </span>
+                              )}
+                            </div>
                           </>
                         )}
                         {upload.status === 'completed' && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <>
+                            {upload.finalStatus === 'processed' && (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            )}
+                            {upload.finalStatus === 'manual_review' && (
+                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            )}
+                            {upload.finalStatus === 'failed' && (
+                              <X className="h-4 w-4 text-red-500" />
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-sm">
+                                {upload.finalStatus === 'processed' ? 'Complete' :
+                                 upload.finalStatus === 'manual_review' ? 'Review Needed' :
+                                 upload.finalStatus === 'failed' ? 'Failed' : 'Complete'}
+                              </span>
+                              {upload.processingDetails?.confidence && (
+                                <span className="text-xs text-muted-foreground">
+                                  {Math.round(upload.processingDetails.confidence * 100)}% confidence
+                                </span>
+                              )}
+                            </div>
+                          </>
                         )}
                         {upload.status === 'error' && (
                           <AlertTriangle className="h-4 w-4 text-red-500" />

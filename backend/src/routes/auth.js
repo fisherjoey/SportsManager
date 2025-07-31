@@ -256,7 +256,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db('users')
       .select('*') // Select all fields to ensure we have everything we need
-      .where('id', req.user.userId)
+      .where('id', req.user.id)
       .first();
 
     if (!user) {

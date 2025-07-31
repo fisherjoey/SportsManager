@@ -50,13 +50,22 @@ const createReceiptUploader = () => {
 
 // Security middleware for file uploads
 const fileUploadSecurity = (req, res, next) => {
+  console.log('=== FILE SECURITY CHECK ===');
+  console.log('File present:', !!req.file);
+  
   // Additional security checks
   if (req.file) {
     const file = req.file;
+    console.log('File details:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
     
     // Check file size again (double check)
     const maxSize = parseInt(process.env.MAX_RECEIPT_SIZE || '10485760');
     if (file.size > maxSize) {
+      console.log('File too large:', file.size, '>', maxSize);
       return res.status(413).json({
         error: 'File too large',
         maxSize: `${maxSize / 1024 / 1024}MB`
@@ -66,6 +75,7 @@ const fileUploadSecurity = (req, res, next) => {
     // Validate file extension matches mime type
     const extension = path.extname(file.originalname).toLowerCase();
     const mimeType = file.mimetype;
+    console.log('Extension check:', { extension, mimeType });
     
     const validCombinations = {
       '.jpg': ['image/jpeg'],
@@ -77,6 +87,9 @@ const fileUploadSecurity = (req, res, next) => {
     };
 
     if (!validCombinations[extension] || !validCombinations[extension].includes(mimeType)) {
+      console.log('VALIDATION ERROR: Extension/MIME mismatch');
+      console.log('Valid combinations:', validCombinations);
+      console.log('Extension:', extension, 'MIME:', mimeType);
       // Clean up uploaded file
       fs.remove(file.path).catch(console.error);
       return res.status(400).json({
@@ -85,6 +98,8 @@ const fileUploadSecurity = (req, res, next) => {
         mimeType
       });
     }
+    
+    console.log('File security check passed');
 
     // Add security metadata to request
     req.uploadSecurity = {

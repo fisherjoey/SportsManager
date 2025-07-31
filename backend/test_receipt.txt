@@ -1,0 +1,16 @@
+COSTCO WHOLESALE
+123 Main Street
+Anytown, ST 12345
+
+Date: 01/30/2025
+Time: 2:15 PM
+Receipt #: 1234567890
+
+ITEM                    QTY    PRICE
+Office Supplies          1     $24.99
+Paper Towels            2     $15.99
+Total Tax                      $3.27
+TOTAL                         $44.25
+
+Payment Method: VISA ****1234
+Thank you for shopping at Costco!

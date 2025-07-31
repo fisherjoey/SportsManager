@@ -79,7 +79,7 @@ class ReceiptProcessingService {
   }
 
   /**
-   * Process receipt through AI pipeline
+   * Process receipt through AI pipeline with enhanced error handling
    * @param {string} receiptId - Receipt ID to process
    * @returns {Promise<Object>} Processing results
    */
@@ -93,85 +93,332 @@ class ReceiptProcessingService {
       throw new Error(`Receipt already processed or in progress: ${receipt.processing_status}`);
     }
 
-    try {
-      // Update status to processing
+    // Validate file exists
+    if (!await fs.pathExists(receipt.file_path)) {
       await db('expense_receipts')
         .where('id', receiptId)
-        .update({ processing_status: 'processing' });
+        .update({ 
+          processing_status: 'failed',
+          processing_notes: 'Receipt file not found on disk'
+        });
+      throw new Error('Receipt file not found');
+    }
 
-      const results = {
-        receiptId,
-        ocrResults: null,
-        extractedData: null,
-        categorization: null,
-        errors: []
-      };
+    const startTime = Date.now();
+    let results = {
+      receiptId,
+      ocrResults: null,
+      extractedData: null,
+      categorization: null,
+      errors: [],
+      warnings: [],
+      processingSteps: [],
+      totalProcessingTime: 0
+    };
 
-      // Step 1: Perform OCR
+    try {
+      // Update status to processing with timestamp
+      await db('expense_receipts')
+        .where('id', receiptId)
+        .update({ 
+          processing_status: 'processing',
+          processing_started_at: new Date()
+        });
+
+      results.processingSteps.push({
+        step: 'initialization',
+        status: 'completed',
+        timestamp: new Date()
+      });
+
+      // Step 1: Perform OCR with enhanced error handling
       try {
         console.log(`Starting OCR for receipt: ${receiptId}`);
         results.ocrResults = await this.performOCRWithLogging(receipt);
+        
+        results.processingSteps.push({
+          step: 'ocr',
+          status: 'completed',
+          confidence: results.ocrResults.confidence,
+          method: results.ocrResults.method,
+          timestamp: new Date()
+        });
+
+        // Check OCR quality
+        if (results.ocrResults.confidence < 0.3) {
+          results.warnings.push('Low OCR confidence - text may be inaccurate');
+        }
+        
+        if (results.ocrResults.requiresManualEntry) {
+          results.warnings.push('OCR services unavailable - manual entry required');
+        }
+
       } catch (error) {
         console.error('OCR failed:', error);
         results.errors.push(`OCR failed: ${error.message}`);
+        results.processingSteps.push({
+          step: 'ocr',
+          status: 'failed',
+          error: error.message,
+          timestamp: new Date()
+        });
       }
 
       // Step 2: Extract structured data
-      if (results.ocrResults && results.ocrResults.text) {
+      if (results.ocrResults && results.ocrResults.text && 
+          !results.ocrResults.text.includes('[Manual review required]')) {
         try {
           console.log(`Extracting data for receipt: ${receiptId}`);
           results.extractedData = await this.extractDataWithLogging(receipt, results.ocrResults.text);
+          
+          results.processingSteps.push({
+            step: 'extraction',
+            status: 'completed',
+            confidence: results.extractedData.confidence,
+            method: results.extractedData.method,
+            timestamp: new Date()
+          });
+
+          // Validate extracted data quality
+          const validationResult = this.validateExtractedData(results.extractedData);
+          if (validationResult.warnings.length > 0) {
+            results.warnings.push(...validationResult.warnings);
+          }
+
         } catch (error) {
           console.error('Data extraction failed:', error);
           results.errors.push(`Data extraction failed: ${error.message}`);
+          results.processingSteps.push({
+            step: 'extraction',
+            status: 'failed',
+            error: error.message,
+            timestamp: new Date()
+          });
         }
+      } else {
+        results.warnings.push('Skipping data extraction - no readable text available');
+        results.processingSteps.push({
+          step: 'extraction',
+          status: 'skipped',
+          reason: 'No readable text from OCR',
+          timestamp: new Date()
+        });
       }
 
       // Step 3: Categorize expense
-      if (results.extractedData) {
+      if (results.extractedData && results.extractedData.vendorName) {
         try {
           console.log(`Categorizing expense for receipt: ${receiptId}`);
           results.categorization = await this.categorizeWithLogging(receipt, results.extractedData);
+          
+          results.processingSteps.push({
+            step: 'categorization',
+            status: 'completed',
+            confidence: results.categorization.confidence,
+            method: results.categorization.method,
+            timestamp: new Date()
+          });
+
         } catch (error) {
           console.error('Categorization failed:', error);
           results.errors.push(`Categorization failed: ${error.message}`);
+          results.processingSteps.push({
+            step: 'categorization',
+            status: 'failed',
+            error: error.message,
+            timestamp: new Date()
+          });
         }
+      } else {
+        results.warnings.push('Skipping categorization - no vendor data available');
+        results.processingSteps.push({
+          step: 'categorization',
+          status: 'skipped',
+          reason: 'No vendor data from extraction',
+          timestamp: new Date()
+        });
       }
 
       // Step 4: Save results to database
-      await this.saveProcessingResults(receipt, results);
-
-      // Step 5: Send notification if configured
-      if (process.env.ACCOUNTING_EMAIL) {
-        await this.sendAccountingNotification(receipt, results);
+      try {
+        await this.saveProcessingResults(receipt, results);
+        results.processingSteps.push({
+          step: 'save_results',
+          status: 'completed',
+          timestamp: new Date()
+        });
+      } catch (error) {
+        console.error('Failed to save results:', error);
+        results.errors.push(`Failed to save results: ${error.message}`);
+        results.processingSteps.push({
+          step: 'save_results',
+          status: 'failed',
+          error: error.message,
+          timestamp: new Date()
+        });
       }
 
-      const finalStatus = results.errors.length === 0 ? 'processed' : 
-                         results.extractedData ? 'manual_review' : 'failed';
+      // Step 5: Send notification if configured and no critical errors
+      if (process.env.ACCOUNTING_EMAIL && results.extractedData) {
+        try {
+          await this.sendAccountingNotification(receipt, results);
+          results.processingSteps.push({
+            step: 'notification',
+            status: 'completed',
+            timestamp: new Date()
+          });
+        } catch (error) {
+          console.warn('Notification failed (non-critical):', error);
+          results.warnings.push(`Notification failed: ${error.message}`);
+          results.processingSteps.push({
+            step: 'notification',
+            status: 'failed',
+            error: error.message,
+            timestamp: new Date()
+          });
+        }
+      }
 
+      // Determine final status based on results quality
+      const finalStatus = this.determineFinalStatus(results);
+      results.totalProcessingTime = Date.now() - startTime;
+
+      // Update final status
       await db('expense_receipts')
         .where('id', receiptId)
         .update({ 
           processing_status: finalStatus,
           processed_at: new Date(),
-          processing_notes: results.errors.join('; ')
+          processing_notes: this.generateProcessingNotes(results),
+          processing_time_ms: results.totalProcessingTime
         });
 
-      console.log(`Receipt processing completed: ${receiptId} - Status: ${finalStatus}`);
+      console.log(`Receipt processing completed: ${receiptId} - Status: ${finalStatus} - Time: ${results.totalProcessingTime}ms`);
       return results;
       
     } catch (error) {
       console.error(`Receipt processing failed: ${receiptId}`, error);
       
+      results.totalProcessingTime = Date.now() - startTime;
+      results.errors.push(`Critical processing error: ${error.message}`);
+      
       await db('expense_receipts')
         .where('id', receiptId)
         .update({ 
           processing_status: 'failed',
-          processing_notes: error.message
+          processed_at: new Date(),
+          processing_notes: `Processing failed: ${error.message}`,
+          processing_time_ms: results.totalProcessingTime
         });
       
       throw error;
     }
+  }
+
+  /**
+   * Determine final processing status based on results
+   * @private
+   */
+  determineFinalStatus(results) {
+    // If critical errors occurred, mark as failed
+    if (results.errors.length > 0 && !results.extractedData) {
+      return 'failed';
+    }
+
+    // If we have extracted data, check quality
+    if (results.extractedData) {
+      const confidence = results.extractedData.confidence || 0;
+      const hasRequiredFields = results.extractedData.vendorName && results.extractedData.totalAmount;
+      
+      // High confidence and required fields = processed
+      if (confidence >= 0.7 && hasRequiredFields && results.errors.length === 0) {
+        return 'processed';
+      }
+      
+      // Medium confidence or missing some fields = manual review
+      if (confidence >= 0.4 || hasRequiredFields) {
+        return 'manual_review';
+      }
+    }
+
+    // Fallback to failed if no usable data
+    return 'failed';
+  }
+
+  /**
+   * Generate comprehensive processing notes
+   * @private
+   */
+  generateProcessingNotes(results) {
+    const notes = [];
+    
+    if (results.errors.length > 0) {
+      notes.push(`Errors: ${results.errors.join('; ')}`);
+    }
+    
+    if (results.warnings.length > 0) {
+      notes.push(`Warnings: ${results.warnings.join('; ')}`);
+    }
+    
+    // Add method information
+    const methods = [];
+    if (results.ocrResults?.method) {
+      methods.push(`OCR: ${results.ocrResults.method}`);
+    }
+    if (results.extractedData?.method) {
+      methods.push(`Extraction: ${results.extractedData.method}`);
+    }
+    if (results.categorization?.method) {
+      methods.push(`Categorization: ${results.categorization.method}`);
+    }
+    
+    if (methods.length > 0) {
+      notes.push(`Methods: ${methods.join(', ')}`);
+    }
+    
+    // Add confidence scores
+    const confidences = [];
+    if (results.ocrResults?.confidence) {
+      confidences.push(`OCR: ${Math.round(results.ocrResults.confidence * 100)}%`);
+    }
+    if (results.extractedData?.confidence) {
+      confidences.push(`Extraction: ${Math.round(results.extractedData.confidence * 100)}%`);
+    }
+    if (results.categorization?.confidence) {
+      confidences.push(`Categorization: ${Math.round(results.categorization.confidence * 100)}%`);
+    }
+    
+    if (confidences.length > 0) {
+      notes.push(`Confidence: ${confidences.join(', ')}`);
+    }
+    
+    return notes.join(' | ');
+  }
+
+  /**
+   * Validate extracted data and generate warnings
+   * @private
+   */
+  validateExtractedData(extractedData) {
+    const warnings = [];
+    
+    if (!extractedData.vendorName) {
+      warnings.push('Missing vendor name');
+    }
+    
+    if (!extractedData.totalAmount || extractedData.totalAmount <= 0) {
+      warnings.push('Missing or invalid total amount');
+    }
+    
+    if (!extractedData.transactionDate) {
+      warnings.push('Missing transaction date');
+    }
+    
+    if (extractedData.confidence < 0.5) {
+      warnings.push('Low extraction confidence');
+    }
+    
+    return { warnings };
   }
 
   /**

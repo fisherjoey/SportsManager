@@ -73,7 +73,7 @@ router.get('/periods', authenticateToken, async (req, res) => {
     const offset = (page - 1) * limit;
     const [periods, [{ total }]] = await Promise.all([
       query.clone().limit(limit).offset(offset),
-      query.clone().count('id as total')
+      db('budget_periods').where('organization_id', organizationId).count('id as total')
     ]);
 
     res.json({
@@ -310,7 +310,7 @@ router.get('/', authenticateToken, async (req, res) => {
         'bc.code as category_code',
         'bc.category_type',
         'bc.color_code as category_color',
-        db.raw("COALESCE(owner.first_name || ' ' || owner.last_name, 'Unassigned') as owner_name")
+        db.raw("COALESCE(owner.email, 'Unassigned') as owner_name")
       );
 
     // Apply filters
@@ -325,9 +325,23 @@ router.get('/', authenticateToken, async (req, res) => {
     );
 
     const offset = (page - 1) * limit;
+    
+    // Create separate count query without the complex SELECT
+    let countQuery = db('budgets as b')
+      .join('budget_periods as bp', 'b.budget_period_id', 'bp.id')
+      .join('budget_categories as bc', 'b.category_id', 'bc.id')
+      .leftJoin('users as owner', 'b.owner_id', 'owner.id')
+      .where('b.organization_id', organizationId);
+
+    // Apply same filters to count query
+    if (period_id) countQuery = countQuery.where('b.budget_period_id', period_id);
+    if (category_id) countQuery = countQuery.where('b.category_id', category_id);
+    if (status) countQuery = countQuery.where('b.status', status);
+    if (owner_id) countQuery = countQuery.where('b.owner_id', owner_id);
+    
     const [budgets, [{ total }]] = await Promise.all([
       query.clone().orderBy('bc.sort_order').orderBy('b.name').limit(limit).offset(offset),
-      query.clone().count('b.id as total')
+      countQuery.count('b.id as total')
     ]);
 
     // Include allocations if requested
@@ -492,7 +506,7 @@ router.post('/',
           'bp.name as period_name',
           'bc.name as category_name',
           'bc.code as category_code',
-          db.raw("COALESCE(owner.first_name || ' ' || owner.last_name, 'Unassigned') as owner_name")
+          db.raw("COALESCE(owner.email, 'Unassigned') as owner_name")
         )
         .first();
 
@@ -532,7 +546,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         'bc.code as category_code',
         'bc.category_type',
         'bc.color_code as category_color',
-        db.raw("COALESCE(owner.first_name || ' ' || owner.last_name, 'Unassigned') as owner_name"),
+        db.raw("COALESCE(owner.email, 'Unassigned') as owner_name"),
         db.raw('(b.allocated_amount - b.committed_amount - b.actual_spent - b.reserved_amount) as calculated_available')
       )
       .first();

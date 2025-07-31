@@ -22,6 +22,10 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
+    // Standardize the user object - ensure 'id' field exists
+    if (user.userId && !user.id) {
+      user.id = user.userId;
+    }
     req.user = user;
     next();
   });
