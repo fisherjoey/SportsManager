@@ -355,6 +355,7 @@ router.get('/receipts', authenticateToken, async (req, res) => {
         'expense_data.total_amount',
         'expense_data.transaction_date',
         'expense_data.extraction_confidence',
+        'expense_data.line_items',
         'expense_categories.name as category_name',
         'expense_categories.color_code as category_color',
         'expense_approvals.status as approval_status'
@@ -378,7 +379,8 @@ router.get('/receipts', authenticateToken, async (req, res) => {
         date: receipt.transaction_date,
         amount: receipt.total_amount,
         category: receipt.category_name,
-        confidence: receipt.extraction_confidence
+        confidence: receipt.extraction_confidence,
+        items: receipt.line_items || []
       } : null,
       processedAt: receipt.processed_at,
       errorMessage: receipt.processing_notes && receipt.processing_status === 'failed' 
@@ -496,6 +498,75 @@ router.get('/receipts/:id', authenticateToken, async (req, res) => {
     console.error('Receipt detail error:', error);
     res.status(500).json({
       error: 'Failed to retrieve receipt details'
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/receipts/:id/download
+ * Download the original receipt file
+ */
+router.get('/receipts/:id/download', authenticateToken, async (req, res) => {
+  try {
+    const receiptId = req.params.id;
+
+    const receipt = await db('expense_receipts')
+      .where('id', receiptId)
+      .where('user_id', req.user.id)
+      .first();
+
+    if (!receipt) {
+      return res.status(404).json({
+        error: 'Receipt not found'
+      });
+    }
+
+    // Check if file exists
+    const fs = require('fs-extra');
+    if (!await fs.pathExists(receipt.file_path)) {
+      return res.status(404).json({
+        error: 'Receipt file not found on server'
+      });
+    }
+
+    // Set appropriate headers for file download
+    const path = require('path');
+    const fileName = receipt.original_filename;
+    const fileExtension = path.extname(fileName).toLowerCase();
+    
+    // Set content type based on file type
+    let contentType = 'application/octet-stream';
+    if (fileExtension === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (['.jpg', '.jpeg'].includes(fileExtension)) {
+      contentType = 'image/jpeg';
+    } else if (fileExtension === '.png') {
+      contentType = 'image/png';
+    } else if (fileExtension === '.gif') {
+      contentType = 'image/gif';
+    } else if (fileExtension === '.webp') {
+      contentType = 'image/webp';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', receipt.file_size);
+    
+    // Stream the file
+    const fileStream = require('fs').createReadStream(receipt.file_path);
+    fileStream.pipe(res);
+    
+    fileStream.on('error', (error) => {
+      console.error('File stream error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to download file' });
+      }
+    });
+
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({
+      error: 'Failed to download receipt'
     });
   }
 });

@@ -28,6 +28,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { ReceiptViewerModal } from '@/components/receipt-viewer-modal'
 
 interface ReceiptData {
   id: string
@@ -71,6 +72,8 @@ export function ReceiptUpload() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('upload')
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -417,6 +420,36 @@ export function ReceiptUpload() {
     setUploads(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleViewReceipt = (receiptId: string) => {
+    setSelectedReceiptId(receiptId)
+    setViewModalOpen(true)
+  }
+
+  const handleDownloadReceipt = async (receiptId: string) => {
+    try {
+      await apiClient.downloadReceipt(receiptId)
+      toast({
+        title: 'Download started',
+        description: 'Receipt download has begun',
+      })
+    } catch (error) {
+      console.error('Download error:', error)
+      let errorMessage = 'Download failed'
+      if (error instanceof Error) {
+        if (error.message.includes('404')) {
+          errorMessage = 'Receipt file not found on server'
+        } else if (error.message.includes('401')) {
+          errorMessage = 'Session expired. Please log in again.'
+        }
+      }
+      toast({
+        title: 'Download Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    }
+  }
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -663,11 +696,19 @@ export function ReceiptUpload() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleViewReceipt(receipt.id)}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleDownloadReceipt(receipt.id)}
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Download
                         </Button>
@@ -715,7 +756,7 @@ export function ReceiptUpload() {
                               {receipt.extractedData.items.slice(0, 3).map((item, index) => (
                                 <div key={index} className="flex justify-between text-sm">
                                   <span>{item.description}</span>
-                                  <span>{formatCurrency(item.amount)}</span>
+                                  <span>{formatCurrency(item.totalPrice || item.amount || 0)}</span>
                                 </div>
                               ))}
                               {receipt.extractedData.items.length > 3 && (
@@ -742,6 +783,13 @@ export function ReceiptUpload() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Receipt Viewer Modal */}
+      <ReceiptViewerModal
+        receiptId={selectedReceiptId}
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+      />
     </div>
   )
 }

@@ -115,8 +115,6 @@ interface BudgetSummary {
 }
 
 export function BudgetTracker() {
-  console.log('BudgetTracker component is rendering')
-  
   const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
   const [budgetPeriods, setBudgetPeriods] = useState<BudgetPeriod[]>([])
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
@@ -592,7 +590,25 @@ export function BudgetTracker() {
     )
   }
 
-  if (!summary) return null
+  if (!summary) {
+    console.log('Summary is null, summary:', summary)
+    console.log('budgets:', budgets)
+    console.log('budgetPeriods:', budgetPeriods)
+    console.log('budgetCategories:', budgetCategories)
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold mb-4">Budget Management</h2>
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            No budget summary available. Loading data...
+            <br />
+            Periods: {budgetPeriods.length}, Categories: {budgetCategories.length}, Budgets: {budgets.length}
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
