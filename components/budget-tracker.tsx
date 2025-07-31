@@ -151,37 +151,31 @@ export function BudgetTracker() {
   const loadInitialData = async () => {
     try {
       setLoading(true)
-      console.log('BudgetTracker: Starting to load initial data...')
       
       const [periodsResponse, categoriesResponse] = await Promise.all([
         apiClient.getBudgetPeriods(),
         apiClient.getBudgetCategories()
       ])
 
-      console.log('BudgetTracker: API responses received:', { periodsResponse, categoriesResponse })
-
-      if (periodsResponse.success && periodsResponse.data.length > 0) {
-        setBudgetPeriods(periodsResponse.data)
+      // Handle periods response - the backend returns { periods, pagination } not { success, data }
+      if (periodsResponse.periods && periodsResponse.periods.length > 0) {
+        setBudgetPeriods(periodsResponse.periods)
         // Set the first active period as default
-        const activePeriod = periodsResponse.data.find(p => p.status === 'active') || periodsResponse.data[0]
+        const activePeriod = periodsResponse.periods.find(p => p.status === 'active') || periodsResponse.periods[0]
         setSelectedPeriod(activePeriod.id)
-        console.log('BudgetTracker: Set selected period:', activePeriod.id)
       } else {
-        console.warn('BudgetTracker: No budget periods found or API call failed:', periodsResponse)
         setError('No budget periods found. Please create budget periods first.')
       }
 
-      if (categoriesResponse.success) {
-        setBudgetCategories(categoriesResponse.data)
-        console.log('BudgetTracker: Set budget categories:', categoriesResponse.data)
-      } else {
-        console.warn('BudgetTracker: No budget categories found or API call failed:', categoriesResponse)
+      // Handle categories response - the backend returns { categories, pagination } not { success, data }
+      if (categoriesResponse.categories && categoriesResponse.categories.length > 0) {
+        setBudgetCategories(categoriesResponse.categories)
       }
 
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load initial data')
-      console.error('BudgetTracker: Error loading initial data:', err)
+      console.error('Error loading budget data:', err)
       toast({
         title: "Error",
         description: "Failed to load budget periods and categories",
@@ -195,7 +189,6 @@ export function BudgetTracker() {
   const loadBudgetData = async () => {
     try {
       setLoading(true)
-      console.log('BudgetTracker: Loading budget data for period:', selectedPeriod)
       
       const budgetsResponse = await apiClient.getBudgets({
         period_id: selectedPeriod,
@@ -203,32 +196,37 @@ export function BudgetTracker() {
         limit: 100
       })
 
-      console.log('BudgetTracker: Budget data response:', budgetsResponse)
-
       if (budgetsResponse && budgetsResponse.budgets) {
         // Transform budget data to include additional fields for the UI
         const transformedBudgets: BudgetWithDetails[] = budgetsResponse.budgets.map(budget => {
-          const utilizationRate = budget.utilization_rate || 0
-          const spentAmount = budget.spent_amount || 0
-          const remainingAmount = budget.remaining_amount || (budget.allocated_amount - spentAmount)
+          // Calculate utilization rate from actual values
+          const allocatedAmount = budget.allocated_amount || 0
+          const spentAmount = budget.actual_spent || 0
+          const utilizationRate = allocatedAmount > 0 ? (spentAmount / allocatedAmount) * 100 : 0
+          const remainingAmount = allocatedAmount - spentAmount
           
           return {
             ...budget,
+            // Map backend fields to frontend expected fields
+            utilization_rate: utilizationRate,
+            spent_amount: spentAmount,
+            remaining_amount: remainingAmount,
+            period_id: budget.budget_period_id,
             category: {
               id: budget.category_id || '',
               name: budget.category_name || 'Unknown',
-              code: budget.category_name || 'UNK',
-              color: getCategoryColor(budget.category_id, budget.category_name || '')
+              code: budget.category_code || 'UNK',
+              color: budget.category_color || getCategoryColor(budget.category_id, budget.category_name || '')
             },
             period: {
-              id: budget.period_id,
+              id: budget.budget_period_id,
               name: budget.period_name || 'Unknown Period',
-              startDate: new Date().toISOString(),
-              endDate: new Date().toISOString()
+              startDate: budget.period_start || new Date().toISOString(),
+              endDate: budget.period_end || new Date().toISOString()
             },
             owner: {
-              id: budget.responsible_person || '',
-              name: budget.responsible_person_name || 'Unassigned'
+              id: budget.owner_id || '',
+              name: budget.owner_name || 'Unassigned'
             },
             // Add empty arrays for additional fields - will be populated on demand
             monthlyAllocations: [],
@@ -237,15 +235,12 @@ export function BudgetTracker() {
           }
         })
 
-        console.log('BudgetTracker: Transformed budgets:', transformedBudgets)
         setBudgets(transformedBudgets)
         
         // Generate summary data from budgets
         const summaryData = generateBudgetSummary(transformedBudgets)
         setSummary(summaryData)
-        console.log('BudgetTracker: Generated summary:', summaryData)
       } else {
-        console.warn('BudgetTracker: No budgets found in response:', budgetsResponse)
         setBudgets([])
         // Create an empty summary for when there are no budgets
         setSummary({
@@ -263,7 +258,7 @@ export function BudgetTracker() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load budget data')
-      console.error('BudgetTracker: Error loading budget data:', err)
+      console.error('Error loading budget data:', err)
       toast({
         title: "Error",
         description: "Failed to load budget data",
@@ -615,7 +610,7 @@ export function BudgetTracker() {
             <SelectContent>
               {budgetPeriods.map((period) => (
                 <SelectItem key={period.id} value={period.id}>
-                  {period.name} ({period.fiscal_year})
+                  {period.name} ({new Date(period.start_date).getFullYear()})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1067,7 +1062,7 @@ export function BudgetTracker() {
                   <SelectContent>
                     {budgetPeriods.map((period) => (
                       <SelectItem key={period.id} value={period.id}>
-                        {period.name} ({period.fiscal_year})
+                        {period.name} ({new Date(period.start_date).getFullYear()})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1176,7 +1171,7 @@ export function BudgetTracker() {
                   <SelectContent>
                     {budgetPeriods.map((period) => (
                       <SelectItem key={period.id} value={period.id}>
-                        {period.name} ({period.fiscal_year})
+                        {period.name} ({new Date(period.start_date).getFullYear()})
                       </SelectItem>
                     ))}
                   </SelectContent>
