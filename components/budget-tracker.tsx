@@ -115,6 +115,8 @@ interface BudgetSummary {
 }
 
 export function BudgetTracker() {
+  console.log('BudgetTracker component is rendering')
+  
   const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
   const [budgetPeriods, setBudgetPeriods] = useState<BudgetPeriod[]>([])
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
