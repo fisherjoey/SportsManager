@@ -23,7 +23,7 @@ import { BudgetTracker } from "@/components/budget-tracker"
 import { ExpenseList } from "@/components/expense-list"
 import { ExpenseListEnhanced } from "@/components/expense-list-enhanced"
 import { ExpenseApprovalDashboard } from "@/components/expense-approval-dashboard"
-import { ExpenseForm } from "@/components/expense-form"
+import { ExpenseFormIntegrated } from "@/components/expense-form-integrated"
 import { OrganizationalDashboard } from "@/components/organizational-dashboard"
 import { EmployeeManagement } from "@/components/employee-management"
 import { AssetTracking } from "@/components/asset-tracking"
@@ -157,7 +157,7 @@ export function AdminDashboard() {
       case "financial-expenses":
         return <ExpenseListEnhanced />
       case "financial-expense-create":
-        return <ExpenseForm onExpenseCreated={() => setActiveView("financial-expenses")} />
+        return <ExpenseFormIntegrated onExpenseCreated={() => setActiveView("financial-expenses")} />
       case "financial-expense-approvals":
         return <ExpenseApprovalDashboard />
       case "financial-reports":

@@ -77,16 +77,12 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
   const loadPendingExpenses = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.request<{
-        expenses: PendingExpense[]
-        summary: {
-          total_pending: number
-          overdue_count: number
-          high_priority_count: number
-          total_amount: number
-        }
-      }>('/expenses/pending-approval', {
-        method: 'GET'
+      const response = await apiClient.getPendingExpenses({
+        payment_method: filters.payment_method,
+        urgency: filters.urgency,
+        amount_min: filters.amount_min,
+        amount_max: filters.amount_max,
+        search: filters.search
       })
       
       setExpenses(response.expenses || [])
@@ -109,12 +105,9 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
       setLoading(true)
       await Promise.all(
         selectedExpenses.map(expenseId =>
-          apiClient.request(`/expenses/${expenseId}/approve`, {
-            method: 'POST',
-            body: JSON.stringify({
-              decision: 'approved',
-              notes: 'Bulk approval'
-            })
+          apiClient.approveExpense(expenseId, {
+            decision: 'approved',
+            notes: 'Bulk approval'
           })
         )
       )
@@ -144,12 +137,10 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
       setLoading(true)
       await Promise.all(
         selectedExpenses.map(expenseId =>
-          apiClient.request(`/expenses/${expenseId}/reject`, {
-            method: 'POST',
-            body: JSON.stringify({
-              decision: 'rejected',
-              notes: 'Bulk rejection - requires more information'
-            })
+          apiClient.rejectExpense(expenseId, {
+            decision: 'rejected',
+            rejection_reason: 'bulk_rejection',
+            notes: 'Bulk rejection - requires more information'
           })
         )
       )
@@ -416,12 +407,9 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                       className="bg-green-600 hover:bg-green-700"
                       onClick={async () => {
                         try {
-                          await apiClient.request(`/expenses/${expense.id}/approve`, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              decision: 'approved',
-                              notes: 'Quick approval'
-                            })
+                          await apiClient.approveExpense(expense.id, {
+                            decision: 'approved',
+                            notes: 'Quick approval'
                           })
                           toast({
                             title: 'Success',

@@ -11,7 +11,7 @@ import { AvailableGames } from "@/components/available-games"
 import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
-import { ExpenseForm } from "@/components/expense-form"
+import { ExpenseFormIntegrated } from "@/components/expense-form-integrated"
 import { ExpenseListEnhanced } from "@/components/expense-list-enhanced"
 
 export function RefereeDashboard() {
@@ -34,7 +34,7 @@ export function RefereeDashboard() {
       case "expenses":
         return <ExpenseListEnhanced />
       case "expense-create":
-        return <ExpenseForm onExpenseCreated={() => setActiveView("expenses")} />
+        return <ExpenseFormIntegrated onExpenseCreated={() => setActiveView("expenses")} />
       case "calendar":
         return <CalendarView />
       case "profile":
