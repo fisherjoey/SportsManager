@@ -10,6 +10,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
 const { apiLimiter } = require('./middleware/rateLimiting');
 
 const authRoutes = require('./routes/auth');
+const usersRoutes = require('./routes/users');
 const gameRoutes = require('./routes/games');
 const refereeRoutes = require('./routes/referees');
 const assignmentRoutes = require('./routes/assignments');
@@ -91,6 +92,7 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/referees', refereeRoutes);
 app.use('/api/assignments/ai-suggestions', aiSuggestionsRoutes);

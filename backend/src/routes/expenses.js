@@ -926,4 +926,405 @@ router.get('/queue/status',
   }
 );
 
+/**
+ * POST /api/expenses/receipts/:id/assign-reimbursement
+ * Assign a user to receive reimbursement for a receipt
+ */
+router.post('/receipts/:id/assign-reimbursement', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const receiptId = req.params.id;
+    const { userId, notes } = req.body;
+
+    // Validate input
+    if (!userId) {
+      return res.status(400).json({
+        error: 'User ID is required'
+      });
+    }
+
+    // Check if receipt exists and get expense data
+    const expenseData = await db('expense_data')
+      .where('receipt_id', receiptId)
+      .first();
+
+    if (!expenseData) {
+      return res.status(404).json({
+        error: 'Expense data not found for this receipt'
+      });
+    }
+
+    // Update expense data with reimbursement assignment
+    await db('expense_data')
+      .where('id', expenseData.id)
+      .update({
+        reimbursement_user_id: userId,
+        reimbursement_notes: notes || null,
+        is_reimbursable: true,
+        updated_at: new Date()
+      });
+
+    // Get the updated data with user info
+    const updatedExpense = await db('expense_data')
+      .leftJoin('users', 'expense_data.reimbursement_user_id', 'users.id')
+      .where('expense_data.id', expenseData.id)
+      .select(
+        'expense_data.*',
+        'users.email as reimbursement_user_email'
+      )
+      .first();
+
+    res.json({
+      message: 'Reimbursement assignment updated successfully',
+      expenseData: updatedExpense
+    });
+  } catch (error) {
+    console.error('Error assigning reimbursement:', error);
+    res.status(500).json({
+      error: 'Failed to assign reimbursement'
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/receipts/:id/create-reimbursement
+ * Create a reimbursement entry for an approved expense
+ */
+router.post('/receipts/:id/create-reimbursement', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const receiptId = req.params.id;
+    const { 
+      approvedAmount, 
+      paymentMethod = 'payroll', 
+      scheduledPayDate,
+      payPeriod,
+      notes 
+    } = req.body;
+
+    // Get expense data with approval info
+    const expenseData = await db('expense_data')
+      .leftJoin('expense_approvals', 'expense_data.id', 'expense_approvals.expense_data_id')
+      .where('expense_data.receipt_id', receiptId)
+      .where('expense_approvals.status', 'approved')
+      .select(
+        'expense_data.*',
+        'expense_approvals.approved_amount as approval_amount'
+      )
+      .first();
+
+    if (!expenseData) {
+      return res.status(404).json({
+        error: 'No approved expense found for this receipt'
+      });
+    }
+
+    if (!expenseData.reimbursement_user_id) {
+      return res.status(400).json({
+        error: 'No user assigned for reimbursement'
+      });
+    }
+
+    // Check if reimbursement already exists
+    const existingReimbursement = await db('expense_reimbursements')
+      .where('receipt_id', receiptId)
+      .first();
+
+    if (existingReimbursement) {
+      return res.status(409).json({
+        error: 'Reimbursement already exists for this receipt'
+      });
+    }
+
+    // Create reimbursement entry
+    const reimbursementData = {
+      expense_data_id: expenseData.id,
+      receipt_id: receiptId,
+      reimbursement_user_id: expenseData.reimbursement_user_id,
+      organization_id: expenseData.organization_id,
+      approved_amount: approvedAmount || expenseData.approval_amount || expenseData.total_amount,
+      payment_method: paymentMethod,
+      scheduled_pay_date: scheduledPayDate ? new Date(scheduledPayDate) : null,
+      pay_period: payPeriod,
+      processed_by: req.user.id,
+      processing_notes: notes,
+      status: scheduledPayDate ? 'scheduled' : 'pending'
+    };
+
+    const [reimbursementId] = await db('expense_reimbursements')
+      .insert(reimbursementData)
+      .returning('id');
+
+    // Create corresponding user earning entry
+    const earningData = {
+      user_id: expenseData.reimbursement_user_id,
+      organization_id: expenseData.organization_id,
+      earning_type: 'reimbursement',
+      amount: reimbursementData.approved_amount,
+      description: `Expense reimbursement: ${expenseData.description || expenseData.vendor_name}`,
+      reference_id: reimbursementId,
+      reference_type: 'expense_reimbursement',
+      pay_period: payPeriod,
+      earned_date: expenseData.transaction_date || new Date(),
+      pay_date: scheduledPayDate ? new Date(scheduledPayDate) : null,
+      payment_status: scheduledPayDate ? 'scheduled' : 'pending',
+      processed_by: req.user.id,
+      notes: notes
+    };
+
+    await db('user_earnings').insert(earningData);
+
+    // Get the created reimbursement with user info
+    const createdReimbursement = await db('expense_reimbursements')
+      .leftJoin('users', 'expense_reimbursements.reimbursement_user_id', 'users.id')
+      .where('expense_reimbursements.id', reimbursementId)
+      .select(
+        'expense_reimbursements.*',
+        'users.email as reimbursement_user_email'
+      )
+      .first();
+
+    res.json({
+      message: 'Reimbursement created successfully',
+      reimbursement: createdReimbursement
+    });
+  } catch (error) {
+    console.error('Error creating reimbursement:', error);
+    res.status(500).json({
+      error: 'Failed to create reimbursement'
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/reimbursements
+ * Get all reimbursements with filtering
+ */
+router.get('/reimbursements', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      status, 
+      userId, 
+      payPeriod, 
+      page = 1, 
+      limit = 50 
+    } = req.query;
+
+    let query = db('expense_reimbursements')
+      .leftJoin('users', 'expense_reimbursements.reimbursement_user_id', 'users.id')
+      .leftJoin('expense_data', 'expense_reimbursements.expense_data_id', 'expense_data.id')
+      .leftJoin('expense_receipts', 'expense_reimbursements.receipt_id', 'expense_receipts.id')
+      .select(
+        'expense_reimbursements.*',
+        'users.email as reimbursement_user_email',
+        'expense_data.vendor_name',
+        'expense_data.description as expense_description',
+        'expense_data.transaction_date',
+        'expense_receipts.original_filename'
+      );
+
+    // Apply filters
+    if (status) {
+      query = query.where('expense_reimbursements.status', status);
+    }
+
+    if (userId) {
+      query = query.where('expense_reimbursements.reimbursement_user_id', userId);
+    }
+
+    if (payPeriod) {
+      query = query.where('expense_reimbursements.pay_period', payPeriod);
+    }
+
+    // Only show reimbursements for user's organization unless admin
+    if (req.user.role !== 'admin') {
+      query = query.where('expense_reimbursements.organization_id', req.user.id);
+    }
+
+    // Apply pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    query = query.limit(parseInt(limit)).offset(offset);
+
+    // Order by creation date
+    query = query.orderBy('expense_reimbursements.created_at', 'desc');
+
+    const reimbursements = await query;
+
+    // Get total count for pagination
+    const totalQuery = db('expense_reimbursements');
+    if (status) totalQuery.where('status', status);
+    if (userId) totalQuery.where('reimbursement_user_id', userId);
+    if (payPeriod) totalQuery.where('pay_period', payPeriod);
+    if (req.user.role !== 'admin') totalQuery.where('organization_id', req.user.id);
+    
+    const totalCount = await totalQuery.count('* as count').first();
+
+    res.json({
+      reimbursements,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(totalCount.count),
+        pages: Math.ceil(parseInt(totalCount.count) / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching reimbursements:', error);
+    res.status(500).json({
+      error: 'Failed to fetch reimbursements'
+    });
+  }
+});
+
+/**
+ * PUT /api/expenses/reimbursements/:id/status
+ * Update reimbursement status (mark as paid, etc.)
+ */
+router.put('/reimbursements/:id/status', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const reimbursementId = req.params.id;
+    const { 
+      status, 
+      paidAmount,
+      paymentReference,
+      paidDate,
+      notes 
+    } = req.body;
+
+    const validStatuses = ['pending', 'scheduled', 'paid', 'cancelled', 'disputed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: 'Invalid status'
+      });
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date()
+    };
+
+    if (status === 'paid') {
+      updateData.reimbursed_amount = paidAmount;
+      updateData.payment_reference = paymentReference;
+      updateData.paid_date = paidDate ? new Date(paidDate) : new Date();
+      updateData.paid_at = new Date();
+    }
+
+    if (notes) {
+      updateData.processing_notes = notes;
+    }
+
+    await db('expense_reimbursements')
+      .where('id', reimbursementId)
+      .update(updateData);
+
+    // Update corresponding user earning
+    const earningUpdateData = {
+      payment_status: status === 'paid' ? 'paid' : status,
+      updated_at: new Date()
+    };
+
+    if (status === 'paid') {
+      earningUpdateData.pay_date = updateData.paid_date;
+    }
+
+    await db('user_earnings')
+      .where('reference_id', reimbursementId)
+      .where('reference_type', 'expense_reimbursement')
+      .update(earningUpdateData);
+
+    const updatedReimbursement = await db('expense_reimbursements')
+      .leftJoin('users', 'expense_reimbursements.reimbursement_user_id', 'users.id')
+      .where('expense_reimbursements.id', reimbursementId)
+      .select(
+        'expense_reimbursements.*',
+        'users.email as reimbursement_user_email'
+      )
+      .first();
+
+    res.json({
+      message: 'Reimbursement status updated successfully',
+      reimbursement: updatedReimbursement
+    });
+  } catch (error) {
+    console.error('Error updating reimbursement status:', error);
+    res.status(500).json({
+      error: 'Failed to update reimbursement status'
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/users/:userId/earnings
+ * Get all earnings for a user (referee pay + reimbursements)
+ */
+router.get('/users/:userId/earnings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { payPeriod, earningType, page = 1, limit = 50 } = req.query;
+
+    // Check authorization
+    if (req.user.role !== 'admin' && req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Not authorized to view these earnings'
+      });
+    }
+
+    let query = db('user_earnings')
+      .where('user_id', userId);
+
+    if (payPeriod) {
+      query = query.where('pay_period', payPeriod);
+    }
+
+    if (earningType) {
+      query = query.where('earning_type', earningType);
+    }
+
+    // Apply pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    query = query.limit(parseInt(limit)).offset(offset);
+
+    // Order by earned date
+    query = query.orderBy('earned_date', 'desc');
+
+    const earnings = await query;
+
+    // Get total count
+    const totalQuery = db('user_earnings').where('user_id', userId);
+    if (payPeriod) totalQuery.where('pay_period', payPeriod);
+    if (earningType) totalQuery.where('earning_type', earningType);
+    
+    const totalCount = await totalQuery.count('* as count').first();
+
+    // Get summary by earning type
+    const summaryQuery = db('user_earnings')
+      .where('user_id', userId)
+      .select('earning_type')
+      .sum('amount as total_amount')
+      .count('* as count')
+      .groupBy('earning_type');
+
+    if (payPeriod) {
+      summaryQuery.where('pay_period', payPeriod);
+    }
+
+    const summary = await summaryQuery;
+
+    res.json({
+      earnings,
+      summary,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(totalCount.count),
+        pages: Math.ceil(parseInt(totalCount.count) / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user earnings:', error);
+    res.status(500).json({
+      error: 'Failed to fetch user earnings'
+    });
+  }
+});
+
 module.exports = router;

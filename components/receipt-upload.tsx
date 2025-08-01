@@ -74,6 +74,7 @@ export function ReceiptUpload() {
   const [activeTab, setActiveTab] = useState('upload')
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null)
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -421,7 +422,11 @@ export function ReceiptUpload() {
   }
 
   const handleViewReceipt = (receiptId: string) => {
+    const selectedReceipt = receipts.find(r => r.id === receiptId)
+    console.log('Found receipt for viewing:', selectedReceipt)
+    console.log('Receipt extractedData.items:', selectedReceipt?.extractedData?.items)
     setSelectedReceiptId(receiptId)
+    setSelectedReceipt(selectedReceipt || null)
     setViewModalOpen(true)
   }
 
@@ -787,6 +792,7 @@ export function ReceiptUpload() {
       {/* Receipt Viewer Modal */}
       <ReceiptViewerModal
         receiptId={selectedReceiptId}
+        receipt={selectedReceipt}
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
       />

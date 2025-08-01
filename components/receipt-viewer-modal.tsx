@@ -18,11 +18,17 @@ import {
   Brain,
   Image as ImageIcon,
   Receipt as ReceiptIcon,
+  User,
+  Plus,
+  Check
 } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api'
 
 interface ReceiptViewerModalProps {
   receiptId: string | null
+  receipt?: any // Accept the full receipt object from main page
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -59,16 +65,47 @@ interface ReceiptDetails {
   }>
 }
 
-export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptViewerModalProps) {
+export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, onOpenChange }: ReceiptViewerModalProps) {
   const [receipt, setReceipt] = useState<ReceiptDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [users, setUsers] = useState<any[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [reimbursementNotes, setReimbursementNotes] = useState<string>('')
+  const [assigningReimbursement, setAssigningReimbursement] = useState(false)
+  const [reimbursementData, setReimbursementData] = useState<any>(null)
 
   useEffect(() => {
-    if (open && receiptId) {
-      loadReceiptDetails()
+    if (open) {
+      loadUsers() // Load users for reimbursement assignment
+      if (passedReceipt) {
+        // Use the receipt data that's already loaded on the main page
+        console.log('Using passed receipt:', passedReceipt)
+        console.log('Passed receipt extractedData.items:', passedReceipt.extractedData?.items)
+        setReceipt({
+          id: passedReceipt.id,
+          originalFilename: passedReceipt.filename || passedReceipt.originalFilename,
+          fileType: passedReceipt.fileType || 'unknown',
+          fileSize: passedReceipt.fileSize || 0,
+          uploadedAt: passedReceipt.uploadedAt,
+          processedAt: passedReceipt.processedAt,
+          status: passedReceipt.status,
+          ocrText: passedReceipt.ocrText || '',
+          extractedData: passedReceipt.extractedData || {
+            merchant: 'Unknown',
+            date: '',
+            amount: 0,
+            category: 'Uncategorized',
+            confidence: 0,
+            items: []
+          },
+          processingLogs: []
+        })
+      } else if (receiptId) {
+        loadReceiptDetails()
+      }
     }
-  }, [open, receiptId])
+  }, [open, receiptId, passedReceipt])
 
   const loadReceiptDetails = async () => {
     if (!receiptId) return
@@ -84,6 +121,18 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
       console.log('Line Items Type:', typeof receiptData.line_items)
       console.log('Line Items Parsed:', JSON.stringify(receiptData.line_items, null, 2))
       
+      // If the receipt already has extractedData (like from the main page), use it directly
+      const extractedData = receiptData.extractedData || {
+        merchant: receiptData.vendor_name || 'Unknown',
+        date: receiptData.transaction_date || '',
+        amount: parseFloat(receiptData.total_amount || '0'),
+        category: receiptData.category_name || 'Uncategorized',
+        confidence: parseFloat(receiptData.extraction_confidence || '0'),
+        items: receiptData.line_items || []
+      }
+      
+      console.log('Final extractedData.items:', extractedData.items)
+      
       setReceipt({
         id: receiptData.id,
         originalFilename: receiptData.original_filename,
@@ -93,14 +142,7 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
         processedAt: receiptData.processed_at,
         status: receiptData.processing_status,
         ocrText: receiptData.raw_ocr_text || '',
-        extractedData: {
-          merchant: receiptData.vendor_name || 'Unknown',
-          date: receiptData.transaction_date || '',
-          amount: parseFloat(receiptData.total_amount || '0'),
-          category: receiptData.category_name || 'Uncategorized',
-          confidence: parseFloat(receiptData.extraction_confidence || '0'),
-          items: receiptData.line_items || []
-        },
+        extractedData: extractedData,
         processingLogs: response.processingLogs || []
       })
     } catch (error) {
@@ -131,6 +173,65 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
         description: 'Failed to download receipt file',
         variant: 'destructive',
       })
+    }
+  }
+
+  const loadUsers = async () => {
+    try {
+      // This would need to be implemented in the API client
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error loading users:', error)
+    }
+  }
+
+  const handleAssignReimbursement = async () => {
+    if (!receiptId || !selectedUserId) return
+    
+    setAssigningReimbursement(true)
+    try {
+      const response = await fetch(`/api/expenses/receipts/${receiptId}/assign-reimbursement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          userId: selectedUserId,
+          notes: reimbursementNotes
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setReimbursementData(data.expenseData)
+        toast({
+          title: 'Success',
+          description: 'Reimbursement assigned successfully',
+        })
+        setSelectedUserId('')
+        setReimbursementNotes('')
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to assign reimbursement')
+      }
+    } catch (error) {
+      console.error('Error assigning reimbursement:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to assign reimbursement',
+        variant: 'destructive',
+      })
+    } finally {
+      setAssigningReimbursement(false)
     }
   }
 
@@ -334,6 +435,87 @@ export function ReceiptViewerModal({ receiptId, open, onOpenChange }: ReceiptVie
                 </CardContent>
               </Card>
 
+
+              {/* Reimbursement Assignment */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Reimbursement Assignment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {reimbursementData?.reimbursement_user_email ? (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Check className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">
+                          Assigned for Reimbursement
+                        </span>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        User: {reimbursementData.reimbursement_user_email}
+                      </p>
+                      {reimbursementData.reimbursement_notes && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Notes: {reimbursementData.reimbursement_notes}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Assign to User
+                        </label>
+                        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a user for reimbursement" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.email}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Reimbursement Notes (Optional)
+                        </label>
+                        <Textarea
+                          value={reimbursementNotes}
+                          onChange={(e) => setReimbursementNotes(e.target.value)}
+                          placeholder="Add any notes about this reimbursement..."
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <Button
+                        onClick={handleAssignReimbursement}
+                        disabled={!selectedUserId || assigningReimbursement}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {assigningReimbursement ? (
+                          <>
+                            <LoadingSpinner className="h-4 w-4 mr-2" />
+                            Assigning...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Assign Reimbursement
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Processing Info */}
               {receipt.processingLogs && receipt.processingLogs.length > 0 && (
