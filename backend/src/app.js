@@ -11,6 +11,8 @@ const { apiLimiter } = require('./middleware/rateLimiting');
 
 // Import performance monitoring middleware
 const { performanceMonitor } = require('./middleware/performanceMonitor');
+const { advancedPerformanceMonitor, setupAlertHandlers } = require('./middleware/advanced-performance');
+const { wrapDatabaseConnection } = require('./utils/query-performance');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -60,6 +62,9 @@ const app = express();
 // Validate environment variables before starting
 validateEnvironment();
 
+// Setup performance alert handlers
+setupAlertHandlers();
+
 // Security middleware stack
 // app.use(enforceHTTPS); // TEMPORARILY DISABLED
 // app.use(createSecurityMiddleware()); // TEMPORARILY DISABLED
@@ -79,6 +84,19 @@ app.use(performanceMonitor({
   logSlowRequests: true,
   trackQueryCount: false, // Disable query tracking for now
   maxSlowQueries: 100
+}));
+
+// Advanced performance monitoring
+app.use(advancedPerformanceMonitor({
+  slowThreshold: 1000,
+  verySlowThreshold: 5000,
+  trackMemory: true,
+  trackCpu: true,
+  enableAlerting: true,
+  samplingRate: 1.0,
+  excludeEndpoints: ['/health', '/api/health'],
+  trackUserAgents: true,
+  trackIpAddresses: true
 }));
 
 // Audit trail for API requests (exclude health checks and static files)
