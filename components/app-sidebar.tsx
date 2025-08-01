@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef } from "react"
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare } from "lucide-react"
+import { NotificationsBell } from "@/components/notifications-bell"
 
 import {
   Sidebar,
@@ -97,6 +98,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Tournament Generator",
       url: "tournaments",
       icon: Zap,
+    },
+    {
+      title: "Communications",
+      url: "communications",
+      icon: MessageSquare,
     },
     {
       title: "Posts",
@@ -247,9 +253,12 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </div>
         </div>
         <div className="px-6 pb-4 group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="capitalize">{user?.email}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="capitalize">{user?.email}</span>
+            </div>
+            <NotificationsBell />
           </div>
         </div>
       </SidebarHeader>

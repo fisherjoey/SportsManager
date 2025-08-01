@@ -11,6 +11,14 @@ class AIServices {
     this.openaiClient = null;
     this.initialized = false;
     this.initPromise = this.initializeServices();
+    
+    // PERFORMANCE OPTIMIZATION: Add request queuing and caching
+    this.requestQueue = [];
+    this.processingRequests = new Map();
+    this.responseCache = new Map();
+    this.maxCacheSize = 100;
+    this.maxConcurrentRequests = 3;
+    this.currentRequests = 0;
   }
 
   /**

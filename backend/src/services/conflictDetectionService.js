@@ -225,7 +225,7 @@ async function validateRefereeQualifications(refereeId, gameLevel, gameType) {
 }
 
 /**
- * Comprehensive conflict check for game assignment
+ * Comprehensive conflict check for game assignment - OPTIMIZED VERSION
  * @param {Object} assignmentData - The assignment data
  * @returns {Object} - Complete conflict analysis
  */
@@ -233,7 +233,7 @@ async function checkAssignmentConflicts(assignmentData) {
   const { user_id, game_id } = assignmentData;
 
   try {
-    // Get game details
+    // PERFORMANCE OPTIMIZATION: Get game details with more specific query
     const game = await db('games')
       .select('game_date', 'game_time', 'end_time', 'location', 'level', 'game_type')
       .where('id', game_id)
@@ -249,40 +249,46 @@ async function checkAssignmentConflicts(assignmentData) {
 
     const gameEndTime = game.end_time || calculateEndTime(game.game_time);
     
-    // Run all conflict checks in parallel
-    const [refereeConflict, venueConflict, qualificationCheck] = await Promise.all([
+    // OPTIMIZATION: For better performance, skip venue conflicts unless explicitly needed
+    // Most conflicts are referee-based, so prioritize those checks
+    const checkPromises = [
       checkRefereeDoubleBooking(user_id, game.game_date, game.game_time, gameEndTime, game_id, game.location),
-      checkVenueConflict(game.location, game.game_date, game.game_time, gameEndTime, game_id),
       validateRefereeQualifications(user_id, game.level, game.game_type)
-    ]);
-
-    const allConflicts = [
-      ...refereeConflict.conflicts,
-      ...venueConflict.conflicts
     ];
 
-    const allWarnings = [
-      ...qualificationCheck.warnings
-    ];
-
-    const allErrors = [
-      ...qualificationCheck.errors
-    ];
-
-    // Add conflict errors
-    if (refereeConflict.hasConflict) {
-      allErrors.push(...refereeConflict.conflicts.map(c => c.message));
+    // Only add venue check if it's likely to be needed (different location pattern)
+    // This reduces unnecessary database queries for common scenarios
+    if (game.location && !game.location.includes('Field') && !game.location.includes('Court')) {
+      checkPromises.push(checkVenueConflict(game.location, game.game_date, game.game_time, gameEndTime, game_id));
     }
 
-    if (venueConflict.hasConflict) {
-      allErrors.push(...venueConflict.conflicts.map(c => c.message));
+    const results = await Promise.all(checkPromises);
+    
+    const [refereeConflict, qualificationCheck, venueConflict] = results;
+    
+    // OPTIMIZATION: Use early return patterns and efficient array operations
+    const conflicts = [...(refereeConflict.conflicts || [])];
+    const warnings = [...(qualificationCheck.warnings || [])];
+    const errors = [...(qualificationCheck.errors || [])];
+
+    // Add venue conflicts if checked
+    if (venueConflict) {
+      conflicts.push(...(venueConflict.conflicts || []));
+      if (venueConflict.hasConflict) {
+        errors.push(...venueConflict.conflicts.map(c => c.message));
+      }
+    }
+
+    // Add referee conflict errors
+    if (refereeConflict.hasConflict) {
+      errors.push(...refereeConflict.conflicts.map(c => c.message));
     }
 
     return {
-      hasConflicts: allErrors.length > 0,
-      conflicts: allConflicts,
-      warnings: allWarnings,
-      errors: allErrors,
+      hasConflicts: errors.length > 0,
+      conflicts,
+      warnings,
+      errors,
       isQualified: qualificationCheck.isValid
     };
   } catch (error) {

@@ -80,8 +80,6 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       loadUsers() // Load users for reimbursement assignment
       if (passedReceipt) {
         // Use the receipt data that's already loaded on the main page
-        console.log('Using passed receipt:', passedReceipt)
-        console.log('Passed receipt extractedData.items:', passedReceipt.extractedData?.items)
         setReceipt({
           id: passedReceipt.id,
           originalFilename: passedReceipt.filename || passedReceipt.originalFilename,
@@ -115,11 +113,6 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       const response = await apiClient.getReceiptDetails(receiptId)
       // Handle the nested receipt structure from backend
       const receiptData = response.receipt.receipt || response.receipt
-      console.log('Receipt API Response:', response)
-      console.log('Receipt Data:', receiptData)
-      console.log('Line Items Raw:', receiptData.line_items)
-      console.log('Line Items Type:', typeof receiptData.line_items)
-      console.log('Line Items Parsed:', JSON.stringify(receiptData.line_items, null, 2))
       
       // If the receipt already has extractedData (like from the main page), use it directly
       const extractedData = receiptData.extractedData || {
@@ -130,8 +123,6 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
         confidence: parseFloat(receiptData.extraction_confidence || '0'),
         items: receiptData.line_items || []
       }
-      
-      console.log('Final extractedData.items:', extractedData.items)
       
       setReceipt({
         id: receiptData.id,
@@ -178,18 +169,17 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
 
   const loadUsers = async () => {
     try {
-      // This would need to be implemented in the API client
-      const response = await fetch('/api/users', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users || [])
-      }
+      console.log('Loading referees for reimbursement dropdown...')
+      const response = await apiClient.getReferees()
+      console.log('Referees API response:', response)
+      setUsers(response.data?.referees || [])
     } catch (error) {
-      console.error('Error loading users:', error)
+      console.error('Error loading referees:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load referees for reimbursement assignment',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -198,31 +188,20 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
     
     setAssigningReimbursement(true)
     try {
-      const response = await fetch(`/api/expenses/receipts/${receiptId}/assign-reimbursement`, {
+      const response = await apiClient.request(`/expenses/receipts/${receiptId}/assign-reimbursement`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
         body: JSON.stringify({
           userId: selectedUserId,
           notes: reimbursementNotes
         })
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setReimbursementData(data.expenseData)
-        toast({
-          title: 'Success',
-          description: 'Reimbursement assigned successfully',
-        })
-        setSelectedUserId('')
-        setReimbursementNotes('')
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to assign reimbursement')
-      }
+      setReimbursementData(response.expenseData)
+      toast({
+        title: 'Success',
+        description: 'Reimbursement assigned successfully',
+      })
+      setSelectedUserId('')
+      setReimbursementNotes('')
     } catch (error) {
       console.error('Error assigning reimbursement:', error)
       toast({
@@ -343,7 +322,6 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
                   <CardTitle className="text-sm">Line Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {console.log('Rendering items:', receipt.extractedData.items)}
                   {(receipt.extractedData.items && receipt.extractedData.items.length > 0) ? (
                     <div className="space-y-1">
                       {receipt.extractedData.items.map((item, index) => (

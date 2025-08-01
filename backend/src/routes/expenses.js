@@ -7,6 +7,7 @@ const db = require('../config/database');
 const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
 const { receiptUploader, fileUploadSecurity, handleUploadErrors, virusScan } = require('../middleware/fileUpload');
 const receiptProcessingService = require('../services/receiptProcessingService');
+const { referenceCache, clearUserCache } = require('../middleware/responseCache');
 const Queue = require('bull');
 
 // Create processing queue for background jobs
@@ -214,6 +215,9 @@ router.post('/receipts/upload',
             ? 'manual_review' 
             : 'failed';
         
+        // PERFORMANCE OPTIMIZATION: Clear user cache when new receipt is added
+        clearUserCache(req.user.id);
+        
         res.status(201).json({
           message: 'Receipt uploaded and processed successfully',
           receipt: {
@@ -286,7 +290,7 @@ router.post('/receipts/upload',
 
 /**
  * GET /api/expenses/receipts
- * List receipts with filtering and pagination
+ * List receipts with filtering and pagination - OPTIMIZED VERSION
  */
 router.get('/receipts', authenticateToken, async (req, res) => {
   try {
@@ -303,54 +307,67 @@ router.get('/receipts', authenticateToken, async (req, res) => {
     const { page, limit, status, category, dateFrom, dateTo, minAmount, maxAmount, search } = value;
     const offset = (page - 1) * limit;
     
-    // Build the query with proper joins
-    let query = db('expense_receipts')
+    // PERFORMANCE OPTIMIZATION: Use more efficient query structure
+    // Start with the most selective filter first (user_id)
+    let baseQuery = db('expense_receipts')
+      .where('expense_receipts.user_id', req.user.id);
+
+    // Apply status filter early for better index usage
+    if (status) {
+      baseQuery = baseQuery.where('expense_receipts.processing_status', status);
+    }
+
+    // OPTIMIZATION: Get count and data in parallel to reduce response time
+    const countPromise = baseQuery.clone()
+      .leftJoin('expense_data', 'expense_receipts.id', 'expense_data.receipt_id')
+      .leftJoin('expense_categories', 'expense_data.category_id', 'expense_categories.id')
+      .modify(queryBuilder => {
+        // Apply all filters to count query
+        if (category) queryBuilder.where('expense_data.category_id', category);
+        if (dateFrom) queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
+        if (dateTo) queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+        if (minAmount) queryBuilder.where('expense_data.total_amount', '>=', minAmount);
+        if (maxAmount) queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        if (search) {
+          queryBuilder.where(function() {
+            this.where('expense_receipts.original_filename', 'ilike', `%${search}%`)
+                .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
+          });
+        }
+      })
+      .count('expense_receipts.id as count')
+      .first();
+
+    // OPTIMIZATION: Build main query with better join order and selective fields
+    const dataPromise = baseQuery.clone()
       .leftJoin('expense_data', 'expense_receipts.id', 'expense_data.receipt_id')
       .leftJoin('expense_categories', 'expense_data.category_id', 'expense_categories.id')
       .leftJoin('expense_approvals', 'expense_data.id', 'expense_approvals.expense_data_id')
-      .where('expense_receipts.user_id', req.user.id);
-
-    // Apply filters
-    if (status) {
-      query = query.where('expense_receipts.processing_status', status);
-    }
-    
-    if (category) {
-      query = query.where('expense_data.category_id', category);
-    }
-    
-    if (dateFrom) {
-      query = query.where('expense_data.transaction_date', '>=', dateFrom);
-    }
-    
-    if (dateTo) {
-      query = query.where('expense_data.transaction_date', '<=', dateTo);
-    }
-    
-    if (minAmount) {
-      query = query.where('expense_data.total_amount', '>=', minAmount);
-    }
-    
-    if (maxAmount) {
-      query = query.where('expense_data.total_amount', '<=', maxAmount);
-    }
-    
-    if (search) {
-      query = query.where(function() {
-        this.where('expense_receipts.original_filename', 'ilike', `%${search}%`)
-            .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
-      });
-    }
-
-    // Get total count for pagination
-    const totalQuery = query.clone();
-    const [{ count: total }] = await totalQuery.count('expense_receipts.id as count');
-    const totalPages = Math.ceil(total / limit);
-
-    // Get the actual receipts with all related data
-    const receipts = await query
+      .modify(queryBuilder => {
+        // Apply all filters
+        if (category) queryBuilder.where('expense_data.category_id', category);
+        if (dateFrom) queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
+        if (dateTo) queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+        if (minAmount) queryBuilder.where('expense_data.total_amount', '>=', minAmount);
+        if (maxAmount) queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        if (search) {
+          queryBuilder.where(function() {
+            this.where('expense_receipts.original_filename', 'ilike', `%${search}%`)
+                .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
+          });
+        }
+      })
       .select(
-        'expense_receipts.*',
+        // OPTIMIZATION: Select only required fields to reduce data transfer
+        'expense_receipts.id',
+        'expense_receipts.original_filename',
+        'expense_receipts.uploaded_at',
+        'expense_receipts.processing_status',
+        'expense_receipts.file_type',
+        'expense_receipts.file_size',
+        'expense_receipts.raw_ocr_text',
+        'expense_receipts.processed_at',
+        'expense_receipts.processing_notes',
         'expense_data.vendor_name',
         'expense_data.total_amount',
         'expense_data.transaction_date',
@@ -364,34 +381,51 @@ router.get('/receipts', authenticateToken, async (req, res) => {
       .limit(limit)
       .offset(offset);
 
-    // Format receipts for frontend consumption
-    const formattedReceipts = receipts.map(receipt => ({
-      id: receipt.id,
-      filename: receipt.original_filename,
-      originalFilename: receipt.original_filename,
-      uploadedAt: receipt.uploaded_at,
-      status: receipt.processing_status,
-      fileType: receipt.file_type,
-      fileSize: receipt.file_size,
-      ocrText: receipt.raw_ocr_text,
-      extractedData: receipt.vendor_name ? {
-        merchant: receipt.vendor_name,
-        date: receipt.transaction_date,
-        amount: receipt.total_amount,
-        category: receipt.category_name,
-        confidence: receipt.extraction_confidence,
-        items: receipt.line_items ? 
-          (typeof receipt.line_items === 'string' ? JSON.parse(receipt.line_items) : receipt.line_items) 
-          : []
-      } : null,
-      processedAt: receipt.processed_at,
-      errorMessage: receipt.processing_notes && receipt.processing_status === 'failed' 
-        ? receipt.processing_notes 
-        : null
-    }));
-
-    console.log(`GET /receipts - Found ${formattedReceipts.length} receipts for user ${req.user.id}`);
+    // Execute queries in parallel
+    const [countResult, receipts] = await Promise.all([countPromise, dataPromise]);
     
+    const total = countResult.count;
+    const totalPages = Math.ceil(total / limit);
+
+    // OPTIMIZATION: Efficient data transformation with minimal parsing
+    const formattedReceipts = receipts.map(receipt => {
+      // Pre-parse line_items only if needed to avoid repeated JSON parsing
+      let parsedLineItems = [];
+      if (receipt.line_items) {
+        try {
+          parsedLineItems = typeof receipt.line_items === 'string' 
+            ? JSON.parse(receipt.line_items) 
+            : receipt.line_items;
+        } catch (parseError) {
+          console.warn('Failed to parse line items for receipt:', receipt.id);
+          parsedLineItems = [];
+        }
+      }
+
+      return {
+        id: receipt.id,
+        filename: receipt.original_filename,
+        originalFilename: receipt.original_filename,
+        uploadedAt: receipt.uploaded_at,
+        status: receipt.processing_status,
+        fileType: receipt.file_type,
+        fileSize: receipt.file_size,
+        ocrText: receipt.raw_ocr_text,
+        extractedData: receipt.vendor_name ? {
+          merchant: receipt.vendor_name,
+          date: receipt.transaction_date,
+          amount: receipt.total_amount,
+          category: receipt.category_name,
+          confidence: receipt.extraction_confidence,
+          items: parsedLineItems
+        } : null,
+        processedAt: receipt.processed_at,
+        errorMessage: receipt.processing_notes && receipt.processing_status === 'failed' 
+          ? receipt.processing_notes 
+          : null
+      };
+    });
+
     res.json({
       receipts: formattedReceipts,
       pagination: {
@@ -721,9 +755,9 @@ router.delete('/receipts/:id', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/expenses/categories
- * Get expense categories
+ * Get expense categories - CACHED VERSION
  */
-router.get('/categories', authenticateToken, async (req, res) => {
+router.get('/categories', authenticateToken, referenceCache, async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     
@@ -739,7 +773,6 @@ router.get('/categories', authenticateToken, async (req, res) => {
       keywords: category.keywords ? JSON.parse(category.keywords) : []
     }));
 
-    console.log('Retrieved categories from database:', formattedCategories.length);
     res.json({
       categories: formattedCategories
     });
@@ -791,7 +824,6 @@ router.get('/categories', authenticateToken, async (req, res) => {
       }
     ];
 
-    console.log('Using fallback categories due to error');
     res.json({
       categories: fallbackCategories
     });

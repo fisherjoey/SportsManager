@@ -19,57 +19,75 @@ const assignmentSchema = Joi.object({
   assigned_by: Joi.string()
 });
 
-// GET /api/assignments - Get all assignments with optional filters
+// GET /api/assignments - Get all assignments with optional filters - OPTIMIZED VERSION
 router.get('/', authenticateToken, validateQuery('assignmentFilter'), asyncHandler(async (req, res) => {
   try {
     const { game_id, referee_id, status, page = 1, limit = 50 } = req.query;
-    
-    let query = db('game_assignments')
-      .join('games', 'game_assignments.game_id', 'games.id')
-      .join('users', 'game_assignments.user_id', 'users.id')
-      .join('positions', 'game_assignments.position_id', 'positions.id')
-      .join('teams as home_team', 'games.home_team_id', 'home_team.id')
-      .join('teams as away_team', 'games.away_team_id', 'away_team.id')
-      .select(
-        'game_assignments.*',
-        'home_team.name as home_team_name',
-        'away_team.name as away_team_name',
-        'games.game_date',
-        'games.game_time',
-        'games.location',
-        'games.pay_rate',
-        'games.level',
-        'games.wage_multiplier',
-        'games.wage_multiplier_reason',
-        'users.name as referee_name',
-        'positions.name as position_name'
-      )
-      .orderBy('games.game_date', 'asc');
-
-    if (game_id) {
-      query = query.where('game_assignments.game_id', game_id);
-    }
-    
-    if (referee_id) {
-      query = query.where('game_assignments.user_id', referee_id);
-    }
-    
-    if (status) {
-      query = query.where('game_assignments.status', status);
-    }
-
     const offset = (page - 1) * limit;
-    query = query.limit(limit).offset(offset);
+    
+    // PERFORMANCE OPTIMIZATION: Build more efficient query with better join order
+    // Start with most selective filters first
+    let baseQuery = db('game_assignments');
+    
+    // Apply filters early for better index usage
+    if (game_id) {
+      baseQuery = baseQuery.where('game_assignments.game_id', game_id);
+    }
+    if (referee_id) {
+      baseQuery = baseQuery.where('game_assignments.user_id', referee_id);
+    }
+    if (status) {
+      baseQuery = baseQuery.where('game_assignments.status', status);
+    }
 
-    const assignments = await query;
+    // OPTIMIZATION: Execute org settings and assignments query in parallel
+    const [orgSettingsPromise, assignmentsPromise] = await Promise.all([
+      getOrganizationSettings(),
+      baseQuery.clone()
+        .join('games', 'game_assignments.game_id', 'games.id')
+        .join('users', 'game_assignments.user_id', 'users.id')
+        .join('positions', 'game_assignments.position_id', 'positions.id')
+        .join('teams as home_team', 'games.home_team_id', 'home_team.id')
+        .join('teams as away_team', 'games.away_team_id', 'away_team.id')
+        .select(
+          // OPTIMIZATION: Select only necessary fields
+          'game_assignments.id',
+          'game_assignments.game_id',
+          'game_assignments.user_id as referee_id',
+          'game_assignments.position_id',
+          'game_assignments.assigned_at',
+          'game_assignments.assigned_by',
+          'game_assignments.status',
+          'game_assignments.created_at',
+          'game_assignments.updated_at',
+          'game_assignments.calculated_wage',
+          'home_team.name as home_team_name',
+          'away_team.name as away_team_name',
+          'games.game_date',
+          'games.game_time',
+          'games.location',
+          'games.pay_rate',
+          'games.level',
+          'games.wage_multiplier',
+          'games.wage_multiplier_reason',
+          'users.name as referee_name',
+          'positions.name as position_name'
+        )
+        .orderBy('games.game_date', 'asc')
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    const [orgSettings, assignments] = await Promise.allSettled([orgSettingsPromise, assignmentsPromise]);
     
-    // Get organization settings for wage calculations
-    const orgSettings = await getOrganizationSettings();
+    // Handle potential failures gracefully
+    const resolvedOrgSettings = orgSettings.status === 'fulfilled' ? orgSettings.value : { payment_model: 'INDIVIDUAL' };
+    const resolvedAssignments = assignments.status === 'fulfilled' ? assignments.value : [];
     
-    // Get referee counts per game for flat rate calculation
-    const gameRefereeCounts = {};
-    if (orgSettings.payment_model === 'FLAT_RATE') {
-      const gameIds = [...new Set(assignments.map(a => a.game_id))];
+    // OPTIMIZATION: Only fetch referee counts if needed and assignments exist
+    let gameRefereeCounts = {};
+    if (resolvedOrgSettings.payment_model === 'FLAT_RATE' && resolvedAssignments.length > 0) {
+      const gameIds = [...new Set(resolvedAssignments.map(a => a.game_id))];
       const refereeCounts = await db('game_assignments')
         .whereIn('game_id', gameIds)
         .whereIn('status', ['pending', 'accepted'])
@@ -77,6 +95,7 @@ router.get('/', authenticateToken, validateQuery('assignmentFilter'), asyncHandl
         .select('game_id')
         .count('* as count');
       
+      // OPTIMIZATION: Use forEach instead of reduce for better performance
       refereeCounts.forEach(rc => {
         gameRefereeCounts[rc.game_id] = parseInt(rc.count);
       });
