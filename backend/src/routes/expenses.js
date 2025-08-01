@@ -7,6 +7,8 @@ const db = require('../config/database');
 const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
 const { receiptUploader, fileUploadSecurity, handleUploadErrors, virusScan } = require('../middleware/fileUpload');
 const receiptProcessingService = require('../services/receiptProcessingService');
+const approvalWorkflowService = require('../services/approvalWorkflowService');
+const paymentMethodService = require('../services/paymentMethodService');
 const { referenceCache, clearUserCache } = require('../middleware/responseCache');
 const Queue = require('bull');
 
@@ -694,15 +696,15 @@ router.post('/receipts/:id/process', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/expenses/receipts/:id/approve
- * Approve or reject an expense
+ * POST /api/expenses/:id/approve
+ * Enhanced approval with workflow support
  */
-router.post('/receipts/:id/approve', 
+router.post('/:id/approve', 
   authenticateToken, 
   requireAnyRole('admin', 'manager'),
   async (req, res) => {
     try {
-      const receiptId = req.params.id;
+      const expenseId = req.params.id;
       
       const { error, value } = approvalSchema.validate(req.body);
       if (error) {
@@ -712,51 +714,200 @@ router.post('/receipts/:id/approve',
         });
       }
 
-      const expenseData = await db('expense_data')
-        .where('receipt_id', receiptId)
+      // Get current pending approval for this user
+      const pendingApproval = await db('expense_approvals')
+        .where('expense_data_id', expenseId)
+        .where('stage_status', 'pending')
+        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .orWhere('delegated_to', req.user.id)
         .first();
 
-      if (!expenseData) {
+      if (!pendingApproval) {
         return res.status(404).json({
-          error: 'Expense data not found'
+          error: 'No pending approval found for this user'
         });
       }
 
-      // Create or update approval record
-      const approvalData = {
-        expense_data_id: expenseData.id,
-        receipt_id: receiptId,
-        user_id: expenseData.user_id,
-        organization_id: expenseData.organization_id,
-        status: value.status,
-        approver_id: req.user.id,
-        approval_notes: value.notes,
-        rejection_reason: value.rejectionReason,
-        required_information: value.requiredInformation ? JSON.stringify(value.requiredInformation) : null,
-        approved_amount: value.approvedAmount || expenseData.total_amount,
-        requested_amount: expenseData.total_amount
+      // Process approval decision using workflow service
+      const decision = {
+        action: value.status,
+        notes: value.notes,
+        approvedAmount: value.approvedAmount,
+        rejectionReason: value.rejectionReason,
+        requiredInformation: value.requiredInformation
       };
 
-      if (value.status === 'approved') {
-        approvalData.approved_at = new Date();
-      } else if (value.status === 'rejected') {
-        approvalData.rejected_at = new Date();
-      }
+      const updatedApproval = await approvalWorkflowService.processApprovalDecision(
+        pendingApproval.id,
+        decision,
+        req.user
+      );
 
-      const [approval] = await db('expense_approvals')
-        .insert(approvalData)
-        .onConflict(['expense_data_id'])
-        .merge()
-        .returning('*');
+      // Get approval history for response
+      const approvalHistory = await approvalWorkflowService.getApprovalHistory(expenseId);
 
       res.json({
         message: `Expense ${value.status} successfully`,
-        approval
+        approval: updatedApproval,
+        workflow: {
+          currentStage: updatedApproval.stage_number,
+          totalStages: updatedApproval.total_stages,
+          isComplete: updatedApproval.stage_status === 'approved' && 
+                     updatedApproval.stage_number >= updatedApproval.total_stages,
+          history: approvalHistory
+        }
       });
     } catch (error) {
-      console.error('Approval error:', error);
+      console.error('Enhanced approval error:', error);
       res.status(500).json({
-        error: 'Failed to process approval'
+        error: 'Failed to process approval',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/expenses/:id/reject
+ * Enhanced rejection with routing
+ */
+router.post('/:id/reject', 
+  authenticateToken, 
+  requireAnyRole('admin', 'manager'),
+  async (req, res) => {
+    try {
+      const expenseId = req.params.id;
+      const { rejectionReason, notes, routeBack = false } = req.body;
+
+      if (!rejectionReason) {
+        return res.status(400).json({
+          error: 'Rejection reason is required'
+        });
+      }
+
+      // Get current pending approval for this user
+      const pendingApproval = await db('expense_approvals')
+        .where('expense_data_id', expenseId)
+        .where('stage_status', 'pending')
+        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .orWhere('delegated_to', req.user.id)
+        .first();
+
+      if (!pendingApproval) {
+        return res.status(404).json({
+          error: 'No pending approval found for this user'
+        });
+      }
+
+      const decision = {
+        action: 'rejected',
+        notes: notes,
+        rejectionReason: rejectionReason
+      };
+
+      const updatedApproval = await approvalWorkflowService.processApprovalDecision(
+        pendingApproval.id,
+        decision,
+        req.user
+      );
+
+      // If routeBack is true, reset to first stage for resubmission
+      if (routeBack) {
+        await db('expense_data')
+          .where('id', expenseId)
+          .update({
+            payment_status: 'draft',
+            updated_at: new Date()
+          });
+
+        // Mark all approvals as pending resubmission
+        await db('expense_approvals')
+          .where('expense_data_id', expenseId)
+          .update({
+            stage_status: 'pending',
+            status: 'pending',
+            updated_at: new Date()
+          });
+      }
+
+      res.json({
+        message: 'Expense rejected successfully',
+        approval: updatedApproval,
+        routedBack: routeBack,
+        nextAction: routeBack ? 'Expense returned to submitter for revision' : 'Expense workflow terminated'
+      });
+    } catch (error) {
+      console.error('Enhanced rejection error:', error);
+      res.status(500).json({
+        error: 'Failed to process rejection'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/expenses/:id/delegate
+ * Delegate approval to another user
+ */
+router.post('/:id/delegate', 
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const expenseId = req.params.id;
+      const { delegateTo, reason } = req.body;
+
+      if (!delegateTo || !reason) {
+        return res.status(400).json({
+          error: 'Delegate user ID and reason are required'
+        });
+      }
+
+      // Validate delegate user exists
+      const delegateUser = await db('users')
+        .where('id', delegateTo)
+        .where('organization_id', req.user.organization_id || req.user.id)
+        .first();
+
+      if (!delegateUser) {
+        return res.status(404).json({
+          error: 'Delegate user not found'
+        });
+      }
+
+      // Get current pending approval for this user
+      const pendingApproval = await db('expense_approvals')
+        .where('expense_data_id', expenseId)
+        .where('stage_status', 'pending')
+        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .first();
+
+      if (!pendingApproval) {
+        return res.status(404).json({
+          error: 'No pending approval found for this user'
+        });
+      }
+
+      const updatedApproval = await approvalWorkflowService.delegateApproval(
+        pendingApproval.id,
+        delegateTo,
+        req.user.id,
+        reason
+      );
+
+      res.json({
+        message: 'Approval delegated successfully',
+        approval: updatedApproval,
+        delegatedTo: {
+          id: delegateUser.id,
+          name: `${delegateUser.first_name} ${delegateUser.last_name}`,
+          email: delegateUser.email
+        },
+        delegationReason: reason
+      });
+    } catch (error) {
+      console.error('Delegation error:', error);
+      res.status(500).json({
+        error: 'Failed to delegate approval'
       });
     }
   }
@@ -1634,11 +1785,11 @@ router.post('/receipts/:id/select-payment-method', authenticateToken, async (req
 
 /**
  * GET /api/expenses/payment-methods/detect
- * Auto-detect payment method from receipt data
+ * Enhanced auto-detect payment method from receipt data
  */
 router.get('/payment-methods/detect', authenticateToken, async (req, res) => {
   try {
-    const { receiptId, vendorName, amount, category } = req.query;
+    const { receiptId, vendorName, amount, category, urgency } = req.query;
     
     if (!receiptId) {
       return res.status(400).json({
@@ -1646,15 +1797,214 @@ router.get('/payment-methods/detect', authenticateToken, async (req, res) => {
       });
     }
 
+    // Get receipt with expense data for context
+    const receipt = await db('expense_receipts')
+      .leftJoin('expense_data', 'expense_receipts.id', 'expense_data.receipt_id')
+      .where('expense_receipts.id', receiptId)
+      .where('expense_receipts.user_id', req.user.id)
+      .select([
+        'expense_receipts.*',
+        'expense_data.vendor_name',
+        'expense_data.total_amount',
+        'expense_data.category_id'
+      ])
+      .first();
+
+    if (!receipt) {
+      return res.status(404).json({
+        error: 'Receipt not found'
+      });
+    }
+
+    // Build receipt data for detection
+    const receiptData = {
+      total_amount: amount || receipt.total_amount,
+      vendor_name: vendorName || receipt.vendor_name,
+      category_id: category || receipt.category_id,
+      raw_ocr_text: receipt.raw_ocr_text
+    };
+
+    const context = {
+      urgency: urgency || 'normal',
+      receiptId: receiptId
+    };
+
+    // Use enhanced payment method detection service
+    const suggestions = await paymentMethodService.detectPaymentMethod(
+      receiptData,
+      req.user,
+      context
+    );
+
+    res.json({
+      receiptId,
+      suggestions,
+      detectionCriteria: {
+        vendorName: receiptData.vendor_name,
+        amount: receiptData.total_amount,
+        category: receiptData.category_id,
+        urgency: context.urgency,
+        userRole: req.user.role
+      },
+      detectionMetadata: {
+        totalMethodsEvaluated: await paymentMethodService.getAvailablePaymentMethods(
+          req.user.organization_id || req.user.id
+        ).then(methods => methods.length),
+        detectedAt: new Date(),
+        detectionVersion: '2.0'
+      }
+    });
+  } catch (error) {
+    console.error('Enhanced payment method detection error:', error);
+    res.status(500).json({
+      error: 'Failed to detect payment method',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/:id/approval-history
+ * Get detailed approval history for an expense
+ */
+router.get('/:id/approval-history', authenticateToken, async (req, res) => {
+  try {
+    const expenseId = req.params.id;
+
+    // Verify user has access to this expense
+    const expense = await db('expense_data')
+      .where('id', expenseId)
+      .where(function() {
+        this.where('user_id', req.user.id)
+            .orWhere('organization_id', req.user.organization_id || req.user.id);
+      })
+      .first();
+
+    if (!expense) {
+      return res.status(404).json({
+        error: 'Expense not found or access denied'
+      });
+    }
+
+    const approvalHistory = await approvalWorkflowService.getApprovalHistory(expenseId);
+
+    // Format the history for frontend consumption
+    const formattedHistory = approvalHistory.map(approval => ({
+      id: approval.id,
+      stage: {
+        number: approval.stage_number,
+        totalStages: approval.total_stages,
+        name: approval.stage_number === 1 ? 'Manager Approval' : 
+              approval.stage_number === 2 ? 'Finance Review' : 
+              approval.stage_number === 3 ? 'Executive Approval' : 
+              `Stage ${approval.stage_number}`,
+        status: approval.stage_status,
+        startedAt: approval.stage_started_at,
+        deadline: approval.stage_deadline,
+        completedAt: approval.approved_at || approval.rejected_at
+      },
+      approver: approval.approver_first_name ? {
+        id: approval.approver_id,
+        name: `${approval.approver_first_name} ${approval.approver_last_name}`,
+        email: approval.approver_email
+      } : null,
+      decision: {
+        status: approval.stage_status,
+        notes: approval.approval_notes,
+        approvedAmount: approval.approved_amount,
+        rejectionReason: approval.rejection_reason,
+        decidedAt: approval.approved_at || approval.rejected_at
+      },
+      delegation: approval.delegated_to ? {
+        delegatedTo: {
+          name: `${approval.delegated_to_first_name} ${approval.delegated_to_last_name}`
+        },
+        delegatedBy: {
+          name: `${approval.delegated_by_first_name} ${approval.delegated_by_last_name}`
+        },
+        reason: approval.delegation_reason,
+        delegatedAt: approval.delegated_at
+      } : null,
+      escalation: approval.escalated_to ? {
+        escalatedAt: approval.escalated_at,
+        reason: approval.escalation_reason
+      } : null,
+      metadata: {
+        riskLevel: approval.risk_level,
+        requiresAdditionalReview: approval.requires_additional_review,
+        notificationCount: approval.notification_count,
+        lastNotificationSent: approval.last_notification_sent
+      }
+    }));
+
+    // Calculate workflow summary
+    const workflowSummary = {
+      currentStage: Math.max(...approvalHistory.map(a => a.stage_number)),
+      totalStages: approvalHistory.length > 0 ? approvalHistory[0].total_stages : 0,
+      isComplete: approvalHistory.some(a => a.stage_status === 'approved' && 
+                                           a.stage_number >= (approvalHistory[0]?.total_stages || 0)),
+      isRejected: approvalHistory.some(a => a.stage_status === 'rejected'),
+      totalDuration: approvalHistory.length > 0 ? 
+        Math.floor((new Date() - new Date(approvalHistory[0].stage_started_at)) / (1000 * 60 * 60 * 24)) : 0,
+      pendingWith: approvalHistory
+        .filter(a => a.stage_status === 'pending')
+        .map(a => JSON.parse(a.required_approvers || '[]'))
+        .flat()
+    };
+
+    res.json({
+      expenseId,
+      approvalHistory: formattedHistory,
+      workflowSummary,
+      expense: {
+        id: expense.id,
+        vendor: expense.vendor_name,
+        amount: expense.total_amount,
+        paymentStatus: expense.payment_status,
+        submittedAt: expense.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Get approval history error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve approval history'
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/create
+ * Create a new expense with enhanced workflow support
+ */
+router.post('/create', authenticateToken, async (req, res) => {
+  try {
+    const {
+      receiptId,
+      paymentMethodId,
+      amount,
+      vendorName,
+      transactionDate,
+      categoryId,
+      description,
+      businessPurpose,
+      projectCode,
+      purchaseOrderId,
+      creditCardId,
+      expenseUrgency = 'normal',
+      urgencyJustification
+    } = req.body;
+
+    // Validate required fields
+    if (!receiptId || !paymentMethodId || !amount || !vendorName || !transactionDate) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        required: ['receiptId', 'paymentMethodId', 'amount', 'vendorName', 'transactionDate']
+      });
+    }
+
     const organizationId = req.user.organization_id || req.user.id;
 
-    // Get available payment methods for the organization
-    const paymentMethods = await db('payment_methods')
-      .where('organization_id', organizationId)
-      .where('is_active', true)
-      .select('*');
-
-    // Get receipt details for context
+    // Validate receipt exists and belongs to user
     const receipt = await db('expense_receipts')
       .where('id', receiptId)
       .where('user_id', req.user.id)
@@ -1666,91 +2016,281 @@ router.get('/payment-methods/detect', authenticateToken, async (req, res) => {
       });
     }
 
-    // Simple rule-based detection logic
-    const suggestions = [];
-
-    for (const method of paymentMethods) {
-      let score = 0;
-      let reasons = [];
-
-      // Check amount-based rules
-      if (method.auto_approval_limit && amount && parseFloat(amount) <= method.auto_approval_limit) {
-        score += 20;
-        reasons.push(`Amount $${amount} is within auto-approval limit`);
-      }
-
-      // Check category restrictions
-      if (method.allowed_categories) {
-        const allowedCategories = JSON.parse(method.allowed_categories);
-        if (allowedCategories.length === 0 || (category && allowedCategories.includes(category))) {
-          score += 15;
-          reasons.push('Category matches allowed categories');
-        }
-      } else {
-        score += 10; // No restrictions
-      }
-
-      // Check user restrictions
-      if (method.user_restrictions) {
-        const userRestrictions = JSON.parse(method.user_restrictions);
-        const allowedUsers = userRestrictions.allowedUsers || [];
-        const allowedRoles = userRestrictions.allowedRoles || [];
-        
-        if (allowedUsers.length === 0 && allowedRoles.length === 0) {
-          score += 10; // No user restrictions
-        } else if (allowedUsers.includes(req.user.id) || allowedRoles.includes(req.user.role)) {
-          score += 15;
-          reasons.push('User is authorized for this payment method');
-        }
-      } else {
-        score += 10;
-      }
-
-      // Prefer reimbursement for receipts unless specific payment method is needed
-      if (method.type === 'person_reimbursement') {
-        score += 5;
-        reasons.push('Default reimbursement method');
-      }
-
-      // Prefer emergency card for urgent expenses
-      if (method.type === 'credit_card' && vendorName && vendorName.toLowerCase().includes('emergency')) {
-        score += 25;
-        reasons.push('Emergency vendor detected');
-      }
-
-      if (score > 0) {
-        suggestions.push({
-          paymentMethod: {
-            id: method.id,
-            name: method.name,
-            type: method.type,
-            requiresApproval: method.requires_approval,
-            autoApprovalLimit: method.auto_approval_limit
-          },
-          score,
-          reasons,
-          confidence: Math.min(score / 50, 1) // Normalize to 0-1
-        });
-      }
+    // Get payment method and validate
+    const paymentMethod = await paymentMethodService.getPaymentMethodById(paymentMethodId, organizationId);
+    if (!paymentMethod) {
+      return res.status(404).json({
+        error: 'Payment method not found'
+      });
     }
 
-    // Sort by score descending
-    suggestions.sort((a, b) => b.score - a.score);
+    // Create expense data
+    const expenseData = {
+      receipt_id: receiptId,
+      user_id: req.user.id,
+      organization_id: organizationId,
+      vendor_name: vendorName,
+      total_amount: parseFloat(amount),
+      transaction_date: new Date(transactionDate),
+      category_id: categoryId,
+      description: description,
+      business_purpose: businessPurpose,
+      project_code: projectCode,
+      payment_method_id: paymentMethodId,
+      payment_method_type: paymentMethod.type,
+      purchase_order_id: purchaseOrderId,
+      credit_card_id: creditCardId,
+      expense_urgency: expenseUrgency,
+      urgency_justification: urgencyJustification,
+      payment_status: 'pending', // Will be updated by workflow
+      extraction_confidence: 1.0 // Manual entry has high confidence
+    };
 
-    res.json({
-      receiptId,
-      suggestions: suggestions.slice(0, 3), // Top 3 suggestions
-      detectionCriteria: {
-        vendorName,
-        amount: amount ? parseFloat(amount) : null,
-        category,
-        userRole: req.user.role
+    // Validate payment method selection
+    const validation = await paymentMethodService.validatePaymentMethodSelection(
+      paymentMethodId,
+      expenseData,
+      req.user
+    );
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Payment method validation failed',
+        details: validation.errors,
+        warnings: validation.warnings
+      });
+    }
+
+    // Create expense in transaction
+    let createdExpense;
+    let approvalRecords = [];
+
+    await db.transaction(async (trx) => {
+      // Insert expense data
+      [createdExpense] = await trx('expense_data')
+        .insert(expenseData)
+        .returning('*');
+
+      // Determine and create approval workflow
+      const workflow = await approvalWorkflowService.determineWorkflow(
+        createdExpense,
+        paymentMethod,
+        req.user
+      );
+
+      console.log(`Determined workflow: ${workflow.workflowName} with ${workflow.totalStages} stages`);
+
+      approvalRecords = await approvalWorkflowService.createApprovalWorkflow(
+        createdExpense.id,
+        workflow,
+        req.user
+      );
+
+      // Update expense status based on workflow result
+      if (workflow.autoApproved) {
+        await trx('expense_data')
+          .where('id', createdExpense.id)
+          .update({ payment_status: 'approved' });
+      }
+    });
+
+    // Clear user cache
+    clearUserCache(req.user.id);
+
+    res.status(201).json({
+      message: 'Expense created successfully',
+      expense: {
+        id: createdExpense.id,
+        receiptId: createdExpense.receipt_id,
+        amount: createdExpense.total_amount,
+        vendor: createdExpense.vendor_name,
+        paymentStatus: createdExpense.payment_status,
+        paymentMethod: {
+          id: paymentMethod.id,
+          name: paymentMethod.name,
+          type: paymentMethod.type
+        }
+      },
+      workflow: {
+        totalStages: approvalRecords.length,
+        currentStage: approvalRecords.length > 0 ? 1 : 0,
+        autoApproved: approvalRecords.length === 0 || 
+                     (approvalRecords.length === 1 && approvalRecords[0].stage_status === 'approved'),
+        nextApprovers: approvalRecords.length > 0 && approvalRecords[0].stage_status === 'pending' ?
+          JSON.parse(approvalRecords[0].required_approvers || '[]') : []
+      },
+      validation: {
+        warnings: validation.warnings
       }
     });
   } catch (error) {
-    console.error('Payment method detection error:', error);
+    console.error('Enhanced expense creation error:', error);
     res.status(500).json({
-      error: 'Failed to detect payment method'
+      error: 'Failed to create expense',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/:id/submit-for-approval
+ * Submit expense for approval workflow
+ */
+router.post('/:id/submit-for-approval', authenticateToken, async (req, res) => {
+  try {
+    const expenseId = req.params.id;
+    const { notes, urgency = 'normal' } = req.body;
+
+    // Get expense data
+    const expenseData = await db('expense_data')
+      .where('id', expenseId)
+      .where('user_id', req.user.id)
+      .first();
+
+    if (!expenseData) {
+      return res.status(404).json({
+        error: 'Expense not found'
+      });
+    }
+
+    if (expenseData.payment_status !== 'draft' && expenseData.payment_status !== 'pending') {
+      return res.status(400).json({
+        error: 'Expense is not in a state that can be submitted for approval',
+        currentStatus: expenseData.payment_status
+      });
+    }
+
+    // Get payment method
+    const paymentMethod = await paymentMethodService.getPaymentMethodById(
+      expenseData.payment_method_id,
+      req.user.organization_id || req.user.id
+    );
+
+    if (!paymentMethod) {
+      return res.status(400).json({
+        error: 'Payment method not found'
+      });
+    }
+
+    // Update expense with submission notes
+    await db('expense_data')
+      .where('id', expenseId)
+      .update({
+        submission_notes: notes,
+        expense_urgency: urgency,
+        payment_status: 'pending',
+        updated_at: new Date()
+      });
+
+    // Get updated expense data
+    const updatedExpenseData = await db('expense_data')
+      .where('id', expenseId)
+      .first();
+
+    // Create approval workflow
+    const workflow = await approvalWorkflowService.determineWorkflow(
+      updatedExpenseData,
+      paymentMethod,
+      req.user
+    );
+
+    const approvalRecords = await approvalWorkflowService.createApprovalWorkflow(
+      expenseId,
+      workflow,
+      req.user
+    );
+
+    res.json({
+      message: 'Expense submitted for approval',
+      expense: {
+        id: expenseId,
+        paymentStatus: updatedExpenseData.payment_status
+      },
+      workflow: {
+        workflowName: workflow.workflowName,
+        totalStages: workflow.totalStages,
+        autoApproved: workflow.autoApproved || false,
+        nextApprovers: approvalRecords.length > 0 && approvalRecords[0].stage_status === 'pending' ?
+          JSON.parse(approvalRecords[0].required_approvers || '[]') : []
+      }
+    });
+  } catch (error) {
+    console.error('Submit for approval error:', error);
+    res.status(500).json({
+      error: 'Failed to submit expense for approval'
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/pending-approval
+ * Get expenses pending user's approval
+ */
+router.get('/pending-approval', authenticateToken, async (req, res) => {
+  try {
+    const { urgent, page = 1, limit = 20 } = req.query;
+    
+    const filters = {
+      organizationId: req.user.organization_id || req.user.id,
+      urgent: urgent === 'true'
+    };
+
+    const pendingApprovals = await approvalWorkflowService.getPendingApprovalsForUser(
+      req.user.id,
+      filters
+    );
+
+    // Apply pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedApprovals = pendingApprovals.slice(offset, offset + parseInt(limit));
+
+    // Format response
+    const formattedApprovals = paginatedApprovals.map(approval => ({
+      id: approval.id,
+      expenseId: approval.expense_data_id,
+      submitter: {
+        name: `${approval.submitter_first_name} ${approval.submitter_last_name}`,
+        email: approval.submitter_email
+      },
+      expense: {
+        vendor: approval.vendor_name,
+        amount: approval.total_amount,
+        description: approval.description,
+        transactionDate: approval.transaction_date,
+        filename: approval.original_filename
+      },
+      approval: {
+        stageName: approval.stage_status === 'pending' ? `Stage ${approval.stage_number}` : approval.stage_status,
+        stageNumber: approval.stage_number,
+        totalStages: approval.total_stages,
+        deadline: approval.stage_deadline,
+        urgency: approval.risk_level,
+        isDelegated: !!approval.delegated_to,
+        delegatedFrom: approval.delegated_by ? {
+          id: approval.delegated_by,
+          reason: approval.delegation_reason
+        } : null
+      }
+    }));
+
+    res.json({
+      approvals: formattedApprovals,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: pendingApprovals.length,
+        totalPages: Math.ceil(pendingApprovals.length / parseInt(limit))
+      },
+      summary: {
+        totalPending: pendingApprovals.length,
+        urgent: pendingApprovals.filter(a => a.stage_deadline < new Date(Date.now() + 24 * 60 * 60 * 1000)).length,
+        overdue: pendingApprovals.filter(a => a.stage_deadline < new Date()).length
+      }
+    });
+  } catch (error) {
+    console.error('Get pending approvals error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve pending approvals'
     });
   }
 });
