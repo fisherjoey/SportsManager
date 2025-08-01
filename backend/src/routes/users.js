@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { ResponseFormatter, asyncHandler } = require('../utils/response-formatters');
-const { UserSchemas, IdParamSchema } = require('../utils/validation-schemas');
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
+const { UserSchemas, IdParamSchema, FilterSchemas } = require('../utils/validation-schemas');
+const { ErrorFactory } = require('../utils/errors');
 const UserService = require('../services/UserService');
 
 // Initialize UserService with database connection
@@ -13,7 +16,7 @@ const userService = new UserService(db);
  * GET /api/users
  * Get all users (for admin dropdown selections)
  */
-router.get('/', authenticateToken, requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/', authenticateToken, requireRole('admin'), validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
   const { role, page = 1, limit = 50 } = req.query;
   
   let users;
@@ -40,25 +43,19 @@ router.get('/', authenticateToken, requireRole('admin'), asyncHandler(async (req
   }
 
   // Maintain backward compatibility with existing API consumers
-  ResponseFormatter.sendSuccess(res, { users }, 'Users retrieved successfully');
+  return ResponseFormatter.sendSuccess(res, { users }, 'Users retrieved successfully');
 }));
 
 /**
  * GET /api/users/:id
  * Get a specific user
  */
-router.get('/:id', authenticateToken, asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate(req.params);
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
-
+router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const userId = req.params.id;
   
   // Users can only view their own profile unless they're admin
   if (req.user.role !== 'admin' && req.user.id !== userId) {
-    return ResponseFormatter.sendForbidden(res, 'Not authorized to view this user');
+    throw ErrorFactory.forbidden('Not authorized to view this user');
   }
 
   const user = await userService.findById(userId, {
@@ -66,7 +63,7 @@ router.get('/:id', authenticateToken, asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    return ResponseFormatter.sendNotFound(res, 'User', userId);
+    throw ErrorFactory.notFound('User', userId);
   }
 
   // For referees, get additional details if admin is requesting
@@ -78,7 +75,7 @@ router.get('/:id', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Maintain backward compatibility with existing API consumers
-  ResponseFormatter.sendSuccess(res, { user }, 'User retrieved successfully');
+  return ResponseFormatter.sendSuccess(res, { user }, 'User retrieved successfully');
 }));
 
 module.exports = router;

@@ -3,8 +3,11 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { ResponseFormatter, asyncHandler } = require('../utils/response-formatters');
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
 const { UserSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
+const { ErrorFactory } = require('../utils/errors');
 const UserService = require('../services/UserService');
 
 // Initialize UserService with database connection
@@ -13,14 +16,8 @@ const userService = new UserService(db);
 // Validation schemas are now centralized in validation-schemas.js
 
 // GET /api/referees - Get all referees with optional filters
-router.get('/', asyncHandler(async (req, res) => {
-  // Validate query parameters
-  const { error: queryError, value: validatedQuery } = FilterSchemas.referees.validate(req.query);
-  if (queryError) {
-    return ResponseFormatter.sendValidationError(res, queryError.details);
-  }
-
-  const { level, postal_code, is_available, page, limit, search, white_whistle } = validatedQuery;
+router.get('/', validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
+  const { level, postal_code, is_available, page, limit, search, white_whistle } = req.query;
   
   // Build filters for UserService
   const filters = {};
@@ -66,7 +63,7 @@ router.get('/', asyncHandler(async (req, res) => {
   }
 
   // Maintain backward compatibility with existing API consumers
-  ResponseFormatter.sendSuccess(res, {
+  return ResponseFormatter.sendSuccess(res, {
     data: referees,
     pagination: {
       page: result.pagination.page,
@@ -78,13 +75,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /api/referees/:id - Get specific referee
-router.get('/:id', asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate(req.params);
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
-
+router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
   
   // Use UserService to get referee with complete details
@@ -93,7 +84,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   });
 
   if (!referee || referee.role !== 'referee') {
-    return ResponseFormatter.sendNotFound(res, 'Referee', refereeId);
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
 
   // Maintain backward compatibility - rename assignments field
@@ -102,24 +93,18 @@ router.get('/:id', asyncHandler(async (req, res) => {
     delete referee.recent_assignments;
   }
 
-  ResponseFormatter.sendSuccess(res, referee, 'Referee details retrieved successfully');
+  return ResponseFormatter.sendSuccess(res, referee, 'Referee details retrieved successfully');
 }));
 
 // POST /api/referees - Create new referee
-router.post('/', authenticateToken, requireRole('admin'), asyncHandler(async (req, res) => {
-  // Validate request body using updated schema
-  const { error, value } = UserSchemas.create.validate(req.body);
-  if (error) {
-    return ResponseFormatter.sendValidationError(res, error.details);
-  }
-
+router.post('/', authenticateToken, requireRole('admin'), validateBody(UserSchemas.create), enhancedAsyncHandler(async (req, res) => {
   // Ensure role is set to referee
-  value.role = 'referee';
+  const value = { ...req.body, role: 'referee' };
   
   // Use UserService to create referee with proper defaults
   const referee = await userService.createReferee(value);
 
-  ResponseFormatter.sendCreated(
+  return ResponseFormatter.sendCreated(
     res, 
     referee, 
     'Referee created successfully',
@@ -128,13 +113,7 @@ router.post('/', authenticateToken, requireRole('admin'), asyncHandler(async (re
 }));
 
 // PUT /api/referees/:id - Update referee (admin can update wage, referees cannot)
-router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate(req.params);
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
-
+router.put('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
   
   // Check if user is admin or updating their own profile
@@ -142,14 +121,14 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
   const isOwnProfile = req.user.referee_id === refereeId || req.user.id === refereeId;
   
   if (!isAdmin && !isOwnProfile) {
-    return ResponseFormatter.sendForbidden(res, 'Can only update your own profile');
+    throw ErrorFactory.forbidden('Can only update your own profile');
   }
   
   // Use appropriate schema based on user role
   const schema = isAdmin ? UserSchemas.adminUpdate : UserSchemas.update;
   const { error, value } = schema.validate(req.body);
   if (error) {
-    return ResponseFormatter.sendValidationError(res, error.details);
+    throw ErrorFactory.fromJoiError(error);
   }
 
   // Check if email already exists for another user
@@ -158,108 +137,92 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
     const existingUser = existingUsers.find(user => user.id !== refereeId);
     
     if (existingUser) {
-      return ResponseFormatter.sendConflict(res, 'Email already exists', { email: value.email });
+      throw ErrorFactory.conflict('Email already exists', { email: value.email });
     }
   }
 
   // Verify referee exists before update
   const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
   if (!existingReferee || existingReferee.role !== 'referee') {
-    return ResponseFormatter.sendNotFound(res, 'Referee', refereeId);
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
 
   // Use UserService to update referee
   const updatedReferee = await userService.update(refereeId, value);
 
-  ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee updated successfully');
+  return ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee updated successfully');
 }));
 
 // PATCH /api/referees/:id/availability - Update referee availability
-router.patch('/:id/availability', asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate(req.params);
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
+router.patch('/:id/availability', 
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    is_available: Joi.boolean().required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { is_available } = req.body;
+    const refereeId = req.params.id;
+    
+    // Use UserService to update availability
+    const updatedReferee = await userService.updateAvailability(refereeId, is_available);
 
-  const { is_available } = req.body;
-  
-  if (typeof is_available !== 'boolean') {
-    return ResponseFormatter.sendValidationError(res, [
-      { field: 'is_available', message: 'is_available must be a boolean' }
-    ]);
-  }
-
-  const refereeId = req.params.id;
-  
-  // Use UserService to update availability
-  const updatedReferee = await userService.updateAvailability(refereeId, is_available);
-
-  ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee availability updated successfully');
-}));
+    return ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee availability updated successfully');
+  })
+);
 
 // GET /api/referees/available/:gameId - Get available referees for a specific game
-router.get('/available/:gameId', asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate({ id: req.params.gameId });
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
-
-  const gameId = req.params.gameId;
-  
-  // First verify the game exists
-  const game = await db('games').where('id', gameId).first();
-  if (!game) {
-    return ResponseFormatter.sendNotFound(res, 'Game', gameId);
-  }
-
-  // Use UserService to find available referees for the specific game date/time
-  const availableReferees = await userService.findAvailableReferees(
-    game.game_date,
-    game.game_time,
-    {
-      level: game.level,
-      location: game.location
+router.get('/available/:gameId', 
+  validateParams(IdParamSchema.keys({ gameId: Joi.string().uuid().required() })),
+  enhancedAsyncHandler(async (req, res) => {
+    const gameId = req.params.gameId;
+    
+    // First verify the game exists
+    const game = await db('games').where('id', gameId).first();
+    if (!game) {
+      throw ErrorFactory.notFound('Game', gameId);
     }
-  );
 
-  // Filter out referees already assigned to this specific game
-  const assignedRefereeIds = await db('game_assignments')
-    .where('game_id', gameId)
-    .pluck('user_id');
+    // Use UserService to find available referees for the specific game date/time
+    const availableReferees = await userService.findAvailableReferees(
+      game.game_date,
+      game.game_time,
+      {
+        level: game.level,
+        location: game.location
+      }
+    );
 
-  const filteredReferees = availableReferees.filter(
-    referee => !assignedRefereeIds.includes(referee.id)
-  );
+    // Filter out referees already assigned to this specific game
+    const assignedRefereeIds = await db('game_assignments')
+      .where('game_id', gameId)
+      .pluck('user_id');
 
-  ResponseFormatter.sendSuccess(res, filteredReferees, 'Available referees retrieved successfully');
-}));
+    const filteredReferees = availableReferees.filter(
+      referee => !assignedRefereeIds.includes(referee.id)
+    );
+
+    return ResponseFormatter.sendSuccess(res, filteredReferees, 'Available referees retrieved successfully');
+  })
+);
 
 // DELETE /api/referees/:id - Delete referee
-router.delete('/:id', authenticateToken, requireRole('admin'), asyncHandler(async (req, res) => {
-  // Validate request parameters
-  const { error: paramError } = IdParamSchema.validate(req.params);
-  if (paramError) {
-    return ResponseFormatter.sendValidationError(res, paramError.details);
-  }
-
+router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
   
   // Verify referee exists before deletion
   const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
   if (!existingReferee || existingReferee.role !== 'referee') {
-    return ResponseFormatter.sendNotFound(res, 'Referee', refereeId);
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
 
   // Use UserService to delete referee
   const deleted = await userService.delete(refereeId);
   
   if (!deleted) {
-    return ResponseFormatter.sendNotFound(res, 'Referee', refereeId);
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
 
-  ResponseFormatter.sendSuccess(res, null, 'Referee deleted successfully');
+  return ResponseFormatter.sendSuccess(res, null, 'Referee deleted successfully');
 }));
 
 module.exports = router;

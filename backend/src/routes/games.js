@@ -4,7 +4,11 @@ const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { validateQuery, validateIdParam } = require('../middleware/sanitization');
-const { asyncHandler, withDatabaseError } = require('../middleware/errorHandling');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery: validateQuerySchema } = require('../middleware/validation');
+const { ErrorFactory } = require('../utils/errors');
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { IdParamSchema } = require('../utils/validation-schemas');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 const { checkGameSchedulingConflicts } = require('../services/conflictDetectionService');
 const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
@@ -259,19 +263,15 @@ router.get('/:id', authenticateToken, validateIdParam, asyncHandler(async (req, 
   );
   
   if (!cachedGame) {
-    return res.status(404).json({ error: 'Game not found' });
+    throw ErrorFactory.notFound('Game', req.params.id);
   }
   
   res.json(cachedGame);
 }));
 
 // POST /api/games - Create new game
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { error, value } = gameSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+router.post('/', authenticateToken, requireRole('admin'), validateBody(gameSchema), enhancedAsyncHandler(async (req, res) => {
+  const value = req.body;
 
     // Check for venue scheduling conflicts
     const conflictCheck = await checkGameSchedulingConflicts({
@@ -338,20 +338,12 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       response.conflicts = conflictCheck.conflicts;
     }
     
-    res.status(201).json(response);
-  } catch (error) {
-    console.error('Error creating game:', error);
-    res.status(500).json({ error: 'Failed to create game' });
-  }
-});
+    return ResponseFormatter.sendCreated(res, transformedGame, 'Game created successfully', `/api/games/${game.id}`);
+}));
 
 // PUT /api/games/:id - Update game
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { error, value } = gameUpdateSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), validateBody(gameUpdateSchema), enhancedAsyncHandler(async (req, res) => {
+  const value = req.body;
 
     // Check for venue scheduling conflicts if location, date, or time is being updated
     let conflictCheck = { hasConflicts: false };
