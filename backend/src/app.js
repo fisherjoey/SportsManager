@@ -9,6 +9,9 @@ const { auditMiddleware } = require('./middleware/auditTrail');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
 const { apiLimiter } = require('./middleware/rateLimiting');
 
+// Import performance monitoring middleware
+const { performanceMonitor } = require('./middleware/performanceMonitor');
+
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const gameRoutes = require('./routes/games');
@@ -38,6 +41,7 @@ const financialTransactionRoutes = require('./routes/financial-transactions');
 const financialApprovalRoutes = require('./routes/financial-approvals');
 const accountingIntegrationRoutes = require('./routes/accounting-integration');
 const financialReportRoutes = require('./routes/financial-reports');
+const performanceRoutes = require('./routes/performance');
 
 // Import organizational management routes
 const employeeRoutes = require('./routes/employees');
@@ -67,6 +71,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // app.use(sanitizeAll); // TEMPORARILY DISABLED
 
 // Request processing middleware
+app.use(performanceMonitor({
+  slowThreshold: 1000,    // Log requests slower than 1 second
+  logSlowRequests: true,
+  trackQueryCount: false, // Disable query tracking for now
+  maxSlowQueries: 100
+}));
 
 // Audit trail for API requests (exclude health checks and static files)
 // app.use(auditMiddleware({ // TEMPORARILY DISABLED
@@ -119,6 +129,9 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/analytics/organizational', organizationalAnalyticsRoutes);
 app.use('/api/workflows', workflowRoutes);
+
+// Performance monitoring routes (admin only)
+app.use('/api/performance', performanceRoutes);
 
 // Health check endpoints (no authentication required)
 app.use('/health', healthRoutes);

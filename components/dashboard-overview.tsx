@@ -13,6 +13,7 @@ import { EmptyState, NoGamesEmptyState } from "@/components/ui/empty-state"
 import { StatusBadge, LevelBadge, GameTypeBadge, AssignmentStatusBadge, CountBadge } from "@/components/ui/specialized-badges"
 import { apiClient, type Assignment, type Referee } from "@/lib/api"
 import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+import { AnnouncementBoard } from "@/components/announcement-board"
 
 // Enhanced interfaces with proper typing
 interface EnhancedGame {
@@ -608,6 +609,11 @@ export function DashboardOverview() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Announcements Section */}
+      <div className="mt-8">
+        <AnnouncementBoard />
       </div>
     </PageLayout>
   )

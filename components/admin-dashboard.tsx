@@ -15,6 +15,7 @@ import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
 import OrganizationSettings from "@/components/organization-settings"
 import { PostsManagement } from "@/components/posts-management"
+import { CommunicationsManagement } from "@/components/communications-management"
 import { AIAssignmentsEnterprise } from "@/components/ai-assignments-enterprise"
 import { FinancialDashboard } from "@/components/financial-dashboard"
 import { ReceiptUpload } from "@/components/receipt-upload"
@@ -56,6 +57,8 @@ export function AdminDashboard() {
         return "Referees"
       case "calendar":
         return "Calendar"
+      case "communications":
+        return "Communications"
       case "posts":
         return "Posts"
       
@@ -132,6 +135,8 @@ export function AdminDashboard() {
             setActiveView("games")
           }} 
         />
+      case "communications":
+        return <CommunicationsManagement />
       case "posts":
         return <PostsManagement />
       

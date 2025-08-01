@@ -48,7 +48,12 @@ const uploadSchema = Joi.object({
   description: Joi.string().max(500).allow('').optional(),
   businessPurpose: Joi.string().max(200).allow('').optional(),
   projectCode: Joi.string().max(50).allow('').optional(),
-  department: Joi.string().max(100).allow('').optional()
+  department: Joi.string().max(100).allow('').optional(),
+  paymentMethodId: Joi.string().uuid().optional(),
+  purchaseOrderId: Joi.string().uuid().optional(),
+  creditCardId: Joi.string().uuid().optional(),
+  expenseUrgency: Joi.string().valid('low', 'normal', 'high', 'urgent').default('normal'),
+  urgencyJustification: Joi.string().max(1000).optional()
 });
 
 const querySchema = Joi.object({
@@ -74,7 +79,34 @@ const approvalSchema = Joi.object({
   requiredInformation: Joi.array().items(Joi.string()).when('status', {
     is: 'requires_information',
     then: Joi.required()
-  })
+  }),
+  paymentDueDate: Joi.date().optional(),
+  paymentReference: Joi.string().max(100).optional()
+});
+
+const bulkExpenseSchema = Joi.object({
+  paymentMethodId: Joi.string().uuid().required(),
+  expenses: Joi.array().items(Joi.object({
+    receiptId: Joi.string().uuid().required(),
+    amount: Joi.number().min(0).required(),
+    vendorName: Joi.string().max(200).required(),
+    transactionDate: Joi.date().required(),
+    categoryId: Joi.string().uuid().optional(),
+    description: Joi.string().max(500).optional(),
+    businessPurpose: Joi.string().max(200).optional(),
+    projectCode: Joi.string().max(50).optional(),
+    creditCardTransactionId: Joi.string().max(100).optional(),
+    vendorInvoiceNumber: Joi.string().max(100).optional()
+  })).min(1).max(100)
+});
+
+const paymentMethodSelectionSchema = Joi.object({
+  paymentMethodId: Joi.string().uuid().required(),
+  purchaseOrderId: Joi.string().uuid().optional(),
+  creditCardId: Joi.string().uuid().optional(),
+  expenseUrgency: Joi.string().valid('low', 'normal', 'high', 'urgent').default('normal'),
+  urgencyJustification: Joi.string().max(1000).optional(),
+  vendorPaymentDetails: Joi.object().optional()
 });
 
 /**
@@ -182,7 +214,12 @@ router.post('/receipts/upload',
             description: value.description || null,
             business_purpose: value.businessPurpose || null,
             project_code: value.projectCode || null,
-            department: value.department || null
+            department: value.department || null,
+            payment_method_id: value.paymentMethodId || null,
+            purchase_order_id: value.purchaseOrderId || null,
+            credit_card_id: value.creditCardId || null,
+            expense_urgency: value.expenseUrgency || 'normal',
+            urgency_justification: value.urgencyJustification || null
           })
         }).returning('*');
       } catch (dbError) {
@@ -1355,6 +1392,418 @@ router.get('/users/:userId/earnings', authenticateToken, async (req, res) => {
     console.error('Error fetching user earnings:', error);
     res.status(500).json({
       error: 'Failed to fetch user earnings'
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/bulk-create
+ * Create multiple expenses from credit card statement or bulk import
+ */
+router.post('/bulk-create', authenticateToken, async (req, res) => {
+  try {
+    const { error, value } = bulkExpenseSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: error.details[0].message
+      });
+    }
+
+    const organizationId = req.user.organization_id || req.user.id;
+
+    // Validate payment method exists and user has access
+    const paymentMethod = await db('payment_methods')
+      .where('id', value.paymentMethodId)
+      .where('organization_id', organizationId)
+      .first();
+
+    if (!paymentMethod) {
+      return res.status(404).json({
+        error: 'Payment method not found'
+      });
+    }
+
+    // Process expenses in a transaction
+    const createdExpenses = await db.transaction(async (trx) => {
+      const results = [];
+
+      for (const expense of value.expenses) {
+        // Validate receipt exists and belongs to user
+        const receipt = await trx('expense_receipts')
+          .where('id', expense.receiptId)
+          .where('user_id', req.user.id)
+          .first();
+
+        if (!receipt) {
+          throw new Error(`Receipt ${expense.receiptId} not found`);
+        }
+
+        // Create expense data
+        const [expenseData] = await trx('expense_data')
+          .insert({
+            receipt_id: expense.receiptId,
+            user_id: req.user.id,
+            organization_id: organizationId,
+            vendor_name: expense.vendorName,
+            total_amount: expense.amount,
+            transaction_date: expense.transactionDate,
+            category_id: expense.categoryId,
+            description: expense.description,
+            business_purpose: expense.businessPurpose,
+            project_code: expense.projectCode,
+            payment_method_id: value.paymentMethodId,
+            payment_method_type: paymentMethod.type,
+            payment_status: paymentMethod.requires_approval ? 'pending' : 'approved',
+            credit_card_transaction_id: expense.creditCardTransactionId,
+            vendor_invoice_number: expense.vendorInvoiceNumber,
+            extraction_confidence: 1.0 // High confidence for bulk imports
+          })
+          .returning('*');
+
+        results.push({
+          receiptId: expense.receiptId,
+          expenseDataId: expenseData.id,
+          amount: expenseData.total_amount,
+          vendor: expenseData.vendor_name,
+          status: expenseData.payment_status
+        });
+      }
+
+      return results;
+    });
+
+    res.status(201).json({
+      message: `Successfully created ${createdExpenses.length} expenses`,
+      expenses: createdExpenses,
+      paymentMethod: {
+        id: paymentMethod.id,
+        name: paymentMethod.name,
+        type: paymentMethod.type
+      }
+    });
+  } catch (error) {
+    console.error('Bulk expense creation error:', error);
+    res.status(500).json({
+      error: 'Failed to create bulk expenses',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/receipts/:id/select-payment-method
+ * Select payment method for an existing expense
+ */
+router.post('/receipts/:id/select-payment-method', authenticateToken, async (req, res) => {
+  try {
+    const receiptId = req.params.id;
+    const { error, value } = paymentMethodSelectionSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: error.details[0].message
+      });
+    }
+
+    const organizationId = req.user.organization_id || req.user.id;
+
+    // Validate receipt exists and belongs to user
+    const receipt = await db('expense_receipts')
+      .where('id', receiptId)
+      .where('user_id', req.user.id)
+      .first();
+
+    if (!receipt) {
+      return res.status(404).json({
+        error: 'Receipt not found'
+      });
+    }
+
+    // Validate payment method exists and user has access
+    const paymentMethod = await db('payment_methods')
+      .where('id', value.paymentMethodId)
+      .where('organization_id', organizationId)
+      .first();
+
+    if (!paymentMethod) {
+      return res.status(404).json({
+        error: 'Payment method not found'
+      });
+    }
+
+    // Check if expense data already exists
+    let expenseData = await db('expense_data')
+      .where('receipt_id', receiptId)
+      .first();
+
+    if (expenseData) {
+      // Update existing expense data with payment method
+      await db('expense_data')
+        .where('id', expenseData.id)
+        .update({
+          payment_method_id: value.paymentMethodId,
+          payment_method_type: paymentMethod.type,
+          purchase_order_id: value.purchaseOrderId,
+          credit_card_id: value.creditCardId,
+          expense_urgency: value.expenseUrgency,
+          urgency_justification: value.urgencyJustification,
+          vendor_payment_details: value.vendorPaymentDetails ? JSON.stringify(value.vendorPaymentDetails) : null,
+          payment_status: paymentMethod.requires_approval ? 'pending' : 'approved',
+          updated_at: new Date()
+        });
+    } else {
+      return res.status(400).json({
+        error: 'Expense data not found. Receipt may not be processed yet.'
+      });
+    }
+
+    // Validate additional relationships if provided
+    if (value.purchaseOrderId) {
+      const purchaseOrder = await db('purchase_orders')
+        .where('id', value.purchaseOrderId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!purchaseOrder) {
+        return res.status(400).json({
+          error: 'Purchase order not found'
+        });
+      }
+    }
+
+    if (value.creditCardId) {
+      const creditCard = await db('company_credit_cards')
+        .where('id', value.creditCardId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!creditCard) {
+        return res.status(400).json({
+          error: 'Credit card not found'
+        });
+      }
+    }
+
+    // Get updated expense data
+    const updatedExpenseData = await db('expense_data')
+      .where('receipt_id', receiptId)
+      .leftJoin('payment_methods', 'expense_data.payment_method_id', 'payment_methods.id')
+      .leftJoin('purchase_orders', 'expense_data.purchase_order_id', 'purchase_orders.id')
+      .leftJoin('company_credit_cards', 'expense_data.credit_card_id', 'company_credit_cards.id')
+      .select([
+        'expense_data.*',
+        'payment_methods.name as payment_method_name',
+        'purchase_orders.po_number',
+        'company_credit_cards.card_name'
+      ])
+      .first();
+
+    res.json({
+      message: 'Payment method selected successfully',
+      expenseData: {
+        id: updatedExpenseData.id,
+        receiptId: updatedExpenseData.receipt_id,
+        paymentMethod: {
+          id: updatedExpenseData.payment_method_id,
+          name: updatedExpenseData.payment_method_name,
+          type: updatedExpenseData.payment_method_type
+        },
+        purchaseOrder: updatedExpenseData.purchase_order_id ? {
+          id: updatedExpenseData.purchase_order_id,
+          poNumber: updatedExpenseData.po_number
+        } : null,
+        creditCard: updatedExpenseData.credit_card_id ? {
+          id: updatedExpenseData.credit_card_id,
+          cardName: updatedExpenseData.card_name
+        } : null,
+        paymentStatus: updatedExpenseData.payment_status,
+        expenseUrgency: updatedExpenseData.expense_urgency,
+        updatedAt: updatedExpenseData.updated_at
+      }
+    });
+  } catch (error) {
+    console.error('Payment method selection error:', error);
+    res.status(500).json({
+      error: 'Failed to select payment method',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * GET /api/expenses/payment-methods/detect
+ * Auto-detect payment method from receipt data
+ */
+router.get('/payment-methods/detect', authenticateToken, async (req, res) => {
+  try {
+    const { receiptId, vendorName, amount, category } = req.query;
+    
+    if (!receiptId) {
+      return res.status(400).json({
+        error: 'Receipt ID is required'
+      });
+    }
+
+    const organizationId = req.user.organization_id || req.user.id;
+
+    // Get available payment methods for the organization
+    const paymentMethods = await db('payment_methods')
+      .where('organization_id', organizationId)
+      .where('is_active', true)
+      .select('*');
+
+    // Get receipt details for context
+    const receipt = await db('expense_receipts')
+      .where('id', receiptId)
+      .where('user_id', req.user.id)
+      .first();
+
+    if (!receipt) {
+      return res.status(404).json({
+        error: 'Receipt not found'
+      });
+    }
+
+    // Simple rule-based detection logic
+    const suggestions = [];
+
+    for (const method of paymentMethods) {
+      let score = 0;
+      let reasons = [];
+
+      // Check amount-based rules
+      if (method.auto_approval_limit && amount && parseFloat(amount) <= method.auto_approval_limit) {
+        score += 20;
+        reasons.push(`Amount $${amount} is within auto-approval limit`);
+      }
+
+      // Check category restrictions
+      if (method.allowed_categories) {
+        const allowedCategories = JSON.parse(method.allowed_categories);
+        if (allowedCategories.length === 0 || (category && allowedCategories.includes(category))) {
+          score += 15;
+          reasons.push('Category matches allowed categories');
+        }
+      } else {
+        score += 10; // No restrictions
+      }
+
+      // Check user restrictions
+      if (method.user_restrictions) {
+        const userRestrictions = JSON.parse(method.user_restrictions);
+        const allowedUsers = userRestrictions.allowedUsers || [];
+        const allowedRoles = userRestrictions.allowedRoles || [];
+        
+        if (allowedUsers.length === 0 && allowedRoles.length === 0) {
+          score += 10; // No user restrictions
+        } else if (allowedUsers.includes(req.user.id) || allowedRoles.includes(req.user.role)) {
+          score += 15;
+          reasons.push('User is authorized for this payment method');
+        }
+      } else {
+        score += 10;
+      }
+
+      // Prefer reimbursement for receipts unless specific payment method is needed
+      if (method.type === 'person_reimbursement') {
+        score += 5;
+        reasons.push('Default reimbursement method');
+      }
+
+      // Prefer emergency card for urgent expenses
+      if (method.type === 'credit_card' && vendorName && vendorName.toLowerCase().includes('emergency')) {
+        score += 25;
+        reasons.push('Emergency vendor detected');
+      }
+
+      if (score > 0) {
+        suggestions.push({
+          paymentMethod: {
+            id: method.id,
+            name: method.name,
+            type: method.type,
+            requiresApproval: method.requires_approval,
+            autoApprovalLimit: method.auto_approval_limit
+          },
+          score,
+          reasons,
+          confidence: Math.min(score / 50, 1) // Normalize to 0-1
+        });
+      }
+    }
+
+    // Sort by score descending
+    suggestions.sort((a, b) => b.score - a.score);
+
+    res.json({
+      receiptId,
+      suggestions: suggestions.slice(0, 3), // Top 3 suggestions
+      detectionCriteria: {
+        vendorName,
+        amount: amount ? parseFloat(amount) : null,
+        category,
+        userRole: req.user.role
+      }
+    });
+  } catch (error) {
+    console.error('Payment method detection error:', error);
+    res.status(500).json({
+      error: 'Failed to detect payment method'
+    });
+  }
+});
+
+/**
+ * POST /api/expenses/receipts/:id/reconcile
+ * Mark credit card expense as reconciled
+ */
+router.post('/receipts/:id/reconcile', authenticateToken, requireAnyRole('admin', 'manager'), async (req, res) => {
+  try {
+    const receiptId = req.params.id;
+    const { statementDate, notes } = req.body;
+
+    // Get expense data
+    const expenseData = await db('expense_data')
+      .where('receipt_id', receiptId)
+      .where('payment_method_type', 'credit_card')
+      .first();
+
+    if (!expenseData) {
+      return res.status(404).json({
+        error: 'Credit card expense not found for this receipt'
+      });
+    }
+
+    if (expenseData.credit_card_reconciled) {
+      return res.status(400).json({
+        error: 'Expense is already reconciled'
+      });
+    }
+
+    // Update reconciliation status
+    await db('expense_data')
+      .where('id', expenseData.id)
+      .update({
+        credit_card_reconciled: true,
+        credit_card_statement_date: statementDate ? new Date(statementDate) : null,
+        reconciled_by: req.user.id,
+        reconciled_at: new Date(),
+        updated_at: new Date()
+      });
+
+    res.json({
+      message: 'Expense reconciled successfully',
+      expenseId: expenseData.id,
+      reconciledAt: new Date(),
+      reconciledBy: req.user.id,
+      statementDate: statementDate
+    });
+  } catch (error) {
+    console.error('Expense reconciliation error:', error);
+    res.status(500).json({
+      error: 'Failed to reconcile expense'
     });
   }
 });
