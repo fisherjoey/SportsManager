@@ -3,6 +3,12 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { ResponseFormatter, asyncHandler } = require('../utils/response-formatters');
+const { UserSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
+const UserService = require('../services/UserService');
+
+// Initialize UserService with database connection
+const userService = new UserService(db);
 
 const refereeSchema = Joi.object({
   name: Joi.string().required(),
@@ -39,83 +45,97 @@ const adminRefereeUpdateSchema = Joi.object({
 });
 
 // GET /api/referees - Get all referees with optional filters
-router.get('/', async (req, res) => {
-  try {
-    const { level, postal_code, is_available, page = 1, limit = 50, search } = req.query;
-    
-    let query = db('users')
-      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
-      .select('users.*', 'referee_levels.name as level_name')
-      .where('users.role', 'referee')
-      .orderBy('users.name', 'asc');
-
-    if (level) {
-      query = query.where('referee_levels.name', level);
-    }
-    
-    if (postal_code) {
-      query = query.where('users.postal_code', postal_code);
-    }
-    
-    if (is_available !== undefined) {
-      query = query.where('users.is_available', is_available === 'true');
-    }
-
-    if (search) {
-      query = query.where(function() {
-        this.where('users.name', 'ilike', `%${search}%`)
-            .orWhere('users.email', 'ilike', `%${search}%`);
-      });
-    }
-
-    const offset = (page - 1) * limit;
-    query = query.limit(limit).offset(offset);
-
-    const referees = await query;
-    
-    res.json({
-      data: referees,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching referees:', error);
-    res.status(500).json({ error: 'Failed to fetch referees' });
+router.get('/', asyncHandler(async (req, res) => {
+  // Validate query parameters
+  const { error: queryError, value: validatedQuery } = FilterSchemas.referees.validate(req.query);
+  if (queryError) {
+    return ResponseFormatter.sendValidationError(res, queryError.details);
   }
-});
+
+  const { level, postal_code, is_available, page, limit, search, white_whistle } = validatedQuery;
+  
+  // Build filters for UserService
+  const filters = {};
+  if (postal_code) filters.postal_code = postal_code;
+  if (is_available !== undefined) filters.is_available = is_available;
+  if (white_whistle !== undefined) filters.white_whistle = white_whistle;
+  
+  // Use UserService to find referees with pagination
+  const result = await userService.findWithPagination(
+    filters,
+    page,
+    limit,
+    {
+      include: [{
+        table: 'referee_levels',
+        on: 'users.referee_level_id = referee_levels.id',
+        type: 'left'
+      }],
+      select: [
+        'users.*',
+        'referee_levels.name as level_name',
+        'referee_levels.allowed_divisions',
+        'referee_levels.min_experience_years'
+      ],
+      orderBy: 'users.name',
+      orderDirection: 'asc'
+    }
+  );
+
+  let referees = result.data;
+
+  // Apply additional filters that need custom logic
+  if (level) {
+    referees = referees.filter(referee => referee.level_name === level);
+  }
+
+  if (search) {
+    const searchLower = search.toLowerCase();
+    referees = referees.filter(referee => 
+      (referee.name && referee.name.toLowerCase().includes(searchLower)) ||
+      (referee.email && referee.email.toLowerCase().includes(searchLower))
+    );
+  }
+
+  // Maintain backward compatibility with existing API consumers
+  ResponseFormatter.sendSuccess(res, {
+    data: referees,
+    pagination: {
+      page: result.pagination.page,
+      limit: result.pagination.limit,
+      total: result.pagination.total,
+      totalPages: result.pagination.totalPages
+    }
+  }, 'Referees retrieved successfully');
+}));
 
 // GET /api/referees/:id - Get specific referee
-router.get('/:id', async (req, res) => {
-  try {
-    const referee = await db('users')
-      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
-      .select('users.*', 'referee_levels.name as level_name')
-      .where('users.id', req.params.id)
-      .where('users.role', 'referee')
-      .first();
-    
-    if (!referee) {
-      return res.status(404).json({ error: 'Referee not found' });
-    }
-
-    // Get referee's assignments
-    const assignments = await db('game_assignments')
-      .join('games', 'game_assignments.game_id', 'games.id')
-      .join('positions', 'game_assignments.position_id', 'positions.id')
-      .select('games.*', 'positions.name as position_name', 'game_assignments.status as assignment_status')
-      .where('game_assignments.referee_id', referee.id)
-      .orderBy('games.game_date', 'desc');
-
-    referee.assignments = assignments;
-    
-    res.json(referee);
-  } catch (error) {
-    console.error('Error fetching referee:', error);
-    res.status(500).json({ error: 'Failed to fetch referee' });
+router.get('/:id', asyncHandler(async (req, res) => {
+  // Validate request parameters
+  const { error: paramError } = IdParamSchema.validate(req.params);
+  if (paramError) {
+    return ResponseFormatter.sendValidationError(res, paramError.details);
   }
-});
+
+  const refereeId = req.params.id;
+  
+  // Use UserService to get referee with complete details
+  const referee = await userService.getUserWithRefereeDetails(refereeId, {
+    assignmentLimit: 50 // Get more assignments for detailed view
+  });
+
+  if (!referee || referee.role !== 'referee') {
+    return ResponseFormatter.sendNotFound(res, 'Referee', refereeId);
+  }
+
+  // Maintain backward compatibility - rename assignments field
+  if (referee.recent_assignments) {
+    referee.assignments = referee.recent_assignments;
+    delete referee.recent_assignments;
+  }
+
+  ResponseFormatter.sendSuccess(res, referee, 'Referee details retrieved successfully');
+}));
 
 // POST /api/referees - Create new referee
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {

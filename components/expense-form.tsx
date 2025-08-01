@@ -39,7 +39,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { apiClient } from '@/lib/api'
 import { PaymentMethodSelector } from '@/components/payment-method-selector'
-import { ReceiptUploadComponent } from '@/components/receipt-upload'
+import { ReceiptUpload } from '@/components/receipt-upload'
 import { PurchaseOrderSelector } from '@/components/purchase-order-selector'
 import { CreditCardSelector } from '@/components/credit-card-selector'
 
@@ -377,7 +377,7 @@ export function ExpenseForm({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ReceiptUploadComponent
+                <ReceiptUpload
                   onReceiptUpload={handleReceiptUpload}
                   maxFiles={1}
                   showPreview={true}

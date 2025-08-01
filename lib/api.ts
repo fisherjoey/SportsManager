@@ -2184,6 +2184,77 @@ class ApiClient {
     });
   }
 
+  // Expense Approval API endpoints
+  async getPendingExpenses(params?: {
+    payment_method?: string;
+    category?: string;
+    urgency?: string;
+    amount_min?: string;
+    amount_max?: string;
+    search?: string;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      expenses: any[];
+      summary: {
+        total_pending: number;
+        overdue_count: number;
+        high_priority_count: number;
+        total_amount: number;
+      };
+    }>(`/expenses/pending-approval${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async approveExpense(expenseId: string, data: {
+    decision: 'approved';
+    notes?: string;
+    approved_amount?: number;
+  }) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      expense: any;
+    }>(`/expenses/${expenseId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async rejectExpense(expenseId: string, data: {
+    decision: 'rejected';
+    rejection_reason: string;
+    notes?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      expense: any;
+    }>(`/expenses/${expenseId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async delegateExpense(expenseId: string, data: {
+    delegate_to_user_id: string;
+    delegation_notes?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      expense: any;
+    }>(`/expenses/${expenseId}/delegate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getExpenseApprovalHistory(expenseId: string) {
+    return this.request<{
+      history: any[];
+    }>(`/expenses/${expenseId}/approval-history`);
+  }
+
   // Financial Reports API endpoints
   async getBudgetVarianceReport(params?: {
     period_id?: string;
