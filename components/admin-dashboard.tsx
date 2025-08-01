@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -36,8 +37,51 @@ import { SystemSettings } from "@/components/system-settings"
 import { ChevronRight } from "lucide-react"
 
 export function AdminDashboard() {
+  const router = useRouter()
   const [activeView, setActiveView] = useState("dashboard")
   const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
+
+  // Initialize from URL on mount and handle browser navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const viewFromUrl = urlParams.get('view')
+    if (viewFromUrl && viewFromUrl !== activeView) {
+      setActiveView(viewFromUrl)
+    }
+  }, [])
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const viewFromUrl = urlParams.get('view') || 'dashboard'
+      setActiveView(viewFromUrl)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  // Update URL when activeView changes
+  const handleViewChange = (view: string, options?: { dateFilter?: string }) => {
+    setActiveView(view)
+    
+    // Handle special cases like date filters
+    if (options?.dateFilter) {
+      setGameManagementDateFilter(options.dateFilter)
+    }
+
+    // Update URL without page reload
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', view)
+    
+    // Add additional parameters if needed
+    if (options?.dateFilter) {
+      url.searchParams.set('dateFilter', options.dateFilter)
+    }
+    
+    window.history.pushState(null, '', url.toString())
+  }
 
   const getPageTitle = () => {
     switch (activeView) {
@@ -139,7 +183,7 @@ export function AdminDashboard() {
         return <CalendarView 
           onDateClick={(date: string) => {
             setGameManagementDateFilter(date)
-            setActiveView("games")
+            handleViewChange("games")
           }} 
         />
       case "communications":
@@ -155,9 +199,9 @@ export function AdminDashboard() {
       case "financial-budgets":
         return <BudgetTracker />
       case "financial-expenses":
-        return <ExpenseListEnhanced />
+        return <ExpenseListEnhanced onCreateExpense={() => handleViewChange("financial-expense-create")} />
       case "financial-expense-create":
-        return <ExpenseFormIntegrated onExpenseCreated={() => setActiveView("financial-expenses")} />
+        return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange("financial-expenses")} />
       case "financial-expense-approvals":
         return <ExpenseApprovalDashboard />
       case "financial-reports":
@@ -200,7 +244,7 @@ export function AdminDashboard() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeView={activeView} setActiveView={setActiveView} />
+      <AppSidebar activeView={activeView} setActiveView={handleViewChange} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />

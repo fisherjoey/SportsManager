@@ -32,7 +32,8 @@ import {
   Eye,
   ArrowUpDown,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -123,6 +124,7 @@ interface ExpenseFilters {
 
 interface ExpenseListEnhancedProps {
   onExpenseSelect?: (expense: ExpenseData) => void
+  onCreateExpense?: () => void
   showActions?: boolean
   compactView?: boolean
   defaultFilters?: Partial<ExpenseFilters>
@@ -130,6 +132,7 @@ interface ExpenseListEnhancedProps {
 
 export function ExpenseListEnhanced({ 
   onExpenseSelect,
+  onCreateExpense,
   showActions = true,
   compactView = false,
   defaultFilters = {}
@@ -578,6 +581,15 @@ export function ExpenseListEnhanced({
           </div>
           
           <div className="flex flex-wrap gap-2">
+            {onCreateExpense && (
+              <Button 
+                onClick={onCreateExpense}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Expense
+              </Button>
+            )}
             <Button 
               onClick={() => setShowFilters(!showFilters)} 
               variant="outline"

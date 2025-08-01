@@ -134,11 +134,6 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: FileX,
     },
     {
-      title: "Create Expense",
-      url: "financial-expense-create",
-      icon: Plus,
-    },
-    {
       title: "Expense Approvals",
       url: "financial-expense-approvals",
       icon: CheckCircle,
@@ -232,11 +227,6 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "My Expenses",
       url: "expenses",
       icon: Receipt,
-    },
-    {
-      title: "Submit Expense",
-      url: "expense-create",
-      icon: Plus,
     },
     {
       title: "Calendar",

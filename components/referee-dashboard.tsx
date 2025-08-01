@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -18,6 +18,37 @@ export function RefereeDashboard() {
   const [activeView, setActiveView] = useState("dashboard")
   const { user } = useAuth()
 
+  // Initialize from URL on mount and handle browser navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const viewFromUrl = urlParams.get('view')
+    if (viewFromUrl && viewFromUrl !== activeView) {
+      setActiveView(viewFromUrl)
+    }
+  }, [])
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const viewFromUrl = urlParams.get('view') || 'dashboard'
+      setActiveView(viewFromUrl)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  // Update URL when activeView changes
+  const handleViewChange = (view: string) => {
+    setActiveView(view)
+
+    // Update URL without page reload
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', view)
+    window.history.pushState(null, '', url.toString())
+  }
+
   const renderContent = () => {
     switch (activeView) {
       case "dashboard":
@@ -32,9 +63,9 @@ export function RefereeDashboard() {
         }
         return user?.referee_id ? <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} /> : <div className="p-4 text-center text-muted-foreground">Please complete your referee profile to manage availability.</div>
       case "expenses":
-        return <ExpenseListEnhanced />
+        return <ExpenseListEnhanced onCreateExpense={() => handleViewChange("expense-create")} />
       case "expense-create":
-        return <ExpenseFormIntegrated onExpenseCreated={() => setActiveView("expenses")} />
+        return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange("expenses")} />
       case "calendar":
         return <CalendarView />
       case "profile":
@@ -46,7 +77,7 @@ export function RefereeDashboard() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeView={activeView} setActiveView={setActiveView} />
+      <AppSidebar activeView={activeView} setActiveView={handleViewChange} />
       <SidebarInset>
         <header className="flex h-16 md:h-16 shrink-0 items-center gap-2 border-b px-4 touch-manipulation">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center" />

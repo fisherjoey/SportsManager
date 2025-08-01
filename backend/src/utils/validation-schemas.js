@@ -175,7 +175,8 @@ const AssignmentSchemas = {
     game_id: BaseSchemas.id,
     user_id: BaseSchemas.id,
     position_id: BaseSchemas.id,
-    status: Joi.string().valid('assigned', 'accepted', 'declined', 'completed').default('assigned'),
+    assigned_by: BaseSchemas.optionalId,
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').default('pending'),
     calculated_wage: BaseSchemas.optionalCurrency
   }),
 
@@ -183,7 +184,7 @@ const AssignmentSchemas = {
    * Schema for assignment updates
    */
   update: Joi.object({
-    status: Joi.string().valid('assigned', 'accepted', 'declined', 'completed').optional(),
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').optional(),
     calculated_wage: BaseSchemas.optionalCurrency
   }),
 
@@ -195,7 +196,7 @@ const AssignmentSchemas = {
       game_id: BaseSchemas.id,
       user_id: BaseSchemas.id,
       position_id: BaseSchemas.id,
-      status: Joi.string().valid('assigned', 'accepted', 'declined', 'completed').default('assigned')
+      status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').default('pending')
     })).min(1).max(100).required()
   })
 };
@@ -278,8 +279,11 @@ const FilterSchemas = {
    */
   assignments: Joi.object({
     game_id: BaseSchemas.optionalId,
+    gameId: BaseSchemas.optionalId,
     user_id: BaseSchemas.optionalId,
-    status: Joi.string().valid('assigned', 'accepted', 'declined', 'completed').optional(),
+    referee_id: BaseSchemas.optionalId,
+    refereeId: BaseSchemas.optionalId,
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').optional(),
     date_from: BaseSchemas.optionalDate,
     date_to: BaseSchemas.optionalDate
   }).concat(PaginationSchema)

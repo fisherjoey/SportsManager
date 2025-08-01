@@ -25,12 +25,21 @@ const assignmentSchema = AssignmentSchemas.create;
 
 // GET /api/assignments - Get all assignments with optional filters
 router.get('/', authenticateToken, validateQuery(FilterSchemas.assignments), enhancedAsyncHandler(async (req, res) => {
-  const { game_id, referee_id, status, page = 1, limit = 50 } = req.query;
+  const { 
+    game_id, 
+    gameId, 
+    referee_id, 
+    refereeId, 
+    user_id,
+    status, 
+    page = 1, 
+    limit = 50 
+  } = req.query;
   
-  // Build filters object
+  // Build filters object - support both camelCase and snake_case for backward compatibility
   const filters = {};
-  if (game_id) filters.game_id = game_id;
-  if (referee_id) filters.user_id = referee_id;
+  if (game_id || gameId) filters.game_id = game_id || gameId;
+  if (referee_id || refereeId || user_id) filters.user_id = referee_id || refereeId || user_id;
   if (status) filters.status = status;
   
   // Get assignments using AssignmentService
@@ -296,98 +305,85 @@ router.delete('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async 
 
 // POST /api/assignments/bulk - Bulk assign referees to a game
 router.post('/bulk', 
+  authenticateToken,
   validateBody(Joi.object({
     game_id: Joi.string().uuid().required(),
     assignments: Joi.array().items(Joi.object({
       user_id: Joi.string().uuid().required(),
       position_id: Joi.string().uuid().required()
-    })).min(1).required(),
+    })).min(1).max(20).required(),
     assigned_by: Joi.string().uuid().optional()
   })),
   enhancedAsyncHandler(async (req, res) => {
     const { game_id, assignments, assigned_by } = req.body;
-
-    const game = await db('games').where('id', game_id).first();
-    if (!game) {
-      throw ErrorFactory.notFound('Game', game_id);
-    }
-
-    const trx = await db.transaction();
     
-    try {
-      const createdAssignments = [];
-      
-      for (const assignment of assignments) {
-        const { user_id, position_id } = assignment;
+    // Create assignments using service with transaction handling
+    const createdAssignments = [];
+    const errors = [];
+    
+    for (let i = 0; i < assignments.length; i++) {
+      try {
+        const assignmentData = {
+          ...assignments[i],
+          game_id,
+          assigned_by: assigned_by || req.user?.id
+        };
         
-        // Validate each assignment
-        const referee = await trx('users').where('id', user_id).where('role', 'referee').first();
-        if (!referee || !referee.is_available) {
-          throw ErrorFactory.businessLogic(`Referee ${user_id} not found or not available`, 'REFEREE_UNAVAILABLE');
+        const result = await assignmentService.createAssignment(assignmentData);
+        createdAssignments.push(result.assignment);
+        
+        // Create audit log
+        if (req.user) {
+          await createAuditLog(
+            req.user.id,
+            AUDIT_EVENTS.ASSIGNMENT_CREATED,
+            'game_assignments',
+            result.assignment.id,
+            { gameId: game_id, bulk: true }
+          );
         }
         
-        const position = await trx('positions').where('id', position_id).first();
-        if (!position) {
-          throw ErrorFactory.notFound('Position', position_id);
-        }
-        
-        // Check conflicts
-        const existingAssignment = await trx('game_assignments')
-          .where('game_id', game_id)
-          .where(function() {
-            this.where('user_id', user_id).orWhere('position_id', position_id);
-          })
-          .first();
-        
-        if (existingAssignment) {
-          throw ErrorFactory.conflict('Referee or position already assigned');
-        }
-
-        // Check if referee has time conflict with other games
-        const timeConflictAssignment = await trx('game_assignments')
-          .join('games', 'game_assignments.game_id', 'games.id')
-          .where('game_assignments.user_id', user_id)
-          .where('games.game_date', game.game_date)
-          .where('games.game_time', game.game_time)
-          .where('games.id', '!=', game_id)
-          .first();
-        
-        if (timeConflictAssignment) {
-          throw ErrorFactory.conflict(`Referee ${user_id} has a time conflict with another game`);
-        }
-        
-        const [newAssignment] = await trx('game_assignments')
-          .insert({
-            game_id,
-            user_id,
-            position_id,
-            assigned_by
-          })
-          .returning('*');
-        
-        createdAssignments.push(newAssignment);
+      } catch (error) {
+        console.error(`Error creating assignment ${i}:`, error);
+        errors.push({
+          index: i,
+          assignment: assignments[i],
+          error: error.message
+        });
       }
-      
-      // Update game status using AssignmentService
-      await assignmentService.updateGameStatus(game_id, { transaction: trx });
-      
-      await trx.commit();
-      
-      return ResponseFormatter.sendCreated(res, 
-        { assignments: createdAssignments },
-        'Bulk assignments created successfully'
-      );
-    } catch (error) {
-      await trx.rollback();
-      throw error;
     }
+    
+    // Prepare response
+    const responseData = {
+      assignments: createdAssignments,
+      summary: {
+        total: assignments.length,
+        successful: createdAssignments.length,
+        failed: errors.length
+      }
+    };
+    
+    if (errors.length > 0) {
+      responseData.errors = errors;
+    }
+    
+    const statusCode = createdAssignments.length > 0 ? 201 : 400;
+    const message = errors.length === 0 
+      ? 'All assignments created successfully'
+      : `${createdAssignments.length} of ${assignments.length} assignments created successfully`;
+    
+    return ResponseFormatter.send(
+      res,
+      statusCode,
+      ResponseFormatter.created(responseData, message)
+    );
   })
 );
 
 // POST /api/assignments/check-conflicts - Check for conflicts before assignment
 router.post('/check-conflicts', 
   authenticateToken, 
-  validateBody(assignmentSchema),
+  validateBody(AssignmentSchemas.create),
   enhancedAsyncHandler(async (req, res) => {
     const conflictAnalysis = await checkAssignmentConflicts(req.body);
     
@@ -396,7 +392,7 @@ router.post('/check-conflicts',
       conflicts: conflictAnalysis.conflicts || [],
       warnings: conflictAnalysis.warnings || [],
       errors: conflictAnalysis.errors || [],
-      isQualified: conflictAnalysis.isQualified || true,
+      isQualified: conflictAnalysis.isQualified !== false,
       canAssign: !conflictAnalysis.hasConflicts
     }, 'Conflict analysis completed');
   })
@@ -404,123 +400,21 @@ router.post('/check-conflicts',
 
 // GET /api/assignments/available-referees/:game_id - Get available referees for a specific game
 router.get('/available-referees/:game_id', 
+  authenticateToken,
   validateParams(IdParamSchema.keys({ game_id: Joi.string().uuid().required() })),
   enhancedAsyncHandler(async (req, res) => {
-    const game = await db('games').where('id', req.params.game_id).first();
-    if (!game) {
-      throw ErrorFactory.notFound('Game', req.params.game_id);
-    }
-
-    const gameDate = new Date(game.game_date).toISOString().split('T')[0];
-    const gameTime = game.game_time;
-
-    // Calculate game end time (assuming 2-hour duration if not specified)
-    const gameStartTime = game.game_time;
-    const gameEndTime = game.end_time || (() => {
-      const [hours, minutes] = gameStartTime.split(':').map(Number);
-      const endHours = (hours + 2) % 24;
-      return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    })();
-
-    // Get all potentially available referees who:
-    // 1. Are generally available (is_available = true)
-    // 2. Are not already assigned to another game at the same time
-    // 3. Have role = 'referee'
-    const potentialReferees = await db('users')
-      .where('role', 'referee')
-      .where('is_available', true)
-      .whereNotExists(function() {
-        this.select('*')
-          .from('game_assignments')
-          .join('games', 'game_assignments.game_id', 'games.id')
-          .whereRaw('game_assignments.user_id = users.id')
-          .where('games.game_date', game.game_date)
-          .where('games.game_time', game.game_time)
-          .where('games.id', '!=', req.params.game_id);
-      })
-      .select('*');
-
-    // Get availability windows for all potential referees
-    const refereeIds = potentialReferees.map(ref => ref.id);
-    const availabilityWindows = [];
-
-    // Group availability by referee
-    const availabilityByReferee = {};
-    availabilityWindows.forEach(window => {
-      if (!availabilityByReferee[window.referee_id]) {
-        availabilityByReferee[window.referee_id] = [];
-      }
-      availabilityByReferee[window.referee_id].push(window);
-    });
-
-    // Add availability data to referees and calculate availability scores
-    const refereesWithAvailability = potentialReferees.map(referee => ({
-      ...referee,
-      availability: availabilityByReferee[referee.id] || []
-    }));
-
-    // Use the availability utility to find and score available referees
-    const gameTimeWindow = { start: gameStartTime, end: gameEndTime };
-    const availableReferees = findAvailableReferees(refereesWithAvailability, gameTimeWindow);
-
-    // Transform the response to include availability status
-    const enhancedReferees = availableReferees.map(referee => {
-      const windows = availabilityByReferee[referee.id] || [];
-      
-      // Check availability status
-      let availabilityStatus = 'unknown';
-      let availabilityNote = 'No availability windows set';
-      
-      if (windows.length > 0) {
-        const hasConflict = hasSchedulingConflict(windows, gameTimeWindow);
-        if (hasConflict) {
-          availabilityStatus = 'conflict';
-          const conflictWindow = windows.find(w => 
-            !w.is_available && checkTimeOverlap(w, { start_time: gameStartTime, end_time: gameEndTime })
-          );
-          availabilityNote = conflictWindow ? 
-            `Unavailable: ${conflictWindow.start_time}-${conflictWindow.end_time}${conflictWindow.reason ? ` (${conflictWindow.reason})` : ''}` :
-            'Has scheduling conflict';
-        } else {
-          const hasPositiveAvailability = windows.some(w => 
-            w.is_available && 
-            gameStartTime >= w.start_time && 
-            gameEndTime <= w.end_time
-          );
-          
-          if (hasPositiveAvailability) {
-            availabilityStatus = 'available';
-            availabilityNote = 'Specifically available for this time';
-          } else {
-            availabilityStatus = 'not_specified';
-            availabilityNote = 'No specific availability set for this time';
-          }
-        }
-      }
-
-      return {
-        ...referee,
-        availabilityScore: referee.availabilityScore || 0,
-        availabilityStatus,
-        availabilityNote,
-        availabilityWindows: windows
-      };
-    });
-
-    return ResponseFormatter.sendSuccess(res, {
-      referees: enhancedReferees,
-      gameTime: {
-        date: game.game_date,
-        startTime: gameStartTime,
-        endTime: gameEndTime
+    // Use AssignmentService to get available referees with comprehensive analysis
+    const result = await assignmentService.getAvailableRefereesForGame(req.params.game_id);
+    
+    return ResponseFormatter.sendSuccess(
+      res,
+      {
+        referees: result.referees,
+        game: result.game,
+        summary: result.summary
       },
-      summary: {
-        total: enhancedReferees.length,
-        available: enhancedReferees.filter(r => r.availabilityStatus === 'available').length,
-        notSpecified: enhancedReferees.filter(r => r.availabilityStatus === 'not_specified').length,
-        unknown: enhancedReferees.filter(r => r.availabilityStatus === 'unknown').length
-      }
-    }, 'Available referees retrieved successfully');
+      'Available referees retrieved successfully'
+    );
   })
 );
 
