@@ -19,4 +19,7 @@
   - text: password123
 - region "Notifications (F8)":
   - list
+- button "Open Next.js Dev Tools":
+  - img
+- alert
 ```
