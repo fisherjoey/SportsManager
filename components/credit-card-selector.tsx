@@ -121,20 +121,11 @@ export function CreditCardSelector({
   const loadCreditCards = async () => {
     try {
       setIsLoading(true)
-      // Using a mock API call since we need to add this to the API client
-      const response = await fetch('/api/company-credit-cards', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await apiClient.getCompanyCreditCards({
+        status: 'active',
+        minRemainingLimit: 0
       })
-      
-      if (!response.ok) {
-        throw new Error('Failed to load credit cards')
-      }
-      
-      const data = await response.json()
-      setCreditCards(data.creditCards || [])
+      setCreditCards(response.creditCards || [])
     } catch (error) {
       console.error('Error loading credit cards:', error)
       toast({

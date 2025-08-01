@@ -103,20 +103,11 @@ export function PurchaseOrderSelector({
   const loadPurchaseOrders = async () => {
     try {
       setIsLoading(true)
-      // Using a mock API call since we need to add this to the API client
-      const response = await fetch('/api/purchase-orders', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await apiClient.getPurchaseOrders({
+        status: 'approved',
+        minRemainingAmount: 0
       })
-      
-      if (!response.ok) {
-        throw new Error('Failed to load purchase orders')
-      }
-      
-      const data = await response.json()
-      setPurchaseOrders(data.purchaseOrders || [])
+      setPurchaseOrders(response.purchaseOrders || [])
     } catch (error) {
       console.error('Error loading purchase orders:', error)
       toast({

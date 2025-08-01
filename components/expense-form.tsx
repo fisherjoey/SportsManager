@@ -269,7 +269,12 @@ export function ExpenseForm({
         return
       }
       
-      await onSubmit?.(data)
+      // Use the enhanced expense creation API if no custom onSubmit handler is provided
+      if (!onSubmit) {
+        await apiClient.createExpense(data)
+      } else {
+        await onSubmit(data)
+      }
       
       toast({
         title: 'Expense submitted successfully',
@@ -298,7 +303,13 @@ export function ExpenseForm({
     try {
       setIsSavingDraft(true)
       const currentData = form.getValues()
-      await onSaveDraft?.(currentData)
+      
+      // Use the enhanced draft saving API if no custom onSaveDraft handler is provided
+      if (!onSaveDraft) {
+        await apiClient.saveDraftExpense(currentData)
+      } else {
+        await onSaveDraft(currentData)
+      }
       
       toast({
         title: 'Draft saved',

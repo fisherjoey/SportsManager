@@ -34,6 +34,10 @@ class ApiClient {
     }
   }
 
+  getToken() {
+    return this.token;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -1905,6 +1909,279 @@ class ApiClient {
         pendingApprovals: number;
       };
     }>(`/expenses/reports${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Payment Methods API endpoints
+  async getPaymentMethods() {
+    return this.request<{
+      paymentMethods: Array<{
+        id: string;
+        name: string;
+        type: 'person_reimbursement' | 'purchase_order' | 'credit_card' | 'direct_vendor';
+        description: string;
+        requiresApproval: boolean;
+        spendingLimit?: number;
+        monthlySpent?: number;
+        remainingBudget?: number;
+        restrictions?: string[];
+        approvalWorkflow?: {
+          stages: number;
+          estimatedDays: number;
+        };
+        isActive: boolean;
+        confidence?: number;
+        reason?: string;
+      }>;
+    }>('/payment-methods');
+  }
+
+  async detectPaymentMethod(data: {
+    receiptId: string;
+    vendorName: string;
+    amount: number;
+    urgency: string;
+  }) {
+    return this.request<{
+      suggestions: Array<{
+        id: string;
+        name: string;
+        type: string;
+        confidence: number;
+        reason: string;
+      }>;
+    }>('/payment-methods/detect', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Purchase Orders API endpoints
+  async getPurchaseOrders(params?: {
+    status?: string;
+    vendorName?: string;
+    minRemainingAmount?: number;
+    department?: string;
+    search?: string;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      purchaseOrders: Array<{
+        id: string;
+        poNumber: string;
+        description: string;
+        vendorName: string;
+        originalAmount: number;
+        remainingAmount: number;
+        spentAmount: number;
+        status: 'draft' | 'approved' | 'pending' | 'closed' | 'cancelled';
+        approvedBy?: {
+          id: string;
+          name: string;
+          email: string;
+        };
+        createdBy: {
+          id: string;
+          name: string;
+          email: string;
+        };
+        department?: string;
+        projectCode?: string;
+        expirationDate?: string;
+        createdAt: string;
+        updatedAt: string;
+        lineItems?: Array<{
+          id: string;
+          description: string;
+          quantity: number;
+          unitPrice: number;
+          totalPrice: number;
+          remainingAmount: number;
+        }>;
+        restrictions?: string[];
+        approvalNotes?: string;
+      }>;
+    }>(`/purchase-orders${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPurchaseOrder(id: string) {
+    return this.request<{
+      purchaseOrder: any;
+      lineItems: any[];
+      usage: any[];
+    }>(`/purchase-orders/${id}`);
+  }
+
+  // Company Credit Cards API endpoints
+  async getCompanyCreditCards(params?: {
+    status?: string;
+    cardType?: string;
+    minRemainingLimit?: number;
+    department?: string;
+    search?: string;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      creditCards: Array<{
+        id: string;
+        cardName: string;
+        cardType: 'visa' | 'mastercard' | 'amex' | 'discover';
+        last4Digits: string;
+        cardholderName: string;
+        issuingBank: string;
+        monthlyLimit: number;
+        monthlySpent: number;
+        remainingLimit: number;
+        billingCycle: {
+          startDate: string;
+          endDate: string;
+          dueDate: string;
+        };
+        status: 'active' | 'suspended' | 'expired' | 'cancelled';
+        expirationDate: string;
+        authorizedUsers: Array<{
+          id: string;
+          name: string;
+          email: string;
+          spendingLimit?: number;
+        }>;
+        restrictions: {
+          categories?: string[];
+          vendors?: string[];
+          maxTransactionAmount?: number;
+          requiresApproval?: boolean;
+          approvalThreshold?: number;
+        };
+        recentTransactions?: Array<{
+          id: string;
+          amount: number;
+          merchant: string;
+          date: string;
+          category: string;
+          status: 'posted' | 'pending';
+        }>;
+        securityFeatures: {
+          hasChipAndPin: boolean;
+          hasContactless: boolean;
+          hasVirtualCard: boolean;
+          fraudProtection: boolean;
+        };
+        department?: string;
+        projectCode?: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    }>(`/company-credit-cards${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getCompanyCreditCard(id: string) {
+    return this.request<{
+      creditCard: any;
+      transactions: any[];
+      usage: any[];
+    }>(`/company-credit-cards/${id}`);
+  }
+
+  // Enhanced Expense Management API endpoints
+  async createExpense(expenseData: {
+    receiptId: string;
+    paymentMethodId: string;
+    amount: number;
+    vendorName: string;
+    transactionDate: string;
+    categoryId?: string;
+    description?: string;
+    businessPurpose: string;
+    projectCode?: string;
+    purchaseOrderId?: string;
+    creditCardId?: string;
+    expenseUrgency: 'low' | 'normal' | 'high' | 'urgent';
+    urgencyJustification?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        expense: any;
+        approvalWorkflow?: any;
+      };
+      message: string;
+    }>('/expenses', {
+      method: 'POST',
+      body: JSON.stringify(expenseData),
+    });
+  }
+
+  async updateExpense(id: string, expenseData: Partial<{
+    amount: number;
+    vendorName: string;
+    transactionDate: string;
+    categoryId: string;
+    description: string;
+    businessPurpose: string;
+    projectCode: string;
+    expenseUrgency: 'low' | 'normal' | 'high' | 'urgent';
+    urgencyJustification: string;
+  }>) {
+    return this.request<{
+      success: boolean;
+      data: {
+        expense: any;
+      };
+      message: string;
+    }>(`/expenses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(expenseData),
+    });
+  }
+
+  async getExpenses(params?: {
+    status?: string;
+    paymentMethod?: string;
+    category?: string;
+    department?: string;
+    urgency?: string;
+    needsReview?: boolean;
+    dateFrom?: string;
+    dateTo?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.request<{
+      expenses: any[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(`/expenses${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getExpense(id: string) {
+    return this.request<{
+      expense: any;
+      receipt?: any;
+      approvalHistory: any[];
+      paymentMethod: any;
+      purchaseOrder?: any;
+      creditCard?: any;
+    }>(`/expenses/${id}`);
+  }
+
+  async saveDraftExpense(expenseData: any) {
+    return this.request<{
+      success: boolean;
+      data: {
+        expense: any;
+      };
+      message: string;
+    }>('/expenses/draft', {
+      method: 'POST',
+      body: JSON.stringify(expenseData),
+    });
   }
 
   // Financial Reports API endpoints
