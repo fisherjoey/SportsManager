@@ -18,12 +18,15 @@ jest.mock('../../src/services/receiptProcessingService', () => ({
 
 const receiptProcessingService = require('../../src/services/receiptProcessingService');
 
-describe('Expenses API', () => {
+describe('Enhanced Expenses API', () => {
   let testUser;
   let authToken;
   let adminUser;
   let adminToken;
   let testCategory;
+  let testPaymentMethod;
+  let testPurchaseOrder;
+  let testCreditCard;
 
   beforeAll(async () => {
     // Create test user
@@ -56,11 +59,61 @@ describe('Expenses API', () => {
     }).returning('*');
 
     testCategory = category;
+
+    // Create test payment method
+    const [paymentMethod] = await db('payment_methods').insert({
+      organization_id: user.id,  
+      name: 'Test Reimbursement Method',
+      type: 'person_reimbursement',
+      is_active: true,
+      requires_approval: true,
+      auto_approval_limit: 100.00,
+      created_by: admin.id,
+      updated_by: admin.id
+    }).returning('*');
+
+    testPaymentMethod = paymentMethod;
+
+    // Create test purchase order
+    const [purchaseOrder] = await db('purchase_orders').insert({
+      organization_id: user.id,
+      po_number: 'PO-TEST-001',
+      vendor_name: 'Test Vendor',
+      description: 'Test purchase order',
+      estimated_amount: 500.00,
+      status: 'approved',
+      requested_by: admin.id,
+      line_items: JSON.stringify([
+        { description: 'Test Item', quantity: 1, unitPrice: 500, totalPrice: 500 }
+      ]),
+      created_by: admin.id,
+      updated_by: admin.id
+    }).returning('*');
+
+    testPurchaseOrder = purchaseOrder;
+
+    // Create test company credit card
+    const [creditCard] = await db('company_credit_cards').insert({
+      organization_id: user.id,
+      card_name: 'Test Company Card',
+      card_type: 'visa',
+      last_four_digits: '1234',
+      is_active: true,
+      expiration_date: '2026-12-31',
+      primary_holder_id: admin.id,
+      created_by: admin.id,
+      updated_by: admin.id
+    }).returning('*');
+
+    testCreditCard = creditCard;
   });
 
   afterAll(async () => {
     // Clean up test data
     await db('expense_categories').where('organization_id', testUser.id).del();
+    await db('payment_methods').where('organization_id', testUser.id).del();
+    await db('purchase_orders').where('organization_id', testUser.id).del();
+    await db('company_credit_cards').where('organization_id', testUser.id).del();
     await db('users').whereIn('id', [testUser.id, adminUser.id]).del();
   });
 
@@ -88,6 +141,8 @@ describe('Expenses API', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .attach('receipt', testFilePath)
         .field('description', 'Test expense')
+        .field('paymentMethodId', testPaymentMethod.id)
+        .field('businessPurpose', 'Testing expense upload')
         .expect(201);
 
       expect(response.body.message).toBe('Receipt uploaded successfully');
@@ -546,6 +601,359 @@ describe('Expenses API', () => {
         .get('/api/expenses/reports?groupBy=invalid')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(400);
+    });
+  });
+
+  describe('Enhanced Payment Method Integration', () => {
+    let testReceipt;
+
+    beforeEach(async () => {
+      const [receipt] = await db('expense_receipts').insert({
+        user_id: testUser.id,
+        organization_id: testUser.id,
+        original_filename: 'payment-test.jpg',
+        file_path: '/tmp/payment-test.jpg',
+        file_type: 'image',
+        mime_type: 'image/jpeg',
+        file_size: 1024,
+        file_hash: 'payment-hash',
+        processing_status: 'processed'
+      }).returning('*');
+
+      testReceipt = receipt;
+    });
+
+    afterEach(async () => {
+      if (testReceipt) {
+        await db('expense_receipts').where('id', testReceipt.id).del();
+      }
+    });
+
+    test('should upload receipt with payment method selection', async () => {
+      receiptProcessingService.saveReceiptFile.mockResolvedValue({
+        id: 'receipt-payment-123',
+        original_filename: 'receipt-payment.jpg',
+        file_size: 1024,
+        uploaded_at: new Date(),
+        processing_status: 'uploaded'
+      });
+
+      const testFilePath = path.join(__dirname, 'receipt-payment.jpg');
+      await fs.writeFile(testFilePath, 'payment test content');
+
+      const response = await request(app)
+        .post('/api/expenses/receipts/upload')
+        .set('Authorization', `Bearer ${authToken}`)
+        .attach('receipt', testFilePath)
+        .field('description', 'Test expense with payment method')
+        .field('paymentMethodId', testPaymentMethod.id)
+        .field('businessPurpose', 'Office supplies')
+        .field('projectCode', 'PROJ-001')
+        .field('expenseUrgency', 'normal')
+        .expect(201);
+
+      expect(response.body.receipt.paymentMethodId).toBe(testPaymentMethod.id);
+      expect(response.body.receipt.businessPurpose).toBe('Office supplies');
+      expect(response.body.workflow).toBeDefined();
+
+      await fs.remove(testFilePath);
+    });
+
+    test('should validate payment method exists and is active', async () => {
+      const testFilePath = path.join(__dirname, 'invalid-payment.jpg');
+      await fs.writeFile(testFilePath, 'test content');
+
+      const response = await request(app)
+        .post('/api/expenses/receipts/upload')
+        .set('Authorization', `Bearer ${authToken}`)
+        .attach('receipt', testFilePath)
+        .field('paymentMethodId', '00000000-0000-0000-0000-000000000000')
+        .expect(400);
+
+      expect(response.body.error).toBe('Invalid payment method');
+
+      await fs.remove(testFilePath);
+    });
+
+    test('should trigger approval workflow based on payment method settings', async () => {
+      // Create high-value payment method that requires approval
+      const [highValueMethod] = await db('payment_methods').insert({
+        organization_id: testUser.id,
+        name: 'High Value Method',
+        type: 'direct_vendor',
+        is_active: true,
+        requires_approval: true,
+        auto_approval_limit: 50.00,
+        created_by: adminUser.id,
+        updated_by: adminUser.id
+      }).returning('*');
+
+      receiptProcessingService.saveReceiptFile.mockResolvedValue({
+        id: 'receipt-approval-123',
+        original_filename: 'receipt-approval.jpg',
+        file_size: 1024,
+        uploaded_at: new Date(),
+        processing_status: 'uploaded'
+      });
+
+      const testFilePath = path.join(__dirname, 'receipt-approval.jpg');
+      await fs.writeFile(testFilePath, 'approval test content');
+
+      const response = await request(app)
+        .post('/api/expenses/receipts/upload')
+        .set('Authorization', `Bearer ${authToken}`)
+        .attach('receipt', testFilePath)
+        .field('description', 'High-value expense')
+        .field('paymentMethodId', highValueMethod.id)
+        .field('businessPurpose', 'Major purchase')
+        .expect(201);
+
+      expect(response.body.workflow).toBeDefined();
+      expect(response.body.workflow.workflowName).toBeDefined();
+      expect(response.body.requiresApproval).toBe(true);
+
+      await fs.remove(testFilePath);
+      await db('payment_methods').where('id', highValueMethod.id).del();
+    });
+  });
+
+  describe('GET /api/expenses/payment-methods', () => {
+    test('should list available payment methods for user', async () => {
+      const response = await request(app)
+        .get('/api/expenses/payment-methods')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.paymentMethods).toHaveLength(1);
+      expect(response.body.paymentMethods[0].name).toBe('Test Reimbursement Method');
+      expect(response.body.paymentMethods[0].type).toBe('person_reimbursement');
+      expect(response.body.paymentMethods[0].requiresApproval).toBe(true);
+    });
+
+    test('should filter payment methods by type', async () => {
+      // Create additional payment method
+      await db('payment_methods').insert({
+        organization_id: testUser.id,
+        name: 'Test Credit Card Method',
+        type: 'credit_card',
+        is_active: true,
+        requires_approval: false,
+        created_by: adminUser.id,
+        updated_by: adminUser.id
+      });
+
+      const response = await request(app)
+        .get('/api/expenses/payment-methods?type=person_reimbursement')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.paymentMethods).toHaveLength(1);
+      expect(response.body.paymentMethods[0].type).toBe('person_reimbursement');
+    });
+
+    test('should require authentication', async () => {
+      await request(app)
+        .get('/api/expenses/payment-methods')
+        .expect(401);
+    });
+  });
+
+  describe('Enhanced Approval Workflow', () => {
+    let testReceipt, testExpenseData, testApproval;
+
+    beforeEach(async () => {
+      const [receipt] = await db('expense_receipts').insert({
+        user_id: testUser.id,
+        organization_id: testUser.id,
+        original_filename: 'enhanced-approval.jpg',
+        file_path: '/tmp/enhanced-approval.jpg',
+        file_type: 'image',
+        mime_type: 'image/jpeg',
+        file_size: 1024,
+        file_hash: 'enhanced-hash',
+        processing_status: 'processed'
+      }).returning('*');
+
+      testReceipt = receipt;
+
+      const [expenseData] = await db('expense_data').insert({
+        receipt_id: receipt.id,
+        user_id: testUser.id,
+        organization_id: testUser.id,
+        vendor_name: 'Enhanced Vendor',
+        total_amount: 750.00,
+        transaction_date: '2024-01-15',
+        payment_method_id: testPaymentMethod.id,
+        payment_status: 'pending_approval'
+      }).returning('*');
+
+      testExpenseData = expenseData;
+
+      const [approval] = await db('expense_approvals').insert({
+        expense_data_id: expenseData.id,
+        user_id: testUser.id,
+        organization_id: testUser.id,
+        stage_number: 1,
+        total_stages: 2,
+        stage_status: 'pending',
+        required_approvers: JSON.stringify([
+          { id: adminUser.id, name: 'Admin User', role: 'admin' }
+        ]),
+        stage_started_at: new Date(),
+        approval_limit: 1000.00,
+        approval_conditions: JSON.stringify({
+          requiresBusinessJustification: true,
+          requiresReceiptValidation: true
+        })
+      }).returning('*');
+
+      testApproval = approval;
+    });
+
+    afterEach(async () => {
+      if (testReceipt) {
+        await db('expense_receipts').where('id', testReceipt.id).del();
+      }
+    });
+
+    test('should approve expense with enhanced workflow', async () => {
+      const approvalData = {
+        status: 'approved',
+        notes: 'Approved with conditions',
+        approvedAmount: 750.00,
+        paymentReference: 'PAY-2024-001'
+      };
+
+      const response = await request(app)
+        .post(`/api/expenses/receipts/${testReceipt.id}/approve`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(approvalData)
+        .expect(200);
+
+      expect(response.body.message).toBe('Expense approved successfully');
+      expect(response.body.approval.status).toBe('approved');
+      expect(response.body.workflowProgression).toBeDefined();
+
+      // Check if workflow progressed to next stage or completed
+      const updatedApproval = await db('expense_approvals')
+        .where('id', testApproval.id)
+        .first();
+      expect(updatedApproval.stage_status).toBe('approved');
+    });
+
+    test('should require additional information', async () => {
+      const approvalData = {
+        status: 'requires_information',
+        notes: 'Need more details about business purpose',
+        requiredInformation: [
+          'detailed_business_justification',
+          'project_code_confirmation',
+          'manager_pre_approval'
+        ]
+      };
+
+      const response = await request(app)
+        .post(`/api/expenses/receipts/${testReceipt.id}/approve`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(approvalData)
+        .expect(200);
+
+      expect(response.body.message).toBe('Additional information requested');
+      expect(response.body.requiredInformation).toHaveLength(3);
+
+      // Verify expense status updated
+      const updated = await db('expense_data')
+        .where('id', testExpenseData.id)
+        .first();
+      expect(updated.payment_status).toBe('requires_information');
+    });
+  });
+
+  describe('Expense Analytics and Reporting', () => {
+    beforeEach(async () => {
+      // Create test expenses with different payment methods and statuses
+      const receipts = await Promise.all([
+        db('expense_receipts').insert({
+          user_id: testUser.id,
+          organization_id: testUser.id,
+          original_filename: 'analytics1.jpg',
+          file_path: '/tmp/analytics1.jpg',
+          file_type: 'image',
+          mime_type: 'image/jpeg',
+          file_size: 1024,
+          file_hash: 'analytics-hash-1',
+          processing_status: 'processed'
+        }).returning('*'),
+        db('expense_receipts').insert({
+          user_id: testUser.id,
+          organization_id: testUser.id,
+          original_filename: 'analytics2.jpg',
+          file_path: '/tmp/analytics2.jpg',
+          file_type: 'image',
+          mime_type: 'image/jpeg',
+          file_size: 1024,
+          file_hash: 'analytics-hash-2',
+          processing_status: 'processed'
+        }).returning('*')
+      ]);
+
+      await Promise.all([
+        db('expense_data').insert({
+          receipt_id: receipts[0][0].id,
+          user_id: testUser.id,
+          organization_id: testUser.id,
+          vendor_name: 'Analytics Vendor 1',
+          total_amount: 125.00,
+          transaction_date: '2024-01-15',
+          payment_method_id: testPaymentMethod.id,
+          payment_status: 'approved',
+          category_id: testCategory.id
+        }),
+        db('expense_data').insert({
+          receipt_id: receipts[1][0].id,
+          user_id: testUser.id,
+          organization_id: testUser.id,
+          vendor_name: 'Analytics Vendor 2',
+          total_amount: 275.50,
+          transaction_date: '2024-01-16',
+          payment_method_id: testPaymentMethod.id,
+          payment_status: 'pending_approval',
+          category_id: testCategory.id
+        })
+      ]);
+    });
+
+    test('should generate payment method analytics', async () => {
+      const response = await request(app)
+        .get('/api/expenses/reports?groupBy=paymentMethod')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.breakdown).toBeDefined();
+      expect(response.body.summary.totalExpenses).toBe(400.50);
+      expect(response.body.summary.approvedAmount).toBe(125.00);
+      expect(response.body.summary.pendingAmount).toBe(275.50);
+    });
+
+    test('should generate workflow status analytics', async () => {
+      const response = await request(app)
+        .get('/api/expenses/reports?groupBy=approvalStatus')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.breakdown).toHaveProperty('approved');
+      expect(response.body.breakdown).toHaveProperty('pending_approval');
+      expect(response.body.summary.averageApprovalTime).toBeDefined();
+    });
+
+    test('should filter analytics by payment method', async () => {
+      const response = await request(app)
+        .get(`/api/expenses/reports?paymentMethodId=${testPaymentMethod.id}&groupBy=status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.filters.paymentMethodId).toBe(testPaymentMethod.id);
+      expect(response.body.summary.totalExpenses).toBeGreaterThan(0);
     });
   });
 });
