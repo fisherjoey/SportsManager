@@ -1,0 +1,1425 @@
+{
+  "info": {
+    "name": "Sports Management API",
+    "description": "Comprehensive API collection for the Sports Management Application. This collection includes all endpoints for managing sports leagues, referee assignments, games, teams, and budgets.\n\n## Environment Variables\nSet these variables in your Postman environment:\n- `baseUrl`: API base URL (e.g., http://localhost:3001/api)\n- `authToken`: JWT token obtained from login\n- `userId`: Current user ID\n- `gameId`: Sample game ID for testing\n- `refereeId`: Sample referee ID for testing\n- `teamId`: Sample team ID for testing\n- `leagueId`: Sample league ID for testing\n- `assignmentId`: Sample assignment ID for testing\n- `budgetId`: Sample budget ID for testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check the health status of the API and database connection. No authentication required."
+          },
+          "response": []
+        }
+      ],
+      "description": "System health monitoring endpoints"
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save the auth token for future requests",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('authToken', responseJson.token);",
+                  "    pm.environment.set('userId', responseJson.user.id);",
+                  "    pm.environment.set('userRole', responseJson.user.role);",
+                  "    console.log('Auth token saved:', responseJson.token.substring(0, 20) + '...');",
+                  "    console.log('User ID saved:', responseJson.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate user and receive JWT token. Updates environment variables with token and user info."
+          },
+          "response": []
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new admin user."
+          },
+          "response": []
+        },
+        {
+          "name": "Register Referee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"referee@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"referee\",\n  \"name\": \"John Referee\",\n  \"phone\": \"555-0123\",\n  \"postal_code\": \"12345\",\n  \"max_distance\": 30,\n  \"years_experience\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new referee user with complete profile information."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get the profile of the currently authenticated user."
+          },
+          "response": []
+        }
+      ],
+      "description": "User authentication and registration endpoints"
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "referee",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all users (admin only). Can filter by role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Get a specific user by ID. Users can only view their own profile unless they're admin."
+          },
+          "response": []
+        }
+      ],
+      "description": "User management operations (admin only)"
+    },
+    {
+      "name": "Referees",
+      "item": [
+        {
+          "name": "Get All Referees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/referees?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["referees"],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "Senior",
+                  "disabled": true
+                },
+                {
+                  "key": "postal_code",
+                  "value": "12345",
+                  "disabled": true
+                },
+                {
+                  "key": "is_available",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "white_whistle",
+                  "value": "false",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all referees with optional filtering by level, location, availability, etc."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Referee by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample referee ID if not set",
+                  "if (!pm.environment.get('refereeId')) {",
+                  "    pm.environment.set('refereeId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/referees/{{refereeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["referees", "{{refereeId}}"]
+            },
+            "description": "Get detailed information about a specific referee including recent assignments and performance metrics."
+          },
+          "response": []
+        }
+      ],
+      "description": "Referee-specific operations and queries"
+    },
+    {
+      "name": "Leagues",
+      "item": [
+        {
+          "name": "Get All Leagues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leagues?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["leagues"],
+              "query": [
+                {
+                  "key": "organization",
+                  "value": "Metro Soccer Association",
+                  "disabled": true
+                },
+                {
+                  "key": "age_group",
+                  "value": "U12",
+                  "disabled": true
+                },
+                {
+                  "key": "gender",
+                  "value": "Boys",
+                  "disabled": true
+                },
+                {
+                  "key": "division",
+                  "value": "Division 1",
+                  "disabled": true
+                },
+                {
+                  "key": "season",
+                  "value": "Fall 2024",
+                  "disabled": true
+                },
+                {
+                  "key": "level",
+                  "value": "Competitive",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all leagues with optional filtering by organization, age group, gender, etc."
+          },
+          "response": []
+        },
+        {
+          "name": "Create League",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save league ID for future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('leagueId', responseJson.league.id);",
+                  "    console.log('League ID saved:', responseJson.league.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization\": \"Metro Soccer Association\",\n  \"age_group\": \"U12\",\n  \"gender\": \"Boys\",\n  \"division\": \"Division 1\",\n  \"season\": \"Fall 2024\",\n  \"level\": \"Competitive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leagues",
+              "host": ["{{baseUrl}}"],
+              "path": ["leagues"]
+            },
+            "description": "Create a new league (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get League by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample league ID if not set",
+                  "if (!pm.environment.get('leagueId')) {",
+                  "    pm.environment.set('leagueId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leagues/{{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["leagues", "{{leagueId}}"]
+            },
+            "description": "Get a specific league by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update League",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization\": \"Metro Soccer Association\",\n  \"age_group\": \"U12\",\n  \"gender\": \"Boys\",\n  \"division\": \"Division 1\",\n  \"season\": \"Fall 2024\",\n  \"level\": \"Elite\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leagues/{{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["leagues", "{{leagueId}}"]
+            },
+            "description": "Update an existing league (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete League",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leagues/{{leagueId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["leagues", "{{leagueId}}"]
+            },
+            "description": "Delete a league (admin only)."
+          },
+          "response": []
+        }
+      ],
+      "description": "League management operations"
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "Get All Teams",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teams?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["teams"],
+              "query": [
+                {
+                  "key": "league_id",
+                  "value": "{{leagueId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "organization",
+                  "value": "Metro Soccer Association",
+                  "disabled": true
+                },
+                {
+                  "key": "age_group",
+                  "value": "U12",
+                  "disabled": true
+                },
+                {
+                  "key": "gender",
+                  "value": "Boys",
+                  "disabled": true
+                },
+                {
+                  "key": "season",
+                  "value": "Fall 2024",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "lightning",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all teams with optional filtering by league, organization, search, etc."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Team",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save team ID for future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('teamId', responseJson.team.id);",
+                  "    console.log('Team ID saved:', responseJson.team.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample league ID if not set",
+                  "if (!pm.environment.get('leagueId')) {",
+                  "    pm.environment.set('leagueId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lightning Bolts\",\n  \"league_id\": \"{{leagueId}}\",\n  \"rank\": 1,\n  \"location\": \"North Field Complex\",\n  \"contact_email\": \"coach@lightning.com\",\n  \"contact_phone\": \"555-0123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teams",
+              "host": ["{{baseUrl}}"],
+              "path": ["teams"]
+            },
+            "description": "Create a new team (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Team by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample team ID if not set",
+                  "if (!pm.environment.get('teamId')) {",
+                  "    pm.environment.set('teamId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teams/{{teamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["teams", "{{teamId}}"]
+            },
+            "description": "Get a specific team by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Team",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lightning Bolts Updated\",\n  \"league_id\": \"{{leagueId}}\",\n  \"rank\": 2,\n  \"location\": \"South Field Complex\",\n  \"contact_email\": \"newcoach@lightning.com\",\n  \"contact_phone\": \"555-0124\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teams/{{teamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["teams", "{{teamId}}"]
+            },
+            "description": "Update an existing team (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Team",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teams/{{teamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["teams", "{{teamId}}"]
+            },
+            "description": "Delete a team (admin only)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Team management operations"
+    },
+    {
+      "name": "Games",
+      "item": [
+        {
+          "name": "Get All Games",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/games?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["games"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "scheduled",
+                  "disabled": true
+                },
+                {
+                  "key": "level",
+                  "value": "Competitive",
+                  "disabled": true
+                },
+                {
+                  "key": "game_type",
+                  "value": "Community",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "2024-08-01",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "2024-08-31",
+                  "disabled": true
+                },
+                {
+                  "key": "postal_code",
+                  "value": "12345",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all games with optional filtering by status, level, type, date range, etc."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Game",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save game ID for future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('gameId', responseJson.game.id);",
+                  "    console.log('Game ID saved:', responseJson.game.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set sample team and league IDs if not set",
+                  "if (!pm.environment.get('teamId')) {",
+                  "    pm.environment.set('teamId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}",
+                  "if (!pm.environment.get('leagueId')) {",
+                  "    pm.environment.set('leagueId', '123e4567-e89b-12d3-a456-426614174002');",
+                  "}",
+                  "// Set away team ID (different from home team)",
+                  "pm.environment.set('awayTeamId', '123e4567-e89b-12d3-a456-426614174001');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"home_team_id\": \"{{teamId}}\",\n  \"away_team_id\": \"{{awayTeamId}}\",\n  \"league_id\": \"{{leagueId}}\",\n  \"game_date\": \"2024-08-15\",\n  \"game_time\": \"14:00\",\n  \"location\": \"Central Sports Complex\",\n  \"postal_code\": \"12345\",\n  \"level\": \"Competitive\",\n  \"game_type\": \"Community\",\n  \"division\": \"Division 1\",\n  \"season\": \"Fall 2024\",\n  \"pay_rate\": 75.00,\n  \"refs_needed\": 2,\n  \"wage_multiplier\": 1.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/games",
+              "host": ["{{baseUrl}}"],
+              "path": ["games"]
+            },
+            "description": "Create a new game (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Game by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample game ID if not set",
+                  "if (!pm.environment.get('gameId')) {",
+                  "    pm.environment.set('gameId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/games/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{gameId}}"]
+            },
+            "description": "Get a specific game by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Game",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"home_team_id\": \"{{teamId}}\",\n  \"away_team_id\": \"{{awayTeamId}}\",\n  \"league_id\": \"{{leagueId}}\",\n  \"game_date\": \"2024-08-15\",\n  \"game_time\": \"15:00\",\n  \"location\": \"Updated Sports Complex\",\n  \"postal_code\": \"12345\",\n  \"level\": \"Elite\",\n  \"game_type\": \"Tournament\",\n  \"division\": \"Division 1\",\n  \"season\": \"Fall 2024\",\n  \"pay_rate\": 85.00,\n  \"refs_needed\": 3,\n  \"wage_multiplier\": 1.2,\n  \"wage_multiplier_reason\": \"Tournament game\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/games/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{gameId}}"]
+            },
+            "description": "Update an existing game (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Game",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/games/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{gameId}}"]
+            },
+            "description": "Delete a game (admin only)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Game scheduling and management operations"
+    },
+    {
+      "name": "Assignments",
+      "item": [
+        {
+          "name": "Get All Assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assignments?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments"],
+              "query": [
+                {
+                  "key": "game_id",
+                  "value": "{{gameId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "referee_id",
+                  "value": "{{refereeId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all referee assignments with optional filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save assignment ID for future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('assignmentId', responseJson.data.assignment.id);",
+                  "    console.log('Assignment ID saved:', responseJson.data.assignment.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set sample IDs if not set",
+                  "if (!pm.environment.get('gameId')) {",
+                  "    pm.environment.set('gameId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}",
+                  "if (!pm.environment.get('refereeId')) {",
+                  "    pm.environment.set('refereeId', '123e4567-e89b-12d3-a456-426614174001');",
+                  "}",
+                  "pm.environment.set('positionId', '123e4567-e89b-12d3-a456-426614174002');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{gameId}}\",\n  \"user_id\": \"{{refereeId}}\",\n  \"position_id\": \"{{positionId}}\",\n  \"assigned_by\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assignments",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments"]
+            },
+            "description": "Create a new referee assignment."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Assignment by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample assignment ID if not set",
+                  "if (!pm.environment.get('assignmentId')) {",
+                  "    pm.environment.set('assignmentId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assignments/{{assignmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "{{assignmentId}}"]
+            },
+            "description": "Get a specific assignment by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Assignment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Update the status of an assignment (pending, accepted, declined, completed)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assignments/{{assignmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "{{assignmentId}}"]
+            },
+            "description": "Remove a referee assignment."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Update Assignments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"updates\": [\n    {\n      \"assignment_id\": \"{{assignmentId}}\",\n      \"status\": \"accepted\"\n    },\n    {\n      \"assignment_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n      \"status\": \"declined\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assignments/bulk-update",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "bulk-update"]
+            },
+            "description": "Update multiple assignment statuses at once (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Remove Assignments",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignment_ids\": [\n    \"{{assignmentId}}\",\n    \"123e4567-e89b-12d3-a456-426614174001\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assignments/bulk-remove",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "bulk-remove"]
+            },
+            "description": "Remove multiple assignments at once (admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Assignment Conflicts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{gameId}}\",\n  \"user_id\": \"{{refereeId}}\",\n  \"position_id\": \"{{positionId}}\",\n  \"assigned_by\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assignments/check-conflicts",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "check-conflicts"]
+            },
+            "description": "Check for conflicts before creating an assignment."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Referees for Game",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assignments/available-referees/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["assignments", "available-referees", "{{gameId}}"]
+            },
+            "description": "Get list of referees available for a specific game with availability scores and status."
+          },
+          "response": []
+        }
+      ],
+      "description": "Referee assignment operations and conflict management"
+    },
+    {
+      "name": "AI Suggestions",
+      "item": [
+        {
+          "name": "Generate AI Assignment Suggestions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_ids\": [\n    \"{{gameId}}\",\n    \"123e4567-e89b-12d3-a456-426614174001\"\n  ],\n  \"factors\": {\n    \"proximity_weight\": 0.3,\n    \"availability_weight\": 0.4,\n    \"experience_weight\": 0.2,\n    \"performance_weight\": 0.1\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-suggestions/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-suggestions", "generate"]
+            },
+            "description": "Generate AI-powered referee assignment suggestions for one or more games."
+          },
+          "response": []
+        }
+      ],
+      "description": "AI-powered assignment suggestions with customizable weighting factors"
+    },
+    {
+      "name": "Budgets",
+      "item": [
+        {
+          "name": "Get All Budgets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/budgets?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "budget_period_id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all budgets accessible to the current user with optional filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Budget",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save budget ID for future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set('budgetId', responseJson.budget.id);",
+                  "    console.log('Budget ID saved:', responseJson.budget.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set sample organization and budget period IDs if not set",
+                  "pm.environment.set('organizationId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "pm.environment.set('budgetPeriodId', '123e4567-e89b-12d3-a456-426614174002');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Q1 2024 Operations\",\n  \"description\": \"First quarter operational budget\",\n  \"organization_id\": \"{{organizationId}}\",\n  \"owner_id\": \"{{userId}}\",\n  \"budget_period_id\": \"{{budgetPeriodId}}\",\n  \"total_amount\": 50000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/budgets",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets"]
+            },
+            "description": "Create a new budget."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Budget by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set a sample budget ID if not set",
+                  "if (!pm.environment.get('budgetId')) {",
+                  "    pm.environment.set('budgetId', '123e4567-e89b-12d3-a456-426614174000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/budgets/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", "{{budgetId}}"]
+            },
+            "description": "Get a specific budget by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Budget",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Q1 2024 Operations - Updated\",\n  \"description\": \"Updated first quarter operational budget\",\n  \"organization_id\": \"{{organizationId}}\",\n  \"owner_id\": \"{{userId}}\",\n  \"budget_period_id\": \"{{budgetPeriodId}}\",\n  \"total_amount\": 55000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/budgets/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", "{{budgetId}}"]
+            },
+            "description": "Update an existing budget."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Budget",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/budgets/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", "{{budgetId}}"]
+            },
+            "description": "Delete a budget."
+          },
+          "response": []
+        }
+      ],
+      "description": "Budget management and financial tracking operations"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "// Set default base URL if not set",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    pm.environment.set('baseUrl', 'http://localhost:3001/api');",
+          "}",
+          "",
+          "// Log the current request for debugging",
+          "console.log('Making request to:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "// Log response status and basic info",
+          "console.log('Response status:', pm.response.code, pm.response.status);",
+          "",
+          "// Check for common error patterns",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error response:', pm.response.text());",
+          "}",
+          "",
+          "// Basic response time check",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Check that response is JSON for non-204 responses",
+          "if (pm.response.code !== 204) {",
+          "    pm.test('Response is JSON', function () {",
+          "        pm.response.to.be.json;",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    }
+  ]
+}
