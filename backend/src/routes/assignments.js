@@ -313,23 +313,8 @@ router.post('/', async (req, res) => {
     
     const [assignment] = await db('game_assignments').insert(assignmentData).returning('*');
 
-    // Update game status based on assignments
-    const totalAssignments = await db('game_assignments')
-      .where('game_id', value.game_id)
-      .whereIn('status', ['pending', 'accepted'])
-      .count('* as count')
-      .first();
-
-    let gameStatus = 'unassigned';
-    if (parseInt(totalAssignments.count) > 0 && parseInt(totalAssignments.count) < game.refs_needed) {
-      gameStatus = 'assigned'; // Partially assigned
-    } else if (parseInt(totalAssignments.count) >= game.refs_needed) {
-      gameStatus = 'assigned'; // Fully assigned
-    }
-
-    await db('games')
-      .where('id', value.game_id)
-      .update({ status: gameStatus, updated_at: new Date() });
+    // Update game status using AssignmentService
+    await assignmentService.updateGameStatus(value.game_id);
 
     const response = {
       success: true,
@@ -418,211 +403,108 @@ router.post('/bulk-update', authenticateToken, requireRole('admin'), asyncHandle
 }));
 
 // DELETE /api/assignments/bulk-remove - Bulk remove assignments
-router.delete('/bulk-remove', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { assignment_ids } = req.body;
-    
-    if (!Array.isArray(assignment_ids) || assignment_ids.length === 0) {
-      return res.status(400).json({ error: 'Assignment IDs array is required and cannot be empty' });
-    }
+router.delete('/bulk-remove', authenticateToken, requireRole('admin'), asyncHandler(async (req, res) => {
+  const { assignment_ids } = req.body;
+  
+  // Basic validation
+  if (!Array.isArray(assignment_ids) || assignment_ids.length === 0) {
+    return res.status(400).json({ error: 'Assignment IDs array is required and cannot be empty' });
+  }
 
-    if (assignment_ids.length > 100) {
-      return res.status(400).json({ error: 'Maximum 100 assignments can be removed at once' });
-    }
+  if (assignment_ids.length > 100) {
+    return res.status(400).json({ error: 'Maximum 100 assignments can be removed at once' });
+  }
 
-    // Validate all assignment IDs are UUIDs
-    const uuidSchema = Joi.string().uuid();
-    const invalidIds = [];
-    const validIds = [];
+  // Validate all assignment IDs are UUIDs
+  const uuidSchema = Joi.string().uuid();
+  const invalidIds = [];
+  const validIds = [];
 
-    for (let i = 0; i < assignment_ids.length; i++) {
-      const { error, value } = uuidSchema.validate(assignment_ids[i]);
-      if (error) {
-        invalidIds.push({
-          index: i,
-          id: assignment_ids[i],
-          error: error.details[0].message
-        });
-      } else {
-        validIds.push(value);
-      }
-    }
-
-    if (invalidIds.length > 0) {
-      return res.status(400).json({ 
-        error: 'Invalid assignment IDs provided',
-        invalidIds,
-        totalInvalid: invalidIds.length,
-        totalProvided: assignment_ids.length
+  for (let i = 0; i < assignment_ids.length; i++) {
+    const { error, value } = uuidSchema.validate(assignment_ids[i]);
+    if (error) {
+      invalidIds.push({
+        index: i,
+        id: assignment_ids[i],
+        error: error.details[0].message
       });
+    } else {
+      validIds.push(value);
     }
+  }
 
-    const trx = await db.transaction();
-    
-    try {
-      // Get assignments before deletion to update game statuses
-      const assignmentsToDelete = await trx('game_assignments')
-        .whereIn('id', validIds)
-        .select('id', 'game_id');
-
-      if (assignmentsToDelete.length === 0) {
-        await trx.rollback();
-        return res.status(404).json({ error: 'No assignments found with provided IDs' });
-      }
-
-      // Group assignments by game_id for status updates
-      const gameIds = [...new Set(assignmentsToDelete.map(a => a.game_id))];
-      
-      // Delete assignments
-      const deletedCount = await trx('game_assignments')
-        .whereIn('id', validIds)
-        .del();
-
-      // Update game statuses for affected games
-      for (const gameId of gameIds) {
-        const remainingAssignments = await trx('game_assignments')
-          .where('game_id', gameId)
-          .whereIn('status', ['pending', 'accepted'])
-          .count('* as count')
-          .first();
-
-        const game = await trx('games').where('id', gameId).first();
-        
-        let gameStatus = 'unassigned';
-        if (parseInt(remainingAssignments.count) > 0 && parseInt(remainingAssignments.count) < game.refs_needed) {
-          gameStatus = 'assigned'; // Partially assigned
-        } else if (parseInt(remainingAssignments.count) >= game.refs_needed) {
-          gameStatus = 'assigned'; // Fully assigned
-        }
-
-        await trx('games')
-          .where('id', gameId)
-          .update({ status: gameStatus, updated_at: new Date() });
-      }
-
-      await trx.commit();
-
-      const notFoundIds = validIds.filter(id => 
-        !assignmentsToDelete.find(a => a.id === id)
-      );
-
-      const response = {
-        success: true,
-        data: {
-          deletedCount,
-          affectedGames: gameIds.length,
-          summary: {
-            totalRequested: assignment_ids.length,
-            successfullyDeleted: deletedCount,
-            notFound: notFoundIds.length
-          }
-        }
-      };
-
-      if (notFoundIds.length > 0) {
-        response.warnings = [{
-          message: 'Some assignment IDs were not found',
-          notFoundIds
-        }];
-      }
-
-      res.json(response);
-
-    } catch (error) {
-      await trx.rollback();
-      throw error;
-    }
-
-  } catch (error) {
-    console.error('Error bulk removing assignments:', error);
-    res.status(500).json({ 
-      error: 'Failed to bulk remove assignments',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+  if (invalidIds.length > 0) {
+    return res.status(400).json({ 
+      error: 'Invalid assignment IDs provided',
+      invalidIds,
+      totalInvalid: invalidIds.length,
+      totalProvided: assignment_ids.length
     });
   }
-});
+
+  // Use AssignmentService for bulk removal
+  const results = await assignmentService.bulkRemoveAssignments(validIds);
+
+  const response = {
+    success: true,
+    data: {
+      deletedCount: results.deletedCount,
+      affectedGames: results.affectedGames,
+      summary: results.summary
+    }
+  };
+
+  if (results.warnings && results.warnings.length > 0) {
+    response.warnings = results.warnings.map(warning => ({
+      message: warning,
+      notFoundIds: results.summary.notFound > 0 ? 
+        assignment_ids.filter(id => !validIds.includes(id)) : undefined
+    }));
+  }
+
+  res.json(response);
+}));
 
 // PATCH /api/assignments/:id/status - Update assignment status
-router.patch('/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'accepted', 'declined', 'completed'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
+router.patch('/:id/status', asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ['pending', 'accepted', 'declined', 'completed'];
+  
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
 
-    const [assignment] = await db('game_assignments')
-      .where('id', req.params.id)
-      .update({ status, updated_at: new Date() })
-      .returning('*');
+  // Use AssignmentService for single status update
+  const results = await assignmentService.bulkUpdateAssignments([{
+    assignment_id: req.params.id,
+    status
+  }]);
 
-    if (!assignment) {
+  if (results.summary.failedUpdates > 0) {
+    const error = results.updateErrors[0];
+    if (error.error === 'Assignment not found') {
       return res.status(404).json({ error: 'Assignment not found' });
     }
-
-    // Update game status based on assignments
-    const game = await db('games').where('id', assignment.game_id).first();
-    const activeAssignments = await db('game_assignments')
-      .where('game_id', assignment.game_id)
-      .whereIn('status', ['pending', 'accepted'])
-      .count('* as count')
-      .first();
-
-    let gameStatus = 'unassigned';
-    if (parseInt(activeAssignments.count) > 0 && parseInt(activeAssignments.count) < game.refs_needed) {
-      gameStatus = 'assigned'; // Partially assigned
-    } else if (parseInt(activeAssignments.count) >= game.refs_needed) {
-      gameStatus = 'assigned'; // Fully assigned
-    }
-
-    await db('games')
-      .where('id', assignment.game_id)
-      .update({ status: gameStatus, updated_at: new Date() });
-
-    res.json({
-      success: true,
-      data: { assignment }
-    });
-  } catch (error) {
-    console.error('Error updating assignment status:', error);
-    res.status(500).json({ error: 'Failed to update assignment status' });
+    return res.status(500).json({ error: error.error });
   }
-});
+
+  res.json({
+    success: true,
+    data: { assignment: results.updatedAssignments[0] }
+  });
+}));
 
 // DELETE /api/assignments/:id - Remove assignment
-router.delete('/:id', async (req, res) => {
-  try {
-    const assignment = await db('game_assignments').where('id', req.params.id).first();
-    if (!assignment) {
-      return res.status(404).json({ error: 'Assignment not found' });
-    }
+router.delete('/:id', asyncHandler(async (req, res) => {
+  // Use AssignmentService for single assignment removal
+  const results = await assignmentService.bulkRemoveAssignments([req.params.id]);
 
-    const gameId = assignment.game_id;
-    
-    const deletedCount = await db('game_assignments').where('id', req.params.id).del();
-    
-    if (deletedCount === 0) {
-      return res.status(404).json({ error: 'Assignment not found' });
-    }
-
-    // Check if game has any remaining assignments
-    const remainingAssignments = await db('game_assignments')
-      .where('game_id', gameId)
-      .where('status', '!=', 'declined');
-    
-    if (remainingAssignments.length === 0) {
-      await db('games')
-        .where('id', gameId)
-        .update({ status: 'unassigned', updated_at: new Date() });
-    }
-
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting assignment:', error);
-    res.status(500).json({ error: 'Failed to delete assignment' });
+  if (results.summary.successfullyDeleted === 0) {
+    return res.status(404).json({ error: 'Assignment not found' });
   }
-});
+
+  res.status(204).send();
+}));
 
 // POST /api/assignments/bulk - Bulk assign referees to a game
 router.post('/bulk', async (req, res) => {
@@ -694,10 +576,8 @@ router.post('/bulk', async (req, res) => {
         createdAssignments.push(newAssignment);
       }
       
-      // Update game status to assigned
-      await trx('games')
-        .where('id', game_id)
-        .update({ status: 'assigned', updated_at: new Date() });
+      // Update game status using AssignmentService
+      await assignmentService.updateGameStatus(game_id, { transaction: trx });
       
       await trx.commit();
       

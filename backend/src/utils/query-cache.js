@@ -23,13 +23,35 @@ class QueryCache {
   get(key) {
     const cached = this.cache.get(key);
     if (!cached) {
+      // Track cache miss
+      try {
+        const { trackCacheOperation } = require('../middleware/performanceMonitor');
+        trackCacheOperation(false);
+      } catch (err) {
+        // Ignore if monitoring not available
+      }
       return null;
     }
 
     // Check if expired
     if (Date.now() > cached.expires) {
       this.delete(key);
+      // Track cache miss (expired)
+      try {
+        const { trackCacheOperation } = require('../middleware/performanceMonitor');
+        trackCacheOperation(false);
+      } catch (err) {
+        // Ignore if monitoring not available
+      }
       return null;
+    }
+
+    // Track cache hit
+    try {
+      const { trackCacheOperation } = require('../middleware/performanceMonitor');
+      trackCacheOperation(true);
+    } catch (err) {
+      // Ignore if monitoring not available
     }
 
     // Update access time for LRU tracking

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare } from "lucide-react"
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle } from "lucide-react"
 import { NotificationsBell } from "@/components/notifications-bell"
 
 import {
@@ -129,9 +129,19 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: BarChart3,
     },
     {
-      title: "Expense Tracking",
+      title: "Expense Management",
       url: "financial-expenses",
       icon: FileX,
+    },
+    {
+      title: "Create Expense",
+      url: "financial-expense-create",
+      icon: Plus,
+    },
+    {
+      title: "Expense Approvals",
+      url: "financial-expense-approvals",
+      icon: CheckCircle,
     },
     {
       title: "Financial Reports",
@@ -217,6 +227,16 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: "Availability",
       url: "availability",
       icon: CalendarClock,
+    },
+    {
+      title: "My Expenses",
+      url: "expenses",
+      icon: Receipt,
+    },
+    {
+      title: "Submit Expense",
+      url: "expense-create",
+      icon: Plus,
     },
     {
       title: "Calendar",

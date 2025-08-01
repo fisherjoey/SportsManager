@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 
 const leagueSchema = Joi.object({
   organization: Joi.string().required(),
@@ -25,65 +27,94 @@ const bulkLeagueSchema = Joi.object({
 // GET /api/leagues - Get all leagues with optional filtering
 router.get('/', async (req, res) => {
   try {
-    const { 
-      organization, 
-      age_group, 
-      gender, 
-      division, 
-      season, 
-      level, 
-      page = 1, 
-      limit = 50 
-    } = req.query;
+    const filters = {
+      organization: req.query.organization,
+      age_group: req.query.age_group,
+      gender: req.query.gender,
+      division: req.query.division,
+      season: req.query.season,
+      level: req.query.level
+    };
     
-    let query = db('leagues')
-      .select(
-        'leagues.*',
-        db.raw('COUNT(teams.id) as team_count'),
-        db.raw('COUNT(games.id) as game_count')
-      )
-      .leftJoin('teams', 'leagues.id', 'teams.league_id')
-      .leftJoin('games', 'leagues.id', 'games.league_id')
-      .groupBy('leagues.id')
-      .orderBy('leagues.created_at', 'desc');
-
-    // Apply filters
-    if (organization) query = query.where('leagues.organization', 'ilike', `%${organization}%`);
-    if (age_group) query = query.where('leagues.age_group', age_group);
-    if (gender) query = query.where('leagues.gender', gender);
-    if (division) query = query.where('leagues.division', 'ilike', `%${division}%`);
-    if (season) query = query.where('leagues.season', 'ilike', `%${season}%`);
-    if (level) query = query.where('leagues.level', level);
-
-    const offset = (page - 1) * limit;
-    const leagues = await query.limit(limit).offset(offset);
-
-    // Get total count for pagination
-    let countQuery = db('leagues').count('* as count');
-    if (organization) countQuery = countQuery.where('organization', 'ilike', `%${organization}%`);
-    if (age_group) countQuery = countQuery.where('age_group', age_group);
-    if (gender) countQuery = countQuery.where('gender', gender);
-    if (division) countQuery = countQuery.where('division', 'ilike', `%${division}%`);
-    if (season) countQuery = countQuery.where('season', 'ilike', `%${season}%`);
-    if (level) countQuery = countQuery.where('level', level);
+    const paginationParams = QueryBuilder.validatePaginationParams(req.query);
+    const { page, limit } = paginationParams;
     
-    const [{ count }] = await countQuery;
+    // Use cached aggregation for expensive league count queries
+    const result = await CacheHelpers.cacheAggregation(
+      async () => {
+        // Optimized base query without expensive JOINs
+        let baseQuery = db('leagues')
+          .select('leagues.*');
+        
+        // Apply filters using QueryBuilder
+        const filterMap = {
+          organization: 'leagues.organization',
+          age_group: 'leagues.age_group',
+          gender: 'leagues.gender',
+          division: 'leagues.division',
+          season: 'leagues.season',
+          level: 'leagues.level'
+        };
+        
+        baseQuery = QueryBuilder.applyCommonFilters(baseQuery, filters, filterMap);
+        baseQuery = baseQuery.orderBy('leagues.created_at', 'desc');
+        
+        // Get total count efficiently
+        const countQuery = QueryBuilder.buildCountQuery(baseQuery);
+        const [{ count }] = await countQuery;
+        
+        // Apply pagination
+        const paginatedQuery = QueryBuilder.applyPagination(baseQuery, page, limit);
+        const leagues = await paginatedQuery;
+        
+        // Get counts using separate optimized queries instead of expensive JOINs
+        const leagueIds = leagues.map(league => league.id);
+        
+        // Optimized team counts using idx_teams_league_rank index
+        const teamCounts = leagueIds.length > 0 ? await db('teams')
+          .select('league_id', db.raw('COUNT(*) as team_count'))
+          .whereIn('league_id', leagueIds)
+          .groupBy('league_id') : [];
+        
+        // Optimized game counts - games table should have league_id indexed
+        const gameCounts = leagueIds.length > 0 ? await db('games')
+          .select('league_id', db.raw('COUNT(*) as game_count'))
+          .whereIn('league_id', leagueIds)
+          .groupBy('league_id') : [];
+        
+        // Create lookup maps
+        const teamCountMap = {};
+        teamCounts.forEach(tc => {
+          teamCountMap[tc.league_id] = parseInt(tc.team_count);
+        });
+        
+        const gameCountMap = {};
+        gameCounts.forEach(gc => {
+          gameCountMap[gc.league_id] = parseInt(gc.game_count);
+        });
+        
+        return {
+          leagues: leagues.map(league => ({
+            ...league,
+            team_count: teamCountMap[league.id] || 0,
+            game_count: gameCountMap[league.id] || 0
+          })),
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: parseInt(count),
+            pages: Math.ceil(count / limit)
+          }
+        };
+      },
+      'leagues_list',
+      { ...filters, page, limit },
+      5 * 60 * 1000 // Cache for 5 minutes
+    );
 
     res.json({
       success: true,
-      data: {
-        leagues: leagues.map(league => ({
-          ...league,
-          team_count: parseInt(league.team_count) || 0,
-          game_count: parseInt(league.game_count) || 0
-        })),
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: parseInt(count),
-          pages: Math.ceil(count / limit)
-        }
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching leagues:', error);
@@ -94,38 +125,61 @@ router.get('/', async (req, res) => {
 // GET /api/leagues/:id - Get specific league with teams
 router.get('/:id', async (req, res) => {
   try {
-    const league = await db('leagues').where('id', req.params.id).first();
-    if (!league) {
+    const leagueId = req.params.id;
+    
+    // Cache league details for 10 minutes
+    const result = await CacheHelpers.cachePaginatedQuery(
+      async () => {
+        const league = await db('leagues').where('id', leagueId).first();
+        if (!league) {
+          return null;
+        }
+
+        // Optimized teams query using idx_teams_league_rank index
+        const teams = await db('teams')
+          .where('league_id', leagueId)
+          .orderBy('rank', 'asc'); // Uses idx_teams_league_rank
+
+        // Optimized games query using indexes
+        const games = await db('games')
+          .select(
+            'games.*',
+            'home_team.name as home_team_name',
+            'away_team.name as away_team_name'
+          )
+          .leftJoin('teams as home_team', 'games.home_team_id', 'home_team.id')
+          .leftJoin('teams as away_team', 'games.away_team_id', 'away_team.id')
+          .where('games.league_id', leagueId)
+          .orderBy('games.game_date', 'asc'); // Uses idx_games_date_location
+
+        // Calculate stats efficiently
+        const now = new Date();
+        const upcoming_games = games.filter(g => new Date(g.game_date) > now).length;
+
+        return {
+          league,
+          teams,
+          games,
+          stats: {
+            team_count: teams.length,
+            game_count: games.length,
+            upcoming_games
+          }
+        };
+      },
+      `league_${leagueId}`,
+      {},
+      {},
+      10 * 60 * 1000
+    );
+    
+    if (!result) {
       return res.status(404).json({ error: 'League not found' });
     }
 
-    const teams = await db('teams')
-      .where('league_id', req.params.id)
-      .orderBy('rank', 'asc');
-
-    const games = await db('games')
-      .select(
-        'games.*',
-        'home_team.name as home_team_name',
-        'away_team.name as away_team_name'
-      )
-      .leftJoin('teams as home_team', 'games.home_team_id', 'home_team.id')
-      .leftJoin('teams as away_team', 'games.away_team_id', 'away_team.id')
-      .where('games.league_id', req.params.id)
-      .orderBy('games.game_date', 'asc');
-
     res.json({
       success: true,
-      data: {
-        league,
-        teams,
-        games,
-        stats: {
-          team_count: teams.length,
-          game_count: games.length,
-          upcoming_games: games.filter(g => new Date(g.game_date) > new Date()).length
-        }
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching league:', error);
@@ -159,6 +213,9 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     }
 
     const [league] = await db('leagues').insert(value).returning('*');
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateLeagues(queryCache);
 
     res.status(201).json({
       success: true,
@@ -215,6 +272,9 @@ router.post('/bulk', authenticateToken, requireRole('admin'), async (req, res) =
     if (leaguesToCreate.length > 0) {
       const leagues = await db('leagues').insert(leaguesToCreate).returning('*');
       createdLeagues.push(...leagues);
+      
+      // Invalidate related caches
+      CacheInvalidation.invalidateLeagues(queryCache);
     }
 
     res.status(201).json({
@@ -252,6 +312,9 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
     if (!league) {
       return res.status(404).json({ error: 'League not found' });
     }
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateLeagues(queryCache, req.params.id);
 
     res.json({
       success: true,
@@ -287,6 +350,9 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
     }
 
     await db('leagues').where('id', req.params.id).del();
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateLeagues(queryCache, req.params.id);
 
     res.json({
       success: true,
@@ -301,23 +367,35 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 // GET /api/leagues/options/filters - Get filter options for dropdowns
 router.get('/options/filters', async (req, res) => {
   try {
-    const organizations = await db('leagues').distinct('organization').orderBy('organization');
-    const age_groups = await db('leagues').distinct('age_group').orderBy('age_group');
-    const genders = await db('leagues').distinct('gender').orderBy('gender');
-    const divisions = await db('leagues').distinct('division').orderBy('division');
-    const seasons = await db('leagues').distinct('season').orderBy('season', 'desc');
-    const levels = await db('leagues').distinct('level').orderBy('level');
+    // Cache filter options for 30 minutes as they change infrequently
+    const result = await CacheHelpers.cacheLookupData(
+      async () => {
+        // Use Promise.all for parallel execution of independent queries
+        const [organizations, age_groups, genders, divisions, seasons, levels] = await Promise.all([
+          db('leagues').distinct('organization').orderBy('organization'),
+          db('leagues').distinct('age_group').orderBy('age_group'),
+          db('leagues').distinct('gender').orderBy('gender'),
+          db('leagues').distinct('division').orderBy('division'),
+          db('leagues').distinct('season').orderBy('season', 'desc'),
+          db('leagues').distinct('level').orderBy('level')
+        ]);
+
+        return {
+          organizations: organizations.map(o => o.organization),
+          age_groups: age_groups.map(a => a.age_group),
+          genders: genders.map(g => g.gender),
+          divisions: divisions.map(d => d.division),
+          seasons: seasons.map(s => s.season),
+          levels: levels.map(l => l.level)
+        };
+      },
+      'filter_options',
+      30 * 60 * 1000 // Cache for 30 minutes
+    );
 
     res.json({
       success: true,
-      data: {
-        organizations: organizations.map(o => o.organization),
-        age_groups: age_groups.map(a => a.age_group),
-        genders: genders.map(g => g.gender),
-        divisions: divisions.map(d => d.division),
-        seasons: seasons.map(s => s.season),
-        levels: levels.map(l => l.level)
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching filter options:', error);

@@ -2,15 +2,23 @@
  * Performance Monitoring Middleware
  * 
  * Tracks API response times, database query counts, and identifies slow endpoints
- * for performance optimization insights.
+ * for performance optimization insights. Enhanced with query cache monitoring.
  */
+
+const { queryCache } = require('../utils/query-cache');
 
 const performanceStats = {
   requests: new Map(),
   slowQueries: [],
   averageResponseTimes: new Map(),
   totalRequests: 0,
-  totalResponseTime: 0
+  totalResponseTime: 0,
+  queryMetrics: {
+    totalDbQueries: 0,
+    slowDbQueries: 0,
+    cacheHits: 0,
+    cacheMisses: 0
+  }
 };
 
 /**
@@ -107,7 +115,7 @@ function performanceMonitor(options = {}) {
 }
 
 /**
- * Get performance statistics
+ * Get performance statistics with enhanced query cache monitoring
  */
 function getPerformanceStats() {
   const overallAverage = performanceStats.totalRequests > 0 
@@ -132,6 +140,11 @@ function getPerformanceStats() {
       slowPercentage: ((stats.slowCount / stats.count) * 100).toFixed(1)
     }));
 
+  // Get cache statistics
+  const cacheStats = queryCache.getStats();
+  const totalQueries = performanceStats.queryMetrics.cacheHits + performanceStats.queryMetrics.cacheMisses;
+  const cacheHitRate = totalQueries > 0 ? (performanceStats.queryMetrics.cacheHits / totalQueries * 100).toFixed(2) : 0;
+
   return {
     overall: {
       totalRequests: performanceStats.totalRequests,
@@ -139,12 +152,61 @@ function getPerformanceStats() {
       totalResponseTime: performanceStats.totalResponseTime,
       uptime: process.uptime()
     },
+    database: {
+      totalQueries: performanceStats.queryMetrics.totalDbQueries,
+      slowQueries: performanceStats.queryMetrics.slowDbQueries,
+      slowQueryPercentage: performanceStats.queryMetrics.totalDbQueries > 0 
+        ? ((performanceStats.queryMetrics.slowDbQueries / performanceStats.queryMetrics.totalDbQueries) * 100).toFixed(2)
+        : 0
+    },
+    cache: {
+      hits: performanceStats.queryMetrics.cacheHits,
+      misses: performanceStats.queryMetrics.cacheMisses,
+      hitRate: `${cacheHitRate}%`,
+      size: cacheStats.size,
+      maxSize: cacheStats.maxSize,
+      activeEntries: cacheStats.active
+    },
     endpoints: endpointStats,
     slowestEndpoints,
     recentSlowQueries: performanceStats.slowQueries.slice(-20), // Last 20 slow queries
     memoryUsage: process.memoryUsage(),
     timestamp: new Date()
   };
+}
+
+/**
+ * Track database query performance
+ */
+function trackDbQuery(duration, sql, cached = false) {
+  performanceStats.queryMetrics.totalDbQueries++;
+  
+  if (cached) {
+    performanceStats.queryMetrics.cacheHits++;
+  } else {
+    performanceStats.queryMetrics.cacheMisses++;
+  }
+  
+  // Track slow queries (>500ms)
+  if (duration > 500) {
+    performanceStats.queryMetrics.slowDbQueries++;
+    
+    // Log very slow queries (>2000ms)
+    if (duration > 2000) {
+      console.warn(`[VERY SLOW QUERY] ${duration}ms: ${sql?.substring(0, 100)}...`);
+    }
+  }
+}
+
+/**
+ * Track cache operation
+ */
+function trackCacheOperation(hit = true) {
+  if (hit) {
+    performanceStats.queryMetrics.cacheHits++;
+  } else {
+    performanceStats.queryMetrics.cacheMisses++;
+  }
 }
 
 /**
@@ -156,6 +218,12 @@ function resetPerformanceStats() {
   performanceStats.averageResponseTimes.clear();
   performanceStats.totalRequests = 0;
   performanceStats.totalResponseTime = 0;
+  performanceStats.queryMetrics = {
+    totalDbQueries: 0,
+    slowDbQueries: 0,
+    cacheHits: 0,
+    cacheMisses: 0
+  };
 }
 
 /**
@@ -258,5 +326,7 @@ module.exports = {
   getPerformanceStats,
   resetPerformanceStats,
   getSlowQueriesSummary,
-  createPerformanceRoute
+  createPerformanceRoute,
+  trackDbQuery,
+  trackCacheOperation
 };

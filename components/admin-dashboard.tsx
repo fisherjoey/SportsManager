@@ -21,6 +21,9 @@ import { FinancialDashboard } from "@/components/financial-dashboard"
 import { ReceiptUpload } from "@/components/receipt-upload"
 import { BudgetTracker } from "@/components/budget-tracker"
 import { ExpenseList } from "@/components/expense-list"
+import { ExpenseListEnhanced } from "@/components/expense-list-enhanced"
+import { ExpenseApprovalDashboard } from "@/components/expense-approval-dashboard"
+import { ExpenseForm } from "@/components/expense-form"
 import { OrganizationalDashboard } from "@/components/organizational-dashboard"
 import { EmployeeManagement } from "@/components/employee-management"
 import { AssetTracking } from "@/components/asset-tracking"
@@ -70,7 +73,11 @@ export function AdminDashboard() {
       case "financial-budgets":
         return "Budget Management"
       case "financial-expenses":
-        return "Expense Tracking"
+        return "Expense Management"
+      case "financial-expense-create":
+        return "Create Expense"
+      case "financial-expense-approvals":
+        return "Expense Approvals"
       case "financial-reports":
         return "Financial Reports"
       
@@ -148,7 +155,11 @@ export function AdminDashboard() {
       case "financial-budgets":
         return <BudgetTracker />
       case "financial-expenses":
-        return <ExpenseList />
+        return <ExpenseListEnhanced />
+      case "financial-expense-create":
+        return <ExpenseForm onExpenseCreated={() => setActiveView("financial-expenses")} />
+      case "financial-expense-approvals":
+        return <ExpenseApprovalDashboard />
       case "financial-reports":
         return <FinancialDashboard /> // Financial reports are part of the financial dashboard
       

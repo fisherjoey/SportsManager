@@ -11,6 +11,8 @@ import { AvailableGames } from "@/components/available-games"
 import { CalendarView } from "@/components/calendar-view"
 import { ProfileSettings } from "@/components/profile-settings"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
+import { ExpenseForm } from "@/components/expense-form"
+import { ExpenseListEnhanced } from "@/components/expense-list-enhanced"
 
 export function RefereeDashboard() {
   const [activeView, setActiveView] = useState("dashboard")
@@ -29,6 +31,10 @@ export function RefereeDashboard() {
           return <div className="p-4 text-center text-muted-foreground">Availability management is only available for referee users. Use the Referees section to view individual referee availability.</div>
         }
         return user?.referee_id ? <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} /> : <div className="p-4 text-center text-muted-foreground">Please complete your referee profile to manage availability.</div>
+      case "expenses":
+        return <ExpenseListEnhanced />
+      case "expense-create":
+        return <ExpenseForm onExpenseCreated={() => setActiveView("expenses")} />
       case "calendar":
         return <CalendarView />
       case "profile":

@@ -7,6 +7,8 @@ const { validateQuery, validateIdParam } = require('../middleware/sanitization')
 const { asyncHandler, withDatabaseError } = require('../middleware/errorHandling');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 const { checkGameSchedulingConflicts } = require('../services/conflictDetectionService');
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 
 const teamSchema = Joi.object({
   organization: Joi.string().required(),
@@ -51,52 +53,58 @@ const gameUpdateSchema = Joi.object({
 
 // GET /api/games - Get all games with optional filters
 router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(async (req, res) => {
-  const { status, level, game_type, date_from, date_to, postal_code, page = 1, limit = 50 } = req.query;
-    
-    let query = db('games')
-      .select(
-        'games.*',
-        'home_teams.name as home_team_name',
-        'away_teams.name as away_team_name',
-        'leagues.organization',
-        'leagues.age_group',
-        'leagues.gender',
-        'leagues.division',
-        'leagues.season'
-      )
-      .leftJoin('teams as home_teams', 'games.home_team_id', 'home_teams.id')
-      .leftJoin('teams as away_teams', 'games.away_team_id', 'away_teams.id')
-      .leftJoin('leagues', 'games.league_id', 'leagues.id')
-      .orderBy('games.game_date', 'asc');
+  const filters = {
+    status: req.query.status,
+    level: req.query.level,
+    game_type: req.query.game_type,
+    date_from: req.query.date_from,
+    date_to: req.query.date_to,
+    postal_code: req.query.postal_code
+  };
+  
+  const paginationParams = QueryBuilder.validatePaginationParams(req.query);
+  const { page, limit } = paginationParams;
+  
+  // Try to get cached results first
+  const cacheKey = queryCache.generateKey('games_list', filters, { page, limit });
+  const cachedResult = queryCache.get(cacheKey);
+  
+  if (cachedResult) {
+    return res.json(cachedResult);
+  }
+  
+  // Build optimized query using indexes
+  let query = db('games')
+    .select(
+      'games.*',
+      'home_teams.name as home_team_name',
+      'away_teams.name as away_team_name',
+      'leagues.organization',
+      'leagues.age_group',
+      'leagues.gender',
+      'leagues.division',
+      'leagues.season'
+    )
+    .leftJoin('teams as home_teams', 'games.home_team_id', 'home_teams.id')
+    .leftJoin('teams as away_teams', 'games.away_team_id', 'away_teams.id')
+    .leftJoin('leagues', 'games.league_id', 'leagues.id');
 
-    if (status) {
-      query = query.where('games.status', status);
-    }
-    
-    if (level) {
-      query = query.where('games.level', level);
-    }
-    
-    if (game_type) {
-      query = query.where('games.game_type', game_type);
-    }
-    
-    if (date_from) {
-      query = query.where('games.game_date', '>=', date_from);
-    }
-    
-    if (date_to) {
-      query = query.where('games.game_date', '<=', date_to);
-    }
-    
-    if (postal_code) {
-      query = query.where('games.postal_code', postal_code);
-    }
+  // Apply filters using QueryBuilder with performance indexes
+  // This will use idx_games_status_date and idx_games_date_location indexes
+  query = QueryBuilder.applyCommonFilters(query, filters, QueryHelpers.getGameFilterMap());
+  
+  // Apply date range optimization for better index usage
+  if (filters.date_from || filters.date_to) {
+    query = QueryBuilder.applyDateRange(query, 'games.game_date', filters.date_from, filters.date_to);
+  }
+  
+  // Use optimized sorting - games.game_date is indexed
+  query = query.orderBy('games.game_date', 'asc');
+  
+  // Apply pagination
+  query = QueryBuilder.applyPagination(query, page, limit);
 
-    const offset = (page - 1) * limit;
-    query = query.limit(limit).offset(offset);
-
-    const games = await query;
+  const games = await query;
     
     // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
     const gameIds = games.map(game => game.id);
@@ -184,38 +192,78 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), asyncHandler(as
       };
     });
 
-    res.json({
+    const result = {
       data: transformedGames,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit)
       }
-    });
+    };
+    
+    // Cache the result for 5 minutes
+    queryCache.set(cacheKey, result, 5 * 60 * 1000);
+    
+    res.json(result);
 }));
 
 // GET /api/games/:id - Get specific game
-router.get('/:id', async (req, res) => {
-  try {
-    const game = await db('games').where('id', req.params.id).first();
-    
-    if (!game) {
-      return res.status(404).json({ error: 'Game not found' });
-    }
+router.get('/:id', authenticateToken, validateIdParam, asyncHandler(async (req, res) => {
+  const gameId = req.params.id;
+  
+  // Try cache first
+  const cachedGame = await CacheHelpers.cachePaginatedQuery(
+    async () => {
+      // Use optimized single game query with joins
+      const game = await db('games')
+        .select(
+          'games.*',
+          'home_teams.name as home_team_name',
+          'away_teams.name as away_team_name',
+          'leagues.organization',
+          'leagues.age_group',
+          'leagues.gender',
+          'leagues.division',
+          'leagues.season'
+        )
+        .leftJoin('teams as home_teams', 'games.home_team_id', 'home_teams.id')
+        .leftJoin('teams as away_teams', 'games.away_team_id', 'away_teams.id')
+        .leftJoin('leagues', 'games.league_id', 'leagues.id')
+        .where('games.id', gameId)
+        .first();
+        
+      if (!game) {
+        return null;
+      }
 
-    const assignments = await db('game_assignments')
-      .join('referees', 'game_assignments.referee_id', 'referees.id')
-      .join('positions', 'game_assignments.position_id', 'positions.id')
-      .select('users.*', 'positions.name as position_name', 'game_assignments.status as assignment_status')
-      .where('game_assignments.game_id', game.id);
+      // Optimized assignments query using idx_assignments_user_game index
+      const assignments = await db('game_assignments')
+        .join('users', 'game_assignments.user_id', 'users.id')
+        .join('positions', 'game_assignments.position_id', 'positions.id')
+        .select(
+          'users.name',
+          'users.email',
+          'users.phone',
+          'positions.name as position_name',
+          'game_assignments.status as assignment_status',
+          'game_assignments.created_at as assigned_at'
+        )
+        .where('game_assignments.game_id', gameId)
+        .orderBy('positions.sort_order', 'asc');
 
-    game.assignments = assignments;
-    
-    res.json(game);
-  } catch (error) {
-    console.error('Error fetching game:', error);
-    res.status(500).json({ error: 'Failed to fetch game' });
+      return { ...game, assignments };
+    },
+    `game_${gameId}`,
+    {},
+    {},
+    10 * 60 * 1000 // Cache for 10 minutes
+  );
+  
+  if (!cachedGame) {
+    return res.status(404).json({ error: 'Game not found' });
   }
-});
+  
+  res.json(cachedGame);
+}));
 
 // POST /api/games - Create new game
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
@@ -251,6 +299,9 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     };
 
     const [game] = await db('games').insert(dbData).returning('*');
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateGames(queryCache);
     
     // Transform response back to frontend format
     const transformedGame = {
@@ -326,6 +377,9 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateGames(queryCache, req.params.id);
 
     const response = {
       success: true,
@@ -363,6 +417,9 @@ router.patch('/:id/status', authenticateToken, requireRole('admin'), async (req,
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateGames(queryCache, req.params.id);
 
     res.json(game);
   } catch (error) {
@@ -379,6 +436,9 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
     if (deletedCount === 0) {
       return res.status(404).json({ error: 'Game not found' });
     }
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateGames(queryCache, req.params.id);
 
     res.status(204).send();
   } catch (error) {
@@ -487,6 +547,9 @@ router.post('/bulk-import', authenticateToken, requireRole('admin'), async (req,
       }
 
       await trx.commit();
+      
+      // Invalidate related caches after successful bulk import
+      CacheInvalidation.invalidateGames(queryCache);
 
       const response = {
         success: true,
