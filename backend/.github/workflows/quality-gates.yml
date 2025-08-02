@@ -1,0 +1,545 @@
+name: Quality Gates and Maintenance
+
+on:
+  push:
+    branches: [ main, develop, ai-algorithm ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily maintenance checks at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      run_full_suite:
+        description: 'Run full maintenance suite'
+        type: boolean
+        default: false
+      skip_performance:
+        description: 'Skip performance tests'
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '18'
+  DATABASE_URL: sqlite://./test.db
+
+jobs:
+  # Code Quality Analysis
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Run ESLint
+      working-directory: ./backend
+      run: |
+        npm run lint
+        echo "ESLint completed successfully"
+        
+    - name: Check code formatting
+      working-directory: ./backend
+      run: |
+        npm run format:check
+        echo "Code formatting check completed"
+        
+    - name: Run comprehensive code quality check
+      working-directory: ./backend
+      run: |
+        chmod +x scripts/quality/check-code-quality.js
+        node scripts/quality/check-code-quality.js --output quality-reports/ci
+        
+    - name: Upload quality reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-quality-reports
+        path: backend/quality-reports/
+        retention-days: 30
+        
+    - name: Check quality gate
+      working-directory: ./backend
+      run: |
+        # Check if quality score meets minimum threshold
+        if [ -f "quality-reports/ci/latest-quality-summary.json" ]; then
+          score=$(cat quality-reports/ci/latest-quality-summary.json | jq -r '.overallScore')
+          echo "Code quality score: $score/100"
+          if [ "$score" -lt 70 ]; then
+            echo "❌ Code quality score ($score) is below minimum threshold (70)"
+            exit 1
+          else
+            echo "✅ Code quality gate passed"
+          fi
+        else
+          echo "⚠️ Quality report not found, skipping gate check"
+        fi
+
+  # Security Scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Run npm audit
+      working-directory: ./backend
+      run: |
+        npm audit --audit-level=moderate
+        echo "NPM audit completed"
+        
+    - name: Run security audit with audit-ci
+      working-directory: ./backend
+      run: |
+        npm run audit
+        echo "Security audit completed"
+        
+    - name: CodeQL Analysis
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript
+        queries: security-and-quality
+        
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'Sports Management Backend'
+        path: './backend'
+        format: 'ALL'
+        
+    - name: Upload dependency check results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-check-results
+        path: reports/
+        retention-days: 30
+
+  # Database Health Check
+  database-health:
+    name: Database Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Setup test database
+      working-directory: ./backend
+      run: |
+        npm run migrate
+        npm run seed
+        
+    - name: Run database health check
+      working-directory: ./backend
+      run: |
+        chmod +x scripts/database/health-check.js
+        node scripts/database/health-check.js --output quality-reports/database --env test
+        
+    - name: Upload database health reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: database-health-reports
+        path: backend/quality-reports/database/
+        retention-days: 30
+        
+    - name: Check database health gate
+      working-directory: ./backend
+      run: |
+        if [ -f "quality-reports/database/latest-health-summary.json" ]; then
+          health=$(cat quality-reports/database/latest-health-summary.json | jq -r '.overallHealth')
+          score=$(cat quality-reports/database/latest-health-summary.json | jq -r '.metrics.score')
+          echo "Database health: $health (Score: $score/100)"
+          if [ "$health" = "critical" ] || [ "$health" = "poor" ]; then
+            echo "❌ Database health gate failed: $health"
+            exit 1
+          else
+            echo "✅ Database health gate passed"
+          fi
+        else
+          echo "⚠️ Database health report not found, skipping gate check"
+        fi
+
+  # Automated Testing
+  comprehensive-tests:
+    name: Comprehensive Testing Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        test-suite: ['unit', 'integration', 'security']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Setup test database
+      working-directory: ./backend
+      run: |
+        npm run migrate
+        npm run seed
+        
+    - name: Run unit tests
+      if: matrix.test-suite == 'unit'
+      working-directory: ./backend
+      run: |
+        npm run test:coverage -- --testPathPattern="tests/(unit|services|utils|middleware)" --ci --coverage --watchAll=false
+        
+    - name: Run integration tests
+      if: matrix.test-suite == 'integration'
+      working-directory: ./backend
+      run: |
+        npm run test:coverage -- --testPathPattern="tests/(integration|routes)" --ci --coverage --watchAll=false
+        
+    - name: Run security tests
+      if: matrix.test-suite == 'security'
+      working-directory: ./backend
+      run: |
+        npm run test:coverage -- --testPathPattern="tests/security" --ci --coverage --watchAll=false
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.test-suite }}
+        path: |
+          backend/coverage/
+          backend/test-results/
+        retention-days: 30
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.test-suite == 'unit'
+      with:
+        file: ./backend/coverage/lcov.info
+        flags: backend
+        name: backend-coverage
+
+  # Performance Testing
+  performance-tests:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_performance != 'true'
+    
+    services:
+      api:
+        image: node:18
+        ports:
+          - 3000:3000
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Setup and start API server
+      working-directory: ./backend
+      run: |
+        npm run migrate
+        npm run seed
+        npm start &
+        sleep 10
+        curl -f http://localhost:3000/health || exit 1
+        
+    - name: Run performance benchmarks
+      working-directory: ./backend
+      run: |
+        chmod +x scripts/performance/benchmark.js
+        node scripts/performance/benchmark.js --base-url http://localhost:3000 --output quality-reports/performance --iterations 5
+        
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-reports
+        path: backend/quality-reports/performance/
+        retention-days: 30
+        
+    - name: Check performance regression gate
+      working-directory: ./backend
+      run: |
+        if [ -f "quality-reports/performance/latest-benchmark-summary.json" ]; then
+          health=$(cat quality-reports/performance/latest-benchmark-summary.json | jq -r '.overallHealth')
+          critical_regressions=$(cat quality-reports/performance/latest-benchmark-summary.json | jq -r '.criticalRegressions')
+          echo "Performance health: $health"
+          echo "Critical regressions: $critical_regressions"
+          if [ "$health" = "critical" ] || [ "$critical_regressions" -gt 0 ]; then
+            echo "❌ Performance regression gate failed"
+            exit 1
+          else
+            echo "✅ Performance gate passed"
+          fi
+        else
+          echo "⚠️ Performance report not found, skipping gate check"
+        fi
+
+  # Daily Maintenance (scheduled only)
+  daily-maintenance:
+    name: Daily Maintenance Tasks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.run_full_suite == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+      
+    - name: Setup database
+      working-directory: ./backend
+      run: |
+        npm run migrate
+        npm run seed
+        
+    - name: Run comprehensive maintenance suite
+      working-directory: ./backend
+      run: |
+        echo "🧹 Running daily maintenance tasks..."
+        
+        # Code quality analysis
+        chmod +x scripts/quality/check-code-quality.js
+        node scripts/quality/check-code-quality.js --output quality-reports/maintenance
+        
+        # Database health check with cleanup
+        chmod +x scripts/database/health-check.js
+        node scripts/database/health-check.js --output quality-reports/maintenance --old-data-days 90
+        
+        # Performance baseline update
+        chmod +x scripts/performance/benchmark.js
+        node scripts/performance/benchmark.js --output quality-reports/maintenance --iterations 10
+        
+        echo "✅ Daily maintenance completed"
+        
+    - name: Generate maintenance summary
+      working-directory: ./backend
+      run: |
+        # Create comprehensive maintenance report
+        cat > maintenance-summary.md << EOF
+        # Daily Maintenance Summary - $(date)
+        
+        ## Code Quality
+        $(if [ -f "quality-reports/maintenance/latest-quality-summary.json" ]; then
+          score=$(cat quality-reports/maintenance/latest-quality-summary.json | jq -r '.overallScore')
+          echo "- Overall Score: $score/100"
+          echo "- Critical Issues: $(cat quality-reports/maintenance/latest-quality-summary.json | jq -r '.issues.critical')"
+          echo "- High Priority: $(cat quality-reports/maintenance/latest-quality-summary.json | jq -r '.issues.high')"
+        else
+          echo "- Report generation failed"
+        fi)
+        
+        ## Database Health
+        $(if [ -f "quality-reports/maintenance/latest-health-summary.json" ]; then
+          health=$(cat quality-reports/maintenance/latest-health-summary.json | jq -r '.overallHealth')
+          score=$(cat quality-reports/maintenance/latest-health-summary.json | jq -r '.metrics.score')
+          echo "- Health Status: $health"
+          echo "- Health Score: $score/100"
+          echo "- Critical Issues: $(cat quality-reports/maintenance/latest-health-summary.json | jq -r '.criticalIssues')"
+        else
+          echo "- Report generation failed"
+        fi)
+        
+        ## Performance
+        $(if [ -f "quality-reports/maintenance/latest-benchmark-summary.json" ]; then
+          health=$(cat quality-reports/maintenance/latest-benchmark-summary.json | jq -r '.overallHealth')
+          avg_time=$(cat quality-reports/maintenance/latest-benchmark-summary.json | jq -r '.avgResponseTime')
+          echo "- Performance Health: $health"
+          echo "- Average Response Time: ${avg_time}ms"
+          echo "- Critical Regressions: $(cat quality-reports/maintenance/latest-benchmark-summary.json | jq -r '.criticalRegressions')"
+        else
+          echo "- Report generation failed"
+        fi)
+        
+        ## Recommendations
+        - Review and address any critical issues identified
+        - Monitor trending metrics for early warning signs
+        - Update performance baselines if infrastructure changes
+        
+        Generated by GitHub Actions Maintenance Workflow
+        EOF
+        
+    - name: Upload maintenance reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: daily-maintenance-reports
+        path: |
+          backend/quality-reports/maintenance/
+          backend/maintenance-summary.md
+        retention-days: 90
+        
+    - name: Create maintenance issue if critical problems found
+      uses: actions/github-script@v7
+      if: always()
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let criticalIssues = [];
+          
+          // Check code quality issues
+          try {
+            const qualityData = JSON.parse(fs.readFileSync('backend/quality-reports/maintenance/latest-quality-summary.json', 'utf8'));
+            if (qualityData.overallScore < 60) {
+              criticalIssues.push(`Code quality score is critically low: ${qualityData.overallScore}/100`);
+            }
+            if (qualityData.issues.critical > 0) {
+              criticalIssues.push(`${qualityData.issues.critical} critical code quality issues detected`);
+            }
+          } catch (e) {
+            criticalIssues.push('Code quality analysis failed');
+          }
+          
+          // Check database health issues
+          try {
+            const healthData = JSON.parse(fs.readFileSync('backend/quality-reports/maintenance/latest-health-summary.json', 'utf8'));
+            if (healthData.overallHealth === 'critical' || healthData.overallHealth === 'poor') {
+              criticalIssues.push(`Database health is ${healthData.overallHealth}`);
+            }
+            if (healthData.criticalIssues > 0) {
+              criticalIssues.push(`${healthData.criticalIssues} critical database issues detected`);
+            }
+          } catch (e) {
+            criticalIssues.push('Database health check failed');
+          }
+          
+          // Check performance issues
+          try {
+            const perfData = JSON.parse(fs.readFileSync('backend/quality-reports/maintenance/latest-benchmark-summary.json', 'utf8'));
+            if (perfData.overallHealth === 'critical') {
+              criticalIssues.push('Performance health is critical');
+            }
+            if (perfData.criticalRegressions > 0) {
+              criticalIssues.push(`${perfData.criticalRegressions} critical performance regressions detected`);
+            }
+          } catch (e) {
+            criticalIssues.push('Performance analysis failed');
+          }
+          
+          if (criticalIssues.length > 0) {
+            const issueBody = `
+          # 🚨 Critical Maintenance Issues Detected
+          
+          The daily maintenance check has identified critical issues that require immediate attention:
+          
+          ${criticalIssues.map(issue => `- ❌ ${issue}`).join('\n')}
+          
+          ## Actions Required
+          
+          1. Review the detailed maintenance reports in the workflow artifacts
+          2. Address critical issues immediately
+          3. Run targeted fixes and re-run maintenance checks
+          4. Update monitoring thresholds if needed
+          
+          ## Reports
+          
+          View the full maintenance reports in the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) artifacts.
+          
+          **This issue was automatically created by the maintenance workflow.**
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Critical Maintenance Issues - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['critical', 'maintenance', 'automated']
+            });
+          }
+
+  # Summary and Notification
+  quality-gate-summary:
+    name: Quality Gate Summary
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan, database-health, comprehensive-tests, performance-tests]
+    if: always()
+    
+    steps:
+    - name: Generate summary
+      run: |
+        echo "# Quality Gate Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Database Health | ${{ needs.database-health.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Comprehensive Tests | ${{ needs.comprehensive-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Performance Tests | ${{ needs.performance-tests.result == 'success' && '✅ Passed' || (needs.performance-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.code-quality.result }}" == "failure" || "${{ needs.security-scan.result }}" == "failure" || "${{ needs.database-health.result }}" == "failure" || "${{ needs.comprehensive-tests.result }}" == "failure" || "${{ needs.performance-tests.result }}" == "failure" ]]; then
+          echo "## ❌ Quality gates failed - review issues before merging" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        else
+          echo "## ✅ All quality gates passed" >> $GITHUB_STEP_SUMMARY
+        fi

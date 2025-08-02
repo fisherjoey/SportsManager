@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/tournament-generator.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/tournament-generator.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Tournament Generation Utilities
+ * Supports various tournament formats including Round Robin, Single Elimination, 
+ * Double Elimination, Swiss System, and Group Stage + Playoffs
+ */
+
+/**
+ * Generate Round Robin tournament
+ * Every team plays every other team once
+ */
+function generateRoundRobin(teams, options = {}) {
+  const {
+    venue = 'TBD',
+    startDate = new Date(),
+    timeSlots = ['10:00', '12:00', '14:00', '16:00', '18:00'],
+    daysOfWeek = [6, 0], // Saturday and Sunday
+    gamesPerDay = 3
+  } = options;
+
+  if (teams.length &lt; 2) {
+    throw new Error('At least 2 teams required for Round Robin');
+  }
+
+  const games = [];
+  const rounds = [];
+  let currentDate = new Date(startDate);
+  let gameCounter = 0;
+
+  // Generate all possible matchups
+  for (let i = 0; i &lt; teams.length; i++) {
+    for (let j = i + 1; j &lt; teams.length; j++) {
+      // Find next available date
+      while (!daysOfWeek.includes(currentDate.getDay()) || 
+             gameCounter >= gamesPerDay) {
+        if (gameCounter >= gamesPerDay) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          gameCounter = 0;
+        } else {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+
+      const game = {
+        home_team_id: teams[i].id,
+        away_team_id: teams[j].id,
+        home_team_name: teams[i].name,
+        away_team_name: teams[j].name,
+        game_date: new Date(currentDate).toISOString().split('T')[0],
+        game_time: timeSlots[gameCounter % timeSlots.length],
+        location: venue,
+        round: Math.floor(games.length / Math.floor(teams.length / 2)) + 1,
+        tournament_type: 'round_robin'
+      };
+
+      games.push(game);
+      gameCounter++;
+
+      // If we've scheduled all games for this day, move to next day
+      if (gameCounter >= gamesPerDay) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        gameCounter = 0;
+      }
+    }
+  }
+
+  // Group games into rounds
+  const gamesPerRound = Math.floor(teams.length / 2);
+  for (let i = 0; i &lt; games.length; i += gamesPerRound) {
+    rounds.push({
+      round: Math.floor(i / gamesPerRound) + 1,
+      games: games.slice(i, i + gamesPerRound)
+    });
+  }
+
+  return {
+    type: 'round_robin',
+    total_games: games.length,
+    total_rounds: rounds.length,
+    games,
+    rounds,
+    summary: {
+      teams_count: teams.length,
+      games_per_team: teams.length - 1,
+      estimated_duration_days: Math.ceil(games.length / gamesPerDay),
+      format: 'Every team plays every other team once'
+    }
+  };
+}
+
+/**
+ * Generate Single Elimination tournament
+ * Teams are eliminated after one loss
+ */
+function generateSingleElimination(teams, options = {}) {
+  const {
+    venue = 'TBD',
+    startDate = new Date(),
+    timeSlots = ['10:00', '12:00', '14:00', '16:00'],
+    daysOfWeek = [6, 0], // Saturday and Sunday
+    seedingMethod = 'random' // 'random', 'ranked', 'custom'
+  } = options;
+
+  if (teams.length &lt; 2) {
+    throw new Error('At least 2 teams required for Single Elimination');
+  }
+
+  // Seed teams
+  let seededTeams = [...teams];
+  if (seedingMethod === 'random') {
+    seededTeams = shuffleArray([...teams]);
+  } else if (seedingMethod === 'ranked') {
+    seededTeams = teams.sort((a, b) => (a.rank || 1) - (b.rank || 1));
+  }
+
+  // Add byes if necessary (must be power of 2)
+  const nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(teams.length)));
+  const byesNeeded = nextPowerOfTwo - teams.length;
+  
+  for (let i = 0; i &lt; byesNeeded; i++) {
+    seededTeams.push({ id: `bye-${i}`, name: 'BYE', is_bye: true });
+  }
+
+  const games = [];
+  const rounds = [];
+  let currentRound = 1;
+  let currentTeams = [...seededTeams];
+  let currentDate = new Date(startDate);
+  let gameCounter = 0;
+
+  while (currentTeams.length > 1) {
+    const roundGames = [];
+    const winners = [];
+
+    // Create matchups for this round
+    for (let i = 0; i &lt; currentTeams.length; i += 2) {
+      const team1 = currentTeams[i];
+      const team2 = currentTeams[i + 1];
+
+      // Handle byes
+      if (team1.is_bye) {
+        winners.push(team2);
+        continue;
+      }
+      if (team2.is_bye) {
+        winners.push(team1);
+        continue;
+      }
+
+      // Find next available date
+      while (!daysOfWeek.includes(currentDate.getDay())) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      const game = {
+        home_team_id: team1.id,
+        away_team_id: team2.id,
+        home_team_name: team1.name,
+        away_team_name: team2.name,
+        game_date: new Date(currentDate).toISOString().split('T')[0],
+        game_time: timeSlots[gameCounter % timeSlots.length],
+        location: venue,
+        round: currentRound,
+        round_name: getRoundName(currentRound, Math.log2(nextPowerOfTwo)),
+        tournament_type: 'single_elimination'
+      };
+
+      roundGames.push(game);
+      games.push(game);
+      
+      // Winner TBD - will be determined after game
+      winners.push({ 
+        id: `winner-${game.home_team_id}-${game.away_team_id}`,
+        name: `Winner of ${team1.name} vs ${team2.name}`,
+        is_placeholder: true,
+        source_game: game
+      });
+
+      gameCounter++;
+    }
+
+    rounds.push({
+      round: currentRound,
+      round_name: getRoundName(currentRound, Math.log2(nextPowerOfTwo)),
+      games: roundGames
+    });
+
+    currentTeams = winners;
+    currentRound++;
+    
+    // Move to next day for next round
+    currentDate.setDate(currentDate.getDate() + 1);
+    gameCounter = 0;
+  }
+
+  return {
+    type: 'single_elimination',
+    total_games: games.length,
+    total_rounds: rounds.length,
+    games,
+    rounds,
+    summary: {
+      teams_count: teams.length,
+      byes_added: byesNeeded,
+      max_games_per_team: Math.log2(nextPowerOfTwo),
+      estimated_duration_days: rounds.length,
+      format: 'Single elimination - lose and you are out'
+    }
+  };
+}
+
+/**
+ * Generate Swiss System tournament
+ * Teams play a fixed number of rounds, paired by similar records
+ */
+function generateSwissSystem(teams, options = {}) {
+  const {
+    venue = 'TBD',
+    startDate = new Date(),
+    timeSlots = ['10:00', '12:00', '14:00', '16:00'],
+    daysOfWeek = [6, 0], // Saturday and Sunday
+    rounds: totalRounds = Math.ceil(Math.log2(teams.length)) + 1
+  } = options;
+
+  if (teams.length &lt; 4) {
+    throw new Error('At least 4 teams required for Swiss System');
+  }
+
+  const games = [];
+  const rounds = [];
+  let currentDate = new Date(startDate);
+
+  // Initialize team records
+  const teamRecords = teams.map(team => ({
+    ...team,
+    wins: 0,
+    losses: 0,
+    opponents: []
+  }));
+
+  for (let round = 1; round &lt;= totalRounds; round++) {
+    // Sort teams by record (wins desc, then by tiebreakers)
+    teamRecords.sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      // Add more tiebreaker logic here if needed
+      return (a.rank || 1) - (b.rank || 1);
+    });
+
+    const roundGames = [];
+    const pairedTeams = new Set();
+
+    // Pair teams with similar records
+    for (let i = 0; i &lt; teamRecords.length; i++) {
+      if (pairedTeams.has(teamRecords[i].id)) continue;
+
+      const team1 = teamRecords[i];
+      let team2 = null;
+
+      // Find best opponent for team1
+      for (let j = i + 1; j &lt; teamRecords.length; j++) {
+        const candidate = teamRecords[j];
+        if (pairedTeams.has(candidate.id)) continue;
+        if (team1.opponents.includes(candidate.id)) continue;
+
+        team2 = candidate;
+        break;
+      }
+
+      // If no ideal opponent, pair with next available
+      if (!team2) {
+        for (let j = i + 1; j &lt; teamRecords.length; j++) {
+          const candidate = teamRecords[j];
+          if (!pairedTeams.has(candidate.id)) {
+            team2 = candidate;
+            break;
+          }
+        }
+      }
+
+      if (team2) {
+        // Find next available date
+        while (!daysOfWeek.includes(currentDate.getDay())) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        const game = {
+          home_team_id: team1.id,
+          away_team_id: team2.id,
+          home_team_name: team1.name,
+          away_team_name: team2.name,
+          game_date: new Date(currentDate).toISOString().split('T')[0],
+          game_time: timeSlots[roundGames.length % timeSlots.length],
+          location: venue,
+          round: round,
+          tournament_type: 'swiss_system'
+        };
+
+        roundGames.push(game);
+        games.push(game);
+        
+        pairedTeams.add(team1.id);
+        pairedTeams.add(team2.id);
+        
+        // Update opponent lists
+        team1.opponents.push(team2.id);
+        team2.opponents.push(team1.id);
+      }
+    }
+
+    rounds.push({
+      round: round,
+      games: roundGames
+    });
+
+    // Move to next round date
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return {
+    type: 'swiss_system',
+    total_games: games.length,
+    total_rounds: rounds.length,
+    games,
+    rounds,
+    summary: {
+      teams_count: teams.length,
+      rounds: totalRounds,
+      games_per_team: totalRounds,
+      estimated_duration_days: totalRounds,
+      format: `Swiss system - ${totalRounds} rounds, paired by similar records`
+    }
+  };
+}
+
+/**
+ * Generate Group Stage + Playoffs tournament
+ * Teams divided into groups, top teams advance to elimination playoffs
+ */
+function generateGroupStagePlayoffs(teams, options = {}) {
+  const {
+    venue = 'TBD',
+    startDate = new Date(),
+    timeSlots = ['10:00', '12:00', '14:00', '16:00'],
+    daysOfWeek = [6, 0],
+    groupSize = 4,
+    advancePerGroup = 2,
+    playoffFormat = 'single_elimination'
+  } = options;
+
+  if (teams.length &lt; 4) {
+    throw new Error('At least 4 teams required for Group Stage + Playoffs');
+  }
+
+  const games = [];
+  const rounds = [];
+  let currentDate = new Date(startDate);
+
+  // Divide teams into groups
+  const numGroups = Math.ceil(teams.length / groupSize);
+  const groups = [];
+  
+  for (let i = 0; i &lt; numGroups; i++) {
+    const groupTeams = teams.slice(i * groupSize, (i + 1) * groupSize);
+    groups.push({
+      id: i + 1,
+      name: `Group ${String.fromCharCode(65 + i)}`, // Group A, B, C...
+      teams: groupTeams
+    });
+  }
+
+  let roundCounter = 1;
+
+  // Generate group stage games (round robin within each group)
+  for (const group of groups) {
+    if (group.teams.length &lt; 2) continue;
+
+    // Generate round robin for this group
+    for (let i = 0; i &lt; group.teams.length; i++) {
+      for (let j = i + 1; j &lt; group.teams.length; j++) {
+        // Find next available date
+        while (!daysOfWeek.includes(currentDate.getDay())) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        const game = {
+          home_team_id: group.teams[i].id,
+          away_team_id: group.teams[j].id,
+          home_team_name: group.teams[i].name,
+          away_team_name: group.teams[j].name,
+          game_date: new Date(currentDate).toISOString().split('T')[0],
+          game_time: timeSlots[games.length % timeSlots.length],
+          location: venue,
+          round: roundCounter,
+          group_id: group.id,
+          group_name: group.name,
+          stage: 'group_stage',
+          tournament_type: 'group_stage_playoffs'
+        };
+
+        games.push(game);
+      }
+    }
+  }
+
+  // Create rounds for group stage
+  const groupGames = games.filter(g => g.stage === 'group_stage');
+  const gamesPerRound = Math.ceil(groupGames.length / 3); // Spread across ~3 rounds
+  
+  for (let i = 0; i &lt; groupGames.length; i += gamesPerRound) {
+    rounds.push({
+      round: roundCounter++,
+      stage: 'group_stage',
+      games: groupGames.slice(i, i + gamesPerRound)
+    });
+  }
+
+  // Generate playoff bracket (placeholder teams - will be filled after group stage)
+  const advancingTeams = [];
+  for (const group of groups) {
+    for (let i = 0; i &lt; Math.min(advancePerGroup, group.teams.length); i++) {
+      advancingTeams.push({
+        id: `${group.name}-${i + 1}`,
+        name: `${group.name} ${i === 0 ? '1st' : i === 1 ? '2nd' : `${i + 1}th`}`,
+        is_placeholder: true,
+        group_id: group.id,
+        group_position: i + 1
+      });
+    }
+  }
+
+  // Generate playoff games if we have enough advancing teams
+  if (advancingTeams.length >= 2) {
+    currentDate.setDate(currentDate.getDate() + 2); // Gap between group stage and playoffs
+    
+    const playoffTournament = generateSingleElimination(advancingTeams, {
+      venue,
+      startDate: currentDate,
+      timeSlots,
+      daysOfWeek
+    });
+
+    // Add playoff games
+    playoffTournament.games.forEach(game => {
+      games.push({
+        ...game,
+        stage: 'playoffs',
+        tournament_type: 'group_stage_playoffs',
+        round: roundCounter + game.round - 1
+      });
+    });
+
+    // Add playoff rounds
+    playoffTournament.rounds.forEach(round => {
+      rounds.push({
+        ...round,
+        round: roundCounter++,
+        stage: 'playoffs'
+      });
+    });
+  }
+
+  return {
+    type: 'group_stage_playoffs',
+    total_games: games.length,
+    total_rounds: rounds.length,
+    games,
+    rounds,
+    groups,
+    summary: {
+      teams_count: teams.length,
+      groups_count: groups.length,
+      teams_per_group: groupSize,
+      advancing_per_group: advancePerGroup,
+      group_stage_games: groupGames.length,
+      playoff_games: games.length - groupGames.length,
+      estimated_duration_days: rounds.length + 1,
+      format: `${numGroups} groups of ~${groupSize} teams, top ${advancePerGroup} advance to ${playoffFormat} playoffs`
+    }
+  };
+}
+
+// Helper functions
+function shuffleArray(array) {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
+function getRoundName(round, totalRounds) {
+  const roundsFromEnd = totalRounds - round + 1;
+  
+  switch (roundsFromEnd) {
+    case 1: return 'Final';
+    case 2: return 'Semi-Final';
+    case 3: return 'Quarter-Final';
+    case 4: return 'Round of 16';
+    case 5: return 'Round of 32';
+    default: return `Round ${round}`;
+  }
+}
+
+// Export all functions
+module.exports = {
+  generateRoundRobin,
+  generateSingleElimination,
+  generateSwissSystem,
+  generateGroupStagePlayoffs,
+  
+  // Utility exports
+  shuffleArray,
+  getRoundName
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
