@@ -4,6 +4,9 @@ const fs = require('fs-extra');
 const sharp = require('sharp');
 const pdf2pic = require('pdf2pic');
 const path = require('path');
+const logger = require('../utils/logger');
+const { sanitizePromptInput, sanitizeObjectFields, generateRequestId } = require('../utils/security');
+const aiConfig = require('../config/aiConfig');
 
 class AIServices {
   constructor() {
@@ -12,13 +15,59 @@ class AIServices {
     this.initialized = false;
     this.initPromise = this.initializeServices();
     
-    // PERFORMANCE OPTIMIZATION: Add request queuing and caching
+    // PERFORMANCE OPTIMIZATION: Add request queuing and caching with TTL
     this.requestQueue = [];
     this.processingRequests = new Map();
     this.responseCache = new Map();
-    this.maxCacheSize = 100;
+    this.cacheTimestamps = new Map();
+    
+    // Get configuration
+    const cachingConfig = aiConfig.getCachingConfig();
+    this.maxCacheSize = cachingConfig.maxSize;
+    this.cacheTTL = cachingConfig.ttl * 1000; // Convert to milliseconds
     this.maxConcurrentRequests = 3;
     this.currentRequests = 0;
+    
+    // Start cache cleanup interval
+    this.startCacheCleanup();
+  }
+
+  /**
+   * Start cache cleanup interval to remove expired entries
+   * @private
+   */
+  startCacheCleanup() {
+    setInterval(() => {
+      this.cleanupExpiredCache();
+    }, 300000); // Clean up every 5 minutes
+  }
+
+  /**
+   * Clean up expired cache entries
+   * @private
+   */
+  cleanupExpiredCache() {
+    const now = Date.now();
+    const expiredKeys = [];
+
+    for (const [key, timestamp] of this.cacheTimestamps.entries()) {
+      if (now - timestamp > this.cacheTTL) {
+        expiredKeys.push(key);
+      }
+    }
+
+    for (const key of expiredKeys) {
+      this.responseCache.delete(key);
+      this.cacheTimestamps.delete(key);
+    }
+
+    if (expiredKeys.length > 0) {
+      logger.logDebug('Cache cleanup completed', {
+        component: 'aiServices',
+        expiredEntries: expiredKeys.length,
+        remainingEntries: this.responseCache.size
+      });
+    }
   }
 
   /**
@@ -44,39 +93,63 @@ class AIServices {
         // Test the API connection
         try {
           await this.testVisionAPI();
-          console.log('Google Vision API initialized and tested successfully');
+          logger.logInfo('Google Vision API initialized and tested successfully', {
+            component: 'aiServices',
+            service: 'vision'
+          });
         } catch (testError) {
-          console.warn('Google Vision API test failed:', testError.message);
-          console.warn('Continuing with fallback OCR methods');
+          logger.logWarning('Google Vision API test failed, continuing with fallback OCR methods', {
+            component: 'aiServices',
+            service: 'vision',
+            error: testError.message
+          });
           this.visionClient = null;
         }
       } else {
-        console.warn('Google Vision API credentials not found. OCR will use fallback methods.');
+        logger.logWarning('Google Vision API credentials not found, OCR will use fallback methods', {
+          component: 'aiServices',
+          service: 'vision'
+        });
       }
 
       // Initialize OpenAI/DeepSeek API with validation
+      const llmConfig = aiConfig.getLLMConfig();
       if (process.env.OPENAI_API_KEY) {
         this.openaiClient = new OpenAI({
           apiKey: process.env.OPENAI_API_KEY,
-          timeout: 60000, // 60 second timeout
-          maxRetries: 2
+          timeout: llmConfig.timeout,
+          maxRetries: llmConfig.maxRetries
         });
         await this.testLLMAPI('OpenAI');
-        console.log('OpenAI API initialized and tested successfully');
+        logger.logInfo('OpenAI API initialized and tested successfully', {
+          component: 'aiServices',
+          service: 'openai',
+          model: llmConfig.model.openai
+        });
       } else if (process.env.DEEPSEEK_API_KEY) {
         this.openaiClient = new OpenAI({
           apiKey: process.env.DEEPSEEK_API_KEY,
           baseURL: 'https://api.deepseek.com/v1',
-          timeout: 60000,
-          maxRetries: 2
+          timeout: llmConfig.timeout,
+          maxRetries: llmConfig.maxRetries
         });
         await this.testLLMAPI('DeepSeek');
-        console.log('DeepSeek API initialized and tested successfully');
+        logger.logInfo('DeepSeek API initialized and tested successfully', {
+          component: 'aiServices',
+          service: 'deepseek',
+          model: llmConfig.model.deepseek
+        });
       } else {
-        console.warn('OpenAI/DeepSeek API key not found. LLM processing will be disabled.');
+        logger.logWarning('OpenAI/DeepSeek API key not found, LLM processing will be disabled', {
+          component: 'aiServices',
+          service: 'llm'
+        });
       }
     } catch (error) {
-      console.error('Error initializing AI services:', error);
+      logger.logError('Error initializing AI services', {
+        component: 'aiServices',
+        operation: 'initialization'
+      }, error);
     }
   }
 
@@ -122,7 +195,11 @@ class AIServices {
       
       return true;
     } catch (error) {
-      console.error(`${provider} API test failed:`, error.message);
+      logger.logError(`${provider} API test failed`, {
+        component: 'aiServices',
+        service: provider.toLowerCase(),
+        operation: 'api_test'
+      }, error);
       this.openaiClient = null;
       throw error;
     }
@@ -996,9 +1073,32 @@ Categorize now:`;
    * @returns {Promise<Object>} Assignment suggestions with confidence scores
    */
   async generateRefereeAssignments(games, referees, assignmentRules = {}) {
+    const requestId = generateRequestId();
+    const startTime = Date.now();
+    
     await this.ensureInitialized();
     
+    // Get configuration defaults
+    const config = aiConfig.getAssignmentWeights();
+    const constraints = aiConfig.getConstraints();
+    const llmConfig = aiConfig.getLLMConfig();
+    
+    // Merge with provided rules
+    assignmentRules = { ...config, ...constraints, ...assignmentRules };
+    
+    logger.logInfo('Starting AI referee assignment generation', {
+      component: 'aiServices',
+      operation: 'assignment_generation',
+      requestId,
+      gamesCount: games.length,
+      refereesCount: referees.length
+    });
+    
     if (!this.openaiClient) {
+      logger.logWarning('LLM client not available, using fallback assignment', {
+        component: 'aiServices',
+        requestId
+      });
       return this.generateAssignmentsFallback(games, referees, assignmentRules);
     }
 
@@ -1006,7 +1106,7 @@ Categorize now:`;
       const prompt = this.buildAssignmentPrompt(games, referees, assignmentRules);
       
       const completion = await this.callLLMWithRetry({
-        model: process.env.OPENAI_API_KEY ? 'gpt-4o-mini' : (process.env.DEEPSEEK_MODEL || 'deepseek-chat'),
+        model: process.env.OPENAI_API_KEY ? llmConfig.model.openai : llmConfig.model.deepseek,
         messages: [
           {
             role: 'system',
@@ -1017,61 +1117,98 @@ Categorize now:`;
             content: prompt
           }
         ],
-        temperature: 0.1, // Low temperature for consistent assignments
-        max_tokens: 4000
+        temperature: llmConfig.temperature,
+        max_tokens: llmConfig.maxTokens
       });
 
       const response = completion.choices[0].message.content.trim();
       const assignments = await this.parseAssignmentResponse(response, games, referees);
       
+      const duration = Date.now() - startTime;
+      const tokensUsed = completion.usage?.total_tokens || 0;
+      
+      // Log success metrics
+      logger.logAIMetrics('assignment_generation', duration, true, {
+        requestId,
+        tokensUsed,
+        assignmentsGenerated: assignments.length
+      });
+      
       return {
         success: true,
         assignments,
-        tokensUsed: completion.usage?.total_tokens || 0,
+        tokensUsed,
         method: 'ai_assignment',
-        confidence: this.calculateOverallAssignmentConfidence(assignments)
+        confidence: this.calculateOverallAssignmentConfidence(assignments),
+        requestId
       };
 
     } catch (error) {
-      console.error('AI assignment generation error:', error);
+      const duration = Date.now() - startTime;
+      
+      logger.logError('AI assignment generation failed', {
+        component: 'aiServices',
+        operation: 'assignment_generation',
+        requestId,
+        duration
+      }, error);
+      
+      // Log failure metrics
+      logger.logAIMetrics('assignment_generation', duration, false, {
+        requestId,
+        errorMessage: error.message
+      });
       
       // Fallback to algorithmic assignment
-      console.log('Falling back to algorithmic assignment method');
+      logger.logInfo('Falling back to algorithmic assignment method', {
+        component: 'aiServices',
+        requestId
+      });
+      
       const fallbackResult = this.generateAssignmentsFallback(games, referees, assignmentRules);
       return {
         ...fallbackResult,
-        fallbackReason: error.message
+        fallbackReason: error.message,
+        requestId
       };
     }
   }
 
   /**
-   * Build assignment prompt for LLM
+   * Build assignment prompt for LLM with input sanitization
    * @private
    */
   buildAssignmentPrompt(games, referees, rules) {
-    const gamesInfo = games.map(game => ({
-      id: game.id,
-      date: game.game_date,
-      time: game.game_time,
-      location: game.location,
-      postalCode: game.postal_code,
-      level: game.level,
-      homeTeam: game.home_team_name,
-      awayTeam: game.away_team_name,
-      refereesNeeded: game.refs_needed || 2
-    }));
+    // Sanitize game data to prevent prompt injection
+    const gamesInfo = games.map(game => {
+      const sanitizedGame = sanitizeObjectFields(game, ['location', 'home_team_name', 'away_team_name']);
+      return {
+        id: game.id,
+        date: game.game_date,
+        time: game.game_time,
+        location: sanitizedGame.location || 'Unknown Location',
+        postalCode: game.postal_code,
+        level: game.level,
+        homeTeam: sanitizedGame.home_team_name || 'Team A',
+        awayTeam: sanitizedGame.away_team_name || 'Team B',
+        refereesNeeded: game.refs_needed || 2
+      };
+    });
 
-    const refereesInfo = referees.map(ref => ({
-      id: ref.id,
-      name: ref.name,
-      level: ref.level,
-      location: ref.location,
-      postalCode: ref.postal_code,
-      maxDistance: ref.max_distance,
-      isAvailable: ref.is_available,
-      experience: ref.experience || 1
-    }));
+    // Sanitize referee data to prevent prompt injection
+    const refereesInfo = referees.map(ref => {
+      const sanitizedRef = sanitizeObjectFields(ref, ['name', 'location']);
+      return {
+        id: ref.id,
+        name: sanitizedRef.name || 'Referee',
+        level: ref.level,
+        location: sanitizedRef.location || 'Unknown Location',
+        postalCode: ref.postal_code,
+        maxDistance: ref.max_distance,
+        isAvailable: ref.is_available,
+        experience: ref.experience || 1
+      };
+    });
 
     return `Assign referees to games optimally. Consider:
 

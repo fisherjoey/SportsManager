@@ -4,6 +4,9 @@ const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const aiServices = require('../services/aiServices');
+const logger = require('../utils/logger');
+const { generateRequestId } = require('../utils/security');
+const batchProcessor = require('../utils/batching');
 
 // Validation schemas
 const generateSuggestionsSchema = Joi.object({
@@ -24,17 +27,49 @@ const rejectSuggestionSchema = Joi.object({
 class AIAssignmentService {
   static async generateSuggestions(games, referees, factors = {}) {
     try {
-      // Use the enhanced AI service for referee assignments
-      const aiResult = await aiServices.generateRefereeAssignments(games, referees, factors);
-      
-      if (!aiResult.success) {
-        throw new Error('AI assignment generation failed');
+      // Use batching for large datasets
+      const batchResult = await batchProcessor.processBatches(
+        games, 
+        referees, 
+        async (batchGames, batchReferees) => {
+          // Use the enhanced AI service for referee assignments
+          const aiResult = await aiServices.generateRefereeAssignments(batchGames, batchReferees, factors);
+          
+          if (!aiResult.success) {
+            throw new Error('AI assignment generation failed');
+          }
+          
+          return aiResult.assignments;
+        },
+        {
+          operation: 'generateSuggestions',
+          totalGames: games.length,
+          totalReferees: referees.length
+        }
+      );
+
+      // Handle batched results
+      let allAssignments = [];
+      if (batchResult.results) {
+        // Batched processing
+        allAssignments = batchResult.results.flat();
+        
+        if (batchResult.errors && batchResult.errors.length > 0) {
+          logger.logWarning('Some batches failed during AI suggestion generation', {
+            component: 'AIAssignmentService',
+            failedBatches: batchResult.errors.length,
+            totalBatches: batchResult.batchInfo.totalBatches
+          });
+        }
+      } else {
+        // Single batch processing
+        allAssignments = batchResult;
       }
 
       const suggestions = [];
       
       // Transform AI results to suggestions format
-      for (const assignment of aiResult.assignments) {
+      for (const assignment of allAssignments) {
         const game = games.find(g => g.id === assignment.gameId);
         if (!game) continue;
 
@@ -85,7 +120,13 @@ class AIAssignmentService {
       });
 
     } catch (error) {
-      console.error('AI assignment service error:', error);
+      logger.logError('AI assignment service error', {
+        component: 'AIAssignmentService',
+        operation: 'generateSuggestions',
+        gamesCount: games.length,
+        refereesCount: referees.length
+      }, error);
+      
       // Fallback to the original mock implementation
       return this.generateSuggestionsLegacy(games, referees, factors);
     }
@@ -529,12 +570,29 @@ class AIAssignmentService {
 
 // POST /api/assignments/ai-suggestions - Generate AI suggestions
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
   try {
+    logger.logInfo('AI suggestions request received', {
+      component: 'ai-suggestions',
+      operation: 'generate',
+      requestId,
+      userId: req.user.userId
+    });
+    
     const { error, value } = generateSuggestionsSchema.validate(req.body);
     if (error) {
+      logger.logWarning('Invalid request data for AI suggestions', {
+        component: 'ai-suggestions',
+        requestId,
+        validationError: error.details[0].message
+      });
+      
       return res.status(400).json({
         success: false,
-        error: error.details[0].message
+        error: error.details[0].message,
+        requestId
       });
     }
 
@@ -551,9 +609,17 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       });
 
     if (games.length !== game_ids.length) {
+      logger.logWarning('Some games not found or already assigned', {
+        component: 'ai-suggestions',
+        requestId,
+        requestedGames: game_ids.length,
+        foundGames: games.length
+      });
+      
       return res.status(404).json({
         success: false,
-        error: 'One or more games not found or already assigned'
+        error: 'One or more games not found or already assigned',
+        requestId
       });
     }
 
@@ -582,8 +648,18 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       await db('ai_suggestions').insert(suggestionInserts);
     }
 
+    const duration = Date.now() - startTime;
+    
+    logger.logAssignment('generate_suggestions', true, {
+      requestId,
+      duration,
+      suggestionsGenerated: suggestions.length,
+      gamesProcessed: games.length
+    });
+
     res.json({
       success: true,
+      requestId,
       data: {
         suggestions: suggestions.map(s => ({
           id: s.id,
@@ -614,10 +690,26 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error generating AI suggestions:', error);
+    const duration = Date.now() - startTime;
+    
+    logger.logError('Error generating AI suggestions', {
+      component: 'ai-suggestions',
+      operation: 'generate',
+      requestId,
+      duration,
+      userId: req.user.userId
+    }, error);
+    
+    logger.logAssignment('generate_suggestions', false, {
+      requestId,
+      duration,
+      errorMessage: error.message
+    });
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to generate AI suggestions'
+      error: 'Failed to generate AI suggestions',
+      requestId
     });
   }
 });
