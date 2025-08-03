@@ -1,0 +1,2277 @@
+openapi: 3.0.3
+info:
+  title: Sports Management API
+  description: |
+    Comprehensive API for managing sports leagues, referee assignments, games, teams, and budgets.
+    
+    ## Authentication
+    All endpoints (except `/health` and `/auth/login`) require Bearer authentication.
+    Include the JWT token in the Authorization header: `Authorization: Bearer <token>`
+    
+    ## Rate Limiting
+    - Login endpoint: 5 requests per minute
+    - Registration endpoint: 3 requests per hour
+    - Password reset: 3 requests per hour
+    - Assignment operations: 100 requests per minute
+    - General endpoints: 1000 requests per hour
+    
+    ## Error Handling
+    All error responses follow a consistent format:
+    ```json
+    {
+      "error": "Error message",
+      "message": "Detailed description",
+      "code": "ERROR_CODE"
+    }
+    ```
+    
+    ## Data Models
+    The API follows a hierarchical structure:
+    - Organizations contain Leagues
+    - Leagues contain Teams
+    - Games reference Teams and are assigned Referees
+    - Budgets track financial aspects
+    
+  version: 1.0.0
+  contact:
+    name: Sports Management API Support
+    email: support@sportsmanagement.app
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3001/api
+    description: Development server
+  - url: https://api.sportsmanagement.app
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login
+
+  schemas:
+    # Core Entity Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User's email address
+        role:
+          type: string
+          enum: [admin, referee, manager]
+          description: User's primary role
+        roles:
+          type: array
+          items:
+            type: string
+          description: Array of user roles (new role system)
+        name:
+          type: string
+          description: User's full name
+        phone:
+          type: string
+          description: User's phone number
+        location:
+          type: string
+          description: User's location/address
+        postal_code:
+          type: string
+          maxLength: 10
+          description: User's postal code for distance calculations
+        max_distance:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 25
+          description: Maximum travel distance in km (for referees)
+        is_available:
+          type: boolean
+          description: Whether the user is available for assignments
+        wage_per_game:
+          type: number
+          minimum: 0
+          description: User's wage per game (for referees)
+        referee_level_id:
+          type: string
+          format: uuid
+          description: Reference to referee level
+        years_experience:
+          type: integer
+          minimum: 0
+          maximum: 50
+          description: Years of experience
+        games_refereed_season:
+          type: integer
+          minimum: 0
+          description: Number of games refereed this season
+        evaluation_score:
+          type: number
+          minimum: 0
+          maximum: 10
+          description: Average evaluation score
+        white_whistle:
+          type: boolean
+          description: Whether referee has white whistle certification
+        notes:
+          type: string
+          description: Additional notes about the user
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - role
+
+    League:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organization:
+          type: string
+          description: Organization name
+        age_group:
+          type: string
+          description: Age group (e.g., U12, U14)
+        gender:
+          type: string
+          enum: [Boys, Girls, Mixed]
+        division:
+          type: string
+          description: Division level
+        season:
+          type: string
+          description: Season identifier
+        level:
+          type: string
+          enum: [Recreational, Competitive, Elite]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - organization
+        - age_group
+        - gender
+        - division
+        - season
+        - level
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Team name
+        league_id:
+          type: string
+          format: uuid
+          description: Reference to league
+        rank:
+          type: integer
+          minimum: 1
+          description: Team ranking
+        location:
+          type: string
+          description: Team's home location
+        contact_email:
+          type: string
+          format: email
+          description: Team contact email
+        contact_phone:
+          type: string
+          description: Team contact phone
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - name
+        - league_id
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        home_team_id:
+          type: string
+          format: uuid
+          description: Reference to home team
+        away_team_id:
+          type: string
+          format: uuid
+          description: Reference to away team
+        league_id:
+          type: string
+          format: uuid
+          description: Reference to league
+        game_date:
+          type: string
+          format: date
+          description: Game date
+        game_time:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Game time in HH:MM format
+        location:
+          type: string
+          description: Game location/venue
+        postal_code:
+          type: string
+          maxLength: 10
+          description: Location postal code
+        level:
+          type: string
+          description: Game level/difficulty
+        game_type:
+          type: string
+          enum: [Community, Club, Tournament, Private Tournament]
+          default: Community
+        division:
+          type: string
+          description: Division
+        season:
+          type: string
+          description: Season
+        pay_rate:
+          type: number
+          minimum: 0
+          description: Base pay rate for the game
+        refs_needed:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 2
+          description: Number of referees needed
+        wage_multiplier:
+          type: number
+          minimum: 0.1
+          maximum: 5.0
+          default: 1.0
+          description: Wage multiplier for special conditions
+        wage_multiplier_reason:
+          type: string
+          description: Reason for wage multiplier
+        status:
+          type: string
+          enum: [scheduled, assigned, completed, cancelled]
+          description: Game status
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - home_team_id
+        - away_team_id
+        - game_date
+        - game_time
+        - location
+        - postal_code
+        - level
+        - pay_rate
+
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        game_id:
+          type: string
+          format: uuid
+          description: Reference to game
+        user_id:
+          type: string
+          format: uuid
+          description: Reference to referee user
+        position_id:
+          type: string
+          format: uuid
+          description: Reference to position
+        status:
+          type: string
+          enum: [pending, accepted, declined, completed]
+          description: Assignment status
+        assigned_at:
+          type: string
+          format: date-time
+          description: When the assignment was made
+        assigned_by:
+          type: string
+          format: uuid
+          description: User who made the assignment
+        calculated_wage:
+          type: number
+          minimum: 0
+          description: Final calculated wage for this assignment
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - game_id
+        - user_id
+        - position_id
+
+    Budget:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Budget name
+        description:
+          type: string
+          description: Budget description
+        organization_id:
+          type: string
+          format: uuid
+          description: Organization owning this budget
+        owner_id:
+          type: string
+          format: uuid
+          description: User who owns this budget
+        budget_period_id:
+          type: string
+          format: uuid
+          description: Budget period reference
+        total_amount:
+          type: number
+          minimum: 0
+          description: Total budget amount
+        spent_amount:
+          type: number
+          minimum: 0
+          description: Amount already spent
+        status:
+          type: string
+          enum: [active, locked, archived]
+          description: Budget status
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - name
+        - organization_id
+        - owner_id
+        - total_amount
+
+    # Request/Response Schemas
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT authentication token
+        user:
+          $ref: '#/components/schemas/User'
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: string
+          enum: [admin, referee]
+        name:
+          type: string
+          description: Required for referee role
+        phone:
+          type: string
+          maxLength: 20
+        location:
+          type: string
+        postal_code:
+          type: string
+          maxLength: 10
+          description: Required for referee role
+        max_distance:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 25
+        referee_level_id:
+          type: string
+          format: uuid
+        years_experience:
+          type: integer
+          minimum: 0
+          maximum: 50
+        notes:
+          type: string
+      required:
+        - email
+        - password
+        - role
+
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        game_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        position_id:
+          type: string
+          format: uuid
+        assigned_by:
+          type: string
+          format: uuid
+      required:
+        - game_id
+        - user_id
+        - position_id
+
+    BulkUpdateAssignmentsRequest:
+      type: object
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            properties:
+              assignment_id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [pending, accepted, declined, completed]
+              calculated_wage:
+                type: number
+                minimum: 0
+            required:
+              - assignment_id
+              - status
+          maxItems: 100
+      required:
+        - updates
+
+    BulkRemoveAssignmentsRequest:
+      type: object
+      properties:
+        assignment_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+      required:
+        - assignment_ids
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        message:
+          type: string
+          description: Detailed error description
+        code:
+          type: string
+          description: Error code for programmatic handling
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+        database:
+          type: string
+          enum: [connected, disconnected]
+        error:
+          type: string
+          description: Error message if unhealthy
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Health Check
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check the health status of the API and database connection
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # Authentication
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "admin@example.com"
+              password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new user (admin or referee)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              admin:
+                summary: Admin registration
+                value:
+                  email: "admin@example.com"
+                  password: "password123"
+                  role: "admin"
+              referee:
+                summary: Referee registration
+                value:
+                  email: "referee@example.com"
+                  password: "password123"
+                  role: "referee"
+                  name: "John Referee"
+                  postal_code: "12345"
+                  phone: "555-0123"
+                  max_distance: 30
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Validation error or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the profile of the currently authenticated user
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Users
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Retrieve all users (admin only). Can filter by role.
+      parameters:
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [admin, referee, manager]
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get specific user
+      description: Retrieve a specific user by ID. Users can only view their own profile unless they're admin.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '403':
+          description: Not authorized to view this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Referees
+  /referees:
+    get:
+      tags:
+        - Referees
+      summary: Get all referees
+      description: Retrieve all referees with optional filtering
+      parameters:
+        - name: level
+          in: query
+          description: Filter by referee level
+          schema:
+            type: string
+        - name: postal_code
+          in: query
+          description: Filter by postal code
+          schema:
+            type: string
+        - name: is_available
+          in: query
+          description: Filter by availability status
+          schema:
+            type: boolean
+        - name: white_whistle
+          in: query
+          description: Filter by white whistle certification
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search by name or email
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Referees retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+  /referees/{id}:
+    get:
+      tags:
+        - Referees
+      summary: Get specific referee
+      description: Retrieve detailed information about a specific referee
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Referee ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Referee retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: Referee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Leagues
+  /leagues:
+    get:
+      tags:
+        - Leagues
+      summary: Get all leagues
+      description: Retrieve all leagues with optional filtering
+      parameters:
+        - name: organization
+          in: query
+          description: Filter by organization
+          schema:
+            type: string
+        - name: age_group
+          in: query
+          description: Filter by age group
+          schema:
+            type: string
+        - name: gender
+          in: query
+          description: Filter by gender
+          schema:
+            type: string
+            enum: [Boys, Girls, Mixed]
+        - name: division
+          in: query
+          description: Filter by division
+          schema:
+            type: string
+        - name: season
+          in: query
+          description: Filter by season
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Filter by level
+          schema:
+            type: string
+            enum: [Recreational, Competitive, Elite]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Leagues retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Leagues
+      summary: Create new league
+      description: Create a new league (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/League'
+            example:
+              organization: "Metro Soccer Association"
+              age_group: "U12"
+              gender: "Boys"
+              division: "Division 1"
+              season: "Fall 2024"
+              level: "Competitive"
+      responses:
+        '201':
+          description: League created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  league:
+                    $ref: '#/components/schemas/League'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /leagues/{id}:
+    get:
+      tags:
+        - Leagues
+      summary: Get specific league
+      description: Retrieve a specific league by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: League ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: League retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  league:
+                    $ref: '#/components/schemas/League'
+        '404':
+          description: League not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Leagues
+      summary: Update league
+      description: Update an existing league (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: League ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/League'
+      responses:
+        '200':
+          description: League updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  league:
+                    $ref: '#/components/schemas/League'
+        '404':
+          description: League not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Leagues
+      summary: Delete league
+      description: Delete a league (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: League ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: League deleted successfully
+        '404':
+          description: League not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Teams
+  /teams:
+    get:
+      tags:
+        - Teams
+      summary: Get all teams
+      description: Retrieve all teams with optional filtering
+      parameters:
+        - name: league_id
+          in: query
+          description: Filter by league ID
+          schema:
+            type: string
+            format: uuid
+        - name: organization
+          in: query
+          description: Filter by organization
+          schema:
+            type: string
+        - name: age_group
+          in: query
+          description: Filter by age group
+          schema:
+            type: string
+        - name: gender
+          in: query
+          description: Filter by gender
+          schema:
+            type: string
+            enum: [Boys, Girls, Mixed]
+        - name: season
+          in: query
+          description: Filter by season
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search by team name
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Teams
+      summary: Create new team
+      description: Create a new team (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+            example:
+              name: "Lightning Bolts"
+              league_id: "123e4567-e89b-12d3-a456-426614174000"
+              rank: 1
+              location: "North Field Complex"
+              contact_email: "coach@lightning.com"
+              contact_phone: "555-0123"
+      responses:
+        '201':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  team:
+                    $ref: '#/components/schemas/Team'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /teams/{id}:
+    get:
+      tags:
+        - Teams
+      summary: Get specific team
+      description: Retrieve a specific team by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Team ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Team retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  team:
+                    $ref: '#/components/schemas/Team'
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Teams
+      summary: Update team
+      description: Update an existing team (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Team ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  team:
+                    $ref: '#/components/schemas/Team'
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Teams
+      summary: Delete team
+      description: Delete a team (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Team ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Team deleted successfully
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Games
+  /games:
+    get:
+      tags:
+        - Games
+      summary: Get all games
+      description: Retrieve all games with optional filtering
+      parameters:
+        - name: status
+          in: query
+          description: Filter by game status
+          schema:
+            type: string
+            enum: [scheduled, assigned, completed, cancelled]
+        - name: level
+          in: query
+          description: Filter by game level
+          schema:
+            type: string
+        - name: game_type
+          in: query
+          description: Filter by game type
+          schema:
+            type: string
+            enum: [Community, Club, Tournament, Private Tournament]
+        - name: date_from
+          in: query
+          description: Filter games from this date (inclusive)
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: Filter games until this date (inclusive)
+          schema:
+            type: string
+            format: date
+        - name: postal_code
+          in: query
+          description: Filter by location postal code
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Games retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Games
+      summary: Create new game
+      description: Create a new game (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Game'
+            example:
+              home_team_id: "123e4567-e89b-12d3-a456-426614174000"
+              away_team_id: "123e4567-e89b-12d3-a456-426614174001"
+              league_id: "123e4567-e89b-12d3-a456-426614174002"
+              game_date: "2024-08-15"
+              game_time: "14:00"
+              location: "Central Sports Complex"
+              postal_code: "12345"
+              level: "Competitive"
+              game_type: "Community"
+              division: "Division 1"
+              season: "Fall 2024"
+              pay_rate: 75.00
+              refs_needed: 2
+              wage_multiplier: 1.0
+      responses:
+        '201':
+          description: Game created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game:
+                    $ref: '#/components/schemas/Game'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /games/{id}:
+    get:
+      tags:
+        - Games
+      summary: Get specific game
+      description: Retrieve a specific game by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Game ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Game retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game:
+                    $ref: '#/components/schemas/Game'
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Games
+      summary: Update game
+      description: Update an existing game (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Game ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Game'
+      responses:
+        '200':
+          description: Game updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game:
+                    $ref: '#/components/schemas/Game'
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Games
+      summary: Delete game
+      description: Delete a game (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Game ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Game deleted successfully
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Assignments
+  /assignments:
+    get:
+      tags:
+        - Assignments
+      summary: Get all assignments
+      description: Retrieve all referee assignments with optional filtering
+      parameters:
+        - name: game_id
+          in: query
+          description: Filter by game ID
+          schema:
+            type: string
+            format: uuid
+        - name: referee_id
+          in: query
+          description: Filter by referee ID
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter by assignment status
+          schema:
+            type: string
+            enum: [pending, accepted, declined, completed]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Assignments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Assignments
+      summary: Create new assignment
+      description: Create a new referee assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentRequest'
+            example:
+              game_id: "123e4567-e89b-12d3-a456-426614174000"
+              user_id: "123e4567-e89b-12d3-a456-426614174001"
+              position_id: "123e4567-e89b-12d3-a456-426614174002"
+              assigned_by: "123e4567-e89b-12d3-a456-426614174003"
+      responses:
+        '201':
+          description: Assignment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      assignment:
+                        $ref: '#/components/schemas/Assignment'
+                      wageBreakdown:
+                        type: object
+                        description: Detailed wage calculation breakdown
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                    description: Any warnings about the assignment
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Game, referee, or position not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Assignment conflict (position filled, referee already assigned, etc.)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: string
+                  conflicts:
+                    type: array
+                    items:
+                      type: object
+
+  /assignments/{id}:
+    get:
+      tags:
+        - Assignments
+      summary: Get specific assignment
+      description: Retrieve a specific assignment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Assignment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Assignment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Assignments
+      summary: Remove assignment
+      description: Remove a referee assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Assignment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Assignment removed successfully
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /assignments/{id}/status:
+    patch:
+      tags:
+        - Assignments
+      summary: Update assignment status
+      description: Update the status of an assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Assignment ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, accepted, declined, completed]
+              required:
+                - status
+            example:
+              status: "accepted"
+      responses:
+        '200':
+          description: Assignment status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      assignment:
+                        $ref: '#/components/schemas/Assignment'
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /assignments/bulk-update:
+    post:
+      tags:
+        - Assignments
+      summary: Bulk update assignments
+      description: Update multiple assignment statuses at once (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkUpdateAssignmentsRequest'
+            example:
+              updates:
+                - assignment_id: "123e4567-e89b-12d3-a456-426614174000"
+                  status: "accepted"
+                - assignment_id: "123e4567-e89b-12d3-a456-426614174001"
+                  status: "declined"
+      responses:
+        '200':
+          description: Bulk update completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      updatedAssignments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Assignment'
+                      summary:
+                        type: object
+                        properties:
+                          totalRequested:
+                            type: integer
+                          successfulUpdates:
+                            type: integer
+                          failedUpdates:
+                            type: integer
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  partialSuccess:
+                    type: boolean
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /assignments/bulk-remove:
+    delete:
+      tags:
+        - Assignments
+      summary: Bulk remove assignments
+      description: Remove multiple assignments at once (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkRemoveAssignmentsRequest'
+            example:
+              assignment_ids:
+                - "123e4567-e89b-12d3-a456-426614174000"
+                - "123e4567-e89b-12d3-a456-426614174001"
+      responses:
+        '200':
+          description: Bulk removal completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      deletedCount:
+                        type: integer
+                      affectedGames:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
+                      summary:
+                        type: object
+                        properties:
+                          requested:
+                            type: integer
+                          successfullyDeleted:
+                            type: integer
+                          notFound:
+                            type: integer
+                  warnings:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /assignments/check-conflicts:
+    post:
+      tags:
+        - Assignments
+      summary: Check assignment conflicts
+      description: Check for conflicts before creating an assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentRequest'
+      responses:
+        '200':
+          description: Conflict check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      hasConflicts:
+                        type: boolean
+                      conflicts:
+                        type: array
+                        items:
+                          type: string
+                      warnings:
+                        type: array
+                        items:
+                          type: string
+                      errors:
+                        type: array
+                        items:
+                          type: string
+                      isQualified:
+                        type: boolean
+                      canAssign:
+                        type: boolean
+
+  /assignments/available-referees/{game_id}:
+    get:
+      tags:
+        - Assignments
+      summary: Get available referees for game
+      description: Get list of referees available for a specific game
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: Game ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Available referees retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      referees:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/User'
+                            - type: object
+                              properties:
+                                availabilityScore:
+                                  type: number
+                                availabilityStatus:
+                                  type: string
+                                  enum: [available, not_specified, unknown, conflict]
+                                availabilityNote:
+                                  type: string
+                                availabilityWindows:
+                                  type: array
+                                  items:
+                                    type: object
+                      gameTime:
+                        type: object
+                        properties:
+                          date:
+                            type: string
+                            format: date
+                          startTime:
+                            type: string
+                          endTime:
+                            type: string
+                      summary:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          available:
+                            type: integer
+                          notSpecified:
+                            type: integer
+                          unknown:
+                            type: integer
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # AI Suggestions
+  /ai-suggestions/generate:
+    post:
+      tags:
+        - AI Suggestions
+      summary: Generate AI assignment suggestions
+      description: Generate AI-powered referee assignment suggestions for games
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+                factors:
+                  type: object
+                  properties:
+                    proximity_weight:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.3
+                    availability_weight:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.4
+                    experience_weight:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.2
+                    performance_weight:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.1
+              required:
+                - game_ids
+            example:
+              game_ids:
+                - "123e4567-e89b-12d3-a456-426614174000"
+                - "123e4567-e89b-12d3-a456-426614174001"
+              factors:
+                proximity_weight: 0.3
+                availability_weight: 0.4
+                experience_weight: 0.2
+                performance_weight: 0.1
+      responses:
+        '200':
+          description: AI suggestions generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      suggestions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            game_id:
+                              type: string
+                              format: uuid
+                            referee_id:
+                              type: string
+                              format: uuid
+                            position_id:
+                              type: string
+                              format: uuid
+                            confidence_score:
+                              type: number
+                              minimum: 0
+                              maximum: 1
+                            factors:
+                              type: object
+                              properties:
+                                proximity_score:
+                                  type: number
+                                availability_score:
+                                  type: number
+                                experience_score:
+                                  type: number
+                                performance_score:
+                                  type: number
+                            conflict_warnings:
+                              type: array
+                              items:
+                                type: string
+                      summary:
+                        type: object
+                        properties:
+                          total_suggestions:
+                            type: integer
+                          games_processed:
+                            type: integer
+                          average_confidence:
+                            type: number
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Budgets
+  /budgets:
+    get:
+      tags:
+        - Budgets
+      summary: Get all budgets
+      description: Retrieve all budgets accessible to the current user
+      parameters:
+        - name: status
+          in: query
+          description: Filter by budget status
+          schema:
+            type: string
+            enum: [active, locked, archived]
+        - name: budget_period_id
+          in: query
+          description: Filter by budget period
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Budgets retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Budgets
+      summary: Create new budget
+      description: Create a new budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Budget'
+            example:
+              name: "Q1 2024 Operations"
+              description: "First quarter operational budget"
+              organization_id: "123e4567-e89b-12d3-a456-426614174000"
+              owner_id: "123e4567-e89b-12d3-a456-426614174001"
+              budget_period_id: "123e4567-e89b-12d3-a456-426614174002"
+              total_amount: 50000.00
+      responses:
+        '201':
+          description: Budget created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budget:
+                    $ref: '#/components/schemas/Budget'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /budgets/{id}:
+    get:
+      tags:
+        - Budgets
+      summary: Get specific budget
+      description: Retrieve a specific budget by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Budget retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budget:
+                    $ref: '#/components/schemas/Budget'
+        '404':
+          description: Budget not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Budgets
+      summary: Update budget
+      description: Update an existing budget
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Budget'
+      responses:
+        '200':
+          description: Budget updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budget:
+                    $ref: '#/components/schemas/Budget'
+        '404':
+          description: Budget not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions or budget is locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Budgets
+      summary: Delete budget
+      description: Delete a budget
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Budget deleted successfully
+        '404':
+          description: Budget not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions or budget is locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Health
+    description: System health monitoring
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management operations
+  - name: Referees
+    description: Referee-specific operations and queries
+  - name: Leagues
+    description: League management operations
+  - name: Teams
+    description: Team management operations
+  - name: Games
+    description: Game scheduling and management
+  - name: Assignments
+    description: Referee assignment operations
+  - name: AI Suggestions
+    description: AI-powered assignment suggestions
+  - name: Budgets
+    description: Budget management and tracking

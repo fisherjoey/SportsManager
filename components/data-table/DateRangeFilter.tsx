@@ -1,17 +1,18 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Calendar as CalendarIcon, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import * as React from 'react'
+import { Calendar as CalendarIcon, X } from 'lucide-react'
+import { format, isToday, parseISO, isValid } from 'date-fns'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format, isToday, parseISO, isValid } from "date-fns"
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 
 interface DateRangeFilterProps {
   startDate?: Date
@@ -26,25 +27,25 @@ export function DateRangeFilter({
   endDate,
   onStartDateChange,
   onEndDateChange,
-  onClear,
+  onClear
 }: DateRangeFilterProps) {
-  const [startInputValue, setStartInputValue] = React.useState("")
-  const [endInputValue, setEndInputValue] = React.useState("")
+  const [startInputValue, setStartInputValue] = React.useState('')
+  const [endInputValue, setEndInputValue] = React.useState('')
   const [isStartOpen, setIsStartOpen] = React.useState(false)
   const [isEndOpen, setIsEndOpen] = React.useState(false)
 
   // Update input values when dates change
   React.useEffect(() => {
-    setStartInputValue(startDate ? format(startDate, "yyyy-MM-dd") : "")
+    setStartInputValue(startDate ? format(startDate, 'yyyy-MM-dd') : '')
   }, [startDate])
 
   React.useEffect(() => {
-    setEndInputValue(endDate ? format(endDate, "yyyy-MM-dd") : "")
+    setEndInputValue(endDate ? format(endDate, 'yyyy-MM-dd') : '')
   }, [endDate])
 
   const handleStartInputChange = (value: string) => {
     setStartInputValue(value)
-    if (value === "") {
+    if (value === '') {
       onStartDateChange(undefined)
       return
     }
@@ -57,7 +58,7 @@ export function DateRangeFilter({
 
   const handleEndInputChange = (value: string) => {
     setEndInputValue(value)
-    if (value === "") {
+    if (value === '') {
       onEndDateChange(undefined)
       return
     }
@@ -116,7 +117,7 @@ export function DateRangeFilter({
                   className="w-full h-8 px-2 text-xs justify-start font-normal"
                 >
                   <CalendarIcon className="mr-1 h-3 w-3" />
-                  {startDate ? format(startDate, "MMM dd") : "Pick date"}
+                  {startDate ? format(startDate, 'MMM dd') : 'Pick date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -152,7 +153,7 @@ export function DateRangeFilter({
                   className="w-full h-8 px-2 text-xs justify-start font-normal"
                 >
                   <CalendarIcon className="mr-1 h-3 w-3" />
-                  {endDate ? format(endDate, "MMM dd") : "Pick date"}
+                  {endDate ? format(endDate, 'MMM dd') : 'Pick date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -183,12 +184,12 @@ export function DateRangeFilter({
       {hasActiveFilter && (
         <div className="text-xs text-muted-foreground">
           {startDate && endDate
-            ? `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`
+            ? `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`
             : startDate
-            ? `From ${format(startDate, "MMM dd")}`
-            : endDate
-            ? `Until ${format(endDate, "MMM dd")}`
-            : ""}
+              ? `From ${format(startDate, 'MMM dd')}`
+              : endDate
+                ? `Until ${format(endDate, 'MMM dd')}`
+                : ''}
         </div>
       )}
     </div>

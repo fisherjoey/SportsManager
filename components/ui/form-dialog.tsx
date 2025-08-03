@@ -1,14 +1,15 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
+import React, { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  DialogTitle
+} from '@/components/ui/dialog'
 
 interface FormDialogProps {
   open: boolean
@@ -32,9 +33,9 @@ export function FormDialog({
   description,
   onSubmit,
   children,
-  submitText = "Submit",
-  cancelText = "Cancel",
-  maxWidth = "sm:max-w-[425px]",
+  submitText = 'Submit',
+  cancelText = 'Cancel',
+  maxWidth = 'sm:max-w-[425px]',
   disabled = false,
   resetFormOnSuccess = true
 }: FormDialogProps) {
@@ -96,7 +97,7 @@ export function FormDialog({
               type="submit" 
               disabled={disabled || loading}
             >
-              {loading ? "Loading..." : submitText}
+              {loading ? 'Loading...' : submitText}
             </Button>
           </div>
         </form>
@@ -126,9 +127,9 @@ export function CustomFormDialog({
   description,
   onSubmit,
   children,
-  submitText = "Submit",
-  cancelText = "Cancel",
-  maxWidth = "sm:max-w-[425px]",
+  submitText = 'Submit',
+  cancelText = 'Cancel',
+  maxWidth = 'sm:max-w-[425px]',
   showActions = true
 }: CustomFormDialogProps) {
   const [loading, setLoading] = useState(false)
@@ -179,7 +180,7 @@ export function CustomFormDialog({
                 form="dialog-form"
                 disabled={loading}
               >
-                {loading ? "Loading..." : submitText}
+                {loading ? 'Loading...' : submitText}
               </Button>
             </div>
           )}

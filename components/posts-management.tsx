@@ -1,19 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { RichTextEditor } from "@/components/rich-text-editor"
-import { apiClient } from "@/lib/api"
-import { useAuth } from "@/components/auth-provider"
+import { useState, useEffect } from 'react'
 import { 
   Plus, 
   Edit, 
@@ -34,8 +21,22 @@ import {
   FileText,
   Sparkles,
   TrendingUp
-} from "lucide-react"
-import { format } from "date-fns"
+} from 'lucide-react'
+import { format } from 'date-fns'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { RichTextEditor } from '@/components/rich-text-editor'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
 
 interface Post {
   id: string
@@ -221,10 +222,10 @@ export function PostsManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-green-100 text-green-800'
-      case 'draft': return 'bg-yellow-100 text-yellow-800'
-      case 'archived': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+    case 'published': return 'bg-green-100 text-green-800'
+    case 'draft': return 'bg-yellow-100 text-yellow-800'
+    case 'archived': return 'bg-gray-100 text-gray-800'
+    default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -273,32 +274,32 @@ export function PostsManagement() {
   // Stats for posts overview
   const stats = [
     {
-      title: "Total Posts",
+      title: 'Total Posts',
       value: posts.length,
       icon: FileText,
-      color: "text-blue-600",
-      description: "All posts in system",
+      color: 'text-blue-600',
+      description: 'All posts in system'
     },
     {
-      title: "Published",
+      title: 'Published',
       value: posts.filter(p => p.status === 'published').length,
       icon: TrendingUp,
-      color: "text-green-600",
-      description: "Live posts visible to users",
+      color: 'text-green-600',
+      description: 'Live posts visible to users'
     },
     {
-      title: "Drafts",
+      title: 'Drafts',
       value: posts.filter(p => p.status === 'draft').length,
       icon: Edit,
-      color: "text-orange-600",
-      description: "Posts in progress",
+      color: 'text-orange-600',
+      description: 'Posts in progress'
     },
     {
-      title: "Categories",
+      title: 'Categories',
       value: categories.length,
       icon: Tag,
-      color: "text-purple-600",
-      description: "Available categories",
+      color: 'text-purple-600',
+      description: 'Available categories'
     }
   ]
 
@@ -313,7 +314,7 @@ export function PostsManagement() {
           <Sparkles className="h-3 w-3 mr-1" />
           Rich Content
         </Badge>
-        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}>
           <Plus className="h-5 w-5 mr-2" />
           Create Post
         </Button>
@@ -321,19 +322,19 @@ export function PostsManagement() {
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Post</DialogTitle>
-            </DialogHeader>
-            <PostForm
-              formData={formData}
-              setFormData={setFormData}
-              categories={categories}
-              onSubmit={handleCreatePost}
-              onCancel={() => setIsCreateDialogOpen(false)}
-              isEdit={false}
-            />
-          </DialogContent>
-        </Dialog>
+          <DialogHeader>
+            <DialogTitle>Create New Post</DialogTitle>
+          </DialogHeader>
+          <PostForm
+            formData={formData}
+            setFormData={setFormData}
+            categories={categories}
+            onSubmit={handleCreatePost}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            isEdit={false}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 interface AutoHidingTabsContextType {
   isMinimized: boolean
@@ -17,13 +18,13 @@ const AutoHidingTabsContext = React.createContext<AutoHidingTabsContextType | nu
 interface AutoHidingTabsProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root> {
   autoHide?: boolean
   hideDelay?: number
-  orientation?: "horizontal" | "vertical"
+  orientation?: 'horizontal' | 'vertical'
 }
 
 const AutoHidingTabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   AutoHidingTabsProps
->(({ className, autoHide = false, hideDelay = 3000, orientation = "horizontal", ...props }, ref) => {
+>(({ className, autoHide = false, hideDelay = 3000, orientation = 'horizontal', ...props }, ref) => {
   const [isMinimized, setIsMinimized] = React.useState(false)
   const [isHovered, setIsHovered] = React.useState(false)
   const timeoutRef = React.useRef<NodeJS.Timeout>()
@@ -66,7 +67,7 @@ const AutoHidingTabs = React.forwardRef<
     </AutoHidingTabsContext.Provider>
   )
 })
-AutoHidingTabs.displayName = "AutoHidingTabs"
+AutoHidingTabs.displayName = 'AutoHidingTabs'
 
 const AutoHidingTabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
@@ -75,7 +76,7 @@ const AutoHidingTabsList = React.forwardRef<
   const context = React.useContext(AutoHidingTabsContext)
   
   if (!context) {
-    throw new Error("AutoHidingTabsList must be used within AutoHidingTabs")
+    throw new Error('AutoHidingTabsList must be used within AutoHidingTabs')
   }
 
   const { isMinimized, setIsMinimized } = context
@@ -85,8 +86,8 @@ const AutoHidingTabsList = React.forwardRef<
       <TabsPrimitive.List
         ref={ref}
         className={cn(
-          "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground transition-all duration-300",
-          isMinimized && "transform -translate-x-full opacity-50 hover:translate-x-0 hover:opacity-100",
+          'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground transition-all duration-300',
+          isMinimized && 'transform -translate-x-full opacity-50 hover:translate-x-0 hover:opacity-100',
           className
         )}
         {...props}
@@ -112,7 +113,7 @@ const AutoHidingTabsList = React.forwardRef<
     </div>
   )
 })
-AutoHidingTabsList.displayName = "AutoHidingTabsList"
+AutoHidingTabsList.displayName = 'AutoHidingTabsList'
 
 const AutoHidingTabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
@@ -121,7 +122,7 @@ const AutoHidingTabsTrigger = React.forwardRef<
   const context = React.useContext(AutoHidingTabsContext)
   
   if (!context) {
-    throw new Error("AutoHidingTabsTrigger must be used within AutoHidingTabs")
+    throw new Error('AutoHidingTabsTrigger must be used within AutoHidingTabs')
   }
 
   const { isMinimized } = context
@@ -130,8 +131,8 @@ const AutoHidingTabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
-        isMinimized && "opacity-0 w-0 px-0 overflow-hidden",
+        'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+        isMinimized && 'opacity-0 w-0 px-0 overflow-hidden',
         className
       )}
       {...props}
@@ -140,7 +141,7 @@ const AutoHidingTabsTrigger = React.forwardRef<
     </TabsPrimitive.Trigger>
   )
 })
-AutoHidingTabsTrigger.displayName = "AutoHidingTabsTrigger"
+AutoHidingTabsTrigger.displayName = 'AutoHidingTabsTrigger'
 
 const AutoHidingTabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
@@ -149,13 +150,13 @@ const AutoHidingTabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       className
     )}
     {...props}
   />
 ))
-AutoHidingTabsContent.displayName = "AutoHidingTabsContent"
+AutoHidingTabsContent.displayName = 'AutoHidingTabsContent'
 
 export { 
   AutoHidingTabs, 

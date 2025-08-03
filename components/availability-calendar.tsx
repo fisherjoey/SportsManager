@@ -1,32 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useToast } from "@/components/ui/use-toast"
-import { useApi } from "@/lib/api"
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -38,8 +12,35 @@ import {
   X,
   ChevronLeft,
   ChevronRight
-} from "lucide-react"
+} from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi } from '@/lib/api'
 import { AvailabilityWindow } from '@/lib/types'
 
 interface AvailabilityCalendarProps {
@@ -112,15 +113,15 @@ export function AvailabilityCalendar({
       setAvailabilityStrategy(strategy)
       
       toast({
-        title: "Success",
-        description: `Availability strategy updated to ${strategy === 'BLACKLIST' ? 'Blacklist Mode (Assume Available)' : 'Whitelist Mode (Assume Unavailable)'}.`,
+        title: 'Success',
+        description: `Availability strategy updated to ${strategy === 'BLACKLIST' ? 'Blacklist Mode (Assume Available)' : 'Whitelist Mode (Assume Unavailable)'}.`
       })
     } catch (error) {
       console.error('Error updating availability strategy:', error)
       toast({
-        title: "Error",
-        description: "Failed to update availability strategy.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update availability strategy.',
+        variant: 'destructive'
       })
     }
   }
@@ -171,9 +172,9 @@ export function AvailabilityCalendar({
       console.error('Error fetching availability:', error)
       setAvailabilityWindows([])
       toast({
-        title: "Error", 
-        description: "Failed to load availability data. Please try again.",
-        variant: "destructive",
+        title: 'Error', 
+        description: 'Failed to load availability data. Please try again.',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -207,9 +208,9 @@ export function AvailabilityCalendar({
     if (!refereeId) {
       console.error('Cannot create availability window: No refereeId provided')
       toast({
-        title: "Error",
-        description: "Unable to create availability window. Referee ID is missing.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Unable to create availability window. Referee ID is missing.',
+        variant: 'destructive'
       })
       return
     }
@@ -242,8 +243,8 @@ export function AvailabilityCalendar({
       }
       
       toast({
-        title: "Success",
-        description: "Availability window created successfully.",
+        title: 'Success',
+        description: 'Availability window created successfully.'
       })
     } catch (error) {
       console.error('Error creating window:', error)
@@ -254,9 +255,9 @@ export function AvailabilityCalendar({
       )
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create availability window.",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create availability window.',
+        variant: 'destructive'
       })
     }
   }
@@ -285,8 +286,8 @@ export function AvailabilityCalendar({
       }
       
       toast({
-        title: "Success",
-        description: "Availability window updated successfully.",
+        title: 'Success',
+        description: 'Availability window updated successfully.'
       })
     } catch (error) {
       console.error('Error updating window:', error)
@@ -299,9 +300,9 @@ export function AvailabilityCalendar({
       }
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update availability window.",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update availability window.',
+        variant: 'destructive'
       })
     }
   }
@@ -317,8 +318,8 @@ export function AvailabilityCalendar({
       await api.deleteAvailabilityWindow(windowId)
       
       toast({
-        title: "Success",
-        description: "Availability window deleted successfully.",
+        title: 'Success',
+        description: 'Availability window deleted successfully.'
       })
     } catch (error) {
       console.error('Error deleting window:', error)
@@ -329,9 +330,9 @@ export function AvailabilityCalendar({
       }
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete availability window.",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete availability window.',
+        variant: 'destructive'
       })
     }
   }
@@ -377,8 +378,8 @@ export function AvailabilityCalendar({
 
       if (windowsToDelete.length === 0) {
         toast({
-          title: "Nothing to clear",
-          description: "No availability entries found for selected slots.",
+          title: 'Nothing to clear',
+          description: 'No availability entries found for selected slots.'
         })
         setSelectedSlots(new Set())
         setIsSelectionMode(false)
@@ -398,15 +399,15 @@ export function AvailabilityCalendar({
       setIsSelectionMode(false)
       
       toast({
-        title: "Success",
-        description: `Cleared availability for ${selectedSlots.size} time slot${selectedSlots.size > 1 ? 's' : ''}.`,
+        title: 'Success',
+        description: `Cleared availability for ${selectedSlots.size} time slot${selectedSlots.size > 1 ? 's' : ''}.`
       })
     } catch (error) {
       console.error('Error clearing availability:', error)
       toast({
-        title: "Error",
-        description: "Failed to clear availability. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to clear availability. Please try again.',
+        variant: 'destructive'
       })
       // Refresh data to restore correct state
       fetchAvailabilityWindows()
@@ -461,15 +462,15 @@ export function AvailabilityCalendar({
       fetchAvailabilityWindows()
       
       toast({
-        title: "Success",
-        description: `${selectedSlots.size} time slots marked as ${isAvailable ? 'available' : 'unavailable'}.`,
+        title: 'Success',
+        description: `${selectedSlots.size} time slots marked as ${isAvailable ? 'available' : 'unavailable'}.`
       })
     } catch (error) {
       console.error('Error applying availability:', error)
       toast({
-        title: "Error",
-        description: "Failed to update availability. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update availability. Please try again.',
+        variant: 'destructive'
       })
       // Refresh data to restore correct state
       fetchAvailabilityWindows()
@@ -634,8 +635,8 @@ export function AvailabilityCalendar({
       }
       
       toast({
-        title: "Success",
-        description: `Created ${windows.length} availability windows.`,
+        title: 'Success',
+        description: `Created ${windows.length} availability windows.`
       })
     } catch (error) {
       console.error('Error creating bulk windows:', error)
@@ -646,9 +647,9 @@ export function AvailabilityCalendar({
       )
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create availability windows.",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create availability windows.',
+        variant: 'destructive'
       })
     }
   }
@@ -707,10 +708,10 @@ export function AvailabilityCalendar({
                     </SelectContent>
                   </Select>
                   <Button 
-                    size="sm" 
-                    variant={isSelectionMode ? "default" : "outline"}
+                    size="mobileSm" 
+                    variant={isSelectionMode ? 'default' : 'outline'}
                     onClick={toggleSelectionMode}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto touch-manipulation"
                   >
                     {isSelectionMode ? (
                       <X className="h-4 w-4 mr-2" />
@@ -728,29 +729,29 @@ export function AvailabilityCalendar({
                   {!isSelectionMode && (
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="w-full sm:w-auto">
+                        <Button size="mobileSm" className="w-full sm:w-auto touch-manipulation">
                           <Plus className="h-4 w-4 mr-2" />
                           <span className="hidden sm:inline">Add Window</span>
                           <span className="sm:hidden">Add</span>
                         </Button>
                       </DialogTrigger>
-                  <DialogContent className="mx-4 max-w-md">
-                    <AvailabilityWindowForm
-                      onSubmit={(data) => {
-                        if (selectedSlots.size > 1) {
-                          createBulkWindows(data)
-                        } else {
-                          createWindow(data)
-                        }
-                      }}
-                      onCancel={() => {
-                        setIsCreateDialogOpen(false)
-                        setSelectedSlots(new Set())
-                      }}
-                      selectedSlotCount={selectedSlots.size}
-                    />
-                  </DialogContent>
-                </Dialog>
+                      <DialogContent className="mx-4 max-w-md">
+                        <AvailabilityWindowForm
+                          onSubmit={(data) => {
+                            if (selectedSlots.size > 1) {
+                              createBulkWindows(data)
+                            } else {
+                              createWindow(data)
+                            }
+                          }}
+                          onCancel={() => {
+                            setIsCreateDialogOpen(false)
+                            setSelectedSlots(new Set())
+                          }}
+                          selectedSlotCount={selectedSlots.size}
+                        />
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
               )}
@@ -812,19 +813,19 @@ export function AvailabilityCalendar({
                                 ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-400 ring-opacity-50' : ''}
                                 ${!isSelectionMode && isSelected ? 'bg-blue-200 hover:bg-blue-300' : ''}
                                 ${!isSelected && hasWindow ? (
-                                  isAvailable ? 'bg-green-100 hover:bg-green-200' :
-                                  isUnavailable ? 'bg-red-100 hover:bg-red-200' :
+                              isAvailable ? 'bg-green-100 hover:bg-green-200' :
+                                isUnavailable ? 'bg-red-100 hover:bg-red-200' :
                                   'bg-yellow-100 hover:bg-yellow-200'
-                                ) : !isSelected ? 'hover:bg-blue-50' : ''}
+                            ) : !isSelected ? 'hover:bg-blue-50' : ''}
                               `}
                               onClick={() => handleSlotClick(dateStr, time)}
                               onMouseDown={(e) => !isSelectionMode && handleSlotMouseDown(dateStr, time, e)}
                               onMouseEnter={() => !isSelectionMode && handleSlotMouseEnter(dateStr, time)}
                               title={
                                 isSelected ? 'Selected for bulk creation' :
-                                hasWindow 
-                                  ? `${isAvailable ? 'Available' : 'Unavailable'}: ${time} - ${windows[0]?.end_time}`
-                                  : canEdit ? 'Click to add availability or drag to select multiple' : 'No availability set'
+                                  hasWindow 
+                                    ? `${isAvailable ? 'Available' : 'Unavailable'}: ${time} - ${windows[0]?.end_time}`
+                                    : canEdit ? 'Click to add availability or drag to select multiple' : 'No availability set'
                               }
                             >
                               {hasWindow && !isSelected && (
@@ -886,14 +887,14 @@ export function AvailabilityCalendar({
                               <div
                                 key={slotKey}
                                 className={`
-                                  p-3 border rounded-lg cursor-pointer transition-colors select-none text-center relative
+                                  p-4 border rounded-lg cursor-pointer transition-colors select-none text-center relative min-h-[48px] touch-manipulation
                                   ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400 ring-opacity-50' : ''}
                                   ${!isSelectionMode && isSelected ? 'bg-blue-200 border-blue-400' : ''}
                                   ${!isSelected && hasWindow ? (
-                                    isAvailable ? 'bg-green-100 border-green-300' :
-                                    isUnavailable ? 'bg-red-100 border-red-300' :
-                                    'bg-yellow-100 border-yellow-300'
-                                  ) : !isSelected ? 'bg-background border-border hover:bg-muted/50' : ''}
+                                isAvailable ? 'bg-green-100 border-green-300 active:bg-green-200' :
+                                  isUnavailable ? 'bg-red-100 border-red-300 active:bg-red-200' :
+                                    'bg-yellow-100 border-yellow-300 active:bg-yellow-200'
+                              ) : !isSelected ? 'bg-background border-border hover:bg-muted/50 active:bg-muted' : ''}
                                 `}
                                 onClick={() => handleSlotClick(dateStr, time)}
                                 onTouchStart={(e) => {
@@ -1091,27 +1092,27 @@ export function AvailabilityCalendar({
             </span>
             <div className="flex gap-2">
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white touch-manipulation"
                 onClick={() => applyAvailabilityToSelected(true)}
               >
                 <Check className="h-4 w-4 mr-1" />
                 Available
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white touch-manipulation"
                 onClick={() => applyAvailabilityToSelected(false)}
               >
                 <X className="h-4 w-4 mr-1" />
                 Unavailable
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="default"
-                className="bg-gray-600 hover:bg-gray-700 text-white"
+                className="bg-gray-600 hover:bg-gray-700 active:bg-gray-800 text-white touch-manipulation"
                 onClick={clearAvailabilityForSelected}
                 title="Remove availability entries (reset to undefined)"
               >
@@ -1119,8 +1120,9 @@ export function AvailabilityCalendar({
                 Clear
               </Button>
               <Button
-                size="sm"
+                size="mobileSm"
                 variant="outline"
+                className="touch-manipulation"
                 onClick={() => setSelectedSlots(new Set())}
                 title="Cancel selection"
               >

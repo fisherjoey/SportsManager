@@ -1,0 +1,31 @@
+{
+  "source": {
+    "include": [
+      "./src/"
+    ],
+    "includePattern": "\\.(js|jsx)$",
+    "exclude": [
+      "./node_modules/",
+      "./tests/",
+      "./coverage/",
+      "./docs/"
+    ],
+    "excludePattern": "(test|spec)\\.js$"
+  },
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true,
+    "private": false
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "metadata": {
+    "title": "Sports Management API Documentation",
+    "description": "Complete API documentation for the Sports Management backend services"
+  }
+}

@@ -38,13 +38,13 @@ export class AddressService {
 
     try {
       switch (this.config.provider) {
-        case 'google':
-          return this.searchGooglePlaces(query)
-        case 'mapbox':
-          return this.searchMapbox(query)
-        case 'nominatim':
-        default:
-          return this.searchNominatim(query)
+      case 'google':
+        return this.searchGooglePlaces(query)
+      case 'mapbox':
+        return this.searchMapbox(query)
+      case 'nominatim':
+      default:
+        return this.searchNominatim(query)
       }
     } catch (error) {
       console.error(`Address search error (${this.config.provider}):`, error)

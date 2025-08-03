@@ -46,7 +46,7 @@ const tournamentSchema = Joi.object({
 });
 
 // POST /api/tournaments/generate - Generate tournament schedule
-router.post('/generate', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/generate', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = tournamentSchema.validate(req.body);
     if (error) {
@@ -169,7 +169,7 @@ router.post('/generate', authenticateToken, requireRole(['admin']), async (req, 
 });
 
 // POST /api/tournaments/create-games - Create actual games from tournament
-router.post('/create-games', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/create-games', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { games, tournament_name } = req.body;
     

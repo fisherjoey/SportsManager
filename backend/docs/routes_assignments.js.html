@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: routes/assignments.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: routes/assignments.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Assignment management routes for the Sports Management API
+ * 
+ * This module handles all assignment-related HTTP endpoints including:
+ * - Creating, updating, and deleting referee assignments
+ * - Bulk assignment operations
+ * - Assignment conflict detection and resolution
+ * - Wage calculation and breakdown reporting
+ * - Assignment status management and workflow
+ * 
+ * @module routes/assignments
+ * @requires express
+ * @requires ../config/database
+ * @requires ../middleware/auth
+ * @requires ../services/AssignmentService
+ * @requires ../services/conflictDetectionService
+ * @requires ../utils/wage-calculator
+ * @requires ../utils/availability
+ */
+
+const express = require('express');
+const router = express.Router();
+const db = require('../config/database');
+const Joi = require('joi');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
+const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
+const { checkAssignmentConflicts } = require('../services/conflictDetectionService');
+const { getOrganizationSettings } = require('../utils/organization-settings');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
+const { assignmentLimiter } = require('../middleware/rateLimiting');
+const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
+const AssignmentService = require('../services/AssignmentService');
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { ErrorFactory, NotFoundError, ConflictError, ValidationError } = require('../utils/errors');
+const { AssignmentSchemas, IdParamSchema, FilterSchemas } = require('../utils/validation-schemas');
+
+// Initialize AssignmentService
+const assignmentService = new AssignmentService(db);
+
+// Legacy schema - now using AssignmentSchemas from validation-schemas.js
+// Keeping for backward compatibility if needed
+const assignmentSchema = AssignmentSchemas.create;
+
+/**
+ * Get all assignments with optional filtering, pagination, and detailed referee/game information
+ * 
+ * @route GET /api/assignments
+ * @param {Object} req.query - Query parameters for filtering and pagination
+ * @param {string} [req.query.game_id] - Filter by specific game ID
+ * @param {string} [req.query.gameId] - Alternative camelCase game ID parameter
+ * @param {string} [req.query.referee_id] - Filter by specific referee ID
+ * @param {string} [req.query.refereeId] - Alternative camelCase referee ID parameter
+ * @param {string} [req.query.user_id] - Filter by specific user ID
+ * @param {string} [req.query.status] - Filter by assignment status (pending, confirmed, declined, etc.)
+ * @param {number} [req.query.page=1] - Page number for pagination
+ * @param {number} [req.query.limit=50] - Number of results per page
+ * @returns {Object} JSON response with assignments data and pagination info
+ * @returns {Array} returns.data - Array of assignment objects with referee and game details
+ * @returns {Object} returns.pagination - Pagination metadata (total, pages, current page)
+ * @throws {401} Unauthorized - Missing or invalid authentication token
+ * @throws {400} Bad Request - Invalid query parameters
+ * @throws {500} Internal Server Error - Database or server error
+ */
+router.get('/', authenticateToken, validateQuery(FilterSchemas.assignments), enhancedAsyncHandler(async (req, res) => {
+  const { 
+    game_id, 
+    gameId, 
+    referee_id, 
+    refereeId, 
+    user_id,
+    status, 
+    page = 1, 
+    limit = 50 
+  } = req.query;
+  
+  // Build filters object - support both camelCase and snake_case for backward compatibility
+  const filters = {};
+  if (game_id || gameId) filters.game_id = game_id || gameId;
+  if (referee_id || refereeId || user_id) filters.user_id = referee_id || refereeId || user_id;
+  if (status) filters.status = status;
+  
+  // Get assignments using AssignmentService
+  const result = await assignmentService.getAssignmentsWithDetails(
+    filters,
+    parseInt(page),
+    parseInt(limit)
+  );
+  
+  // Transform response to match expected format
+  const transformedAssignments = result.data.map(assignment => ({
+    id: assignment.id,
+    gameId: assignment.game_id,
+    refereeId: assignment.user_id,
+    positionId: assignment.position_id,
+    assignedAt: assignment.assigned_at,
+    assignedBy: assignment.assigned_by,
+    status: assignment.status,
+    createdAt: assignment.created_at,
+    updatedAt: assignment.updated_at,
+    calculatedWage: assignment.calculated_wage,
+    game: {
+      id: assignment.game_id,
+      homeTeam: assignment.home_team_name,
+      awayTeam: assignment.away_team_name,
+      date: assignment.game_date,
+      time: assignment.game_time,
+      location: assignment.location,
+      level: assignment.level,
+      payRate: assignment.pay_rate || 0,
+      wageMultiplier: assignment.wage_multiplier || 1.0,
+      wageMultiplierReason: assignment.wage_multiplier_reason || '',
+      finalWage: assignment.calculated_wage
+    },
+    referee: {
+      name: assignment.referee_name,
+      email: assignment.referee_email
+    },
+    position: {
+      name: assignment.position_name
+    }
+  }));
+  
+  return ResponseFormatter.sendSuccess(res, {
+    assignments: transformedAssignments,
+    pagination: result.pagination
+  }, 'Assignments retrieved successfully');
+}));
+
+// GET /api/assignments/:id - Get specific assignment
+router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  // First check if assignment exists using base service method
+  const assignment = await assignmentService.findById(req.params.id);
+  
+  if (!assignment) {
+    throw ErrorFactory.notFound('Assignment', req.params.id);
+  }
+  
+  // Get enriched assignment data with joins using service method
+  const enrichedResult = await assignmentService.getAssignmentsWithDetails(
+    { game_id: assignment.game_id },
+    1,
+    50
+  );
+  
+  // Find the specific assignment in the enriched results
+  const enrichedAssignment = enrichedResult.data.find(a => a.id === req.params.id);
+  
+  if (!enrichedAssignment) {
+    // Fallback to basic assignment data if enriched data is not available
+    return ResponseFormatter.sendSuccess(res, assignment, 'Assignment retrieved successfully');
+  }
+  
+  // Transform to match expected format
+  const transformedAssignment = {
+    id: enrichedAssignment.id,
+    gameId: enrichedAssignment.game_id,
+    refereeId: enrichedAssignment.user_id,
+    positionId: enrichedAssignment.position_id,
+    assignedAt: enrichedAssignment.assigned_at,
+    assignedBy: enrichedAssignment.assigned_by,
+    status: enrichedAssignment.status,
+    createdAt: enrichedAssignment.created_at,
+    updatedAt: enrichedAssignment.updated_at,
+    calculatedWage: enrichedAssignment.calculated_wage,
+    game: {
+      id: enrichedAssignment.game_id,
+      homeTeam: enrichedAssignment.home_team_name,
+      awayTeam: enrichedAssignment.away_team_name,
+      date: enrichedAssignment.game_date,
+      time: enrichedAssignment.game_time,
+      location: enrichedAssignment.location,
+      level: enrichedAssignment.level,
+      payRate: enrichedAssignment.pay_rate || 0,
+      wageMultiplier: enrichedAssignment.wage_multiplier || 1.0,
+      wageMultiplierReason: enrichedAssignment.wage_multiplier_reason || ''
+    },
+    referee: {
+      name: enrichedAssignment.referee_name,
+      email: enrichedAssignment.referee_email,
+      level: enrichedAssignment.referee_level
+    },
+    position: {
+      name: enrichedAssignment.position_name
+    }
+  };
+  
+  return ResponseFormatter.sendSuccess(res, transformedAssignment, 'Assignment retrieved successfully');
+}));
+
+// POST /api/assignments - Create new assignment
+router.post('/', validateBody(AssignmentSchemas.create), enhancedAsyncHandler(async (req, res) => {
+  const assignmentData = {
+    ...req.body,
+    assigned_by: req.body.assigned_by || req.user?.id // Add assigned_by from authenticated user if not provided
+  };
+  
+  // Use AssignmentService to create assignment with all validations and conflict checking
+  const result = await assignmentService.createAssignment(assignmentData);
+  
+  // Create audit log
+  if (req.user) {
+    await createAuditLog(
+      req.user.id,
+      AUDIT_EVENTS.ASSIGNMENT_CREATED,
+      'game_assignments',
+      result.assignment.id,
+      { gameId: result.assignment.game_id }
+    );
+  }
+  
+  // Prepare response data
+  const responseData = {
+    assignment: result.assignment,
+    wageBreakdown: result.wageBreakdown
+  };
+  
+  const meta = {};
+  
+  // Include warnings from conflict analysis
+  if (result.warnings &amp;&amp; result.warnings.length > 0) {
+    meta.warnings = result.warnings;
+  }
+  
+  const response = ResponseFormatter.created(
+    responseData,
+    'Assignment created successfully',
+    `/api/assignments/${result.assignment.id}`
+  );
+  
+  if (Object.keys(meta).length > 0) {
+    response.meta = meta;
+  }
+  
+  return ResponseFormatter.send(res, 201, response);
+}));
+
+// POST /api/assignments/bulk-update - Bulk update assignment statuses
+router.post('/bulk-update', 
+  authenticateToken, 
+  requireRole('admin'), 
+  validateBody(Joi.object({
+    updates: Joi.array().items(Joi.object({
+      assignment_id: Joi.string().uuid().required(),
+      status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required(),
+      calculated_wage: Joi.number().min(0).optional()
+    })).min(1).max(100).required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { updates } = req.body;
+
+    // Use AssignmentService for bulk updates
+    const results = await assignmentService.bulkUpdateAssignments(updates);
+
+    const responseData = {
+      updatedAssignments: results.updatedAssignments,
+      summary: results.summary
+    };
+
+    const message = `Updated ${results.summary.successfulUpdates} assignments successfully`;
+    const meta = {};
+
+    if (results.updateErrors &amp;&amp; results.updateErrors.length > 0) {
+      meta.warnings = results.updateErrors;
+      meta.partialSuccess = true;
+    }
+
+    return ResponseFormatter.sendSuccess(res, responseData, message, meta);
+  })
+);
+
+// DELETE /api/assignments/bulk-remove - Bulk remove assignments
+router.delete('/bulk-remove', 
+  authenticateToken, 
+  requireRole('admin'), 
+  validateBody(Joi.object({
+    assignment_ids: Joi.array().items(Joi.string().uuid()).min(1).max(100).required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { assignment_ids } = req.body;
+
+    // Use AssignmentService for bulk removal
+    const results = await assignmentService.bulkRemoveAssignments(assignment_ids);
+
+    const responseData = {
+      deletedCount: results.deletedCount,
+      affectedGames: results.affectedGames,
+      summary: results.summary
+    };
+
+    const message = `Removed ${results.deletedCount} assignments successfully`;
+    const meta = {};
+
+    if (results.warnings &amp;&amp; results.warnings.length > 0) {
+      meta.warnings = results.warnings;
+    }
+
+    return ResponseFormatter.sendSuccess(res, responseData, message, meta);
+  })
+);
+
+// PATCH /api/assignments/:id/status - Update assignment status
+router.patch('/:id/status', 
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { status } = req.body;
+
+    // Use AssignmentService for single status update
+    const results = await assignmentService.bulkUpdateAssignments([{
+      assignment_id: req.params.id,
+      status
+    }]);
+
+    if (results.summary.failedUpdates > 0) {
+      const error = results.updateErrors[0];
+      if (error.error === 'Assignment not found') {
+        throw ErrorFactory.notFound('Assignment', req.params.id);
+      }
+      throw new Error(error.error);
+    }
+
+    return ResponseFormatter.sendSuccess(res, 
+      { assignment: results.updatedAssignments[0] },
+      'Assignment status updated successfully'
+    );
+  })
+);
+
+// DELETE /api/assignments/:id - Remove assignment
+router.delete('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  // Use AssignmentService for single assignment removal
+  const results = await assignmentService.bulkRemoveAssignments([req.params.id]);
+
+  if (results.summary.successfullyDeleted === 0) {
+    throw ErrorFactory.notFound('Assignment', req.params.id);
+  }
+
+  res.status(204).send();
+}));
+
+// POST /api/assignments/bulk - Bulk assign referees to a game
+router.post('/bulk', 
+  authenticateToken,
+  validateBody(Joi.object({
+    game_id: Joi.string().uuid().required(),
+    assignments: Joi.array().items(Joi.object({
+      user_id: Joi.string().uuid().required(),
+      position_id: Joi.string().uuid().required()
+    })).min(1).max(20).required(),
+    assigned_by: Joi.string().uuid().optional()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { game_id, assignments, assigned_by } = req.body;
+    
+    // Create assignments using service with transaction handling
+    const createdAssignments = [];
+    const errors = [];
+    
+    for (let i = 0; i &lt; assignments.length; i++) {
+      try {
+        const assignmentData = {
+          ...assignments[i],
+          game_id,
+          assigned_by: assigned_by || req.user?.id
+        };
+        
+        const result = await assignmentService.createAssignment(assignmentData);
+        createdAssignments.push(result.assignment);
+        
+        // Create audit log
+        if (req.user) {
+          await createAuditLog(
+            req.user.id,
+            AUDIT_EVENTS.ASSIGNMENT_CREATED,
+            'game_assignments',
+            result.assignment.id,
+            { gameId: game_id, bulk: true }
+          );
+        }
+        
+      } catch (error) {
+        console.error(`Error creating assignment ${i}:`, error);
+        errors.push({
+          index: i,
+          assignment: assignments[i],
+          error: error.message
+        });
+      }
+    }
+    
+    // Prepare response
+    const responseData = {
+      assignments: createdAssignments,
+      summary: {
+        total: assignments.length,
+        successful: createdAssignments.length,
+        failed: errors.length
+      }
+    };
+    
+    if (errors.length > 0) {
+      responseData.errors = errors;
+    }
+    
+    const statusCode = createdAssignments.length > 0 ? 201 : 400;
+    const message = errors.length === 0 
+      ? 'All assignments created successfully'
+      : `${createdAssignments.length} of ${assignments.length} assignments created successfully`;
+    
+    return ResponseFormatter.send(
+      res,
+      statusCode,
+      ResponseFormatter.created(responseData, message)
+    );
+  })
+);
+
+// POST /api/assignments/check-conflicts - Check for conflicts before assignment
+router.post('/check-conflicts', 
+  authenticateToken, 
+  validateBody(AssignmentSchemas.create),
+  enhancedAsyncHandler(async (req, res) => {
+    const conflictAnalysis = await checkAssignmentConflicts(req.body);
+    
+    return ResponseFormatter.sendSuccess(res, {
+      hasConflicts: conflictAnalysis.hasConflicts,
+      conflicts: conflictAnalysis.conflicts || [],
+      warnings: conflictAnalysis.warnings || [],
+      errors: conflictAnalysis.errors || [],
+      isQualified: conflictAnalysis.isQualified !== false,
+      canAssign: !conflictAnalysis.hasConflicts
+    }, 'Conflict analysis completed');
+  })
+);
+
+// GET /api/assignments/available-referees/:game_id - Get available referees for a specific game
+router.get('/available-referees/:game_id', 
+  authenticateToken,
+  validateParams(IdParamSchema.keys({ game_id: Joi.string().uuid().required() })),
+  enhancedAsyncHandler(async (req, res) => {
+    // Use AssignmentService to get available referees with comprehensive analysis
+    const result = await assignmentService.getAvailableRefereesForGame(req.params.game_id);
+    
+    return ResponseFormatter.sendSuccess(
+      res,
+      {
+        referees: result.referees,
+        game: result.game,
+        summary: result.summary
+      },
+      'Available referees retrieved successfully'
+    );
+  })
+);
+
+module.exports = router;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

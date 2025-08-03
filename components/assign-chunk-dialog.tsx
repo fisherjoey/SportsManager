@@ -1,14 +1,15 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Clock, MapPin, Users, Phone, Mail, Star, Calendar, AlertTriangle } from "lucide-react"
-import { type Game, type Referee, mockGames } from "@/lib/mock-data"
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+import { useState } from 'react'
+import { Clock, MapPin, Users, Phone, Mail, Star, Calendar, AlertTriangle } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Card, CardContent } from '@/components/ui/card'
+import { type Game, type Referee, mockGames } from '@/lib/mock-data'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 
 interface GameChunk {
   id: string
@@ -58,14 +59,14 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case "Elite":
-        return "bg-purple-600"
-      case "Competitive":
-        return "bg-blue-600"
-      case "Recreational":
-        return "bg-green-600"
-      default:
-        return "bg-gray-600"
+    case 'Elite':
+      return 'bg-purple-600'
+    case 'Competitive':
+      return 'bg-blue-600'
+    case 'Recreational':
+      return 'bg-green-600'
+    default:
+      return 'bg-gray-600'
     }
   }
 
@@ -84,7 +85,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{chunk.location}</h3>
                 <Badge variant="outline">
-                  {chunk.games.length} game{chunk.games.length !== 1 ? "s" : ""}
+                  {chunk.games.length} game{chunk.games.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -98,7 +99,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                 </span>
                 <span className="flex items-center">
                   <Users className="h-4 w-4 mr-1" />
-                  {chunk.totalReferees} referee{chunk.totalReferees !== 1 ? "s" : ""} required
+                  {chunk.totalReferees} referee{chunk.totalReferees !== 1 ? 's' : ''} required
                 </span>
               </div>
               <div className="mt-3 space-y-1">
@@ -135,8 +136,8 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                 <Card
                   key={referee.id}
                   className={`cursor-pointer transition-colors ${
-                    selectedReferee === referee.id ? "ring-2 ring-blue-500 bg-blue-50" : "hover:bg-gray-50"
-                  } ${!isAvailable || hasConflicts ? "opacity-60" : ""}`}
+                    selectedReferee === referee.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                  } ${!isAvailable || hasConflicts ? 'opacity-60' : ''}`}
                   onClick={() => {
                     if (isAvailable && !hasConflicts) {
                       setSelectedReferee(referee.id)
@@ -149,9 +150,9 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                         <Avatar>
                           <AvatarFallback>
                             {referee.name
-                              .split(" ")
+                              .split(' ')
                               .map((n) => n[0])
-                              .join("")}
+                              .join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
@@ -181,7 +182,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                           </div>
                           <div className="flex items-center space-x-2 mt-2">
                             <span className="text-sm text-muted-foreground">
-                              Certifications: {referee.certifications.join(", ")}
+                              Certifications: {referee.certifications.join(', ')}
                             </span>
                           </div>
 

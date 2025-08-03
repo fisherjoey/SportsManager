@@ -1,25 +1,26 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import React from 'react'
+import { MoreVertical, Copy } from 'lucide-react'
+
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical, Copy } from "lucide-react"
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface BaseEntityCardAction {
   label: string
   icon: React.ComponentType<{ className?: string }>
   onClick: () => void
   disabled?: boolean
-  variant?: "default" | "destructive"
+  variant?: 'default' | 'destructive'
 }
 
 interface BaseEntityCardProps {
@@ -43,7 +44,7 @@ export function BaseEntityCard({
   onSelect,
   actions = [],
   children,
-  className = "",
+  className = '',
   showCopyId = true,
   copyIdLabel
 }: BaseEntityCardProps) {
@@ -105,7 +106,7 @@ export function BaseEntityCard({
                       key={index}
                       onClick={action.onClick}
                       disabled={action.disabled}
-                      className={action.variant === "destructive" ? "text-red-600" : ""}
+                      className={action.variant === 'destructive' ? 'text-red-600' : ''}
                     >
                       <action.icon className="mr-2 h-4 w-4" />
                       {action.label}
@@ -133,7 +134,7 @@ interface ContactInfoSectionProps {
   className?: string
 }
 
-export function ContactInfoSection({ icon: Icon, email, phone, className = "" }: ContactInfoSectionProps) {
+export function ContactInfoSection({ icon: Icon, email, phone, className = '' }: ContactInfoSectionProps) {
   return (
     <div className={`space-y-2 ${className}`}>
       {email && (
@@ -159,7 +160,7 @@ interface InfoRowProps {
   className?: string
 }
 
-export function InfoRow({ icon: Icon, label, children, className = "" }: InfoRowProps) {
+export function InfoRow({ icon: Icon, label, children, className = '' }: InfoRowProps) {
   return (
     <div className={`flex items-center text-sm text-muted-foreground ${className}`}>
       <Icon className="mr-2 h-4 w-4" />
@@ -176,7 +177,7 @@ interface BadgeRowProps {
   className?: string
 }
 
-export function BadgeRow({ icon: Icon, label, children, className = "" }: BadgeRowProps) {
+export function BadgeRow({ icon: Icon, label, children, className = '' }: BadgeRowProps) {
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <div className="flex items-center space-x-2">
@@ -202,8 +203,8 @@ export function CollapsibleSection({
   label, 
   children, 
   isEmpty = false, 
-  emptyText = "None listed",
-  className = "" 
+  emptyText = 'None listed',
+  className = '' 
 }: CollapsibleSectionProps) {
   return (
     <div className={`border-t pt-3 ${className}`}>

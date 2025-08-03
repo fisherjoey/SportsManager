@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/budgetCalculationService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/budgetCalculationService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const db = require('../config/database');
+
+/**
+ * Budget calculation and management service
+ */
+class BudgetCalculationService {
+  /**
+   * Update budget amounts based on financial transactions
+   */
+  async updateBudgetAmounts(budgetId) {
+    return await db.transaction(async (trx) => {
+      try {
+        const budget = await trx('budgets').where('id', budgetId).first();
+        if (!budget) {
+          throw new Error('Budget not found');
+        }
+
+        // Calculate actual spent from posted transactions
+        const [{ actual_spent }] = await trx('financial_transactions')
+          .where('budget_id', budgetId)
+          .where('status', 'posted')
+          .sum('amount as actual_spent');
+
+        // Calculate committed amount from approved/pending transactions
+        const [{ committed_amount }] = await trx('financial_transactions')
+          .where('budget_id', budgetId)
+          .whereIn('status', ['approved', 'pending_approval'])
+          .sum('amount as committed_amount');
+
+        // Update budget with calculated amounts
+        const [updatedBudget] = await trx('budgets')
+          .where('id', budgetId)
+          .update({
+            actual_spent: parseFloat(actual_spent) || 0,
+            committed_amount: parseFloat(committed_amount) || 0,
+            updated_at: trx.fn.now()
+          })
+          .returning('*');
+
+        // Check for budget alerts within the same transaction
+        await this.checkBudgetAlertsInTransaction(budgetId, trx);
+
+        return updatedBudget;
+      } catch (error) {
+        console.error('Budget amount update error:', error);
+        throw error;
+      }
+    });
+  }
+
+  /**
+   * Check for budget alerts and create them if needed (transaction-aware version)
+   */
+  async checkBudgetAlertsInTransaction(budgetId, trx) {
+    try {
+      const budget = await trx('budgets as b')
+        .join('budget_categories as bc', 'b.category_id', 'bc.id')
+        .where('b.id', budgetId)
+        .select('b.*', 'bc.name as category_name')
+        .first();
+
+      if (!budget) return;
+
+      await this._processAlerts(budget, budgetId, trx);
+    } catch (error) {
+      console.error('Budget alert check error:', error);
+      // Don't throw - alerts are not critical
+    }
+  }
+
+  /**
+   * Check for budget alerts and create them if needed (legacy version)
+   */
+  async checkBudgetAlerts(budgetId) {
+    try {
+      const budget = await db('budgets as b')
+        .join('budget_categories as bc', 'b.category_id', 'bc.id')
+        .where('b.id', budgetId)
+        .select('b.*', 'bc.name as category_name')
+        .first();
+
+      if (!budget) return;
+
+      await this._processAlerts(budget, budgetId, db);
+    } catch (error) {
+      console.error('Budget alert check error:', error);
+      // Don't throw - alerts are not critical
+    }
+  }
+
+  /**
+   * Process alerts for a budget (shared between transaction and non-transaction contexts)
+   */
+  async _processAlerts(budget, budgetId, dbContext) {
+    const allocated = parseFloat(budget.allocated_amount) || 0;
+    const spent = parseFloat(budget.actual_spent) || 0;
+    const committed = parseFloat(budget.committed_amount) || 0;
+    const totalUsed = spent + committed;
+    const available = allocated - totalUsed;
+    const utilizationRate = allocated > 0 ? (totalUsed / allocated) * 100 : 0;
+
+    const alerts = [];
+
+    // Overspend alerts
+    if (spent > allocated) {
+      const overspendAmount = spent - allocated;
+      const overspendPercentage = allocated > 0 ? (overspendAmount / allocated) * 100 : 0;
+      
+      alerts.push({
+        alert_type: overspendPercentage > 25 ? 'overspend_critical' : 'overspend_warning',
+        title: `${budget.category_name} Budget Overspend`,
+        message: `Budget exceeded by $${overspendAmount.toFixed(2)} (${overspendPercentage.toFixed(1)}%)`,
+        threshold_value: allocated,
+        current_value: spent,
+        variance_percentage: overspendPercentage,
+        severity: overspendPercentage > 25 ? 'critical' : 'high'
+      });
+    }
+
+    // High utilization warning
+    if (utilizationRate > 90 &amp;&amp; spent &lt;= allocated) {
+      alerts.push({
+        alert_type: 'overspend_warning',
+        title: `${budget.category_name} Budget Nearly Exhausted`,
+        message: `Budget is ${utilizationRate.toFixed(1)}% utilized with $${available.toFixed(2)} remaining`,
+        threshold_value: allocated * 0.9,
+        current_value: totalUsed,
+        variance_percentage: utilizationRate,
+        severity: utilizationRate > 95 ? 'high' : 'medium'
+      });
+    }
+
+    // Underutilization alert (if period is >75% complete)
+    const budgetPeriod = await dbContext('budget_periods').where('id', budget.budget_period_id).first();
+    if (budgetPeriod) {
+      const periodStart = new Date(budgetPeriod.start_date);
+      const periodEnd = new Date(budgetPeriod.end_date);
+      const now = new Date();
+      const periodProgress = (now - periodStart) / (periodEnd - periodStart);
+
+      if (periodProgress > 0.75 &amp;&amp; utilizationRate &lt; 25) {
+        alerts.push({
+          alert_type: 'underspend_warning',
+          title: `${budget.category_name} Budget Underutilized`,
+          message: `Only ${utilizationRate.toFixed(1)}% of budget used with ${((1 - periodProgress) * 100).toFixed(0)}% of period remaining`,
+          threshold_value: allocated * 0.5,
+          current_value: totalUsed,
+          variance_percentage: utilizationRate,
+          severity: 'low'
+        });
+      }
+    }
+
+    // Parse variance rules if they exist
+    if (budget.variance_rules) {
+      const rules = typeof budget.variance_rules === 'string' 
+        ? JSON.parse(budget.variance_rules) 
+        : budget.variance_rules;
+      
+      // Custom alert thresholds
+      if (rules.warning_threshold &amp;&amp; utilizationRate > rules.warning_threshold) {
+        alerts.push({
+          alert_type: 'forecast_variance',
+          title: `${budget.category_name} Custom Threshold Exceeded`,
+          message: `Budget utilization (${utilizationRate.toFixed(1)}%) exceeded custom warning threshold (${rules.warning_threshold}%)`,
+          threshold_value: allocated * (rules.warning_threshold / 100),
+          current_value: totalUsed,
+          variance_percentage: utilizationRate,
+          severity: rules.severity || 'medium'
+        });
+      }
+    }
+
+    // Insert new alerts
+    for (const alert of alerts) {
+      await dbContext('budget_alerts')
+        .insert({
+          organization_id: budget.organization_id,
+          budget_id: budgetId,
+          ...alert
+        })
+        .onConflict(['budget_id', 'alert_type'])
+        .merge(['message', 'current_value', 'variance_percentage', 'created_at']);
+    }
+  }
+
+  /**
+   * Calculate budget performance metrics
+   */
+  async calculateBudgetPerformance(organizationId, budgetPeriodId = null) {
+    try {
+      let query = db('budgets as b')
+        .join('budget_periods as bp', 'b.budget_period_id', 'bp.id')
+        .join('budget_categories as bc', 'b.category_id', 'bc.id')
+        .where('b.organization_id', organizationId);
+
+      if (budgetPeriodId) {
+        query = query.where('b.budget_period_id', budgetPeriodId);
+      }
+
+      const budgets = await query.select(
+        'b.*',
+        'bp.name as period_name',
+        'bc.name as category_name',
+        'bc.category_type'
+      );
+
+      const performance = {
+        summary: {
+          total_budgets: budgets.length,
+          total_allocated: 0,
+          total_spent: 0,
+          total_committed: 0,
+          total_available: 0,
+          average_utilization: 0,
+          budgets_over: 0,
+          budgets_under_utilized: 0
+        },
+        by_category: {},
+        by_budget: []
+      };
+
+      const utilizationRates = [];
+
+      for (const budget of budgets) {
+        const allocated = parseFloat(budget.allocated_amount) || 0;
+        const spent = parseFloat(budget.actual_spent) || 0;
+        const committed = parseFloat(budget.committed_amount) || 0;
+        const available = allocated - spent - committed;
+        const utilizationRate = allocated > 0 ? ((spent + committed) / allocated) * 100 : 0;
+
+        // Update summary
+        performance.summary.total_allocated += allocated;
+        performance.summary.total_spent += spent;
+        performance.summary.total_committed += committed;
+        performance.summary.total_available += available;
+
+        if (spent > allocated) performance.summary.budgets_over++;
+        if (utilizationRate &lt; 25) performance.summary.budgets_under_utilized++;
+
+        utilizationRates.push(utilizationRate);
+
+        // Category performance
+        if (!performance.by_category[budget.category_type]) {
+          performance.by_category[budget.category_type] = {
+            category_type: budget.category_type,
+            total_allocated: 0,
+            total_spent: 0,
+            total_committed: 0,
+            budget_count: 0,
+            average_utilization: 0
+          };
+        }
+
+        const categoryPerf = performance.by_category[budget.category_type];
+        categoryPerf.total_allocated += allocated;
+        categoryPerf.total_spent += spent;
+        categoryPerf.total_committed += committed;
+        categoryPerf.budget_count++;
+
+        // Budget performance
+        performance.by_budget.push({
+          budget_id: budget.id,
+          budget_name: budget.name,
+          category_name: budget.category_name,
+          category_type: budget.category_type,
+          allocated_amount: allocated,
+          actual_spent: spent,
+          committed_amount: committed,
+          available_amount: available,
+          utilization_rate: Math.round(utilizationRate * 100) / 100,
+          variance_amount: spent - allocated,
+          variance_percentage: allocated > 0 ? Math.round(((spent - allocated) / allocated) * 100 * 100) / 100 : 0,
+          status: spent > allocated ? 'over_budget' : utilizationRate > 90 ? 'nearly_exhausted' : utilizationRate &lt; 25 ? 'under_utilized' : 'on_track'
+        });
+      }
+
+      // Calculate averages
+      if (budgets.length > 0) {
+        performance.summary.average_utilization = 
+          Math.round((utilizationRates.reduce((sum, rate) => sum + rate, 0) / utilizationRates.length) * 100) / 100;
+      }
+
+      // Calculate category averages
+      Object.values(performance.by_category).forEach(category => {
+        if (category.total_allocated > 0) {
+          category.average_utilization = 
+            Math.round(((category.total_spent + category.total_committed) / category.total_allocated) * 100 * 100) / 100;
+        }
+      });
+
+      return performance;
+    } catch (error) {
+      console.error('Budget performance calculation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate cash flow forecast based on budgets and historical data
+   */
+  async calculateCashFlowForecast(organizationId, budgetPeriodId, monthsAhead = 6) {
+    try {
+      const budgetPeriod = await db('budget_periods')
+        .where('id', budgetPeriodId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!budgetPeriod) {
+        throw new Error('Budget period not found');
+      }
+
+      const budgets = await db('budgets as b')
+        .join('budget_categories as bc', 'b.category_id', 'bc.id')
+        .where('b.budget_period_id', budgetPeriodId)
+        .where('b.organization_id', organizationId)
+        .select('b.*', 'bc.category_type', 'bc.name as category_name');
+
+      const forecast = [];
+      const startDate = new Date();
+      
+      for (let i = 0; i &lt; monthsAhead; i++) {
+        const forecastDate = new Date(startDate);
+        forecastDate.setMonth(forecastDate.getMonth() + i);
+        
+        const year = forecastDate.getFullYear();
+        const month = forecastDate.getMonth() + 1;
+
+        let projectedIncome = 0;
+        let projectedExpenses = 0;
+        let projectedPayroll = 0;
+
+        // Get existing allocation for this month if it exists
+        const existingForecast = await db('cash_flow_forecasts')
+          .where('organization_id', organizationId)
+          .where('budget_period_id', budgetPeriodId)
+          .where('forecast_year', year)
+          .where('forecast_month', month)
+          .first();
+
+        if (existingForecast) {
+          projectedIncome = parseFloat(existingForecast.projected_income) || 0;
+          projectedExpenses = parseFloat(existingForecast.projected_expenses) || 0;
+          projectedPayroll = parseFloat(existingForecast.projected_payroll) || 0;
+        } else {
+          // Calculate projected amounts based on budgets and historical patterns
+          for (const budget of budgets) {
+            const monthlyAllocation = await db('budget_allocations')
+              .where('budget_id', budget.id)
+              .where('allocation_year', year)
+              .where('allocation_month', month)
+              .first();
+
+            let monthlyAmount = 0;
+            if (monthlyAllocation) {
+              monthlyAmount = parseFloat(monthlyAllocation.allocated_amount) || 0;
+            } else {
+              // Distribute evenly across remaining months if no specific allocation
+              const remainingBudget = parseFloat(budget.allocated_amount) - parseFloat(budget.actual_spent) - parseFloat(budget.committed_amount);
+              monthlyAmount = Math.max(0, remainingBudget / monthsAhead);
+            }
+
+            // Categorize by type
+            if (budget.category_type === 'revenue') {
+              projectedIncome += monthlyAmount;
+            } else if (budget.category_type === 'payroll') {
+              projectedPayroll += monthlyAmount;
+            } else {
+              projectedExpenses += monthlyAmount;
+            }
+          }
+
+          // Apply seasonal adjustments based on historical data
+          const seasonalAdjustment = await this.getSeasonalAdjustment(organizationId, month);
+          projectedExpenses *= seasonalAdjustment.expenses;
+          projectedPayroll *= seasonalAdjustment.payroll;
+          projectedIncome *= seasonalAdjustment.income;
+        }
+
+        const netCashFlow = projectedIncome - projectedExpenses - projectedPayroll;
+        
+        forecast.push({
+          year,
+          month,
+          month_name: forecastDate.toLocaleString('default', { month: 'long' }),
+          projected_income: Math.round(projectedIncome * 100) / 100,
+          projected_expenses: Math.round(projectedExpenses * 100) / 100,
+          projected_payroll: Math.round(projectedPayroll * 100) / 100,
+          net_cash_flow: Math.round(netCashFlow * 100) / 100,
+          confidence_score: existingForecast ? 0.9 : 0.6
+        });
+      }
+
+      // Calculate running balance
+      let runningBalance = 0;
+      forecast.forEach(month => {
+        runningBalance += month.net_cash_flow;
+        month.running_balance = Math.round(runningBalance * 100) / 100;
+      });
+
+      // Store forecast in database
+      for (const month of forecast) {
+        await db('cash_flow_forecasts')
+          .insert({
+            organization_id: organizationId,
+            budget_period_id: budgetPeriodId,
+            forecast_year: month.year,
+            forecast_month: month.month,
+            projected_income: month.projected_income,
+            projected_expenses: month.projected_expenses,
+            projected_payroll: month.projected_payroll,
+            running_balance: month.running_balance,
+            confidence_score: month.confidence_score,
+            assumptions: JSON.stringify({
+              based_on: 'budget_allocations',
+              seasonal_adjustment: true,
+              generated_at: new Date()
+            })
+          })
+          .onConflict(['budget_period_id', 'forecast_year', 'forecast_month'])
+          .merge();
+      }
+
+      return {
+        forecast,
+        summary: {
+          total_projected_income: forecast.reduce((sum, m) => sum + m.projected_income, 0),
+          total_projected_expenses: forecast.reduce((sum, m) => sum + m.projected_expenses, 0),
+          total_projected_payroll: forecast.reduce((sum, m) => sum + m.projected_payroll, 0),
+          net_projected_flow: forecast.reduce((sum, m) => sum + m.net_cash_flow, 0),
+          final_balance: runningBalance,
+          months_forecasted: monthsAhead
+        }
+      };
+    } catch (error) {
+      console.error('Cash flow forecast calculation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get seasonal adjustment factors based on historical data
+   */
+  async getSeasonalAdjustment(organizationId, targetMonth) {
+    try {
+      // Get historical data for the same month across multiple years
+      const historicalData = await db('financial_transactions')
+        .where('organization_id', organizationId)
+        .where('status', 'posted')
+        .whereRaw('EXTRACT(MONTH FROM transaction_date) = ?', [targetMonth])
+        .where('transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '3 years'"))
+        .select(
+          db.raw('EXTRACT(YEAR FROM transaction_date) as year'),
+          db.raw('SUM(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as income'),
+          db.raw('SUM(CASE WHEN transaction_type = \'expense\' THEN amount ELSE 0 END) as expenses'),
+          db.raw('SUM(CASE WHEN transaction_type = \'payroll\' THEN amount ELSE 0 END) as payroll')
+        )
+        .groupBy('year')
+        .having(db.raw('COUNT(*) > 0'));
+
+      if (historicalData.length &lt; 2) {
+        // Not enough data, return neutral adjustments
+        return { income: 1.0, expenses: 1.0, payroll: 1.0 };
+      }
+
+      // Calculate averages for this month vs. overall averages
+      const monthAverages = {
+        income: historicalData.reduce((sum, row) => sum + parseFloat(row.income), 0) / historicalData.length,
+        expenses: historicalData.reduce((sum, row) => sum + parseFloat(row.expenses), 0) / historicalData.length,
+        payroll: historicalData.reduce((sum, row) => sum + parseFloat(row.payroll), 0) / historicalData.length
+      };
+
+      // Get overall monthly averages
+      const overallAverages = await db('financial_transactions')
+        .where('organization_id', organizationId)
+        .where('status', 'posted')
+        .where('transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '3 years'"))
+        .select(
+          db.raw('AVG(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as avg_income'),
+          db.raw('AVG(CASE WHEN transaction_type = \'expense\' THEN amount ELSE 0 END) as avg_expenses'),
+          db.raw('AVG(CASE WHEN transaction_type = \'payroll\' THEN amount ELSE 0 END) as avg_payroll')
+        )
+        .first();
+
+      // Calculate adjustment factors (capped between 0.5 and 2.0)
+      const adjustments = {
+        income: Math.max(0.5, Math.min(2.0, 
+          overallAverages.avg_income > 0 ? monthAverages.income / parseFloat(overallAverages.avg_income) : 1.0)),
+        expenses: Math.max(0.5, Math.min(2.0, 
+          overallAverages.avg_expenses > 0 ? monthAverages.expenses / parseFloat(overallAverages.avg_expenses) : 1.0)),
+        payroll: Math.max(0.5, Math.min(2.0, 
+          overallAverages.avg_payroll > 0 ? monthAverages.payroll / parseFloat(overallAverages.avg_payroll) : 1.0))
+      };
+
+      return adjustments;
+    } catch (error) {
+      console.error('Seasonal adjustment calculation error:', error);
+      // Return neutral adjustments on error
+      return { income: 1.0, expenses: 1.0, payroll: 1.0 };
+    }
+  }
+
+  /**
+   * Update all budget amounts for an organization (optimized for performance)
+   */
+  async updateAllBudgetAmounts(organizationId) {
+    try {
+      const budgets = await db('budgets')
+        .where('organization_id', organizationId)
+        .select('id');
+
+      // Use batch processing with controlled concurrency to avoid overwhelming the database
+      const batchSize = 5; // Process 5 budgets at a time
+      const results = [];
+      
+      for (let i = 0; i &lt; budgets.length; i += batchSize) {
+        const batch = budgets.slice(i, i + batchSize);
+        const batchPromises = batch.map(budget => 
+          this.updateBudgetAmounts(budget.id).catch(error => {
+            console.error(`Failed to update budget ${budget.id}:`, error);
+            return { id: budget.id, error: error.message };
+          })
+        );
+        
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      }
+
+      const successful = results.filter(r => !r.error).length;
+      const failed = results.filter(r => r.error).length;
+
+      return { 
+        updated_budgets: successful,
+        failed_budgets: failed,
+        total_budgets: budgets.length,
+        errors: results.filter(r => r.error)
+      };
+    } catch (error) {
+      console.error('Bulk budget update error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate budget efficiency score
+   */
+  async calculateBudgetEfficiency(budgetId) {
+    try {
+      const budget = await db('budgets').where('id', budgetId).first();
+      if (!budget) {
+        throw new Error('Budget not found');
+      }
+
+      const allocated = parseFloat(budget.allocated_amount) || 0;
+      const spent = parseFloat(budget.actual_spent) || 0;
+      const committed = parseFloat(budget.committed_amount) || 0;
+
+      if (allocated === 0) {
+        return { efficiency_score: 0, analysis: 'No budget allocated' };
+      }
+
+      const utilizationRate = (spent + committed) / allocated;
+      const overspendPenalty = Math.max(0, spent - allocated) / allocated;
+      const underutilizationPenalty = Math.max(0, 0.25 - utilizationRate);
+
+      // Score from 0-100, optimal range is 75-95% utilization
+      let score = 100;
+      
+      // Penalize overspending heavily
+      score -= overspendPenalty * 200;
+      
+      // Penalize underutilization moderately
+      score -= underutilizationPenalty * 100;
+      
+      // Bonus for optimal utilization (75-95%)
+      if (utilizationRate >= 0.75 &amp;&amp; utilizationRate &lt;= 0.95) {
+        score += 10;
+      }
+
+      score = Math.max(0, Math.min(100, score));
+
+      let analysis = 'Good budget management';
+      if (overspendPenalty > 0) {
+        analysis = 'Budget overspent - requires attention';
+      } else if (utilizationRate &lt; 0.25) {
+        analysis = 'Significant underutilization - consider reallocation';
+      } else if (utilizationRate &lt; 0.5) {
+        analysis = 'Moderate underutilization';
+      } else if (utilizationRate > 0.95) {
+        analysis = 'Nearly fully utilized - monitor closely';
+      }
+
+      return {
+        efficiency_score: Math.round(score * 100) / 100,
+        utilization_rate: Math.round(utilizationRate * 100 * 100) / 100,
+        analysis,
+        recommendations: this.getBudgetRecommendations(utilizationRate, overspendPenalty > 0)
+      };
+    } catch (error) {
+      console.error('Budget efficiency calculation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get budget recommendations based on utilization
+   */
+  getBudgetRecommendations(utilizationRate, isOverspent) {
+    const recommendations = [];
+
+    if (isOverspent) {
+      recommendations.push('Implement spending controls');
+      recommendations.push('Review and approve large expenditures');
+      recommendations.push('Consider budget reallocation from other categories');
+    } else if (utilizationRate &lt; 0.25) {
+      recommendations.push('Consider reallocating budget to higher-need categories');
+      recommendations.push('Review if budget amount is appropriate');
+      recommendations.push('Identify opportunities to utilize remaining budget');
+    } else if (utilizationRate &lt; 0.5) {
+      recommendations.push('Monitor spending pace');
+      recommendations.push('Plan for remaining budget utilization');
+    } else if (utilizationRate > 0.95) {
+      recommendations.push('Monitor closely for potential overspend');
+      recommendations.push('Implement approval controls for remaining spending');
+      recommendations.push('Consider requesting budget increase if needed');
+    } else {
+      recommendations.push('Continue current budget management practices');
+      recommendations.push('Monitor utilization rate regularly');
+    }
+
+    return recommendations;
+  }
+}
+
+module.exports = new BudgetCalculationService();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

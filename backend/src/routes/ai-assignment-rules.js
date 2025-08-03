@@ -352,7 +352,7 @@ function calculateNextRun(schedule) {
 // Routes
 
 // GET /api/ai-assignment-rules - Get all rules
-router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { enabled, aiSystemType, page = 1, limit = 50 } = req.query;
     
@@ -387,7 +387,7 @@ router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
 });
 
 // POST /api/ai-assignment-rules - Create new rule
-router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = ruleSchema.validate(req.body);
     if (error) {
@@ -470,7 +470,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
 });
 
 // GET /api/ai-assignment-rules/:id - Get specific rule
-router.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -513,7 +513,7 @@ router.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
 });
 
 // PUT /api/ai-assignment-rules/:id - Update rule
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = ruleSchema.validate(req.body);
@@ -593,7 +593,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
 });
 
 // POST /api/ai-assignment-rules/:id/partner-preferences - Add partner preference
-router.post('/:id/partner-preferences', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:id/partner-preferences', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = partnerPreferenceSchema.validate(req.body);
@@ -644,7 +644,7 @@ router.post('/:id/partner-preferences', authenticateToken, requireRole(['admin']
 });
 
 // DELETE /api/ai-assignment-rules/:id/partner-preferences/:prefId - Delete partner preference
-router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { prefId } = req.params;
 
@@ -673,7 +673,7 @@ router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireRole
 });
 
 // POST /api/ai-assignment-rules/:id/run - Execute rule
-router.post('/:id/run', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:id/run', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = runRuleSchema.validate(req.body);
@@ -817,7 +817,7 @@ router.post('/:id/run', authenticateToken, requireRole(['admin']), async (req, r
 });
 
 // GET /api/ai-assignment-rules/:id/runs - Get rule run history
-router.get('/:id/runs', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/:id/runs', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, page = 1, limit = 50 } = req.query;
@@ -847,7 +847,7 @@ router.get('/:id/runs', authenticateToken, requireRole(['admin']), async (req, r
 });
 
 // GET /api/ai-assignment-rules/runs/:runId - Get detailed run results
-router.get('/runs/:runId', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/runs/:runId', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { runId } = req.params;
 
@@ -876,7 +876,7 @@ router.get('/runs/:runId', authenticateToken, requireRole(['admin']), async (req
 });
 
 // POST /api/ai-assignment-rules/:id/toggle - Toggle rule enabled status
-router.post('/:id/toggle', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:id/toggle', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -909,7 +909,7 @@ router.post('/:id/toggle', authenticateToken, requireRole(['admin']), async (req
 });
 
 // DELETE /api/ai-assignment-rules/:id - Delete rule
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
 

@@ -1,17 +1,18 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { User, Award, Settings } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
-import { useApi } from "@/lib/api"
+import { useState, useEffect } from 'react'
+import { User, Award, Settings } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/components/auth-provider'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi } from '@/lib/api'
 
 export function ProfileSettings() {
   const { user, updateProfile } = useAuth()
@@ -20,26 +21,26 @@ export function ProfileSettings() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    location: "",
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
     maxDistance: 25,
     isAvailable: true,
-    postalCode: "",
+    postalCode: ''
   })
 
   useEffect(() => {
     if (user) {
       const referee = user.referee || {}
       setFormData({
-        name: referee.name || "",
-        email: user.email || "",
-        phone: referee.phone || "",
-        location: referee.location || "",
+        name: referee.name || '',
+        email: user.email || '',
+        phone: referee.phone || '',
+        location: referee.location || '',
         maxDistance: referee.max_distance || 25,
         isAvailable: referee.is_available !== false,
-        postalCode: referee.postal_code || "",
+        postalCode: referee.postal_code || ''
       })
     }
   }, [user])
@@ -63,15 +64,15 @@ export function ProfileSettings() {
       
       setIsEditing(false)
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        title: 'Profile updated',
+        description: 'Your profile has been successfully updated.'
       })
     } catch (error) {
       console.error('Failed to update profile:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update profile. Please try again.'
       })
     } finally {
       setLoading(false)
@@ -85,11 +86,11 @@ export function ProfileSettings() {
       <div className="flex items-center justify-end">
         <Button
           onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-          variant={isEditing ? "default" : "outline"}
+          variant={isEditing ? 'default' : 'outline'}
           disabled={loading}
         >
           <Settings className="h-4 w-4 mr-2" />
-          {loading ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
+          {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit Profile'}
         </Button>
       </div>
 
@@ -144,7 +145,7 @@ export function ProfileSettings() {
           </CardContent>
         </Card>
 
-        {user?.role === "referee" && (
+        {user?.role === 'referee' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -205,7 +206,7 @@ export function ProfileSettings() {
         )}
       </div>
 
-      {user?.role === "referee" && (
+      {user?.role === 'referee' && (
         <Card>
           <CardHeader>
             <CardTitle>Availability Settings</CardTitle>
@@ -216,7 +217,7 @@ export function ProfileSettings() {
               <div>
                 <h4 className="text-sm font-medium mb-2">Weekly Availability</h4>
                 <div className="grid grid-cols-7 gap-2">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                     <div key={day} className="text-center">
                       <Label className="text-xs">{day}</Label>
                       <div className="mt-1">
@@ -232,7 +233,7 @@ export function ProfileSettings() {
               <div>
                 <h4 className="text-sm font-medium mb-2">Preferred Time Slots</h4>
                 <div className="space-y-2">
-                  {["Morning (8AM - 12PM)", "Afternoon (12PM - 6PM)", "Evening (6PM - 10PM)"].map((slot) => (
+                  {['Morning (8AM - 12PM)', 'Afternoon (12PM - 6PM)', 'Evening (6PM - 10PM)'].map((slot) => (
                     <div key={slot} className="flex items-center space-x-2">
                       <Checkbox disabled={!isEditing} />
                       <Label className="text-sm">{slot}</Label>

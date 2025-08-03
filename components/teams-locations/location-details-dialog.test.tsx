@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
 import { LocationDetailsDialog } from './location-details-dialog'
 
 const mockOnOpenChange = jest.fn()
@@ -23,18 +24,18 @@ const mockLocation = {
   availability: {
     Monday: { available: true, open: '08:00', close: '22:00' },
     Tuesday: { available: true, open: '08:00', close: '22:00' },
-    Wednesday: { available: false },
+    Wednesday: { available: false }
   },
   notes: 'Premier hockey venue in Calgary',
   isActive: true,
   createdAt: '2023-01-01T00:00:00Z',
-  updatedAt: '2023-01-02T00:00:00Z',
+  updatedAt: '2023-01-02T00:00:00Z'
 }
 
 const defaultProps = {
   open: false,
   onOpenChange: mockOnOpenChange,
-  location: mockLocation,
+  location: mockLocation
 }
 
 describe('LocationDetailsDialog', () => {
@@ -115,7 +116,7 @@ describe('LocationDetailsDialog', () => {
       ...mockLocation,
       contactName: undefined,
       contactPhone: undefined,
-      contactEmail: undefined,
+      contactEmail: undefined
     }
     render(<LocationDetailsDialog {...defaultProps} open={true} location={locationWithoutContact} />)
     
@@ -210,7 +211,7 @@ describe('LocationDetailsDialog', () => {
       facilities: ['Basketball Court'],
       isActive: true,
       createdAt: '2023-01-01T00:00:00Z',
-      updatedAt: '2023-01-01T00:00:00Z',
+      updatedAt: '2023-01-01T00:00:00Z'
     }
     
     render(<LocationDetailsDialog {...defaultProps} open={true} location={minimalLocation} />)
@@ -268,7 +269,7 @@ describe('LocationDetailsDialog', () => {
         Monday: { available: true, open: '09:00', close: '17:00' },
         Tuesday: { available: true, open: '10:00', close: '20:00' },
         Wednesday: { available: false },
-        Thursday: { available: true, open: '08:00', close: '22:00' },
+        Thursday: { available: true, open: '08:00', close: '22:00' }
       }
     }
     

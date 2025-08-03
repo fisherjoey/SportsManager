@@ -1,6 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { 
+  Calendar, Clock, MapPin, Users, Brain, CheckCircle2, AlertTriangle, 
+  Play, Sparkles, Upload, Download, Plus, Trash2 
+} from 'lucide-react'
+
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,10 +13,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { 
-  Calendar, Clock, MapPin, Users, Brain, CheckCircle2, AlertTriangle, 
-  Play, Sparkles, Upload, Download, Plus, Trash2 
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Game {
@@ -25,7 +26,7 @@ interface Game {
   division: string
   requiredReferees: number
   assignedReferees: string[]
-  status: "unassigned" | "partial" | "assigned"
+  status: 'unassigned' | 'partial' | 'assigned'
   isSelected?: boolean
 }
 
@@ -72,96 +73,96 @@ interface GameChunk {
 // Mock data - replace with API calls
 const mockGames: Game[] = [
   {
-    id: "1",
-    date: "2024-01-15",
-    time: "18:00",
-    endTime: "19:30",
-    homeTeam: "Lakers",
-    awayTeam: "Warriors",
-    location: "Downtown Arena",
-    division: "Senior A",
+    id: '1',
+    date: '2024-01-15',
+    time: '18:00',
+    endTime: '19:30',
+    homeTeam: 'Lakers',
+    awayTeam: 'Warriors',
+    location: 'Downtown Arena',
+    division: 'Senior A',
     requiredReferees: 2,
     assignedReferees: [],
-    status: "unassigned",
+    status: 'unassigned'
   },
   {
-    id: "2",
-    date: "2024-01-15",
-    time: "19:45",
-    endTime: "21:15",
-    homeTeam: "Bulls",
-    awayTeam: "Celtics",
-    location: "Downtown Arena",
-    division: "Senior A",
+    id: '2',
+    date: '2024-01-15',
+    time: '19:45',
+    endTime: '21:15',
+    homeTeam: 'Bulls',
+    awayTeam: 'Celtics',
+    location: 'Downtown Arena',
+    division: 'Senior A',
     requiredReferees: 2,
     assignedReferees: [],
-    status: "unassigned",
+    status: 'unassigned'
   },
   {
-    id: "3",
-    date: "2024-01-16",
-    time: "18:00",
-    endTime: "19:30",
-    homeTeam: "Heat",
-    awayTeam: "Spurs",
-    location: "Westside Sports Center",
-    division: "Junior A",
+    id: '3',
+    date: '2024-01-16',
+    time: '18:00',
+    endTime: '19:30',
+    homeTeam: 'Heat',
+    awayTeam: 'Spurs',
+    location: 'Westside Sports Center',
+    division: 'Junior A',
     requiredReferees: 2,
     assignedReferees: [],
-    status: "unassigned",
-  },
+    status: 'unassigned'
+  }
 ]
 
 const mockReferees: Referee[] = [
   { 
-    id: "1", 
-    name: "John Smith", 
-    level: "Senior", 
+    id: '1', 
+    name: 'John Smith', 
+    level: 'Senior', 
     experience: 8, 
-    location: "Downtown", 
+    location: 'Downtown', 
     available: true, 
-    email: "john@email.com", 
-    phone: "555-0101",
+    email: 'john@email.com', 
+    phone: '555-0101',
     maxGamesPerDay: 3,
-    preferredLocations: ["Downtown Arena", "Westside Sports Center"]
+    preferredLocations: ['Downtown Arena', 'Westside Sports Center']
   },
   { 
-    id: "2", 
-    name: "Sarah Johnson", 
-    level: "Junior", 
+    id: '2', 
+    name: 'Sarah Johnson', 
+    level: 'Junior', 
     experience: 3, 
-    location: "Downtown", 
+    location: 'Downtown', 
     available: true, 
-    email: "sarah@email.com", 
-    phone: "555-0102",
-    unavailableDates: ["2024-01-16"],
+    email: 'sarah@email.com', 
+    phone: '555-0102',
+    unavailableDates: ['2024-01-16'],
     maxGamesPerDay: 2,
-    preferredLocations: ["Downtown Arena"]
+    preferredLocations: ['Downtown Arena']
   },
   { 
-    id: "3", 
-    name: "Mike Wilson", 
-    level: "Senior", 
+    id: '3', 
+    name: 'Mike Wilson', 
+    level: 'Senior', 
     experience: 12, 
-    location: "Westside", 
+    location: 'Westside', 
     available: true, 
-    email: "mike@email.com", 
-    phone: "555-0103",
+    email: 'mike@email.com', 
+    phone: '555-0103',
     maxGamesPerDay: 4,
-    preferredLocations: ["Westside Sports Center"]
+    preferredLocations: ['Westside Sports Center']
   },
   { 
-    id: "4", 
-    name: "Lisa Brown", 
-    level: "Rookie", 
+    id: '4', 
+    name: 'Lisa Brown', 
+    level: 'Rookie', 
     experience: 1, 
-    location: "Westside", 
+    location: 'Westside', 
     available: false, 
-    email: "lisa@email.com", 
-    phone: "555-0104",
-    unavailableDates: ["2024-01-15", "2024-01-16"],
+    email: 'lisa@email.com', 
+    phone: '555-0104',
+    unavailableDates: ['2024-01-15', '2024-01-16'],
     maxGamesPerDay: 1
-  },
+  }
 ]
 
 export default function AIAssignmentsSimple() {
@@ -175,9 +176,9 @@ export default function AIAssignmentsSimple() {
   const [dataLoading, setDataLoading] = useState(true)
   
   // Filters
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterLocation, setFilterLocation] = useState("all")
-  const [filterDate, setFilterDate] = useState("all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterLocation, setFilterLocation] = useState('all')
+  const [filterDate, setFilterDate] = useState('all')
 
   // Load data from backend
   useEffect(() => {
@@ -343,7 +344,7 @@ export default function AIAssignmentsSimple() {
     )
 
     if (!canChunk) {
-      alert("Games must be at the same location and date to be chunked together")
+      alert('Games must be at the same location and date to be chunked together')
       return
     }
 
@@ -356,7 +357,7 @@ export default function AIAssignmentsSimple() {
       date: firstGame.date,
       startTime: sortedGames[0].time,
       endTime: sortedGames[sortedGames.length - 1].endTime,
-      totalReferees: sortedGames.reduce((sum, game) => sum + game.requiredReferees, 0),
+      totalReferees: sortedGames.reduce((sum, game) => sum + game.requiredReferees, 0)
     }
 
     setChunks(prev => [...prev, newChunk])
@@ -385,7 +386,7 @@ export default function AIAssignmentsSimple() {
           date: firstGame.date,
           startTime: sortedGames[0].time,
           endTime: sortedGames[sortedGames.length - 1].endTime,
-          totalReferees: sortedGames.reduce((sum, game) => sum + game.requiredReferees, 0),
+          totalReferees: sortedGames.reduce((sum, game) => sum + game.requiredReferees, 0)
         }
 
         newChunks.push(chunk)
@@ -503,7 +504,7 @@ export default function AIAssignmentsSimple() {
           reasoning += `, prefers ${game.location}`
         }
         if (scoredRef.referee.location === chunk.location) {
-          reasoning += `, local to area`
+          reasoning += ', local to area'
         }
         
         suggestions.push({
@@ -554,8 +555,8 @@ export default function AIAssignmentsSimple() {
       game.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLocation = filterLocation === "all" || game.location === filterLocation
-    const matchesDate = filterDate === "all" || game.date === filterDate
+    const matchesLocation = filterLocation === 'all' || game.location === filterLocation
+    const matchesDate = filterDate === 'all' || game.date === filterDate
 
     return matchesSearch && matchesLocation && matchesDate
   })
@@ -731,12 +732,12 @@ export default function AIAssignmentsSimple() {
               
               return (
                 <div key={referee.id} className={cn(
-                  "p-3 border rounded-lg",
-                  referee.available ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
+                  'p-3 border rounded-lg',
+                  referee.available ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                 )}>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-sm">{referee.name}</h4>
-                    <Badge variant={referee.available ? "default" : "destructive"} className="text-xs">
+                    <Badge variant={referee.available ? 'default' : 'destructive'} className="text-xs">
                       {referee.level}
                     </Badge>
                   </div>
@@ -768,8 +769,8 @@ export default function AIAssignmentsSimple() {
             <Card
               key={game.id}
               className={cn(
-                "cursor-pointer transition-colors",
-                selectedGames.includes(game.id) && "ring-2 ring-blue-500 bg-blue-50"
+                'cursor-pointer transition-colors',
+                selectedGames.includes(game.id) && 'ring-2 ring-blue-500 bg-blue-50'
               )}
               onClick={() => handleGameSelect(game.id)}
             >
@@ -779,8 +780,8 @@ export default function AIAssignmentsSimple() {
                     <div className="flex items-center space-x-2 mb-2">
                       <Badge variant="outline">{game.division}</Badge>
                       <Badge variant={
-                        game.status === "assigned" ? "default" :
-                        game.status === "partial" ? "secondary" : "destructive"
+                        game.status === 'assigned' ? 'default' :
+                          game.status === 'partial' ? 'secondary' : 'destructive'
                       }>
                         {game.status}
                       </Badge>
@@ -912,10 +913,10 @@ export default function AIAssignmentsSimple() {
                       <div className="space-y-3">
                         {gameSuggestions.map((suggestion, index) => (
                           <div key={index} className={cn(
-                            "p-3 border rounded",
+                            'p-3 border rounded',
                             suggestion.conflicts && suggestion.conflicts.length > 0
-                              ? "bg-yellow-50 border-yellow-200"
-                              : "bg-green-50 border-green-200"
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-green-50 border-green-200'
                           )}>
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -935,8 +936,8 @@ export default function AIAssignmentsSimple() {
                               <div className="ml-3 text-right">
                                 <Badge className={
                                   suggestion.conflicts && suggestion.conflicts.length > 0
-                                    ? "bg-yellow-600"
-                                    : "bg-green-600"
+                                    ? 'bg-yellow-600'
+                                    : 'bg-green-600'
                                 }>
                                   {Math.round(suggestion.confidence * 100)}% confidence
                                 </Badge>

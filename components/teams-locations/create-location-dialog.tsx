@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState } from 'react'
 
-import { useState } from "react"
-import { CustomFormDialog } from "@/components/ui/form-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ContactFieldGroup } from "@/components/ui/contact-field-group"
-import { AddressFieldGroup } from "@/components/ui/address-field-group"
+import { CustomFormDialog } from '@/components/ui/form-dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ContactFieldGroup } from '@/components/ui/contact-field-group'
+import { AddressFieldGroup } from '@/components/ui/address-field-group'
 
 interface CreateLocationDialogProps {
   open: boolean
@@ -19,21 +19,21 @@ interface CreateLocationDialogProps {
 
 export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: CreateLocationDialogProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    city: "",
-    province: "AB",
-    postalCode: "",
+    name: '',
+    address: '',
+    city: '',
+    province: 'AB',
+    postalCode: '',
     capacity: 0,
-    contactName: "",
-    contactPhone: "",
-    contactEmail: "",
+    contactName: '',
+    contactPhone: '',
+    contactEmail: '',
     rentalRate: 0,
     parkingSpaces: 0,
     facilities: [] as string[],
     accessibilityFeatures: [] as string[],
-    notes: "",
-    isActive: true,
+    notes: '',
+    isActive: true
   })
 
   const handleAddressSelect = (address: any) => {
@@ -47,39 +47,39 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
   }
 
   const facilityOptions = [
-    "Basketball Court",
-    "Multiple Courts",
-    "Volleyball Courts",
-    "Parking",
-    "Concession",
-    "Changerooms",
-    "Spectator Seating",
-    "Fitness Centre",
-    "Pool",
-    "Ice Rink",
-    "Track",
-    "Meeting Rooms",
+    'Basketball Court',
+    'Multiple Courts',
+    'Volleyball Courts',
+    'Parking',
+    'Concession',
+    'Changerooms',
+    'Spectator Seating',
+    'Fitness Centre',
+    'Pool',
+    'Ice Rink',
+    'Track',
+    'Meeting Rooms'
   ]
 
   const accessibilityOptions = [
-    "Wheelchair Access",
-    "Accessible Washrooms",
-    "Accessible Parking",
-    "Elevator",
-    "Ramps",
-    "Audio Assistance",
+    'Wheelchair Access',
+    'Accessible Washrooms',
+    'Accessible Parking',
+    'Elevator',
+    'Ramps',
+    'Audio Assistance'
   ]
 
   const handleFacilityChange = (facility: string, checked: boolean) => {
     if (checked) {
       setFormData({
         ...formData,
-        facilities: [...formData.facilities, facility],
+        facilities: [...formData.facilities, facility]
       })
     } else {
       setFormData({
         ...formData,
-        facilities: formData.facilities.filter((f) => f !== facility),
+        facilities: formData.facilities.filter((f) => f !== facility)
       })
     }
   }
@@ -88,12 +88,12 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
     if (checked) {
       setFormData({
         ...formData,
-        accessibilityFeatures: [...formData.accessibilityFeatures, feature],
+        accessibilityFeatures: [...formData.accessibilityFeatures, feature]
       })
     } else {
       setFormData({
         ...formData,
-        accessibilityFeatures: formData.accessibilityFeatures.filter((f) => f !== feature),
+        accessibilityFeatures: formData.accessibilityFeatures.filter((f) => f !== feature)
       })
     }
   }
@@ -101,25 +101,25 @@ export function CreateLocationDialog({ open, onOpenChange, onCreateLocation }: C
   const handleSubmit = async (data: any) => {
     const locationData = {
       ...formData,
-      ...data,
+      ...data
     }
     await onCreateLocation(locationData)
     setFormData({
-      name: "",
-      address: "",
-      city: "Calgary",
-      province: "AB",
-      postalCode: "",
+      name: '',
+      address: '',
+      city: 'Calgary',
+      province: 'AB',
+      postalCode: '',
       capacity: 0,
-      contactName: "",
-      contactPhone: "",
-      contactEmail: "",
+      contactName: '',
+      contactPhone: '',
+      contactEmail: '',
       rentalRate: 0,
       parkingSpaces: 0,
       facilities: [],
       accessibilityFeatures: [],
-      notes: "",
-      isActive: true,
+      notes: '',
+      isActive: true
     })
   }
 

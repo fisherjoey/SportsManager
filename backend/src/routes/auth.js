@@ -9,6 +9,7 @@ const { authLimiter, registrationLimiter, passwordResetLimiter } = require('../m
 const { sanitizeAll } = require('../middleware/sanitization');
 const { asyncHandler, AuthenticationError, ValidationError } = require('../middleware/errorHandling');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
+const LocationDataService = require('../services/LocationDataService');
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -19,18 +20,23 @@ const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
   role: Joi.string().valid('admin', 'referee').required(),
-  referee_data: Joi.when('role', {
+  // For referee registration, include user data directly
+  name: Joi.when('role', {
     is: 'referee',
-    then: Joi.object({
-      name: Joi.string().required(),
-      phone: Joi.string().max(20),
-      level: Joi.string().valid('Recreational', 'Competitive', 'Elite').required(),
-      location: Joi.string(),
-      postal_code: Joi.string().max(10).required(),
-      max_distance: Joi.number().integer().min(1).max(200).default(25)
-    }).required(),
-    otherwise: Joi.forbidden()
-  })
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional()
+  }),
+  phone: Joi.string().max(20).optional(),
+  location: Joi.string().optional(),
+  postal_code: Joi.when('role', {
+    is: 'referee',
+    then: Joi.string().max(10).required(),
+    otherwise: Joi.string().optional()
+  }),
+  max_distance: Joi.number().integer().min(1).max(200).default(25),
+  referee_level_id: Joi.string().uuid().optional(),
+  years_experience: Joi.number().integer().min(0).max(50).optional(),
+  notes: Joi.string().optional()
 });
 
 // POST /api/auth/login
@@ -88,35 +94,22 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     id: user.id,
     email: user.email,
     role: user.role, // Keep for backward compatibility
-    roles: user.roles || [user.role] // New roles array
+    roles: user.roles || [user.role], // New roles array
+    name: user.name,
+    phone: user.phone,
+    location: user.location,
+    postal_code: user.postal_code,
+    max_distance: user.max_distance,
+    is_available: user.is_available,
+    wage_per_game: user.wage_per_game,
+    referee_level_id: user.referee_level_id,
+    years_experience: user.years_experience,
+    games_refereed_season: user.games_refereed_season,
+    evaluation_score: user.evaluation_score,
+    notes: user.notes,
+    created_at: user.created_at,
+    updated_at: user.updated_at
   };
-
-  if (user.role === 'referee' || user.role === 'admin') {
-    // Get referee record to include proper referee_id
-    const referee = await db('referees').where('user_id', user.id).first();
-    if (referee) {
-      userData.referee_id = referee.id;
-      userData.referee = {
-        id: referee.id,
-        user_id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        location: user.location,
-        postal_code: user.postal_code,
-        max_distance: user.max_distance,
-        is_available: user.is_available,
-        wage_per_game: user.wage_per_game,
-        referee_level_id: user.referee_level_id,
-        years_experience: user.years_experience,
-        games_refereed_season: user.games_refereed_season,
-        evaluation_score: user.evaluation_score,
-        notes: user.notes,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      };
-    }
-  }
 
   // Log successful login
   await createAuditLog({
@@ -141,7 +134,19 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
     throw new ValidationError(error.details[0].message);
   }
 
-  const { email, password, role, referee_data } = value;
+  const { 
+    email, 
+    password, 
+    role, 
+    name, 
+    phone, 
+    location, 
+    postal_code, 
+    max_distance,
+    referee_level_id,
+    years_experience,
+    notes
+  } = value;
 
   // Check if user already exists
   const existingUser = await db('users').where('email', email).first();
@@ -156,31 +161,62 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
   const trx = await db.transaction();
   
   try {
-    // Create user
-    const [user] = await trx('users').insert({
+    // Prepare user data
+    const userData = {
       email,
       password_hash,
       role
-    }).returning('*');
-
-    let userData = {
-      id: user.id,
-      email: user.email,
-      role: user.role
     };
 
-    // If registering as referee, create referee record
-    if (role === 'referee' && referee_data) {
-      const [referee] = await trx('referees').insert({
-        user_id: user.id,
-        email: email, // Use same email as user
-        ...referee_data
-      }).returning('*');
-      
-      userData.referee = referee;
+    // Add referee-specific fields if registering as referee
+    if (role === 'referee') {
+      userData.name = name;
+      userData.phone = phone;
+      userData.location = location;
+      userData.postal_code = postal_code;
+      userData.max_distance = max_distance || 25;
+      userData.referee_level_id = referee_level_id;
+      userData.years_experience = years_experience;
+      userData.notes = notes;
+      userData.is_available = true; // Default to available
+      userData.games_refereed_season = 0; // Default to 0
     }
 
+    // Create user
+    const [user] = await trx('users').insert(userData).returning('*');
+
     await trx.commit();
+
+    // If referee with postal code, create location data asynchronously
+    if (role === 'referee' && postal_code) {
+      // Don't await this as it can take time and might fail
+      // Run location data creation in background
+      setImmediate(async () => {
+        try {
+          const locationService = new LocationDataService();
+          await locationService.createOrUpdateUserLocation(
+            user.id, 
+            location || postal_code
+          );
+          console.log(`Location data created for new user ${user.id}`);
+        } catch (error) {
+          console.error(`Failed to create location data for user ${user.id}:`, error.message);
+        }
+      });
+    }
+
+    // Prepare response user data
+    let responseUserData = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      phone: user.phone,
+      location: user.location,
+      postal_code: user.postal_code,
+      max_distance: user.max_distance,
+      is_available: user.is_available
+    };
 
     // Generate JWT token (include roles array for new system)
     const token = jwt.sign(
@@ -207,7 +243,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
 
     res.status(201).json({
       token,
-      user: userData
+      user: responseUserData
     });
   } catch (error) {
     await trx.rollback();
@@ -220,7 +256,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db('users')
       .select('*') // Select all fields to ensure we have everything we need
-      .where('id', req.user.userId)
+      .where('id', req.user.id)
       .first();
 
     if (!user) {
@@ -233,36 +269,20 @@ router.get('/me', authenticateToken, async (req, res) => {
       role: user.role, // Keep for backward compatibility
       roles: user.roles || [user.role], // New roles array
       name: user.name,
+      phone: user.phone,
+      location: user.location,
+      postal_code: user.postal_code,
+      max_distance: user.max_distance,
+      is_available: user.is_available,
+      wage_per_game: user.wage_per_game,
+      referee_level_id: user.referee_level_id,
+      years_experience: user.years_experience,
+      games_refereed_season: user.games_refereed_season,
+      evaluation_score: user.evaluation_score,
+      notes: user.notes,
       created_at: user.created_at,
       updated_at: user.updated_at
     };
-
-    if (user.role === 'referee' || user.role === 'admin') {
-      // Get referee record to include proper referee_id
-      const referee = await db('referees').where('user_id', user.id).first();
-      if (referee) {
-        userData.referee_id = referee.id;
-        userData.referee = {
-          id: referee.id,
-          user_id: referee.user_id,
-          name: referee.name,
-          email: referee.email,
-          phone: referee.phone,
-          location: referee.location,
-          postal_code: referee.postal_code,
-          max_distance: referee.max_distance,
-          is_available: referee.is_available,
-          wage_per_game: referee.wage_per_game,
-          referee_level_id: referee.referee_level_id,
-          years_experience: referee.years_experience,
-          games_refereed_season: referee.games_refereed_season,
-          evaluation_score: referee.evaluation_score,
-          notes: referee.notes,
-          created_at: referee.created_at,
-          updated_at: referee.updated_at
-        };
-      }
-    }
 
     res.json({ user: userData });
   } catch (error) {

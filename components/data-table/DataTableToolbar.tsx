@@ -1,20 +1,22 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Cross2Icon } from "@radix-ui/react-icons"
-import { Table } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { DataTableViewOptions } from "./DataTableViewOptions"
-import { DateRangeFilter } from "./DateRangeFilter"
-import { Search, RefreshCw, Calendar, X } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import * as React from 'react'
+import { Cross2Icon } from '@radix-ui/react-icons'
+import { Table } from '@tanstack/react-table'
+import { Search, RefreshCw, Calendar, X } from 'lucide-react'
+import { isWithinInterval, startOfDay, endOfDay } from 'date-fns'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { isWithinInterval, startOfDay, endOfDay } from "date-fns"
+  PopoverTrigger
+} from '@/components/ui/popover'
+
+import { DataTableViewOptions } from './DataTableViewOptions'
+import { DateRangeFilter } from './DateRangeFilter'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -25,7 +27,7 @@ interface DataTableToolbarProps<TData> {
 export function DataTableToolbar<TData>({
   table,
   globalFilter,
-  setGlobalFilter,
+  setGlobalFilter
 }: DataTableToolbarProps<TData>) {
   const [startDate, setStartDate] = React.useState<Date | undefined>()
   const [endDate, setEndDate] = React.useState<Date | undefined>()
@@ -37,10 +39,10 @@ export function DataTableToolbar<TData>({
   React.useEffect(() => {
     // Check if date column exists before trying to access it
     const columns = table.getAllColumns()
-    const hasDateColumn = columns.some(col => col.id === "date")
+    const hasDateColumn = columns.some(col => col.id === 'date')
     if (!hasDateColumn) return
     
-    const dateColumn = table.getColumn("date")
+    const dateColumn = table.getColumn('date')
     if (!dateColumn) return
 
     if (!startDate && !endDate) {
@@ -53,7 +55,7 @@ export function DataTableToolbar<TData>({
 
   const clearAllFilters = () => {
     table.resetColumnFilters()
-    setGlobalFilter("")
+    setGlobalFilter('')
     setStartDate(undefined)
     setEndDate(undefined)
   }
@@ -135,7 +137,7 @@ export function DataTableToolbar<TData>({
                 variant="ghost"
                 size="sm"
                 className="h-3 w-3 p-0 hover:bg-red-500 hover:text-white rounded-full ml-1"
-                onClick={() => setGlobalFilter("")}
+                onClick={() => setGlobalFilter('')}
                 title="Clear global search"
               >
                 <X className="h-2 w-2" />
@@ -148,8 +150,8 @@ export function DataTableToolbar<TData>({
               Date: {startDate && endDate
                 ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
                 : startDate
-                ? `From ${startDate.toLocaleDateString()}`
-                : `Until ${endDate?.toLocaleDateString()}`}
+                  ? `From ${startDate.toLocaleDateString()}`
+                  : `Until ${endDate?.toLocaleDateString()}`}
               <Button
                 variant="ghost"
                 size="sm"

@@ -1,18 +1,19 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
-import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload } from "lucide-react"
-import { mockGames, type Game } from "@/lib/mock-data"
-import { useToast } from "@/components/ui/use-toast"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { StatsGrid } from "@/components/ui/stats-grid"
+import { useState, useEffect } from 'react'
+import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { mockGames, type Game } from '@/lib/mock-data'
+import { useToast } from '@/components/ui/use-toast'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
 
 interface GamesManagementPageProps {
   initialDateFilter?: string
@@ -20,10 +21,10 @@ interface GamesManagementPageProps {
 
 export function GamesManagementPage({ initialDateFilter }: GamesManagementPageProps = {}) {
   const [games, setGames] = useState<Game[]>(mockGames)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedLevel, setSelectedLevel] = useState<string>("all")
-  const [selectedStatus, setSelectedStatus] = useState<string>("all")
-  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || "all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedLevel, setSelectedLevel] = useState<string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || 'all')
   const { toast } = useToast()
 
   // Update date filter when initialDateFilter prop changes
@@ -45,9 +46,9 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       awayTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLevel = selectedLevel === "all" || game.level === selectedLevel
-    const matchesStatus = selectedStatus === "all" || game.status === selectedStatus
-    const matchesDate = selectedDate === "all" || game.date === selectedDate
+    const matchesLevel = selectedLevel === 'all' || game.level === selectedLevel
+    const matchesStatus = selectedStatus === 'all' || game.status === selectedStatus
+    const matchesDate = selectedDate === 'all' || game.date === selectedDate
 
     return matchesSearch && matchesLevel && matchesStatus && matchesDate
   })
@@ -55,43 +56,43 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const handleDeleteGame = (gameId: string) => {
     setGames(games.filter((g) => g.id !== gameId))
     toast({
-      title: "Game deleted",
-      description: "The game has been removed from the system.",
+      title: 'Game deleted',
+      description: 'The game has been removed from the system.'
     })
   }
 
   const stats = [
     {
-      title: selectedDate !== "all" ? "Games This Day" : "Total Games",
+      title: selectedDate !== 'all' ? 'Games This Day' : 'Total Games',
       value: filteredGames.length,
       icon: Calendar,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Unassigned",
-      value: filteredGames.filter((g) => g.status === "unassigned").length,
+      title: 'Unassigned',
+      value: filteredGames.filter((g) => g.status === 'unassigned').length,
       icon: Clock,
-      color: "text-red-600",
+      color: 'text-red-600'
     },
     {
-      title: "Assigned",
-      value: filteredGames.filter((g) => g.status === "assigned").length,
+      title: 'Assigned',
+      value: filteredGames.filter((g) => g.status === 'assigned').length,
       icon: Users,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: selectedDate !== "all" ? "Up for Grabs" : "This Week",
-      value: selectedDate !== "all" 
-        ? filteredGames.filter((g) => g.status === "up-for-grabs").length
+      title: selectedDate !== 'all' ? 'Up for Grabs' : 'This Week',
+      value: selectedDate !== 'all' 
+        ? filteredGames.filter((g) => g.status === 'up-for-grabs').length
         : games.filter((g) => {
-            const gameDate = new Date(g.date)
-            const now = new Date()
-            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-            return gameDate >= now && gameDate <= weekFromNow
-          }).length,
+          const gameDate = new Date(g.date)
+          const now = new Date()
+          const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+          return gameDate >= now && gameDate <= weekFromNow
+        }).length,
       icon: Calendar,
-      color: selectedDate !== "all" ? "text-orange-600" : "text-purple-600",
-    },
+      color: selectedDate !== 'all' ? 'text-orange-600' : 'text-purple-600'
+    }
   ]
 
   // Column definitions for the games table
@@ -193,12 +194,12 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
         <Badge
           variant={
             game.status === 'assigned' ? 'default' :
-            game.status === 'unassigned' ? 'destructive' :
-            'secondary'
+              game.status === 'unassigned' ? 'destructive' :
+                'secondary'
           }
         >
           {game.status === 'up-for-grabs' ? 'Up for Grabs' : 
-           game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+            game.status.charAt(0).toUpperCase() + game.status.slice(1)}
         </Badge>
       )
     },
@@ -228,17 +229,17 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
         icon={Calendar}
         title="Game Management"
         description={
-          selectedDate !== "all" 
+          selectedDate !== 'all' 
             ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}`
-            : "Manage all games across divisions and levels"
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}`
+            : 'Manage all games across divisions and levels'
         }
       >
-        {selectedDate !== "all" && (
+        {selectedDate !== 'all' && (
           <>
             <Badge variant="outline" className="text-blue-600 border-blue-600">
               <Calendar className="h-3 w-3 mr-1" />
@@ -247,7 +248,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setSelectedDate("all")}
+              onClick={() => setSelectedDate('all')}
               className="text-gray-600"
             >
               Clear Date Filter
@@ -313,13 +314,13 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
               <Input
                 type="date"
                 placeholder="Filter by date"
-                value={selectedDate === "all" ? "" : selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value || "all")}
+                value={selectedDate === 'all' ? '' : selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value || 'all')}
                 className={`w-[150px] ${
-                  selectedDate !== "all" ? "ring-2 ring-blue-500 border-blue-500" : ""
+                  selectedDate !== 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
                 }`}
               />
-              {selectedDate !== "all" && (
+              {selectedDate !== 'all' && (
                 <Badge 
                   variant="secondary" 
                   className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"

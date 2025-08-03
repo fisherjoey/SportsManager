@@ -1,10 +1,10 @@
-import { ColumnDef, Row } from "@tanstack/react-table"
-import { ComponentType } from "react"
+import { ColumnDef, Row } from '@tanstack/react-table'
+import { ComponentType } from 'react'
 
 export interface Team {
   organization: string // "Okotoks", "NW", "Calgary", etc.
   ageGroup: string // "U11", "U13", "U15", "U18", etc.
-  gender: "Boys" | "Girls"
+  gender: 'Boys' | 'Girls'
   rank: number // 1, 2, 3, etc.
 }
 
@@ -82,7 +82,7 @@ export interface Referee {
   name: string
   email: string
   phone: string
-  level: "Learning" | "Learning+" | "Growing" | "Growing+" | "Teaching" | "Expert"
+  level: 'Learning' | 'Learning+' | 'Growing' | 'Growing+' | 'Teaching' | 'Expert'
   location: string
   roles: string[]
   maxDistance: number
@@ -94,8 +94,8 @@ export interface Referee {
   notes?: string
 }
 
-export type GameLevel = "Recreational" | "Competitive" | "Elite"
-export type GameType = "Community" | "Club" | "Tournament" | "Private Tournament"
-export type GameStatus = "unassigned" | "assigned" | "up-for-grabs" | "completed"
-export type AssignmentStatus = "pending" | "accepted" | "declined"
-export type RefereeLevel = "Learning" | "Learning+" | "Growing" | "Growing+" | "Teaching" | "Expert"
+export type GameLevel = 'Recreational' | 'Competitive' | 'Elite'
+export type GameType = 'Community' | 'Club' | 'Tournament' | 'Private Tournament'
+export type GameStatus = 'unassigned' | 'assigned' | 'up-for-grabs' | 'completed'
+export type AssignmentStatus = 'pending' | 'accepted' | 'declined'
+export type RefereeLevel = 'Learning' | 'Learning+' | 'Growing' | 'Growing+' | 'Teaching' | 'Expert'

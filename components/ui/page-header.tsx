@@ -1,7 +1,8 @@
-"use client"
+'use client'
 
-import { LucideIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { LucideIcon } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 interface PageHeaderProps {
   icon?: LucideIcon
@@ -19,7 +20,7 @@ export function PageHeader({
   className 
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between", className)}>
+    <div className={cn('flex items-center justify-between', className)}>
       <div className="space-y-1">
         <div className="flex items-center space-x-2">
           {Icon && <Icon className="h-6 w-6 text-muted-foreground" />}

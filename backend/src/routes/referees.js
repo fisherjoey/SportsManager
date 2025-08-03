@@ -3,237 +3,194 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
+const { UserSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
+const { ErrorFactory } = require('../utils/errors');
+const UserService = require('../services/UserService');
 
-const refereeSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  phone: Joi.string().max(20),
-  location: Joi.string(),
-  postal_code: Joi.string().max(10).required(),
-  max_distance: Joi.number().integer().min(1).max(200).default(25),
-  is_available: Joi.boolean().default(true),
-  wage_per_game: Joi.number().min(0).default(0)
+// Initialize UserService with database connection
+const userService = new UserService(db);
+
+// Validation schemas are now centralized in validation-schemas.js
+
+// GET /api/referees/test - Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Referees API is working', timestamp: new Date().toISOString() });
 });
 
-const refereeUpdateSchema = Joi.object({
-  name: Joi.string(),
-  email: Joi.string().email(),
-  phone: Joi.string().max(20).allow(''),
-  location: Joi.string().allow(''),
-  postal_code: Joi.string().max(10).allow(''),
-  max_distance: Joi.number().integer().min(1).max(200),
-  is_available: Joi.boolean(),
-  availability_strategy: Joi.string().valid('WHITELIST', 'BLACKLIST')
-});
-
-const adminRefereeUpdateSchema = Joi.object({
-  name: Joi.string(),
-  email: Joi.string().email(),
-  phone: Joi.string().max(20).allow(''),
-  location: Joi.string().allow(''),
-  postal_code: Joi.string().max(10).allow(''),
-  max_distance: Joi.number().integer().min(1).max(200),
-  is_available: Joi.boolean(),
-  wage_per_game: Joi.number().min(0),
-  availability_strategy: Joi.string().valid('WHITELIST', 'BLACKLIST')
-});
-
-// GET /api/referees - Get all referees with optional filters
-router.get('/', async (req, res) => {
+// GET /api/referees - Get all referees with optional filters  
+router.get('/', enhancedAsyncHandler(async (req, res) => {
   try {
-    const { level, postal_code, is_available, page = 1, limit = 50 } = req.query;
-    
-    let query = db('referees')
-      .select('*')
-      .orderBy('name', 'asc');
-
-    if (level) {
-      query = query.where('level', level);
-    }
-    
-    if (postal_code) {
-      query = query.where('postal_code', postal_code);
-    }
-    
-    if (is_available !== undefined) {
-      query = query.where('is_available', is_available === 'true');
-    }
-
-    const offset = (page - 1) * limit;
-    query = query.limit(limit).offset(offset);
-
-    const referees = await query;
+    // Simple query to test database connection
+    const referees = await db('users')
+      .where('role', 'referee')
+      .select('id', 'name', 'email', 'is_available')
+      .limit(10);
     
     res.json({
-      data: referees,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit)
+      success: true,
+      data: { 
+        referees,
+        total: referees.length
       }
     });
   } catch (error) {
-    console.error('Error fetching referees:', error);
-    res.status(500).json({ error: 'Failed to fetch referees' });
+    console.error('Referees endpoint error:', error);
+    throw error;
   }
-});
+}));
 
 // GET /api/referees/:id - Get specific referee
-router.get('/:id', async (req, res) => {
-  try {
-    const referee = await db('referees').where('id', req.params.id).first();
-    
-    if (!referee) {
-      return res.status(404).json({ error: 'Referee not found' });
-    }
+router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  const refereeId = req.params.id;
+  
+  // Use UserService to get referee with complete details
+  const referee = await userService.getUserWithRefereeDetails(refereeId, {
+    assignmentLimit: 50 // Get more assignments for detailed view
+  });
 
-    // Get referee's assignments
-    const assignments = await db('game_assignments')
-      .join('games', 'game_assignments.game_id', 'games.id')
-      .join('positions', 'game_assignments.position_id', 'positions.id')
-      .select('games.*', 'positions.name as position_name', 'game_assignments.status as assignment_status')
-      .where('game_assignments.referee_id', referee.id)
-      .orderBy('games.game_date', 'desc');
-
-    referee.assignments = assignments;
-    
-    res.json(referee);
-  } catch (error) {
-    console.error('Error fetching referee:', error);
-    res.status(500).json({ error: 'Failed to fetch referee' });
+  if (!referee || referee.role !== 'referee') {
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
-});
+
+  // Maintain backward compatibility - rename assignments field
+  if (referee.recent_assignments) {
+    referee.assignments = referee.recent_assignments;
+    delete referee.recent_assignments;
+  }
+
+  return ResponseFormatter.sendSuccess(res, referee, 'Referee details retrieved successfully');
+}));
 
 // POST /api/referees - Create new referee
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { error, value } = refereeSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+router.post('/', authenticateToken, requireRole('admin'), validateBody(UserSchemas.create), enhancedAsyncHandler(async (req, res) => {
+  // Ensure role is set to referee
+  const value = { ...req.body, role: 'referee' };
+  
+  // Use UserService to create referee with proper defaults
+  const referee = await userService.createReferee(value);
 
-    // Check if email already exists
-    const existingReferee = await db('referees').where('email', value.email).first();
-    if (existingReferee) {
-      return res.status(409).json({ error: 'Email already exists' });
-    }
-
-    const [referee] = await db('referees').insert(value).returning('*');
-    res.status(201).json(referee);
-  } catch (error) {
-    console.error('Error creating referee:', error);
-    res.status(500).json({ error: 'Failed to create referee' });
-  }
-});
+  return ResponseFormatter.sendCreated(
+    res, 
+    referee, 
+    'Referee created successfully',
+    `/api/referees/${referee.id}`
+  );
+}));
 
 // PUT /api/referees/:id - Update referee (admin can update wage, referees cannot)
-router.put('/:id', authenticateToken, async (req, res) => {
-  try {
-    // Check if user is admin or updating their own profile
-    const isAdmin = req.user.role === 'admin';
-    const isOwnProfile = req.user.referee_id === req.params.id || req.user.id === req.params.id;
-    
-    if (!isAdmin && !isOwnProfile) {
-      return res.status(403).json({ error: 'Forbidden: Can only update your own profile' });
-    }
-    
-    // Use appropriate schema based on user role
-    const schema = isAdmin ? adminRefereeUpdateSchema : refereeUpdateSchema;
-    const { error, value } = schema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    // Check if email already exists for another referee
-    const existingReferee = await db('referees')
-      .where('email', value.email)
-      .where('id', '!=', req.params.id)
-      .first();
-    
-    if (existingReferee) {
-      return res.status(409).json({ error: 'Email already exists' });
-    }
-
-    const [referee] = await db('referees')
-      .where('id', req.params.id)
-      .update({ ...value, updated_at: new Date() })
-      .returning('*');
-
-    if (!referee) {
-      return res.status(404).json({ error: 'Referee not found' });
-    }
-
-    res.json(referee);
-  } catch (error) {
-    console.error('Error updating referee:', error);
-    res.status(500).json({ error: 'Failed to update referee' });
+router.put('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  const refereeId = req.params.id;
+  
+  // Check if user is admin or updating their own profile
+  const isAdmin = req.user.role === 'admin';
+  const isOwnProfile = req.user.referee_id === refereeId || req.user.id === refereeId;
+  
+  if (!isAdmin && !isOwnProfile) {
+    throw ErrorFactory.forbidden('Can only update your own profile');
   }
-});
+  
+  // Use appropriate schema based on user role
+  const schema = isAdmin ? UserSchemas.adminUpdate : UserSchemas.update;
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    throw ErrorFactory.fromJoiError(error);
+  }
+
+  // Check if email already exists for another user
+  if (value.email) {
+    const existingUsers = await userService.findWhere({ email: value.email });
+    const existingUser = existingUsers.find(user => user.id !== refereeId);
+    
+    if (existingUser) {
+      throw ErrorFactory.conflict('Email already exists', { email: value.email });
+    }
+  }
+
+  // Verify referee exists before update
+  const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
+  if (!existingReferee || existingReferee.role !== 'referee') {
+    throw ErrorFactory.notFound('Referee', refereeId);
+  }
+
+  // Use UserService to update referee
+  const updatedReferee = await userService.update(refereeId, value);
+
+  return ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee updated successfully');
+}));
 
 // PATCH /api/referees/:id/availability - Update referee availability
-router.patch('/:id/availability', async (req, res) => {
-  try {
+router.patch('/:id/availability', 
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    is_available: Joi.boolean().required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
     const { is_available } = req.body;
+    const refereeId = req.params.id;
     
-    if (typeof is_available !== 'boolean') {
-      return res.status(400).json({ error: 'is_available must be a boolean' });
-    }
+    // Use UserService to update availability
+    const updatedReferee = await userService.updateAvailability(refereeId, is_available);
 
-    const [referee] = await db('referees')
-      .where('id', req.params.id)
-      .update({ is_available, updated_at: new Date() })
-      .returning('*');
-
-    if (!referee) {
-      return res.status(404).json({ error: 'Referee not found' });
-    }
-
-    res.json(referee);
-  } catch (error) {
-    console.error('Error updating referee availability:', error);
-    res.status(500).json({ error: 'Failed to update referee availability' });
-  }
-});
+    return ResponseFormatter.sendSuccess(res, updatedReferee, 'Referee availability updated successfully');
+  })
+);
 
 // GET /api/referees/available/:gameId - Get available referees for a specific game
-router.get('/available/:gameId', async (req, res) => {
-  try {
-    const game = await db('games').where('id', req.params.gameId).first();
+router.get('/available/:gameId', 
+  validateParams(IdParamSchema.keys({ gameId: Joi.string().uuid().required() })),
+  enhancedAsyncHandler(async (req, res) => {
+    const gameId = req.params.gameId;
+    
+    // First verify the game exists
+    const game = await db('games').where('id', gameId).first();
     if (!game) {
-      return res.status(404).json({ error: 'Game not found' });
+      throw ErrorFactory.notFound('Game', gameId);
     }
 
-    // Get available referees for the game
-    const availableReferees = await db('referees')
-      .select('referees.*')
-      .where('referees.is_available', true)
-      .whereNotExists(function() {
-        this.select('*')
-          .from('game_assignments')
-          .whereRaw('game_assignments.referee_id = referees.id')
-          .where('game_assignments.game_id', req.params.gameId);
-      });
+    // Use UserService to find available referees for the specific game date/time
+    const availableReferees = await userService.findAvailableReferees(
+      game.game_date,
+      game.game_time,
+      {
+        level: game.level,
+        location: game.location
+      }
+    );
 
-    res.json(availableReferees);
-  } catch (error) {
-    console.error('Error fetching available referees:', error);
-    res.status(500).json({ error: 'Failed to fetch available referees' });
-  }
-});
+    // Filter out referees already assigned to this specific game
+    const assignedRefereeIds = await db('game_assignments')
+      .where('game_id', gameId)
+      .pluck('user_id');
+
+    const filteredReferees = availableReferees.filter(
+      referee => !assignedRefereeIds.includes(referee.id)
+    );
+
+    return ResponseFormatter.sendSuccess(res, filteredReferees, 'Available referees retrieved successfully');
+  })
+);
 
 // DELETE /api/referees/:id - Delete referee
-router.delete('/:id', async (req, res) => {
-  try {
-    const deletedCount = await db('referees').where('id', req.params.id).del();
-    
-    if (deletedCount === 0) {
-      return res.status(404).json({ error: 'Referee not found' });
-    }
-
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting referee:', error);
-    res.status(500).json({ error: 'Failed to delete referee' });
+router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  const refereeId = req.params.id;
+  
+  // Verify referee exists before deletion
+  const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
+  if (!existingReferee || existingReferee.role !== 'referee') {
+    throw ErrorFactory.notFound('Referee', refereeId);
   }
-});
+
+  // Use UserService to delete referee
+  const deleted = await userService.delete(refereeId);
+  
+  if (!deleted) {
+    throw ErrorFactory.notFound('Referee', refereeId);
+  }
+
+  return ResponseFormatter.sendSuccess(res, null, 'Referee deleted successfully');
+}));
 
 module.exports = router;

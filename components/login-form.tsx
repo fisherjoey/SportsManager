@@ -1,19 +1,19 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState } from 'react'
+import Image from 'next/image'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
-import Image from "next/image"
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/components/auth-provider'
+import { useToast } from '@/components/ui/use-toast'
 
 export function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const { toast } = useToast()
@@ -26,14 +26,14 @@ export function LoginForm() {
 
     if (success) {
       toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+        title: 'Welcome back!',
+        description: 'You have been successfully logged in.'
       })
     } else {
       toast({
-        title: "Login failed",
-        description: "Invalid email or password.",
-        variant: "destructive",
+        title: 'Login failed',
+        description: 'Invalid email or password.',
+        variant: 'destructive'
       })
     }
 
@@ -82,7 +82,7 @@ export function LoginForm() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">

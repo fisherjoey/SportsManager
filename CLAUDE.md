@@ -24,6 +24,34 @@ When making database schema changes (adding/removing tables, fields, relationshi
 ✅ Database schema migrated from JSON to proper entity relationships  
 ✅ Comprehensive unit tests created for new structure
 ✅ Git repository initialized and first commit made
+✅ Frontend testing with Playwright configured
+
+# frontend-testing-instructions
+When working on frontend changes, ALWAYS run frontend tests to ensure quality:
+
+## Available Commands:
+- `npm run test:frontend` - Run all Playwright tests (recommended after changes)
+- `npm run test:frontend:debug` - Debug tests interactively
+- `npm run test:frontend:ui` - Run tests with visual UI
+- `npm run test:frontend:headed` - Run tests in visible browser
+
+## What the tests check:
+- Pages load without console errors
+- Key UI elements render correctly  
+- Network requests complete successfully
+- Screenshots taken for visual verification (saved to test-results/)
+
+## When to run tests:
+- After making UI/component changes
+- Before committing frontend code
+- When investigating bugs or issues
+- When adding new pages or features
+
+## Test Results:
+- Screenshots saved to `test-results/` folder
+- Console errors reported in test output
+- Network failures automatically detected
+- HTML report generated after test runs
 
 # team-league-structure
 The project has been restructured with proper entity relationships:

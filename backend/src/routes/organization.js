@@ -5,7 +5,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { clearSettingsCache } = require('../utils/organization-settings');
 
 // Get organization settings
-router.get('/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/settings', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const result = await db('organization_settings')
       .select('id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at')
@@ -43,7 +43,7 @@ router.get('/settings', authenticateToken, requireRole(['admin']), async (req, r
 });
 
 // Update organization settings
-router.put('/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/settings', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { organization_name, payment_model, default_game_rate, availability_strategy } = req.body;
     

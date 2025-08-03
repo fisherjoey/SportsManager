@@ -402,8 +402,60 @@ function validateEnvironment() {
     console.error('JWT_SECRET must be at least 32 characters long');
     process.exit(1);
   }
-  
-  console.log('✅ Environment validation passed');
+
+  // AI Services validation (warning only - not critical for basic app function)
+  const aiEnvVars = {
+    'AI Services': {
+      'OPENAI_API_KEY': process.env.OPENAI_API_KEY,
+      'DEEPSEEK_API_KEY': process.env.DEEPSEEK_API_KEY
+    },
+    'Google Vision OCR': {
+      'GOOGLE_CLOUD_PROJECT_ID': process.env.GOOGLE_CLOUD_PROJECT_ID,
+      'GOOGLE_CLOUD_KEY_FILE': process.env.GOOGLE_CLOUD_KEY_FILE
+    },
+    'Receipt Processing': {
+      'REDIS_HOST': process.env.REDIS_HOST || 'localhost',
+      'REDIS_PORT': process.env.REDIS_PORT || '6379'
+    }
+  };
+
+  let hasAnyAI = false;
+  let warnings = [];
+
+  // Check if at least one AI service is configured
+  if (process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY) {
+    hasAnyAI = true;
+    console.log('✅ AI LLM Service: Configured');
+  } else {
+    warnings.push('No AI LLM service configured (OPENAI_API_KEY or DEEPSEEK_API_KEY)');
+  }
+
+  // Check Google Vision API
+  if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_KEY_FILE) {
+    console.log('✅ Google Vision OCR: Configured');
+  } else {
+    warnings.push('Google Vision OCR not configured - will use fallback OCR methods');
+  }
+
+  // Check Redis for queue processing
+  if (process.env.REDIS_HOST || process.env.REDIS_PORT) {
+    console.log('✅ Redis Queue: Configured');
+  } else {
+    warnings.push('Redis not configured - receipt processing will be synchronous');
+  }
+
+  // Display warnings
+  if (warnings.length > 0) {
+    console.log('\n⚠️  Configuration Warnings:');
+    warnings.forEach(warning => console.log(`   • ${warning}`));
+    console.log('\n💡 Receipt processing will work with reduced functionality');
+  }
+
+  if (hasAnyAI) {
+    console.log('✅ Environment validation passed - AI receipt processing available');
+  } else {
+    console.log('✅ Environment validation passed - basic functionality only');
+  }
 }
 
 module.exports = {

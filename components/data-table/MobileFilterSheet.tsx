@@ -1,12 +1,14 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Table } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import * as React from 'react'
+import { Table } from '@tanstack/react-table'
+import { Filter, Search, X, RefreshCw } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -14,11 +16,11 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { DateRangeFilter } from "./DateRangeFilter"
-import { DataTableFacetedFilter } from "./DataTableFacetedFilter"
-import { Filter, Search, X, RefreshCw } from "lucide-react"
+  SheetTrigger
+} from '@/components/ui/sheet'
+
+import { DateRangeFilter } from './DateRangeFilter'
+import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 
 interface MobileFilterSheetProps<TData> {
   table: Table<TData>
@@ -41,7 +43,7 @@ export function MobileFilterSheet<TData>({
   onStartDateChange,
   onEndDateChange,
   onClearDateFilter,
-  onClearAllFilters,
+  onClearAllFilters
 }: MobileFilterSheetProps<TData>) {
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -52,35 +54,35 @@ export function MobileFilterSheet<TData>({
 
   // Level filter options
   const levelOptions = [
-    { label: "Recreational", value: "Recreational", id: "level-recreational" },
-    { label: "Competitive", value: "Competitive", id: "level-competitive" },
-    { label: "Elite", value: "Elite", id: "level-elite" },
+    { label: 'Recreational', value: 'Recreational', id: 'level-recreational' },
+    { label: 'Competitive', value: 'Competitive', id: 'level-competitive' },
+    { label: 'Elite', value: 'Elite', id: 'level-elite' }
   ]
 
   // Division filter sections  
   const divisionFilterSections = [
     {
-      title: "Age",
+      title: 'Age',
       options: [
-        { label: "U11", value: "U11", id: "age-u11" },
-        { label: "U13", value: "U13", id: "age-u13" },
-        { label: "U15", value: "U15", id: "age-u15" },
-        { label: "U18", value: "U18", id: "age-u18" },
+        { label: 'U11', value: 'U11', id: 'age-u11' },
+        { label: 'U13', value: 'U13', id: 'age-u13' },
+        { label: 'U15', value: 'U15', id: 'age-u15' },
+        { label: 'U18', value: 'U18', id: 'age-u18' }
       ]
     },
     {
-      title: "Division #",
+      title: 'Division #',
       options: [
-        { label: "Division 1", value: "Division 1", id: "div-1" },
-        { label: "Division 2", value: "Division 2", id: "div-2" },
-        { label: "Division 3", value: "Division 3", id: "div-3" },
+        { label: 'Division 1', value: 'Division 1', id: 'div-1' },
+        { label: 'Division 2', value: 'Division 2', id: 'div-2' },
+        { label: 'Division 3', value: 'Division 3', id: 'div-3' }
       ]
     },
     {
-      title: "Gender",
+      title: 'Gender',
       options: [
-        { label: "Boys Teams", value: "Boys", id: "gender-boys" },
-        { label: "Girls Teams", value: "Girls", id: "gender-girls" },
+        { label: 'Boys Teams', value: 'Boys', id: 'gender-boys' },
+        { label: 'Girls Teams', value: 'Girls', id: 'gender-girls' }
       ]
     }
   ]
@@ -89,11 +91,11 @@ export function MobileFilterSheet<TData>({
   // Try both "status" and "isAvailable" columns to support both games and referees
   // Check if columns exist by looking at all column IDs first
   const allColumnIds = table.getAllColumns().map(col => col.id)
-  const hasIsAvailableColumn = allColumnIds.includes("isAvailable")
-  const hasStatusColumn = allColumnIds.includes("status")
+  const hasIsAvailableColumn = allColumnIds.includes('isAvailable')
+  const hasStatusColumn = allColumnIds.includes('status')
   
-  const statusColumn = hasStatusColumn ? table.getColumn("status") : 
-                      hasIsAvailableColumn ? table.getColumn("isAvailable") : null
+  const statusColumn = hasStatusColumn ? table.getColumn('status') : 
+    hasIsAvailableColumn ? table.getColumn('isAvailable') : null
   const isRefereeTable = hasIsAvailableColumn
   const statusFacets = statusColumn?.getFacetedUniqueValues()
   const statusOptions = React.useMemo(() => {
@@ -127,12 +129,12 @@ export function MobileFilterSheet<TData>({
       <SheetContent side="bottom" className="h-[90vh] overflow-auto">
         <SheetHeader>
           <SheetTitle>
-            {isRefereeTable ? "Filter Referees" : "Filter Games"}
+            {isRefereeTable ? 'Filter Referees' : 'Filter Games'}
           </SheetTitle>
           <SheetDescription>
             {isRefereeTable
-              ? "Choose your filters to find the referees you're looking for."
-              : "Choose your filters to find the games you're looking for."
+              ? 'Choose your filters to find the referees you\'re looking for.'
+              : 'Choose your filters to find the games you\'re looking for.'
             }
           </SheetDescription>
         </SheetHeader>
@@ -148,8 +150,8 @@ export function MobileFilterSheet<TData>({
               <Input
                 id="search"
                 placeholder={isRefereeTable
-                  ? "Search names, locations, certifications..." 
-                  : "Search teams, locations, divisions..."
+                  ? 'Search names, locations, certifications...' 
+                  : 'Search teams, locations, divisions...'
                 }
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
@@ -160,7 +162,7 @@ export function MobileFilterSheet<TData>({
                   variant="ghost"
                   size="sm"
                   className="absolute right-1 top-1 h-6 w-6 p-0"
-                  onClick={() => setGlobalFilter("")}
+                  onClick={() => setGlobalFilter('')}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -197,12 +199,12 @@ export function MobileFilterSheet<TData>({
           <Separator />
 
           {/* Level Filter */}
-          {table.getColumn("level") && (
+          {table.getColumn('level') && (
             <>
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Level</Label>
                 <DataTableFacetedFilter
-                  column={table.getColumn("level")}
+                  column={table.getColumn('level')}
                   title="Level"
                   options={levelOptions}
                 />
@@ -212,7 +214,7 @@ export function MobileFilterSheet<TData>({
           )}
 
           {/* Division Filter - Only show for games */}
-          {table.getAllColumns().some(col => col.id === "division") && table.getColumn("division") && (
+          {table.getAllColumns().some(col => col.id === 'division') && table.getColumn('division') && (
             <>
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Division</Label>
@@ -224,7 +226,7 @@ export function MobileFilterSheet<TData>({
                       </Label>
                       <div className="grid grid-cols-2 gap-2">
                         {section.options.map((option) => {
-                          const column = table.getColumn("division")
+                          const column = table.getColumn('division')
                           const selectedValues = new Set(
                             Array.isArray(column?.getFilterValue()) 
                               ? column?.getFilterValue() as string[]
@@ -237,7 +239,7 @@ export function MobileFilterSheet<TData>({
                           return (
                             <Button
                               key={option.id}
-                              variant={isSelected ? "default" : "outline"}
+                              variant={isSelected ? 'default' : 'outline'}
                               size="sm"
                               className="justify-start text-xs h-8"
                               onClick={() => {
@@ -265,18 +267,18 @@ export function MobileFilterSheet<TData>({
           )}
 
           {/* Location Filter - Show for referees */}
-          {table.getColumn("location") && (
+          {table.getColumn('location') && (
             <>
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Location</Label>
                 <DataTableFacetedFilter
-                  column={table.getColumn("location")}
+                  column={table.getColumn('location')}
                   title="Location"
                   options={[
-                    { label: "Downtown", value: "Downtown" },
-                    { label: "Westside", value: "Westside" },
-                    { label: "Northside", value: "Northside" },
-                    { label: "Eastside", value: "Eastside" },
+                    { label: 'Downtown', value: 'Downtown' },
+                    { label: 'Westside', value: 'Westside' },
+                    { label: 'Northside', value: 'Northside' },
+                    { label: 'Eastside', value: 'Eastside' }
                   ]}
                 />
               </div>
@@ -289,11 +291,11 @@ export function MobileFilterSheet<TData>({
             <>
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  {statusColumn.id === "isAvailable" ? "Availability" : "Assignment Status"}
+                  {statusColumn.id === 'isAvailable' ? 'Availability' : 'Assignment Status'}
                 </Label>
                 <DataTableFacetedFilter
                   column={statusColumn}
-                  title={statusColumn.id === "isAvailable" ? "Availability" : "Status"}
+                  title={statusColumn.id === 'isAvailable' ? 'Availability' : 'Status'}
                   options={statusOptions}
                 />
               </div>
@@ -302,12 +304,12 @@ export function MobileFilterSheet<TData>({
           )}
 
           {/* Season Filter - Only show for games */}
-          {table.getAllColumns().some(col => col.id === "season") && table.getColumn("season") && (
+          {table.getAllColumns().some(col => col.id === 'season') && table.getColumn('season') && (
             <>
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Season</Label>
                 <DataTableFacetedFilter
-                  column={table.getColumn("season")}
+                  column={table.getColumn('season')}
                   title="Season"
                   options={[]}
                 />
@@ -332,8 +334,8 @@ export function MobileFilterSheet<TData>({
                     Date: {startDate && endDate
                       ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
                       : startDate
-                      ? `From ${startDate.toLocaleDateString()}`
-                      : `Until ${endDate?.toLocaleDateString()}`}
+                        ? `From ${startDate.toLocaleDateString()}`
+                        : `Until ${endDate?.toLocaleDateString()}`}
                   </Badge>
                 )}
 
@@ -354,7 +356,7 @@ export function MobileFilterSheet<TData>({
               </div>
               
               <div className="text-sm text-muted-foreground">
-                Showing {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} {isRefereeTable ? "referees" : "games"}
+                Showing {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} {isRefereeTable ? 'referees' : 'games'}
               </div>
             </div>
           )}

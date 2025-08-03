@@ -1,31 +1,32 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from 'react'
+import { UserPlus, Calendar, Clock, Users } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { useToast } from "@/components/ui/use-toast"
-import { UserPlus, Calendar, Clock, Users } from "lucide-react"
-import { useApi } from "@/lib/api"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { StatsGrid } from "@/components/ui/stats-grid"
-import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
-import { AvailabilityCalendar } from "@/components/availability-calendar"
-import { Referee } from "@/components/data-table/types"
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi } from '@/lib/api'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { AvailabilityCalendar } from '@/components/availability-calendar'
+import { Referee } from '@/components/data-table/types'
 
 export function RefereeManagement() {
   const [referees, setReferees] = useState<Referee[]>([])
@@ -35,20 +36,20 @@ export function RefereeManagement() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showProfileDialog, setShowProfileDialog] = useState(false)
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
-  const [availabilityRefereeId, setAvailabilityRefereeId] = useState<string>("")
+  const [availabilityRefereeId, setAvailabilityRefereeId] = useState<string>('')
   const [inviteForm, setInviteForm] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-    role: "referee"
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'referee'
   })
   const [editForm, setEditForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    certificationLevel: "",
-    location: "",
-    notes: "",
+    name: '',
+    email: '',
+    phone: '',
+    certificationLevel: '',
+    location: '',
+    notes: '',
     maxDistance: 50,
     isAvailable: true
   })
@@ -65,9 +66,9 @@ export function RefereeManagement() {
       } catch (error) {
         console.error('Failed to fetch referees:', error)
         toast({
-          title: "Error",
-          description: "Failed to load referees. Please try again.",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load referees. Please try again.',
+          variant: 'destructive'
         })
       } finally {
         setIsLoading(false)
@@ -83,25 +84,25 @@ export function RefereeManagement() {
       const response = await api.createInvitation(inviteForm)
       
       toast({
-        title: "Invitation sent",
-        description: `Invitation sent to ${inviteForm.email}. They will receive an email with signup instructions.`,
+        title: 'Invitation sent',
+        description: `Invitation sent to ${inviteForm.email}. They will receive an email with signup instructions.`
       })
       
       setIsInviteDialogOpen(false)
       setInviteForm({
-        email: "",
-        firstName: "",
-        lastName: "",
-        role: "referee"
+        email: '',
+        firstName: '',
+        lastName: '',
+        role: 'referee'
       })
       
       // Invitation email sent automatically
     } catch (error) {
       console.error('Failed to send invitation:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send invitation. Please try again.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to send invitation. Please try again.'
       })
     }
   }
@@ -112,9 +113,9 @@ export function RefereeManagement() {
       name: referee.name,
       email: referee.email,
       phone: referee.phone,
-      certificationLevel: referee.certificationLevel || "",
+      certificationLevel: referee.certificationLevel || '',
       location: referee.location,
-      notes: referee.notes || "",
+      notes: referee.notes || '',
       maxDistance: referee.maxDistance,
       isAvailable: referee.isAvailable
     })
@@ -143,8 +144,8 @@ export function RefereeManagement() {
 
       if (response.success) {
         toast({
-          title: "Success",
-          description: "Referee updated successfully",
+          title: 'Success',
+          description: 'Referee updated successfully'
         })
         
         // Update the referee in the list
@@ -159,9 +160,9 @@ export function RefereeManagement() {
     } catch (error) {
       console.error('Failed to update referee:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update referee. Please try again.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update referee. Please try again.'
       })
     }
   }
@@ -173,29 +174,29 @@ export function RefereeManagement() {
 
   const stats = [
     {
-      title: "Total Referees",
+      title: 'Total Referees',
       value: Array.isArray(referees) ? referees.length : 0,
       icon: Users,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Active This Week",
+      title: 'Active This Week',
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
       icon: Calendar,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "Available Now",
+      title: 'Available Now',
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.4) : 0,
       icon: Clock,
-      color: "text-orange-600",
+      color: 'text-orange-600'
     },
     {
-      title: "Elite Level",
-      value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === "Elite").length : 0,
+      title: 'Elite Level',
+      value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === 'Elite').length : 0,
       icon: UserPlus,
-      color: "text-purple-600",
-    },
+      color: 'text-purple-600'
+    }
   ]
 
   // Column definitions for the referees table using FilterableTable format
@@ -238,23 +239,23 @@ export function RefereeManagement() {
         { value: 'Growing', label: 'Growing' },
         { value: 'Growing+', label: 'Growing+' },
         { value: 'Teaching', label: 'Teaching' },
-        { value: 'Expert', label: 'Expert' },
+        { value: 'Expert', label: 'Expert' }
       ],
       accessor: (referee) => {
         const level = referee.level
         const levelColors = {
-          "Learning": "bg-green-100 text-green-800 border-green-200",
-          "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
-          "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
-          "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
-          "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
-          "Expert": "bg-red-100 text-red-800 border-red-200",
+          'Learning': 'bg-green-100 text-green-800 border-green-200',
+          'Learning+': 'bg-blue-100 text-blue-800 border-blue-200',
+          'Growing': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          'Growing+': 'bg-orange-100 text-orange-800 border-orange-200',
+          'Teaching': 'bg-purple-100 text-purple-800 border-purple-200',
+          'Expert': 'bg-red-100 text-red-800 border-red-200'
         }
         
         return (
           <Badge 
             variant="outline" 
-            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ""}`}
+            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
           >
             {level}
           </Badge>
@@ -275,7 +276,7 @@ export function RefereeManagement() {
         { value: 'Foothills', label: 'Foothills' },
         { value: 'Bow Valley', label: 'Bow Valley' },
         { value: 'Fish Creek', label: 'Fish Creek' },
-        { value: 'Olds', label: 'Olds' },
+        { value: 'Olds', label: 'Olds' }
       ],
       accessor: (referee) => (
         <div>
@@ -296,10 +297,10 @@ export function RefereeManagement() {
         { value: 'Evaluator', label: 'Evaluator' },
         { value: 'Mentor', label: 'Mentor' },
         { value: 'Trainer', label: 'Trainer' },
-        { value: 'Referee Coach', label: 'Referee Coach' },
+        { value: 'Referee Coach', label: 'Referee Coach' }
       ],
       accessor: (referee) => {
-        const roles = referee.roles || ["Referee"]
+        const roles = referee.roles || ['Referee']
         
         return (
           <div className="space-y-1">
@@ -324,17 +325,17 @@ export function RefereeManagement() {
       filterOptions: [
         { value: 'all', label: 'All' },
         { value: 'true', label: 'Available' },
-        { value: 'false', label: 'Unavailable' },
+        { value: 'false', label: 'Unavailable' }
       ],
       accessor: (referee) => {
         const isAvailable = referee.isAvailable
         
         return (
           <Badge 
-            variant={isAvailable ? "default" : "secondary"}
-            className={`text-xs ${isAvailable ? "bg-success/10 text-success border-success/20 hover:bg-success/20" : "bg-muted text-muted-foreground border-border"}`}
+            variant={isAvailable ? 'default' : 'secondary'}
+            className={`text-xs ${isAvailable ? 'bg-success/10 text-success border-success/20 hover:bg-success/20' : 'bg-muted text-muted-foreground border-border'}`}
           >
-            {isAvailable ? "Available" : "Unavailable"}
+            {isAvailable ? 'Available' : 'Unavailable'}
           </Badge>
         )
       }
@@ -415,63 +416,63 @@ export function RefereeManagement() {
         <DialogTrigger asChild>
           <div></div>
         </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Invite New Referee</DialogTitle>
-                  <DialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite New Referee</DialogTitle>
+            <DialogDescription>
                     Send an invitation to create a new referee account. They will receive an email with instructions to complete their signup.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleInviteSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        value={inviteForm.firstName}
-                        onChange={(e) => setInviteForm({ ...inviteForm, firstName: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        value={inviteForm.lastName}
-                        onChange={(e) => setInviteForm({ ...inviteForm, lastName: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={inviteForm.role} onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="referee">Referee</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleInviteSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={inviteForm.firstName}
+                  onChange={(e) => setInviteForm({ ...inviteForm, firstName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={inviteForm.lastName}
+                  onChange={(e) => setInviteForm({ ...inviteForm, lastName: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={inviteForm.role} onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="referee">Referee</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
                       Cancel
-                    </Button>
-                    <Button type="submit">Send Invitation</Button>
-                  </div>
-                </form>
+              </Button>
+              <Button type="submit">Send Invitation</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -622,8 +623,8 @@ export function RefereeManagement() {
               
               <div>
                 <Label className="font-semibold">Status</Label>
-                <Badge variant={selectedReferee.isAvailable ? "default" : "secondary"}>
-                  {selectedReferee.isAvailable ? "Available" : "Unavailable"}
+                <Badge variant={selectedReferee.isAvailable ? 'default' : 'secondary'}>
+                  {selectedReferee.isAvailable ? 'Available' : 'Unavailable'}
                 </Badge>
               </div>
               

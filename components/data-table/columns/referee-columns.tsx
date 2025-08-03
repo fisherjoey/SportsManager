@@ -1,20 +1,23 @@
-"use client"
+'use client'
 
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Calendar } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { ColumnDef } from '@tanstack/react-table'
+import { MoreHorizontal, Calendar } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Referee } from "../types"
-import { DataTableColumnHeaderAdvanced } from "./DataTableColumnHeaderAdvanced"
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+
+import { Referee } from '../types'
+
+import { DataTableColumnHeaderAdvanced } from './DataTableColumnHeaderAdvanced'
 
 interface RefereeColumnActions {
   onEditReferee?: (referee: Referee) => void
@@ -24,7 +27,7 @@ interface RefereeColumnActions {
 
 export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<Referee>[] => [
   {
-    id: "select",
+    id: 'select',
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllPageRowsSelected()}
@@ -42,11 +45,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
       />
     ),
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: false
   },
   {
-    accessorKey: "name",
-    id: "name",
+    accessorKey: 'name',
+    id: 'name',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -68,11 +71,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
           )}
         </div>
       )
-    },
+    }
   },
   {
-    accessorKey: "email",
-    id: "contact",
+    accessorKey: 'email',
+    id: 'contact',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -89,11 +92,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
           <div className="text-xs text-muted-foreground truncate">{referee.phone}</div>
         </div>
       )
-    },
+    }
   },
   {
-    accessorKey: "level",
-    id: "level",
+    accessorKey: 'certificationLevel',
+    id: 'level',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -101,30 +104,24 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={false}
         filterable={true}
         filterOptions={[
-          { label: "Learning", value: "Learning" },
-          { label: "Learning+", value: "Learning+" },
-          { label: "Growing", value: "Growing" },
-          { label: "Growing+", value: "Growing+" },
-          { label: "Teaching", value: "Teaching" },
-          { label: "Expert", value: "Expert" },
+          { label: 'Rookie', value: 'Rookie' },
+          { label: 'Junior', value: 'Junior' },
+          { label: 'Senior', value: 'Senior' }
         ]}
       />
     ),
     cell: ({ row }) => {
-      const level = row.getValue("level") as string
+      const level = row.getValue('level') as string
       const levelColors = {
-        "Learning": "bg-green-100 text-green-800 border-green-200",
-        "Learning+": "bg-blue-100 text-blue-800 border-blue-200",
-        "Growing": "bg-yellow-100 text-yellow-800 border-yellow-200",
-        "Growing+": "bg-orange-100 text-orange-800 border-orange-200",
-        "Teaching": "bg-purple-100 text-purple-800 border-purple-200",
-        "Expert": "bg-red-100 text-red-800 border-red-200",
+        'Rookie': 'bg-green-100 text-green-800 border-green-200',
+        'Junior': 'bg-blue-100 text-blue-800 border-blue-200', 
+        'Senior': 'bg-purple-100 text-purple-800 border-purple-200'
       }
       
       return (
         <Badge 
           variant="outline" 
-          className={`text-xs ${levelColors[level as keyof typeof levelColors] || ""}`}
+          className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
         >
           {level}
         </Badge>
@@ -132,11 +129,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
-    },
+    }
   },
   {
-    accessorKey: "location",
-    id: "location",
+    accessorKey: 'location',
+    id: 'location',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -144,20 +141,20 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={true}
         filterable={true}
         filterOptions={[
-          { label: "Northwest Calgary", value: "Northwest Calgary" },
-          { label: "Northeast Calgary", value: "Northeast Calgary" },
-          { label: "Southeast Calgary", value: "Southeast Calgary" },
-          { label: "Southwest Calgary", value: "Southwest Calgary" },
-          { label: "Downtown Calgary", value: "Downtown Calgary" },
-          { label: "Foothills", value: "Foothills" },
-          { label: "Bow Valley", value: "Bow Valley" },
-          { label: "Fish Creek", value: "Fish Creek" },
-          { label: "Olds", value: "Olds" },
+          { label: 'Northwest Calgary', value: 'Northwest Calgary' },
+          { label: 'Northeast Calgary', value: 'Northeast Calgary' },
+          { label: 'Southeast Calgary', value: 'Southeast Calgary' },
+          { label: 'Southwest Calgary', value: 'Southwest Calgary' },
+          { label: 'Downtown Calgary', value: 'Downtown Calgary' },
+          { label: 'Foothills', value: 'Foothills' },
+          { label: 'Bow Valley', value: 'Bow Valley' },
+          { label: 'Fish Creek', value: 'Fish Creek' },
+          { label: 'Olds', value: 'Olds' }
         ]}
       />
     ),
     cell: ({ row }) => {
-      const location = row.getValue("location") as string
+      const location = row.getValue('location') as string
       const referee = row.original
       
       return (
@@ -171,11 +168,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
-    },
+    }
   },
   {
-    accessorKey: "roles",
-    id: "roles",
+    accessorKey: 'roles',
+    id: 'roles',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -183,16 +180,16 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={false}
         filterable={true}
         filterOptions={[
-          { label: "Referee", value: "Referee" },
-          { label: "Evaluator", value: "Evaluator" },
-          { label: "Mentor", value: "Mentor" },
-          { label: "Trainer", value: "Trainer" },
-          { label: "Referee Coach", value: "Referee Coach" },
+          { label: 'Referee', value: 'Referee' },
+          { label: 'Evaluator', value: 'Evaluator' },
+          { label: 'Mentor', value: 'Mentor' },
+          { label: 'Trainer', value: 'Trainer' },
+          { label: 'Referee Coach', value: 'Referee Coach' }
         ]}
       />
     ),
     cell: ({ row }) => {
-      const roles = row.getValue("roles") as string[] || ["Referee"]
+      const roles = row.getValue('roles') as string[] || ['Referee']
       
       return (
         <div className="space-y-1">
@@ -212,11 +209,11 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     filterFn: (row, id, value) => {
       const roles = row.getValue(id) as string[] || []
       return value.some((v: string) => roles.includes(v))
-    },
+    }
   },
   {
-    accessorKey: "isAvailable",
-    id: "isAvailable",
+    accessorKey: 'isAvailable',
+    id: 'isAvailable',
     header: ({ column }) => (
       <DataTableColumnHeaderAdvanced 
         column={column} 
@@ -224,30 +221,30 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
         searchable={false}
         filterable={true}
         filterOptions={[
-          { label: "Available", value: "true" },
-          { label: "Unavailable", value: "false" },
+          { label: 'Available', value: 'true' },
+          { label: 'Unavailable', value: 'false' }
         ]}
       />
     ),
     cell: ({ row }) => {
-      const isAvailable = row.getValue("isAvailable") as boolean
+      const isAvailable = row.getValue('isAvailable') as boolean
       
       return (
         <Badge 
-          variant={isAvailable ? "default" : "secondary"}
-          className={`text-xs ${isAvailable ? "bg-success/10 text-success border-success/20 hover:bg-success/20" : "bg-muted text-muted-foreground border-border"}`}
+          variant={isAvailable ? 'default' : 'secondary'}
+          className={`text-xs ${isAvailable ? 'bg-success/10 text-success border-success/20 hover:bg-success/20' : 'bg-muted text-muted-foreground border-border'}`}
         >
-          {isAvailable ? "Available" : "Unavailable"}
+          {isAvailable ? 'Available' : 'Unavailable'}
         </Badge>
       )
     },
     filterFn: (row, id, value) => {
       const isAvailable = row.getValue(id) as boolean
       return value.includes(isAvailable.toString())
-    },
+    }
   },
   {
-    id: "actions",
+    id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
       const referee = row.original
@@ -284,6 +281,6 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
           </DropdownMenuContent>
         </DropdownMenu>
       )
-    },
-  },
+    }
+  }
 ]

@@ -1,17 +1,18 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Check, ChevronsUpDown, MapPin, Plus, Building2, Phone, Mail, Users, Car, AlertCircle, DollarSign } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { AddressSearch } from "@/components/ui/address-search"
+import { useState, useEffect } from 'react'
+import { Check, ChevronsUpDown, MapPin, Plus, Building2, Phone, Mail, Users, Car, AlertCircle, DollarSign } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+import { AddressSearch } from '@/components/ui/address-search'
 
 interface Location {
   id: string
@@ -43,14 +44,14 @@ interface LocationSelectorProps {
 export function LocationSelector({
   value,
   onLocationSelect,
-  placeholder = "Select a location...",
+  placeholder = 'Select a location...',
   className,
   disabled = false
 }: LocationSelectorProps) {
   const [open, setOpen] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([])
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState('')
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [loading, setLoading] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -118,7 +119,7 @@ export function LocationSelector({
   }
 
   return (
-    <div className={cn("grid gap-2", className)}>
+    <div className={cn('grid gap-2', className)}>
       <Label>Location *</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -168,8 +169,8 @@ export function LocationSelector({
                     <div className="flex items-center w-full">
                       <Check
                         className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedLocation?.id === location.id ? "opacity-100" : "opacity-0"
+                          'mr-2 h-4 w-4',
+                          selectedLocation?.id === location.id ? 'opacity-100' : 'opacity-0'
                         )}
                       />
                       <div className="flex-1">
@@ -258,37 +259,37 @@ interface CreateLocationDialogProps {
 
 function CreateLocationDialog({ onLocationCreated }: CreateLocationDialogProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    city: "",
-    province: "AB",
-    postal_code: "",
+    name: '',
+    address: '',
+    city: '',
+    province: 'AB',
+    postal_code: '',
     latitude: null as number | null,
     longitude: null as number | null,
-    capacity: "",
-    contact_name: "",
-    contact_phone: "",
-    contact_email: "",
-    parking_spaces: "",
+    capacity: '',
+    contact_name: '',
+    contact_phone: '',
+    contact_email: '',
+    parking_spaces: '',
     facilities: [] as string[],
-    notes: "",
-    hourly_rate: "",
-    game_rate: "",
-    cost_notes: ""
+    notes: '',
+    hourly_rate: '',
+    game_rate: '',
+    cost_notes: ''
   })
   const [loading, setLoading] = useState(false)
 
   const facilityOptions = [
-    "Basketball Court",
-    "Multiple Courts", 
-    "Volleyball Courts",
-    "Parking",
-    "Concession",
-    "Changerooms",
-    "Spectator Seating",
-    "Fitness Centre",
-    "Pool",
-    "Meeting Rooms"
+    'Basketball Court',
+    'Multiple Courts', 
+    'Volleyball Courts',
+    'Parking',
+    'Concession',
+    'Changerooms',
+    'Spectator Seating',
+    'Fitness Centre',
+    'Pool',
+    'Meeting Rooms'
   ]
 
   const handleAddressSelect = (address: any) => {
@@ -522,7 +523,7 @@ function CreateLocationDialog({ onLocationCreated }: CreateLocationDialogProps) 
 
         <div className="flex justify-end space-x-2">
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Location"}
+            {loading ? 'Creating...' : 'Create Location'}
           </Button>
         </div>
       </form>

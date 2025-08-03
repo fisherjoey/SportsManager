@@ -1,0 +1,141 @@
+{
+  "analysis_date": "2025-08-02",
+  "total_pages_tested": 7,
+  "overall_statistics": {
+    "total_console_errors": 27,
+    "total_console_warnings": 4,
+    "total_network_errors": 15,
+    "pages_with_critical_errors": 4
+  },
+  "pages": {
+    "/": {
+      "name": "Homepage",
+      "status": "clean",
+      "console_errors": 0,
+      "console_warnings": 1,
+      "network_errors": 0,
+      "severity": "low"
+    },
+    "/login": {
+      "name": "Login Page",
+      "status": "minor_issues",
+      "console_errors": 3,
+      "console_warnings": 1,
+      "network_errors": 1,
+      "severity": "medium",
+      "issues": ["rate_limiting", "authentication_errors"]
+    },
+    "/budget": {
+      "name": "Budget Page",
+      "status": "hydration_issues",
+      "console_errors": 1,
+      "console_warnings": 1,
+      "network_errors": 2,
+      "severity": "high",
+      "issues": ["hydration_mismatch", "unauthorized_api_calls"]
+    },
+    "/complete-signup": {
+      "name": "Complete Signup Page",
+      "status": "clean_with_redirect",
+      "console_errors": 0,
+      "console_warnings": 1,
+      "network_errors": 1,
+      "severity": "low"
+    },
+    "/debug": {
+      "name": "Debug Page",
+      "status": "critical_hydration_issues",
+      "console_errors": 1,
+      "console_warnings": 0,
+      "network_errors": 1,
+      "severity": "critical",
+      "issues": ["critical_hydration_mismatch", "ssr_inconsistencies"]
+    },
+    "/financial-budgets": {
+      "name": "Financial Budgets Page",
+      "status": "severe_api_issues",
+      "console_errors": 8,
+      "console_warnings": 0,
+      "network_errors": 5,
+      "severity": "critical",
+      "issues": ["multiple_401_errors", "authentication_failures", "api_retries"]
+    },
+    "/games": {
+      "name": "Games Page",
+      "status": "minor_network_issues",
+      "console_errors": 0,
+      "console_warnings": 1,
+      "network_errors": 1,
+      "severity": "low"
+    }
+  },
+  "error_categories": {
+    "hydration_mismatches": {
+      "count": 3,
+      "priority": "critical",
+      "affected_pages": ["/budget", "/debug", "/complete-signup"],
+      "root_cause": "server_client_rendering_differences"
+    },
+    "api_authentication_failures": {
+      "count": 8,
+      "priority": "critical",
+      "affected_pages": ["/financial-budgets", "/budget"],
+      "root_cause": "missing_invalid_auth_tokens"
+    },
+    "rate_limiting_issues": {
+      "count": 3,
+      "priority": "medium",
+      "affected_pages": ["/login"],
+      "root_cause": "backend_rate_limiting_during_testing"
+    },
+    "network_request_failures": {
+      "count": 5,
+      "priority": "medium",
+      "affected_pages": ["multiple"],
+      "root_cause": "rsc_navigation_issues"
+    },
+    "console_warnings": {
+      "count": 4,
+      "priority": "low",
+      "affected_pages": ["all"],
+      "root_cause": "development_environment_warnings"
+    }
+  },
+  "immediate_action_items": [
+    {
+      "priority": "critical",
+      "task": "Fix hydration mismatch in /app/debug/page.tsx lines 123-125",
+      "estimated_effort": "1 hour",
+      "files_affected": ["/app/debug/page.tsx"]
+    },
+    {
+      "priority": "critical",
+      "task": "Implement authentication guards for API calls",
+      "estimated_effort": "4 hours",
+      "files_affected": ["/components/budget-tracker.tsx", "/app/financial-budgets/page.tsx"]
+    },
+    {
+      "priority": "high",
+      "task": "Add proper SSR guards for client-only code",
+      "estimated_effort": "2 hours",
+      "files_affected": ["/components/data-table/DataTable.tsx", "/components/ui/filterable-table.tsx"]
+    },
+    {
+      "priority": "medium",
+      "task": "Implement error boundaries for API failures",
+      "estimated_effort": "3 hours",
+      "files_affected": ["multiple_components"]
+    }
+  ],
+  "testing_artifacts": {
+    "comprehensive_test_file": "/tests/frontend/comprehensive-console-analysis.spec.js",
+    "screenshots_directory": "/test-results/",
+    "playwright_report": "/playwright-report/index.html"
+  },
+  "next_steps": [
+    "Review and approve remediation plan",
+    "Prioritize fixes based on user impact",
+    "Implement automated console error monitoring",
+    "Add console error checks to CI/CD pipeline"
+  ]
+}

@@ -1,11 +1,12 @@
-"use client"
+'use client'
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { MapPin, Phone, Mail, Globe, Users, Edit } from "lucide-react"
-import type { Team } from "@/lib/mock-data"
+import { MapPin, Phone, Mail, Globe, Users, Edit } from 'lucide-react'
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import type { Team } from '@/lib/mock-data'
 
 interface TeamDetailsDialogProps {
   open: boolean
@@ -21,7 +22,7 @@ export function TeamDetailsDialog({ open, onOpenChange, team }: TeamDetailsDialo
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <div className="flex items-center space-x-3">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: team.colors?.primary || "#gray" }} />
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: team.colors?.primary || '#gray' }} />
             <div>
               <DialogTitle className="text-xl">{team.name}</DialogTitle>
               <DialogDescription>
@@ -34,8 +35,8 @@ export function TeamDetailsDialog({ open, onOpenChange, team }: TeamDetailsDialo
         <div className="space-y-6">
           {/* Status and Basic Info */}
           <div className="flex items-center justify-between">
-            <Badge variant={team.isActive ? "default" : "secondary"} className="text-sm">
-              {team.isActive ? "Active Team" : "Inactive Team"}
+            <Badge variant={team.isActive ? 'default' : 'secondary'} className="text-sm">
+              {team.isActive ? 'Active Team' : 'Inactive Team'}
             </Badge>
             <Button variant="outline" size="sm">
               <Edit className="h-4 w-4 mr-2" />

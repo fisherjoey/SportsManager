@@ -3,44 +3,11 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const multer = require('multer');
+const { receiptUploader } = require('../middleware/fileUpload');
 const path = require('path');
 const fs = require('fs').promises;
 
-// File upload configuration
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads/posts');
-    try {
-      await fs.mkdir(uploadPath, { recursive: true });
-      cb(null, uploadPath);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf|doc|docx/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only images, videos, and documents are allowed.'));
-    }
-  }
-});
+// Using shared file upload configuration from middleware
 
 // Validation schemas
 const postSchema = Joi.object({
@@ -369,7 +336,7 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 });
 
 // POST /api/posts/:id/media - Upload media for post (Admin only)
-router.post('/:id/media', authenticateToken, requireRole('admin'), upload.single('file'), async (req, res) => {
+router.post('/:id/media', authenticateToken, requireRole('admin'), receiptUploader.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 

@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
 import { CreateLocationDialog } from './create-location-dialog'
 
 const mockOnOpenChange = jest.fn()
@@ -9,7 +10,7 @@ const mockOnCreateLocation = jest.fn()
 const defaultProps = {
   open: false,
   onOpenChange: mockOnOpenChange,
-  onCreateLocation: mockOnCreateLocation,
+  onCreateLocation: mockOnCreateLocation
 }
 
 describe('CreateLocationDialog', () => {
@@ -74,7 +75,7 @@ describe('CreateLocationDialog', () => {
       'Pool',
       'Ice Rink',
       'Track',
-      'Meeting Rooms',
+      'Meeting Rooms'
     ]
     
     expectedFacilities.forEach(facility => {
@@ -91,7 +92,7 @@ describe('CreateLocationDialog', () => {
       'Accessible Parking',
       'Elevator',
       'Ramps',
-      'Audio Assistance',
+      'Audio Assistance'
     ]
     
     expectedAccessibility.forEach(feature => {
@@ -188,7 +189,7 @@ describe('CreateLocationDialog', () => {
         facilities: ['Basketball Court', 'Parking'],
         accessibilityFeatures: ['Wheelchair Access'],
         notes: 'Test notes',
-        isActive: true,
+        isActive: true
       })
     })
   })
@@ -334,7 +335,7 @@ describe('CreateLocationDialog', () => {
         expect.objectContaining({
           name: 'Multi-Purpose Arena',
           facilities: ['Basketball Court', 'Volleyball Courts', 'Concession'],
-          accessibilityFeatures: ['Wheelchair Access', 'Accessible Washrooms', 'Elevator'],
+          accessibilityFeatures: ['Wheelchair Access', 'Accessible Washrooms', 'Elevator']
         })
       )
     })

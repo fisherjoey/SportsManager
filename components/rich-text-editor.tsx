@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -8,8 +8,6 @@ import Youtube from '@tiptap/extension-youtube'
 import TextAlign from '@tiptap/extension-text-align'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { 
   Bold, 
   Italic, 
@@ -32,8 +30,11 @@ import {
   CheckSquare
 } from 'lucide-react'
 import { useState } from 'react'
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 interface RichTextEditorProps {
   content: string
@@ -42,7 +43,7 @@ interface RichTextEditorProps {
   className?: string
 }
 
-export function RichTextEditor({ content, onChange, placeholder = "Start writing...", className = "" }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Start writing...', className = '' }: RichTextEditorProps) {
   const [linkUrl, setLinkUrl] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
@@ -55,35 +56,35 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       StarterKit,
       Image.configure({
         HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
-        },
+          class: 'max-w-full h-auto rounded-lg'
+        }
       }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-blue-600 hover:text-blue-800 underline',
-        },
+          class: 'text-blue-600 hover:text-blue-800 underline'
+        }
       }),
       Youtube.configure({
         controls: false,
         nocookie: true,
         HTMLAttributes: {
-          class: 'rounded-lg',
-        },
+          class: 'rounded-lg'
+        }
       }),
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: ['heading', 'paragraph']
       }),
       TaskList,
       TaskItem.configure({
-        nested: true,
-      }),
+        nested: true
+      })
     ],
     content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
-    },
+    }
   })
 
   if (!editor) {
@@ -111,7 +112,7 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       editor.commands.setYoutubeVideo({
         src: youtubeUrl,
         width: 640,
-        height: 480,
+        height: 480
       })
       setYoutubeUrl('')
       setYoutubeDialogOpen(false)

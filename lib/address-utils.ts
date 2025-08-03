@@ -23,7 +23,7 @@ export function parseAddressString(addressString: string): ParsedAddress {
   let city = 'Calgary' // Default to Calgary
   let province = 'Alberta' // Default to Alberta
   let postalCode = ''
-  let country = 'Canada'
+  const country = 'Canada'
 
   // Try to extract postal code (Canadian format: A1A 1A1)
   const postalCodeMatch = addressString.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/i)

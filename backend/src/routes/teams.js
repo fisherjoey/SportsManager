@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 
 const teamSchema = Joi.object({
   name: Joi.string().required(),
@@ -37,75 +39,100 @@ const bulkGenerateSchema = Joi.object({
 // GET /api/teams - Get all teams with optional filtering
 router.get('/', async (req, res) => {
   try {
-    const { 
-      league_id, 
-      organization, 
-      age_group, 
-      gender, 
-      season,
-      search,
-      page = 1, 
-      limit = 50 
-    } = req.query;
+    const filters = {
+      league_id: req.query.league_id,
+      organization: req.query.organization,
+      age_group: req.query.age_group,
+      gender: req.query.gender,
+      season: req.query.season,
+      search: req.query.search
+    };
     
-    let query = db('teams')
-      .select(
-        'teams.*',
-        'leagues.organization',
-        'leagues.age_group',
-        'leagues.gender',
-        'leagues.division',
-        'leagues.season',
-        'leagues.level',
-        db.raw('COUNT(DISTINCT home_games.id) + COUNT(DISTINCT away_games.id) as game_count')
-      )
-      .join('leagues', 'teams.league_id', 'leagues.id')
-      .leftJoin('games as home_games', 'teams.id', 'home_games.home_team_id')
-      .leftJoin('games as away_games', 'teams.id', 'away_games.away_team_id')
-      .groupBy('teams.id', 'leagues.id')
-      .orderBy('leagues.organization', 'asc')
-      .orderBy('leagues.age_group', 'asc')
-      .orderBy('teams.rank', 'asc');
-
-    // Apply filters
-    if (league_id) query = query.where('teams.league_id', league_id);
-    if (organization) query = query.where('leagues.organization', 'ilike', `%${organization}%`);
-    if (age_group) query = query.where('leagues.age_group', age_group);
-    if (gender) query = query.where('leagues.gender', gender);
-    if (season) query = query.where('leagues.season', 'ilike', `%${season}%`);
-    if (search) query = query.where('teams.name', 'ilike', `%${search}%`);
-
-    const offset = (page - 1) * limit;
-    const teams = await query.limit(limit).offset(offset);
-
-    // Get total count for pagination
-    let countQuery = db('teams')
-      .join('leagues', 'teams.league_id', 'leagues.id')
-      .count('teams.id as count');
-      
-    if (league_id) countQuery = countQuery.where('teams.league_id', league_id);
-    if (organization) countQuery = countQuery.where('leagues.organization', 'ilike', `%${organization}%`);
-    if (age_group) countQuery = countQuery.where('leagues.age_group', age_group);
-    if (gender) countQuery = countQuery.where('leagues.gender', gender);
-    if (season) countQuery = countQuery.where('leagues.season', 'ilike', `%${season}%`);
-    if (search) countQuery = countQuery.where('teams.name', 'ilike', `%${search}%`);
+    const paginationParams = QueryBuilder.validatePaginationParams(req.query);
+    const { page, limit } = paginationParams;
     
-    const [{ count }] = await countQuery;
+    // Use cached aggregation for expensive team count queries
+    const result = await CacheHelpers.cacheAggregation(
+      async () => {
+        // Optimized query using idx_teams_league_rank index
+        let baseQuery = db('teams')
+          .select(
+            'teams.*',
+            'leagues.organization',
+            'leagues.age_group',
+            'leagues.gender',
+            'leagues.division',
+            'leagues.season',
+            'leagues.level'
+          )
+          .join('leagues', 'teams.league_id', 'leagues.id');
+        
+        // Apply filters using optimized approach
+        const filterMap = {
+          league_id: 'teams.league_id',
+          organization: 'leagues.organization',
+          age_group: 'leagues.age_group',
+          gender: 'leagues.gender',
+          season: 'leagues.season',
+          search: 'teams.name'
+        };
+        
+        baseQuery = QueryBuilder.applyCommonFilters(baseQuery, filters, filterMap);
+        
+        // Optimized sorting using indexed columns
+        baseQuery = baseQuery
+          .orderBy('leagues.organization', 'asc')
+          .orderBy('leagues.age_group', 'asc')
+          .orderBy('teams.rank', 'asc'); // Uses idx_teams_league_rank
+        
+        // Get total count efficiently
+        const countQuery = QueryBuilder.buildCountQuery(baseQuery, 'teams.id');
+        const [{ count }] = await countQuery;
+        
+        // Apply pagination
+        const paginatedQuery = QueryBuilder.applyPagination(baseQuery, page, limit);
+        const teams = await paginatedQuery;
+        
+        // Optimized game count query using subquery to avoid expensive JOINs
+        const teamIds = teams.map(team => team.id);
+        const gameCounts = teamIds.length > 0 ? await db('games')
+          .select(
+            db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END as team_id'),
+            db.raw('COUNT(*) as game_count')
+          )
+          .where(function() {
+            this.whereIn('home_team_id', teamIds)
+                .orWhereIn('away_team_id', teamIds);
+          })
+          .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
+        
+        // Create lookup map for game counts
+        const gameCountMap = {};
+        gameCounts.forEach(gc => {
+          gameCountMap[gc.team_id] = (gameCountMap[gc.team_id] || 0) + parseInt(gc.game_count);
+        });
+        
+        return {
+          teams: teams.map(team => ({
+            ...team,
+            game_count: gameCountMap[team.id] || 0
+          })),
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: parseInt(count),
+            pages: Math.ceil(count / limit)
+          }
+        };
+      },
+      'teams_list',
+      { ...filters, page, limit },
+      5 * 60 * 1000 // Cache for 5 minutes
+    );
 
     res.json({
       success: true,
-      data: {
-        teams: teams.map(team => ({
-          ...team,
-          game_count: parseInt(team.game_count) || 0
-        })),
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: parseInt(count),
-          pages: Math.ceil(count / limit)
-        }
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -116,53 +143,83 @@ router.get('/', async (req, res) => {
 // GET /api/teams/:id - Get specific team with games
 router.get('/:id', async (req, res) => {
   try {
-    const team = await db('teams')
-      .select(
-        'teams.*',
-        'leagues.organization',
-        'leagues.age_group',
-        'leagues.gender',
-        'leagues.division',
-        'leagues.season',
-        'leagues.level'
-      )
-      .join('leagues', 'teams.league_id', 'leagues.id')
-      .where('teams.id', req.params.id)
-      .first();
+    const teamId = req.params.id;
+    
+    // Cache team details with games for 10 minutes
+    const result = await CacheHelpers.cachePaginatedQuery(
+      async () => {
+        // Optimized team query using idx_teams_league_rank index
+        const team = await db('teams')
+          .select(
+            'teams.*',
+            'leagues.organization',
+            'leagues.age_group',
+            'leagues.gender',
+            'leagues.division',
+            'leagues.season',
+            'leagues.level'
+          )
+          .join('leagues', 'teams.league_id', 'leagues.id')
+          .where('teams.id', teamId)
+          .first();
 
-    if (!team) {
+        if (!team) {
+          return null;
+        }
+
+        // Optimized games query using idx_games_date_location and team indexes
+        const games = await db('games')
+          .select(
+            'games.*',
+            'home_team.name as home_team_name',
+            'away_team.name as away_team_name',
+            db.raw(`CASE 
+              WHEN games.home_team_id = ? THEN 'home'
+              ELSE 'away'
+            END as team_role`, [teamId])
+          )
+          .leftJoin('teams as home_team', 'games.home_team_id', 'home_team.id')
+          .leftJoin('teams as away_team', 'games.away_team_id', 'away_team.id')
+          .where(function() {
+            this.where('games.home_team_id', teamId)
+                .orWhere('games.away_team_id', teamId);
+          })
+          .orderBy('games.game_date', 'desc'); // Uses idx_games_date_location
+
+        // Calculate stats efficiently
+        const now = new Date();
+        const stats = games.reduce((acc, game) => {
+          acc.total_games++;
+          if (game.team_role === 'home') acc.home_games++;
+          else acc.away_games++;
+          if (new Date(game.game_date) > now) acc.upcoming_games++;
+          return acc;
+        }, {
+          total_games: 0,
+          home_games: 0,
+          away_games: 0,
+          upcoming_games: 0
+        });
+
+        return {
+          team,
+          games,
+          stats
+        };
+      },
+      `team_${teamId}`,
+      {},
+      {},
+      10 * 60 * 1000
+    );
+    
+    if (!result) {
       return res.status(404).json({ error: 'Team not found' });
     }
 
-    // Get games for this team
-    const games = await db('games')
-      .select(
-        'games.*',
-        'home_team.name as home_team_name',
-        'away_team.name as away_team_name',
-        db.raw(`CASE 
-          WHEN games.home_team_id = ? THEN 'home'
-          ELSE 'away'
-        END as team_role`, [req.params.id])
-      )
-      .leftJoin('teams as home_team', 'games.home_team_id', 'home_team.id')
-      .leftJoin('teams as away_team', 'games.away_team_id', 'away_team.id')
-      .where('games.home_team_id', req.params.id)
-      .orWhere('games.away_team_id', req.params.id)
-      .orderBy('games.game_date', 'desc');
-
     res.json({
       success: true,
-      data: {
-        team,
-        games,
-        stats: {
-          total_games: games.length,
-          home_games: games.filter(g => g.team_role === 'home').length,
-          away_games: games.filter(g => g.team_role === 'away').length,
-          upcoming_games: games.filter(g => new Date(g.game_date) > new Date()).length
-        }
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching team:', error);
@@ -171,7 +228,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/teams - Create new team
-router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = teamSchema.validate(req.body);
     if (error) {
@@ -197,6 +254,9 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
     }
 
     const [team] = await db('teams').insert(value).returning('*');
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateTeams(queryCache);
 
     res.status(201).json({
       success: true,
@@ -210,7 +270,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
 });
 
 // POST /api/teams/bulk - Create multiple teams
-router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/bulk', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = bulkTeamSchema.validate(req.body);
     if (error) {
@@ -256,6 +316,9 @@ router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res)
     if (validTeams.length > 0) {
       const newTeams = await db('teams').insert(validTeams).returning('*');
       createdTeams.push(...newTeams);
+      
+      // Invalidate related caches
+      CacheInvalidation.invalidateTeams(queryCache);
     }
 
     res.status(201).json({
@@ -278,7 +341,7 @@ router.post('/bulk', authenticateToken, requireRole(['admin']), async (req, res)
 });
 
 // POST /api/teams/generate - Generate teams with pattern
-router.post('/generate', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/generate', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = bulkGenerateSchema.validate(req.body);
     if (error) {
@@ -326,6 +389,9 @@ router.post('/generate', authenticateToken, requireRole(['admin']), async (req, 
     if (teamsToCreate.length > 0) {
       const newTeams = await db('teams').insert(teamsToCreate).returning('*');
       createdTeams.push(...newTeams);
+      
+      // Invalidate related caches
+      CacheInvalidation.invalidateTeams(queryCache);
     }
 
     res.status(201).json({
@@ -354,7 +420,7 @@ router.post('/generate', authenticateToken, requireRole(['admin']), async (req, 
 });
 
 // PUT /api/teams/:id - Update team
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { error, value } = teamSchema.validate(req.body);
     if (error) {
@@ -384,6 +450,9 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
     if (!team) {
       return res.status(404).json({ error: 'Team not found' });
     }
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateTeams(queryCache, req.params.id);
 
     res.json({
       success: true,
@@ -397,7 +466,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
 });
 
 // DELETE /api/teams/:id - Delete team
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const team = await db('teams').where('id', req.params.id).first();
     if (!team) {
@@ -421,6 +490,9 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res
     }
 
     await db('teams').where('id', req.params.id).del();
+    
+    // Invalidate related caches
+    CacheInvalidation.invalidateTeams(queryCache, req.params.id);
 
     res.json({
       success: true,
@@ -435,31 +507,61 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res
 // GET /api/teams/league/:league_id - Get all teams for a specific league
 router.get('/league/:league_id', async (req, res) => {
   try {
-    const teams = await db('teams')
-      .select(
-        'teams.*',
-        db.raw('COUNT(DISTINCT home_games.id) + COUNT(DISTINCT away_games.id) as game_count')
-      )
-      .leftJoin('games as home_games', 'teams.id', 'home_games.home_team_id')
-      .leftJoin('games as away_games', 'teams.id', 'away_games.away_team_id')
-      .where('teams.league_id', req.params.league_id)
-      .groupBy('teams.id')
-      .orderBy('teams.rank', 'asc');
+    const leagueId = req.params.league_id;
+    
+    // Cache league teams for 10 minutes
+    const result = await CacheHelpers.cacheAggregation(
+      async () => {
+        // Optimized query using idx_teams_league_rank index
+        const teams = await db('teams')
+          .select('teams.*')
+          .where('teams.league_id', leagueId)
+          .orderBy('teams.rank', 'asc'); // Uses idx_teams_league_rank
 
-    const league = await db('leagues').where('id', req.params.league_id).first();
-    if (!league) {
+        const league = await db('leagues').where('id', leagueId).first();
+        if (!league) {
+          return null;
+        }
+
+        // Optimized game count query using separate query to avoid expensive JOINs
+        const teamIds = teams.map(team => team.id);
+        const gameCounts = teamIds.length > 0 ? await db('games')
+          .select(
+            db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END as team_id'),
+            db.raw('COUNT(*) as game_count')
+          )
+          .where(function() {
+            this.whereIn('home_team_id', teamIds)
+                .orWhereIn('away_team_id', teamIds);
+          })
+          .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
+        
+        // Create lookup map for game counts
+        const gameCountMap = {};
+        gameCounts.forEach(gc => {
+          gameCountMap[gc.team_id] = (gameCountMap[gc.team_id] || 0) + parseInt(gc.game_count);
+        });
+
+        return {
+          league,
+          teams: teams.map(team => ({
+            ...team,
+            game_count: gameCountMap[team.id] || 0
+          }))
+        };
+      },
+      'league_teams',
+      { league_id: leagueId },
+      10 * 60 * 1000
+    );
+    
+    if (!result) {
       return res.status(404).json({ error: 'League not found' });
     }
 
     res.json({
       success: true,
-      data: {
-        league,
-        teams: teams.map(team => ({
-          ...team,
-          game_count: parseInt(team.game_count) || 0
-        }))
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching teams for league:', error);

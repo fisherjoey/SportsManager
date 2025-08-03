@@ -1,36 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
 import { 
   Trophy, 
   Users, 
@@ -50,10 +20,41 @@ import {
   Sparkles,
   TrendingUp,
   BarChart3
-} from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { useApi, League, Team, Tournament, TournamentFormat } from "@/lib/api"
+} from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@/components/ui/tabs'
+import { useToast } from '@/components/ui/use-toast'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { useApi, League, Team, Tournament, TournamentFormat } from '@/lib/api'
 
 interface TournamentForm {
   name: string
@@ -137,9 +138,9 @@ export function TournamentGenerator() {
     } catch (error) {
       console.error('Error fetching leagues:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch leagues",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch leagues',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -153,9 +154,9 @@ export function TournamentGenerator() {
     } catch (error) {
       console.error('Error fetching tournament formats:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load tournament formats. Some features may not work properly.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load tournament formats. Some features may not work properly.'
       })
     }
   }
@@ -174,9 +175,9 @@ export function TournamentGenerator() {
     } catch (error) {
       console.error('Error fetching teams:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch teams for league",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch teams for league',
+        variant: 'destructive'
       })
     }
   }
@@ -200,9 +201,9 @@ export function TournamentGenerator() {
     } catch (error) {
       console.error('Error estimating tournament:', error)
       toast({
-        variant: "destructive",
-        title: "Estimation Error",
-        description: "Failed to estimate tournament details. Please check your settings.",
+        variant: 'destructive',
+        title: 'Estimation Error',
+        description: 'Failed to estimate tournament details. Please check your settings.'
       })
     }
   }
@@ -211,9 +212,9 @@ export function TournamentGenerator() {
     try {
       if (!tournamentForm.name || !tournamentForm.league_id || tournamentForm.team_ids.length < 2) {
         toast({
-          title: "Error",
-          description: "Please fill in all required fields and select at least 2 teams",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Please fill in all required fields and select at least 2 teams',
+          variant: 'destructive'
         })
         return
       }
@@ -224,15 +225,15 @@ export function TournamentGenerator() {
       setShowPreviewDialog(true)
       
       toast({
-        title: "Success",
-        description: response.message,
+        title: 'Success',
+        description: response.message
       })
     } catch (error) {
       console.error('Error generating tournament:', error)
       toast({
-        title: "Error",
-        description: "Failed to generate tournament",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to generate tournament',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -250,8 +251,8 @@ export function TournamentGenerator() {
       })
       
       toast({
-        title: "Success",
-        description: `${response.message} - ${response.data.created.length} games created`,
+        title: 'Success',
+        description: `${response.message} - ${response.data.created.length} games created`
       })
       
       setShowCreateGamesDialog(false)
@@ -267,9 +268,9 @@ export function TournamentGenerator() {
     } catch (error) {
       console.error('Error creating tournament games:', error)
       toast({
-        title: "Error",
-        description: "Failed to create tournament games",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create tournament games',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -278,11 +279,11 @@ export function TournamentGenerator() {
 
   const getFormatIcon = (formatId: string) => {
     switch (formatId) {
-      case 'round_robin': return <Target className="h-5 w-5" />
-      case 'single_elimination': return <Zap className="h-5 w-5" />
-      case 'swiss_system': return <Settings className="h-5 w-5" />
-      case 'group_stage_playoffs': return <Crown className="h-5 w-5" />
-      default: return <Trophy className="h-5 w-5" />
+    case 'round_robin': return <Target className="h-5 w-5" />
+    case 'single_elimination': return <Zap className="h-5 w-5" />
+    case 'swiss_system': return <Settings className="h-5 w-5" />
+    case 'group_stage_playoffs': return <Crown className="h-5 w-5" />
+    default: return <Trophy className="h-5 w-5" />
     }
   }
 
@@ -291,32 +292,32 @@ export function TournamentGenerator() {
   // Stats for tournament overview
   const stats = [
     {
-      title: "Available Leagues",
+      title: 'Available Leagues',
       value: leagues.length,
       icon: Trophy,
-      color: "text-blue-600",
-      description: "Leagues ready for tournaments",
+      color: 'text-blue-600',
+      description: 'Leagues ready for tournaments'
     },
     {
-      title: "Tournament Formats",
+      title: 'Tournament Formats',
       value: tournamentFormats.length,
       icon: Settings,
-      color: "text-green-600",
-      description: "Format options available",
+      color: 'text-green-600',
+      description: 'Format options available'
     },
     {
-      title: "Total Teams",
+      title: 'Total Teams',
       value: availableTeams.length,
       icon: Users,
-      color: "text-purple-600",
-      description: "Teams in selected league",
+      color: 'text-purple-600',
+      description: 'Teams in selected league'
     },
     {
-      title: "Estimated Games",
-      value: estimate ? estimate.total_games : "TBD",
+      title: 'Estimated Games',
+      value: estimate ? estimate.total_games : 'TBD',
       icon: BarChart3,
-      color: "text-orange-600",
-      description: "Games in current setup",
+      color: 'text-orange-600',
+      description: 'Games in current setup'
     }
   ]
 
@@ -338,397 +339,397 @@ export function TournamentGenerator() {
       </PageHeader>
 
       <Dialog open={showTournamentDialog} onOpenChange={setShowTournamentDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Tournament</DialogTitle>
-              <DialogDescription>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Tournament</DialogTitle>
+            <DialogDescription>
                 Set up your tournament with teams, format, and schedule
-              </DialogDescription>
-            </DialogHeader>
+            </DialogDescription>
+          </DialogHeader>
             
-            <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="teams">Teams</TabsTrigger>
-                <TabsTrigger value="format">Format</TabsTrigger>
-                <TabsTrigger value="schedule">Schedule</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="basic" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="teams">Teams</TabsTrigger>
+              <TabsTrigger value="format">Format</TabsTrigger>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            </TabsList>
               
-              {/* Basic Info Tab */}
-              <TabsContent value="basic" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tournament-name">Tournament Name *</Label>
-                    <Input
-                      id="tournament-name"
-                      placeholder="e.g., Winter Championship 2025"
-                      value={tournamentForm.name}
-                      onChange={(e) => setTournamentForm(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="league-select">League *</Label>
-                    <Select 
-                      value={tournamentForm.league_id} 
-                      onValueChange={(value) => setTournamentForm(prev => ({ ...prev, league_id: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a league" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {leagues.map(league => (
-                          <SelectItem key={league.id} value={league.id}>
-                            {league.organization} {league.age_group} {league.gender} {league.division} - {league.season}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {/* Basic Info Tab */}
+            <TabsContent value="basic" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tournament-name">Tournament Name *</Label>
+                  <Input
+                    id="tournament-name"
+                    placeholder="e.g., Winter Championship 2025"
+                    value={tournamentForm.name}
+                    onChange={(e) => setTournamentForm(prev => ({ ...prev, name: e.target.value }))}
+                  />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date *</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={tournamentForm.start_date}
-                      onChange={(e) => setTournamentForm(prev => ({ ...prev, start_date: e.target.value }))}
-                    />
-                  </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="venue">Venue</Label>
-                    <Input
-                      id="venue"
-                      placeholder="e.g., Downtown Sports Complex"
-                      value={tournamentForm.venue}
-                      onChange={(e) => setTournamentForm(prev => ({ ...prev, venue: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-              
-              {/* Teams Tab */}
-              <TabsContent value="teams" className="space-y-4">
-                {availableTeams.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No teams available</h3>
-                    <p className="text-muted-foreground">
-                      Please select a league first to see available teams
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label>Select Teams ({tournamentForm.team_ids.length} selected)</Label>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTournamentForm(prev => ({ ...prev, team_ids: [] }))}
-                        >
-                          Clear All
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTournamentForm(prev => ({ 
-                            ...prev, 
-                            team_ids: availableTeams.map(t => t.id) 
-                          }))}
-                        >
-                          Select All
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                      {availableTeams.map(team => (
-                        <div key={team.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`team-${team.id}`}
-                            checked={tournamentForm.team_ids.includes(team.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setTournamentForm(prev => ({ 
-                                  ...prev, 
-                                  team_ids: [...prev.team_ids, team.id] 
-                                }))
-                              } else {
-                                setTournamentForm(prev => ({ 
-                                  ...prev, 
-                                  team_ids: prev.team_ids.filter(id => id !== team.id) 
-                                }))
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`team-${team.id}`} className="text-sm flex items-center gap-2">
-                            <Badge variant="secondary" className="w-6 h-5 text-xs justify-center">
-                              {team.rank}
-                            </Badge>
-                            {team.name}
-                          </Label>
-                        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="league-select">League *</Label>
+                  <Select 
+                    value={tournamentForm.league_id} 
+                    onValueChange={(value) => setTournamentForm(prev => ({ ...prev, league_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a league" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leagues.map(league => (
+                        <SelectItem key={league.id} value={league.id}>
+                          {league.organization} {league.age_group} {league.gender} {league.division} - {league.season}
+                        </SelectItem>
                       ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+                
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start-date">Start Date *</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={tournamentForm.start_date}
+                    onChange={(e) => setTournamentForm(prev => ({ ...prev, start_date: e.target.value }))}
+                  />
+                </div>
+                  
+                <div className="space-y-2">
+                  <Label htmlFor="venue">Venue</Label>
+                  <Input
+                    id="venue"
+                    placeholder="e.g., Downtown Sports Complex"
+                    value={tournamentForm.venue}
+                    onChange={(e) => setTournamentForm(prev => ({ ...prev, venue: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </TabsContent>
               
-              {/* Format Tab */}
-              <TabsContent value="format" className="space-y-4">
+            {/* Teams Tab */}
+            <TabsContent value="teams" className="space-y-4">
+              {availableTeams.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No teams available</h3>
+                  <p className="text-muted-foreground">
+                      Please select a league first to see available teams
+                  </p>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  <Label>Tournament Format</Label>
-                  <div className="grid grid-cols-1 gap-3">
-                    {tournamentFormats.map(format => (
-                      <Card 
-                        key={format.id}
-                        className={`cursor-pointer transition-colors ${
-                          tournamentForm.tournament_type === format.id ? 'ring-2 ring-primary' : ''
-                        }`}
+                  <div className="flex items-center justify-between">
+                    <Label>Select Teams ({tournamentForm.team_ids.length} selected)</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTournamentForm(prev => ({ ...prev, team_ids: [] }))}
+                      >
+                          Clear All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() => setTournamentForm(prev => ({ 
                           ...prev, 
-                          tournament_type: format.id as any 
+                          team_ids: availableTeams.map(t => t.id) 
                         }))}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1">
-                              {getFormatIcon(format.id)}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-medium">{format.name}</h3>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <span>{format.min_teams}-{format.max_teams} teams</span>
-                                </div>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">{format.description}</p>
-                              <div className="flex items-center gap-4 text-xs">
-                                <Badge variant="outline" className="text-green-700 bg-green-50">
-                                  {format.pros[0]}
-                                </Badge>
-                                <span className="text-muted-foreground">{format.suitable_for}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                  
-                  {/* Format-specific options */}
-                  {tournamentForm.tournament_type === 'swiss_system' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="rounds">Number of Rounds</Label>
-                      <Input
-                        id="rounds"
-                        type="number"
-                        min="3"
-                        max="15"
-                        value={tournamentForm.rounds}
-                        onChange={(e) => setTournamentForm(prev => ({ 
-                          ...prev, 
-                          rounds: parseInt(e.target.value) || 5 
-                        }))}
-                      />
+                          Select All
+                      </Button>
                     </div>
-                  )}
-                  
-                  {tournamentForm.tournament_type === 'group_stage_playoffs' && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="group-size">Teams per Group</Label>
-                        <Input
-                          id="group-size"
-                          type="number"
-                          min="3"
-                          max="8"
-                          value={tournamentForm.group_size}
-                          onChange={(e) => setTournamentForm(prev => ({ 
-                            ...prev, 
-                            group_size: parseInt(e.target.value) || 4 
-                          }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="advance-per-group">Teams Advancing per Group</Label>
-                        <Input
-                          id="advance-per-group"
-                          type="number"
-                          min="1"
-                          max="4"
-                          value={tournamentForm.advance_per_group}
-                          onChange={(e) => setTournamentForm(prev => ({ 
-                            ...prev, 
-                            advance_per_group: parseInt(e.target.value) || 2 
-                          }))}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label>Seeding Method</Label>
-                    <Select 
-                      value={tournamentForm.seeding_method} 
-                      onValueChange={(value: any) => setTournamentForm(prev => ({ 
-                        ...prev, 
-                        seeding_method: value 
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ranked">By Team Ranking</SelectItem>
-                        <SelectItem value="random">Random</SelectItem>
-                        <SelectItem value="custom">Custom (manual)</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
-                </div>
-              </TabsContent>
-              
-              {/* Schedule Tab */}
-              <TabsContent value="schedule" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="games-per-day">Games per Day</Label>
-                    <Input
-                      id="games-per-day"
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={tournamentForm.games_per_day}
-                      onChange={(e) => setTournamentForm(prev => ({ 
-                        ...prev, 
-                        games_per_day: parseInt(e.target.value) || 4 
-                      }))}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label>Game Days</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {daysOfWeekOptions.map(day => (
-                      <div key={day.value} className="flex items-center space-x-2">
+                    
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                    {availableTeams.map(team => (
+                      <div key={team.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={`day-${day.value}`}
-                          checked={tournamentForm.days_of_week.includes(day.value)}
+                          id={`team-${team.id}`}
+                          checked={tournamentForm.team_ids.includes(team.id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setTournamentForm(prev => ({ 
                                 ...prev, 
-                                days_of_week: [...prev.days_of_week, day.value].sort() 
+                                team_ids: [...prev.team_ids, team.id] 
                               }))
                             } else {
                               setTournamentForm(prev => ({ 
                                 ...prev, 
-                                days_of_week: prev.days_of_week.filter(d => d !== day.value) 
+                                team_ids: prev.team_ids.filter(id => id !== team.id) 
                               }))
                             }
                           }}
                         />
-                        <Label htmlFor={`day-${day.value}`} className="text-sm">
-                          {day.label}
+                        <Label htmlFor={`team-${team.id}`} className="text-sm flex items-center gap-2">
+                          <Badge variant="secondary" className="w-6 h-5 text-xs justify-center">
+                            {team.rank}
+                          </Badge>
+                          {team.name}
                         </Label>
                       </div>
                     ))}
                   </div>
                 </div>
-                
-                <div className="space-y-3">
-                  <Label>Time Slots</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {defaultTimeSlots.map(time => (
-                        <div key={time} className="flex items-center space-x-1">
-                          <Checkbox
-                            id={`time-${time}`}
-                            checked={tournamentForm.time_slots.includes(time)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setTournamentForm(prev => ({ 
-                                  ...prev, 
-                                  time_slots: [...prev.time_slots, time].sort() 
-                                }))
-                              } else {
-                                setTournamentForm(prev => ({ 
-                                  ...prev, 
-                                  time_slots: prev.time_slots.filter(t => t !== time) 
-                                }))
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`time-${time}`} className="text-sm">{time}</Label>
+              )}
+            </TabsContent>
+              
+            {/* Format Tab */}
+            <TabsContent value="format" className="space-y-4">
+              <div className="space-y-4">
+                <Label>Tournament Format</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {tournamentFormats.map(format => (
+                    <Card 
+                      key={format.id}
+                      className={`cursor-pointer transition-colors ${
+                        tournamentForm.tournament_type === format.id ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => setTournamentForm(prev => ({ 
+                        ...prev, 
+                        tournament_type: format.id as any 
+                      }))}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1">
+                            {getFormatIcon(format.id)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium">{format.name}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>{format.min_teams}-{format.max_teams} teams</span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{format.description}</p>
+                            <div className="flex items-center gap-4 text-xs">
+                              <Badge variant="outline" className="text-green-700 bg-green-50">
+                                {format.pros[0]}
+                              </Badge>
+                              <span className="text-muted-foreground">{format.suitable_for}</span>
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                    <Textarea
-                      placeholder="Custom time slots (e.g., 08:00, 10:30, 13:15)"
-                      value={tournamentForm.time_slots.join(', ')}
-                      onChange={(e) => {
-                        const slots = e.target.value.split(',').map(s => s.trim()).filter(s => s)
-                        setTournamentForm(prev => ({ ...prev, time_slots: slots }))
-                      }}
-                      rows={2}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                  
+                {/* Format-specific options */}
+                {tournamentForm.tournament_type === 'swiss_system' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="rounds">Number of Rounds</Label>
+                    <Input
+                      id="rounds"
+                      type="number"
+                      min="3"
+                      max="15"
+                      value={tournamentForm.rounds}
+                      onChange={(e) => setTournamentForm(prev => ({ 
+                        ...prev, 
+                        rounds: parseInt(e.target.value) || 5 
+                      }))}
                     />
                   </div>
-                </div>
-                
-                {/* Estimate */}
-                {estimate && (
-                  <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Info className="h-4 w-4 text-blue-600" />
-                        <h3 className="font-medium text-blue-900">Tournament Estimate</h3>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <Label className="text-xs text-blue-700">TOTAL GAMES</Label>
-                          <div className="font-medium text-blue-900">{estimate.total_games}</div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-blue-700">ESTIMATED DAYS</Label>
-                          <div className="font-medium text-blue-900">{estimate.estimated_days}</div>
-                        </div>
-                        {estimate.games_per_team && (
-                          <div>
-                            <Label className="text-xs text-blue-700">GAMES PER TEAM</Label>
-                            <div className="font-medium text-blue-900">{estimate.games_per_team}</div>
-                          </div>
-                        )}
-                        {estimate.rounds && (
-                          <div>
-                            <Label className="text-xs text-blue-700">ROUNDS</Label>
-                            <div className="font-medium text-blue-900">{estimate.rounds}</div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
                 )}
-              </TabsContent>
-            </Tabs>
+                  
+                {tournamentForm.tournament_type === 'group_stage_playoffs' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="group-size">Teams per Group</Label>
+                      <Input
+                        id="group-size"
+                        type="number"
+                        min="3"
+                        max="8"
+                        value={tournamentForm.group_size}
+                        onChange={(e) => setTournamentForm(prev => ({ 
+                          ...prev, 
+                          group_size: parseInt(e.target.value) || 4 
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="advance-per-group">Teams Advancing per Group</Label>
+                      <Input
+                        id="advance-per-group"
+                        type="number"
+                        min="1"
+                        max="4"
+                        value={tournamentForm.advance_per_group}
+                        onChange={(e) => setTournamentForm(prev => ({ 
+                          ...prev, 
+                          advance_per_group: parseInt(e.target.value) || 2 
+                        }))}
+                      />
+                    </div>
+                  </div>
+                )}
+                  
+                <div className="space-y-2">
+                  <Label>Seeding Method</Label>
+                  <Select 
+                    value={tournamentForm.seeding_method} 
+                    onValueChange={(value: any) => setTournamentForm(prev => ({ 
+                      ...prev, 
+                      seeding_method: value 
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ranked">By Team Ranking</SelectItem>
+                      <SelectItem value="random">Random</SelectItem>
+                      <SelectItem value="custom">Custom (manual)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+              
+            {/* Schedule Tab */}
+            <TabsContent value="schedule" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="games-per-day">Games per Day</Label>
+                  <Input
+                    id="games-per-day"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={tournamentForm.games_per_day}
+                    onChange={(e) => setTournamentForm(prev => ({ 
+                      ...prev, 
+                      games_per_day: parseInt(e.target.value) || 4 
+                    }))}
+                  />
+                </div>
+              </div>
+                
+              <div className="space-y-3">
+                <Label>Game Days</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {daysOfWeekOptions.map(day => (
+                    <div key={day.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`day-${day.value}`}
+                        checked={tournamentForm.days_of_week.includes(day.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setTournamentForm(prev => ({ 
+                              ...prev, 
+                              days_of_week: [...prev.days_of_week, day.value].sort() 
+                            }))
+                          } else {
+                            setTournamentForm(prev => ({ 
+                              ...prev, 
+                              days_of_week: prev.days_of_week.filter(d => d !== day.value) 
+                            }))
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`day-${day.value}`} className="text-sm">
+                        {day.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+                
+              <div className="space-y-3">
+                <Label>Time Slots</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {defaultTimeSlots.map(time => (
+                      <div key={time} className="flex items-center space-x-1">
+                        <Checkbox
+                          id={`time-${time}`}
+                          checked={tournamentForm.time_slots.includes(time)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setTournamentForm(prev => ({ 
+                                ...prev, 
+                                time_slots: [...prev.time_slots, time].sort() 
+                              }))
+                            } else {
+                              setTournamentForm(prev => ({ 
+                                ...prev, 
+                                time_slots: prev.time_slots.filter(t => t !== time) 
+                              }))
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`time-${time}`} className="text-sm">{time}</Label>
+                      </div>
+                    ))}
+                  </div>
+                  <Textarea
+                    placeholder="Custom time slots (e.g., 08:00, 10:30, 13:15)"
+                    value={tournamentForm.time_slots.join(', ')}
+                    onChange={(e) => {
+                      const slots = e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                      setTournamentForm(prev => ({ ...prev, time_slots: slots }))
+                    }}
+                    rows={2}
+                  />
+                </div>
+              </div>
+                
+              {/* Estimate */}
+              {estimate && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      <h3 className="font-medium text-blue-900">Tournament Estimate</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <Label className="text-xs text-blue-700">TOTAL GAMES</Label>
+                        <div className="font-medium text-blue-900">{estimate.total_games}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-blue-700">ESTIMATED DAYS</Label>
+                        <div className="font-medium text-blue-900">{estimate.estimated_days}</div>
+                      </div>
+                      {estimate.games_per_team && (
+                        <div>
+                          <Label className="text-xs text-blue-700">GAMES PER TEAM</Label>
+                          <div className="font-medium text-blue-900">{estimate.games_per_team}</div>
+                        </div>
+                      )}
+                      {estimate.rounds && (
+                        <div>
+                          <Label className="text-xs text-blue-700">ROUNDS</Label>
+                          <div className="font-medium text-blue-900">{estimate.rounds}</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
             
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowTournamentDialog(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTournamentDialog(false)}>
                 Cancel
-              </Button>
-              <Button onClick={generateTournament} disabled={loading || tournamentForm.team_ids.length < 2}>
-                {loading ? 'Generating...' : 'Generate Tournament'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </Button>
+            <Button onClick={generateTournament} disabled={loading || tournamentForm.team_ids.length < 2}>
+              {loading ? 'Generating...' : 'Generate Tournament'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

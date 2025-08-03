@@ -1,10 +1,11 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AddressSearch } from "@/components/ui/address-search"
-import { formatPostalCode } from "@/lib/address-utils"
+import React from 'react'
+
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { AddressSearch } from '@/components/ui/address-search'
+import { formatPostalCode } from '@/lib/address-utils'
 
 interface AddressFieldGroupProps {
   addressValue?: string
@@ -24,14 +25,14 @@ interface AddressFieldGroupProps {
   addressSearchPlaceholder?: string
   className?: string
   disabled?: boolean
-  layout?: "stacked" | "grid"
+  layout?: 'stacked' | 'grid'
 }
 
 export function AddressFieldGroup({
-  addressValue = "",
-  cityValue = "",
-  provinceValue = "AB",
-  postalCodeValue = "",
+  addressValue = '',
+  cityValue = '',
+  provinceValue = 'AB',
+  postalCodeValue = '',
   onAddressChange,
   onCityChange,
   onProvinceChange,
@@ -42,10 +43,10 @@ export function AddressFieldGroup({
   provinceRequired = false,
   postalCodeRequired = false,
   showAddressSearch = true,
-  addressSearchPlaceholder = "Search for address...",
-  className = "",
+  addressSearchPlaceholder = 'Search for address...',
+  className = '',
   disabled = false,
-  layout = "grid"
+  layout = 'grid'
 }: AddressFieldGroupProps) {
   const handleAddressSelect = (address: any) => {
     if (onAddressSelect) {
@@ -76,8 +77,8 @@ export function AddressFieldGroup({
         </div>
       )}
 
-      <div className={layout === "grid" ? "grid grid-cols-3 gap-4" : "space-y-4"}>
-        <div className={layout === "grid" ? "col-span-2" : ""}>
+      <div className={layout === 'grid' ? 'grid grid-cols-3 gap-4' : 'space-y-4'}>
+        <div className={layout === 'grid' ? 'col-span-2' : ''}>
           <div className="space-y-2">
             <Label htmlFor="streetAddress">Street Address</Label>
             <Input
@@ -148,7 +149,7 @@ interface SimpleAddressFieldsProps {
 export function SimpleAddressFields({ 
   required = false, 
   disabled = false, 
-  className = "",
+  className = '',
   showSearch = true
 }: SimpleAddressFieldsProps) {
   return (

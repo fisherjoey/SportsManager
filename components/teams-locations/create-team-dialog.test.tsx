@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
 import { CreateTeamDialog } from './create-team-dialog'
 
 const mockOnOpenChange = jest.fn()
@@ -9,7 +10,7 @@ const mockOnCreateTeam = jest.fn()
 const defaultProps = {
   open: false,
   onOpenChange: mockOnOpenChange,
-  onCreateTeam: mockOnCreateTeam,
+  onCreateTeam: mockOnCreateTeam
 }
 
 describe('CreateTeamDialog', () => {
@@ -151,8 +152,8 @@ describe('CreateTeamDialog', () => {
         isActive: true,
         colors: {
           primary: '#000000',
-          secondary: '#FFFFFF',
-        },
+          secondary: '#FFFFFF'
+        }
       })
     })
   })

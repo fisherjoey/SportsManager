@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import * as React from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   ColumnDef as TanstackColumnDef,
   ColumnFiltersState,
@@ -14,24 +14,25 @@ import {
   getSortedRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  useReactTable,
-} from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Calendar as CalendarIcon, Download, Upload } from "lucide-react"
-import { DataTableToolbar } from "@/components/data-table/DataTableToolbar"
-import { DataTableViewOptions } from "@/components/data-table/DataTableViewOptions"
-import { DataTablePagination } from "@/components/data-table/DataTablePagination"
-import { GameMobileCard } from "@/components/data-table/GameMobileCard"
-import { RefereeMobileCard } from "@/components/data-table/RefereeMobileCard"
-import { Calendar } from "@/components/ui/calendar"
-import { format, isValid, parseISO } from "date-fns"
+  useReactTable
+} from '@tanstack/react-table'
+import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Calendar as CalendarIcon, Download, Upload } from 'lucide-react'
+import { format, isValid, parseISO } from 'date-fns'
 import Papa from 'papaparse'
-import { getTeamSearchTerms } from "@/lib/team-utils"
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DataTableToolbar } from '@/components/data-table/DataTableToolbar'
+import { DataTableViewOptions } from '@/components/data-table/DataTableViewOptions'
+import { DataTablePagination } from '@/components/data-table/DataTablePagination'
+import { GameMobileCard } from '@/components/data-table/GameMobileCard'
+import { RefereeMobileCard } from '@/components/data-table/RefereeMobileCard'
+import { Calendar } from '@/components/ui/calendar'
+import { getTeamSearchTerms } from '@/lib/team-utils'
 
 export interface ColumnDef<T> {
   id: string
@@ -52,7 +53,7 @@ interface FilterableTableProps<T> {
   onAssignReferee?: (game: any) => void
   onEditReferee?: (referee: any) => void
   onViewProfile?: (referee: any) => void
-  mobileCardType?: "game" | "referee" | "team" | "location"
+  mobileCardType?: 'game' | 'referee' | 'team' | 'location'
   enableViewToggle?: boolean
   enableCSV?: boolean
   onDataImport?: (newData: T[]) => void
@@ -62,14 +63,14 @@ interface FilterableTableProps<T> {
 export function FilterableTable<T extends Record<string, any>>({
   data,
   columns,
-  emptyMessage = "No data found",
-  className = "",
-  searchKey = "name",
+  emptyMessage = 'No data found',
+  className = '',
+  searchKey = 'name',
   loading = false,
   onAssignReferee,
   onEditReferee,
   onViewProfile,
-  mobileCardType = "game",
+  mobileCardType = 'game',
   enableViewToggle = true,
   enableCSV = false,
   onDataImport,
@@ -95,8 +96,8 @@ export function FilterableTable<T extends Record<string, any>>({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(storedState?.columnFilters || [])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(storedState?.columnVisibility || {})
   const [rowSelection, setRowSelection] = useState({})
-  const [globalFilter, setGlobalFilter] = useState(storedState?.globalFilter || "")
-  const [viewMode, setViewMode] = useState<"table" | "cards">(storedState?.viewMode || "table")
+  const [globalFilter, setGlobalFilter] = useState(storedState?.globalFilter || '')
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(storedState?.viewMode || 'table')
 
   // CSV functionality
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -135,6 +136,7 @@ export function FilterableTable<T extends Record<string, any>>({
     })
     return initialFilters
   })
+
 
   // CSV Export functionality
   const handleExportCSV = () => {
@@ -177,19 +179,21 @@ export function FilterableTable<T extends Record<string, any>>({
       // Generate CSV using Papa Parse
       const csv = Papa.unparse(exportData)
 
-      // Create download link
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      const link = document.createElement('a')
-      
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob)
-        link.setAttribute('href', url)
-        const filename = csvFilename || `${mobileCardType}-export-${new Date().toISOString().split('T')[0]}.csv`
-        link.setAttribute('download', filename)
-        link.style.visibility = 'hidden'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      // Create download link (client-side only)
+      if (typeof window !== 'undefined') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob)
+          link.setAttribute('href', url)
+          const filename = csvFilename || `${mobileCardType}-export-${new Date().toISOString().split('T')[0]}.csv`
+          link.setAttribute('download', filename)
+          link.style.visibility = 'hidden'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        }
       }
     } catch (error) {
       console.error('Export error:', error)
@@ -283,8 +287,8 @@ export function FilterableTable<T extends Record<string, any>>({
     const hasActiveFilter = column.filterType === 'search' 
       ? currentValue && currentValue !== '' 
       : column.filterType === 'date'
-      ? currentValue instanceof Date
-      : Array.isArray(currentValue) && currentValue.length > 0
+        ? currentValue instanceof Date
+        : Array.isArray(currentValue) && currentValue.length > 0
 
     return (
       <Popover>
@@ -314,8 +318,8 @@ export function FilterableTable<T extends Record<string, any>>({
                     const newValue = column.filterType === 'search' 
                       ? '' 
                       : column.filterType === 'date'
-                      ? undefined
-                      : []
+                        ? undefined
+                        : []
                     setColumnLevelFilters(prev => ({
                       ...prev,
                       [column.id]: newValue
@@ -386,7 +390,7 @@ export function FilterableTable<T extends Record<string, any>>({
                         className="w-full h-8 px-2 text-xs justify-start font-normal"
                       >
                         <CalendarIcon className="mr-2 h-3 w-3" />
-                        {currentValue instanceof Date ? format(currentValue, "MMM dd, yyyy") : "Pick date"}
+                        {currentValue instanceof Date ? format(currentValue, 'MMM dd, yyyy') : 'Pick date'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -406,10 +410,10 @@ export function FilterableTable<T extends Record<string, any>>({
                   </Popover>
                   <Input
                     type="date"
-                    value={currentValue instanceof Date ? format(currentValue, "yyyy-MM-dd") : ""}
+                    value={currentValue instanceof Date ? format(currentValue, 'yyyy-MM-dd') : ''}
                     onChange={(e) => {
                       const dateValue = e.target.value
-                      if (dateValue === "") {
+                      if (dateValue === '') {
                         setColumnLevelFilters(prev => ({
                           ...prev,
                           [column.id]: undefined
@@ -435,21 +439,17 @@ export function FilterableTable<T extends Record<string, any>>({
                 <div className="space-y-2">
                   <div className="max-h-48 overflow-y-auto space-y-1">
                     {column.filterOptions?.filter(option => option.value !== 'all').map((option) => {
-                      const isSelected = Array.isArray(currentValue) && currentValue.includes(option.value)
+                      const currentArray = Array.isArray(currentValue) ? currentValue : []
+                      const isSelected = currentArray.includes(option.value)
                       return (
                         <div key={option.value} className="flex items-center space-x-2">
                           <Checkbox
                             id={`${column.id}-${option.value}`}
-                            checked={isSelected}
+                            checked={Boolean(isSelected)}
                             onCheckedChange={(checked) => {
-                              const currentArray = Array.isArray(currentValue) ? currentValue : []
-                              let newValue: string[]
-                              
-                              if (checked) {
-                                newValue = [...currentArray, option.value]
-                              } else {
-                                newValue = currentArray.filter(v => v !== option.value)
-                              }
+                              const newValue = checked === true
+                                ? [...currentArray, option.value]
+                                : currentArray.filter(v => v !== option.value)
                               
                               setColumnLevelFilters(prev => ({
                                 ...prev,
@@ -579,7 +579,7 @@ export function FilterableTable<T extends Record<string, any>>({
         }
         
         return true
-      },
+      }
     }))
   }, [columns])
 
@@ -609,7 +609,7 @@ export function FilterableTable<T extends Record<string, any>>({
       columnFilters,
       columnVisibility,
       rowSelection,
-      globalFilter,
+      globalFilter
     },
     enableRowSelection: true,
     onSortingChange: setSorting,
@@ -660,11 +660,11 @@ export function FilterableTable<T extends Record<string, any>>({
       
       const searchableText = searchTerms
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase()
         
       return searchableText.includes(filterValue.toLowerCase())
-    },
+    }
   })
 
   if (loading) {
@@ -694,7 +694,7 @@ export function FilterableTable<T extends Record<string, any>>({
       <div className="space-y-4">
         {filteredData.map((row) => {
           const item = row.original
-          if (mobileCardType === "game") {
+          if (mobileCardType === 'game') {
             return (
               <GameMobileCard
                 key={row.id}
@@ -702,7 +702,7 @@ export function FilterableTable<T extends Record<string, any>>({
                 onAssign={onAssignReferee}
               />
             )
-          } else if (mobileCardType === "referee") {
+          } else if (mobileCardType === 'referee') {
             return (
               <RefereeMobileCard
                 key={row.id}
@@ -786,17 +786,17 @@ export function FilterableTable<T extends Record<string, any>>({
               <DataTableViewOptions table={table} />
               <div className="flex items-center rounded-md border">
                 <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setViewMode("table")}
+                  onClick={() => setViewMode('table')}
                   className="rounded-r-none"
                 >
                   <TableIcon className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={viewMode === "cards" ? "default" : "ghost"}
+                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setViewMode("cards")}
+                  onClick={() => setViewMode('cards')}
                   className="rounded-l-none"
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -808,7 +808,7 @@ export function FilterableTable<T extends Record<string, any>>({
       </div>
 
       {/* Content */}
-      {viewMode === "cards" ? (
+      {viewMode === 'cards' ? (
         renderMobileCards()
       ) : (
         <div className="rounded-md border">
@@ -821,9 +821,9 @@ export function FilterableTable<T extends Record<string, any>>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -834,7 +834,7 @@ export function FilterableTable<T extends Record<string, any>>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
+                    data-state={row.getIsSelected() && 'selected'}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

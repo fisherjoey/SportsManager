@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Clock, Play, Settings, CheckCircle2, XCircle, AlertCircle, BarChart3, Plus, Brain, Calculator } from 'lucide-react'
+
 import { apiClient, AIAssignmentRule, AIAssignmentRuleRun } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,11 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AutoHidingTabs, AutoHidingTabsContent, AutoHidingTabsList, AutoHidingTabsTrigger } from '@/components/ui/auto-hiding-tabs'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { Clock, Play, Pause, Settings, Eye, Calendar, CheckCircle2, XCircle, AlertCircle, BarChart3, Plus, Brain, Calculator } from 'lucide-react'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
 
@@ -28,7 +29,7 @@ export default function AIAssignmentsPage() {
   const [showRunRule, setShowRunRule] = useState(false)
   const [selectedResult, setSelectedResult] = useState<AIAssignmentRuleRun | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<any>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
@@ -61,7 +62,7 @@ export default function AIAssignmentsPage() {
       }
     } catch (err) {
       setError('Failed to load AI assignment rules')
-      console.error('Error loading rules:', err)
+      // console.error('Error loading rules:', err)
     } finally {
       setLoading(false)
     }
@@ -79,7 +80,7 @@ export default function AIAssignmentsPage() {
       }
       setResults(allResults.sort((a, b) => new Date(b.run_date).getTime() - new Date(a.run_date).getTime()))
     } catch (err) {
-      console.error('Error loading results:', err)
+      // console.error('Error loading results:', err)
     }
   }
 
@@ -91,7 +92,7 @@ export default function AIAssignmentsPage() {
         setAnalytics(response.data)
       }
     } catch (err) {
-      console.error('Error loading analytics:', err)
+      // console.error('Error loading analytics:', err)
     } finally {
       setAnalyticsLoading(false)
     }
@@ -161,68 +162,68 @@ export default function AIAssignmentsPage() {
 
       setResults([
         {
-        id: '1',
-        rule_id: '1',
-        rule_name: 'Weekly Community Games',
-        run_date: '2024-12-01 10:00',
-        status: 'success',
-        games_processed: 26,
-        assignments_created: 24,
-        conflicts_found: 2,
-        duration_seconds: 4.2,
-        ai_system_used: 'algorithmic',
-        context_comments: ['Partner preference: John & Jane work well together', 'Bob requested local games only'],
-        run_details: { 
-          assignments: [
-            {
-              gameId: 'g1',
-              gameInfo: 'Team Alpha vs Team Beta - Dec 8, 2:00 PM',
-              assignedReferees: [
-                { 
-                  refereeId: 'r1', 
-                  refereeName: 'John Doe', 
-                  position: 'Referee 1', 
-                  confidence: 0.92,
-                  reasoning: 'High skill match, close proximity (5km), preferred partner available'
-                },
-                { 
-                  refereeId: 'r2', 
-                  refereeName: 'Jane Smith', 
-                  position: 'Referee 2', 
-                  confidence: 0.87,
-                  reasoning: 'Good experience level, forms preferred pair with John'
-                }
-              ],
-              notes: 'Assigned preferred referee pair based on past performance'
-            },
-            {
-              gameId: 'g2',
-              gameInfo: 'Team Charlie vs Team Delta - Dec 8, 4:00 PM',
-              assignedReferees: [
-                { 
-                  refereeId: 'r3', 
-                  refereeName: 'Bob Wilson', 
-                  position: 'Referee 1', 
-                  confidence: 0.89,
-                  reasoning: 'Senior level referee, local to venue, requested this type of game'
-                }
-              ],
-              conflicts: ['No available referees for Referee 2 position - all other refs assigned or unavailable'],
-              notes: 'Partial assignment - need to find second referee manually'
-            }
-          ]
+          id: '1',
+          rule_id: '1',
+          run_date: '2024-12-01 10:00',
+          status: 'success',
+          games_processed: 26,
+          assignments_created: 24,
+          conflicts_found: 2,
+          duration_seconds: 4.2,
+          ai_system_used: 'algorithmic',
+          context_comments: ['Partner preference: John & Jane work well together', 'Bob requested local games only'],
+          run_details: { 
+            assignments: [
+              {
+                gameId: 'g1',
+                gameInfo: 'Team Alpha vs Team Beta - Dec 8, 2:00 PM',
+                assignedReferees: [
+                  { 
+                    refereeId: 'r1', 
+                    refereeName: 'John Doe', 
+                    position: 'Referee 1', 
+                    confidence: 0.92,
+                    reasoning: 'High skill match, close proximity (5km), preferred partner available'
+                  },
+                  { 
+                    refereeId: 'r2', 
+                    refereeName: 'Jane Smith', 
+                    position: 'Referee 2', 
+                    confidence: 0.87,
+                    reasoning: 'Good experience level, forms preferred pair with John'
+                  }
+                ],
+                notes: 'Assigned preferred referee pair based on past performance'
+              },
+              {
+                gameId: 'g2',
+                gameInfo: 'Team Charlie vs Team Delta - Dec 8, 4:00 PM',
+                assignedReferees: [
+                  { 
+                    refereeId: 'r3', 
+                    refereeName: 'Bob Wilson', 
+                    position: 'Referee 1', 
+                    confidence: 0.89,
+                    reasoning: 'Senior level referee, local to venue, requested this type of game'
+                  }
+                ],
+                conflicts: ['No available referees for Referee 2 position - all other refs assigned or unavailable'],
+                notes: 'Partial assignment - need to find second referee manually'
+              }
+            ],
+            conflicts: ['No available referees for Referee 2 position - all other refs assigned or unavailable']
+          }
         }
-      }
-    ])
+      ])
     }
   }, [])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'success': return <CheckCircle2 className="h-4 w-4 text-green-500" />
-      case 'error': return <XCircle className="h-4 w-4 text-red-500" />
-      case 'partial': return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      default: return <Clock className="h-4 w-4 text-gray-400" />
+    case 'success': return <CheckCircle2 className="h-4 w-4 text-green-500" />
+    case 'error': return <XCircle className="h-4 w-4 text-red-500" />
+    case 'partial': return <AlertCircle className="h-4 w-4 text-yellow-500" />
+    default: return <Clock className="h-4 w-4 text-gray-400" />
     }
   }
 
@@ -305,8 +306,8 @@ export default function AIAssignmentsPage() {
                           {rule.schedule_type === 'manual' 
                             ? 'Manual' 
                             : rule.schedule_type === 'recurring'
-                            ? `${rule.frequency} at ${rule.schedule_time}${rule.end_date ? ` (until ${new Date(rule.end_date).toLocaleDateString()})` : ''}`
-                            : rule.next_run}
+                              ? `${rule.frequency} at ${rule.schedule_time}${rule.end_date ? ` (until ${new Date(rule.end_date).toLocaleDateString()})` : ''}`
+                              : rule.next_run}
                         </span>
                       </div>
                     </div>
@@ -346,7 +347,7 @@ export default function AIAssignmentsPage() {
           <div className="grid gap-4">
             {results.map((result) => (
               <Card key={result.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedResult(result)}>
+                onClick={() => setSelectedResult(result)}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -640,8 +641,8 @@ function CreateRuleForm({ onClose, onRuleCreated }: { onClose: () => void, onRul
         : ''
       
       return (formData.frequency === 'daily' ? `Runs daily at ${formData.time}` : 
-              formData.frequency === 'weekly' ? `Runs every ${formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1)} at ${formData.time}` :
-              `Runs on the ${formData.dayOfMonth === 1 ? '1st' : formData.dayOfMonth === 2 ? '2nd' : formData.dayOfMonth === 3 ? '3rd' : `${formData.dayOfMonth}th`} of each month at ${formData.time}`) + dateRangeText
+        formData.frequency === 'weekly' ? `Runs every ${formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1)} at ${formData.time}` :
+          `Runs on the ${formData.dayOfMonth === 1 ? '1st' : formData.dayOfMonth === 2 ? '2nd' : formData.dayOfMonth === 3 ? '3rd' : `${formData.dayOfMonth}th`} of each month at ${formData.time}`) + dateRangeText
     } else if (formData.scheduleType === 'one-time') {
       return formData.specificDate ? `Will run once on ${new Date(formData.specificDate).toLocaleString()}` : 'Will run once at the specified date and time'
     }
@@ -707,7 +708,7 @@ function CreateRuleForm({ onClose, onRuleCreated }: { onClose: () => void, onRul
         onClose()
       }
     } catch (error) {
-      console.error('Error creating rule:', error)
+      // console.error('Error creating rule:', error)
       // You might want to show a toast notification here
     } finally {
       setLoading(false)
@@ -1091,7 +1092,7 @@ function RunRuleForm({ rule, onClose, onRunCompleted }: { rule: AIAssignmentRule
         onClose()
       }
     } catch (error) {
-      console.error('Error running rule:', error)
+      // console.error('Error running rule:', error)
       // You might want to show a toast notification here
     } finally {
       setIsRunning(false)

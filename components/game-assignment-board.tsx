@@ -1,20 +1,21 @@
-"use client"
+'use client'
 
-import { useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, MapPin, Users, Upload, Download, Plus, Trash2, Bot, History, Zap, TrendingUp, Star, CheckCircle, XCircle, Brain, Repeat, RotateCcw, GamepadIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
-import { useToast } from "@/components/ui/use-toast"
-import { AssignChunkDialog } from "@/components/assign-chunk-dialog"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
+import { useState, useRef } from 'react'
+import { Calendar, Clock, MapPin, Users, Upload, Download, Plus, Trash2, Bot, History, Zap, TrendingUp, Star, CheckCircle, XCircle, Brain, Repeat, RotateCcw, GamepadIcon } from 'lucide-react'
 import Papa from 'papaparse'
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import { mockGames, mockReferees, type Game, type Referee } from '@/lib/mock-data'
+import { useToast } from '@/components/ui/use-toast'
+import { AssignChunkDialog } from '@/components/assign-chunk-dialog'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 
 interface GameChunk {
   id: string
@@ -61,9 +62,9 @@ export function GameAssignmentBoard() {
   const [selectedGames, setSelectedGames] = useState<string[]>([])
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [selectedChunk, setSelectedChunk] = useState<GameChunk | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterLocation, setFilterLocation] = useState("all")
-  const [filterDate, setFilterDate] = useState("all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterLocation, setFilterLocation] = useState('all')
+  const [filterDate, setFilterDate] = useState('all')
   
   // New state for AI and historic features
   const [aiSuggestions, setAISuggestions] = useState<AISuggestion[]>([])
@@ -95,17 +96,17 @@ export function GameAssignmentBoard() {
 
     if (!canChunk) {
       toast({
-        title: "Invalid Selection",
-        description: "Games must be at the same location and date to be chunked together",
-        variant: "destructive",
+        title: 'Invalid Selection',
+        description: 'Games must be at the same location and date to be chunked together',
+        variant: 'destructive'
       })
       return
     }
 
     // Sort games by time
     const sortedGames = selectedGameObjects.sort((a, b) => {
-      const timeA = a.time || a.startTime || ""
-      const timeB = b.time || b.startTime || ""
+      const timeA = a.time || a.startTime || ''
+      const timeB = b.time || b.startTime || ''
       return timeA.localeCompare(timeB)
     })
 
@@ -114,16 +115,16 @@ export function GameAssignmentBoard() {
       games: sortedGames,
       location: firstGame.location,
       date: firstGame.date,
-      startTime: sortedGames[0].time || sortedGames[0].startTime || "",
-      endTime: sortedGames[sortedGames.length - 1].endTime || sortedGames[sortedGames.length - 1].time || "",
-      totalReferees: sortedGames.reduce((sum, game) => sum + game.refsNeeded, 0),
+      startTime: sortedGames[0].time || sortedGames[0].startTime || '',
+      endTime: sortedGames[sortedGames.length - 1].endTime || sortedGames[sortedGames.length - 1].time || '',
+      totalReferees: sortedGames.reduce((sum, game) => sum + game.refsNeeded, 0)
     }
 
     setChunks((prev) => [...prev, newChunk])
     setSelectedGames([])
     toast({
-      title: "Chunk Created",
-      description: `Created chunk with ${sortedGames.length} games at ${firstGame.location}`,
+      title: 'Chunk Created',
+      description: `Created chunk with ${sortedGames.length} games at ${firstGame.location}`
     })
   }
 
@@ -143,8 +144,8 @@ export function GameAssignmentBoard() {
     Object.values(gamesByLocationAndDate).forEach((locationGames) => {
       if (locationGames.length > 1) {
         const sortedGames = locationGames.sort((a, b) => {
-          const timeA = a.time || a.startTime || ""
-          const timeB = b.time || b.startTime || ""
+          const timeA = a.time || a.startTime || ''
+          const timeB = b.time || b.startTime || ''
           return timeA.localeCompare(timeB)
         })
         const firstGame = sortedGames[0]
@@ -154,9 +155,9 @@ export function GameAssignmentBoard() {
           games: sortedGames,
           location: firstGame.location,
           date: firstGame.date,
-          startTime: sortedGames[0].time || sortedGames[0].startTime || "",
-          endTime: sortedGames[sortedGames.length - 1].endTime || sortedGames[sortedGames.length - 1].time || "",
-          totalReferees: sortedGames.reduce((sum, game) => sum + game.refsNeeded, 0),
+          startTime: sortedGames[0].time || sortedGames[0].startTime || '',
+          endTime: sortedGames[sortedGames.length - 1].endTime || sortedGames[sortedGames.length - 1].time || '',
+          totalReferees: sortedGames.reduce((sum, game) => sum + game.refsNeeded, 0)
         }
 
         newChunks.push(chunk)
@@ -165,8 +166,8 @@ export function GameAssignmentBoard() {
 
     setChunks((prev) => [...prev, ...newChunks])
     toast({
-      title: "Auto-Chunking Complete",
-      description: `Created ${newChunks.length} chunks automatically`,
+      title: 'Auto-Chunking Complete',
+      description: `Created ${newChunks.length} chunks automatically`
     })
   }
 
@@ -178,16 +179,16 @@ export function GameAssignmentBoard() {
     setAssignDialogOpen(false)
     setSelectedChunk(null)
     toast({
-      title: "Chunk Assigned",
-      description: `${referee.name} has been assigned to the chunk at ${chunk.location}`,
+      title: 'Chunk Assigned',
+      description: `${referee.name} has been assigned to the chunk at ${chunk.location}`
     })
   }
 
   const deleteChunk = (chunkId: string) => {
     setChunks((prev) => prev.filter((c) => c.id !== chunkId))
     toast({
-      title: "Chunk Deleted",
-      description: "The game chunk has been removed",
+      title: 'Chunk Deleted',
+      description: 'The game chunk has been removed'
     })
   }
 
@@ -228,14 +229,14 @@ export function GameAssignmentBoard() {
       }
 
       toast({
-        title: "Export Successful",
-        description: `Exported ${games.length} games to CSV file`,
+        title: 'Export Successful',
+        description: `Exported ${games.length} games to CSV file`
       })
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "There was an error exporting the data",
-        variant: "destructive",
+        title: 'Export Failed',
+        description: 'There was an error exporting the data',
+        variant: 'destructive'
       })
     }
   }
@@ -264,9 +265,9 @@ export function GameAssignmentBoard() {
               awayTeam: row['Away Team'] || '',
               location: row['Location'] || '',
               division: row['Division'] || '',
-              level: (row['Level'] as "Recreational" | "Competitive" | "Elite") || 'Recreational',
+              level: (row['Level'] as 'Recreational' | 'Competitive' | 'Elite') || 'Recreational',
               payRate: row['Pay Rate'] || '50.00',
-              status: (row['Status'] as "assigned" | "unassigned" | "up-for-grabs") || 'unassigned',
+              status: (row['Status'] as 'assigned' | 'unassigned' | 'up-for-grabs') || 'unassigned',
               refsNeeded: parseInt(row['Refs Needed']) || 1,
               assignedReferees: row['Assigned Referees'] ? row['Assigned Referees'].split('; ').filter(Boolean) : [],
               notes: row['Notes'] || '',
@@ -284,22 +285,22 @@ export function GameAssignmentBoard() {
           })
 
           toast({
-            title: "Import Successful",
-            description: `Imported ${importedGames.length} games from CSV file`,
+            title: 'Import Successful',
+            description: `Imported ${importedGames.length} games from CSV file`
           })
         } catch (error) {
           toast({
-            title: "Import Failed",
-            description: "There was an error processing the CSV file",
-            variant: "destructive",
+            title: 'Import Failed',
+            description: 'There was an error processing the CSV file',
+            variant: 'destructive'
           })
         }
       },
       error: (error) => {
         toast({
-          title: "Import Failed",
+          title: 'Import Failed',
           description: `Error reading file: ${error.message}`,
-          variant: "destructive",
+          variant: 'destructive'
         })
       }
     })
@@ -350,8 +351,8 @@ export function GameAssignmentBoard() {
     setShowAIPanel(true)
     
     toast({
-      title: "AI Suggestions Generated",
-      description: `Generated ${mockSuggestions.length} assignment suggestions`,
+      title: 'AI Suggestions Generated',
+      description: `Generated ${mockSuggestions.length} assignment suggestions`
     })
   }
 
@@ -393,8 +394,8 @@ export function GameAssignmentBoard() {
   const acceptAISuggestion = (suggestion: AISuggestion) => {
     // TODO: Implement actual assignment logic
     toast({
-      title: "Suggestion Accepted",
-      description: `AI suggestion accepted with ${Math.round(suggestion.confidence * 100)}% confidence`,
+      title: 'Suggestion Accepted',
+      description: `AI suggestion accepted with ${Math.round(suggestion.confidence * 100)}% confidence`
     })
     
     // Remove from suggestions
@@ -404,16 +405,16 @@ export function GameAssignmentBoard() {
   const rejectAISuggestion = (suggestion: AISuggestion) => {
     setAISuggestions(prev => prev.filter(s => s.id !== suggestion.id))
     toast({
-      title: "Suggestion Rejected",
-      description: "AI suggestion has been dismissed",
+      title: 'Suggestion Rejected',
+      description: 'AI suggestion has been dismissed'
     })
   }
 
   const repeatHistoricPattern = (pattern: HistoricPattern) => {
     // TODO: Implement pattern repetition logic
     toast({
-      title: "Pattern Applied",
-      description: `Applied historic pattern for ${pattern.refereeName}`,
+      title: 'Pattern Applied',
+      description: `Applied historic pattern for ${pattern.refereeName}`
     })
   }
 
@@ -425,8 +426,8 @@ export function GameAssignmentBoard() {
       homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       awayTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLocation = filterLocation === "all" || game.location === filterLocation
-    const matchesDate = filterDate === "all" || game.date === filterDate
+    const matchesLocation = filterLocation === 'all' || game.location === filterLocation
+    const matchesDate = filterDate === 'all' || game.date === filterDate
 
     return matchesSearch && matchesLocation && matchesDate
   })
@@ -470,10 +471,10 @@ export function GameAssignmentBoard() {
           <button
             onClick={() => setActiveTab('games')}
             className={cn(
-              "whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm",
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'games'
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
             <Calendar className="h-4 w-4 inline mr-2" />
@@ -482,10 +483,10 @@ export function GameAssignmentBoard() {
           <button
             onClick={() => setActiveTab('chunks')}
             className={cn(
-              "whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm",
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'chunks'
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
             <Users className="h-4 w-4 inline mr-2" />
@@ -494,10 +495,10 @@ export function GameAssignmentBoard() {
           <button
             onClick={() => setActiveTab('ai')}
             className={cn(
-              "whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm",
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'ai'
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
             <Bot className="h-4 w-4 inline mr-2" />
@@ -506,10 +507,10 @@ export function GameAssignmentBoard() {
           <button
             onClick={() => setActiveTab('historic')}
             className={cn(
-              "whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm",
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'historic'
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
             <History className="h-4 w-4 inline mr-2" />
@@ -632,8 +633,8 @@ export function GameAssignmentBoard() {
                   <Card
                     key={game.id}
                     className={cn(
-                      "cursor-pointer transition-colors",
-                      selectedGames.includes(game.id) && "ring-2 ring-blue-500 bg-blue-50",
+                      'cursor-pointer transition-colors',
+                      selectedGames.includes(game.id) && 'ring-2 ring-blue-500 bg-blue-50',
                     )}
                     onClick={() => handleGameSelect(game.id)}
                   >
@@ -644,11 +645,11 @@ export function GameAssignmentBoard() {
                             <Badge variant="outline">{game.division}</Badge>
                             <Badge
                               variant={
-                                game.status === "assigned"
-                                  ? "default"
-                                  : game.status === "up-for-grabs"
-                                    ? "secondary"
-                                    : "destructive"
+                                game.status === 'assigned'
+                                  ? 'default'
+                                  : game.status === 'up-for-grabs'
+                                    ? 'secondary'
+                                    : 'destructive'
                               }
                             >
                               {game.status}
@@ -738,7 +739,7 @@ export function GameAssignmentBoard() {
                           {chunk.location} - {new Date(chunk.date).toLocaleDateString()}
                         </CardTitle>
                         <CardDescription>
-                          {chunk.startTime} - {chunk.endTime} • {chunk.games.length} games • {chunk.totalReferees}{" "}
+                          {chunk.startTime} - {chunk.endTime} • {chunk.games.length} games • {chunk.totalReferees}{' '}
                           referees needed
                         </CardDescription>
                       </div>

@@ -1,6 +1,7 @@
-"use client"
+'use client'
 
 import { MapPin, ExternalLink, Loader2 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { generateGoogleMapsURL, buildFullAddress } from '@/lib/maps'
 import { useDistance } from '@/hooks/use-distance'
@@ -29,7 +30,7 @@ export function LocationWithDistance({
   showDistance = true,
   showMapLink = true,
   className,
-  compact = false,
+  compact = false
 }: LocationWithDistanceProps) {
   // Build full address for distance calculation
   const fullAddress = address && city 
@@ -38,7 +39,7 @@ export function LocationWithDistance({
 
   const { distance, loading, error } = useDistance(fullAddress, {
     enabled: showDistance,
-    userLocation,
+    userLocation
   })
 
   const handleOpenMaps = () => {
@@ -48,7 +49,7 @@ export function LocationWithDistance({
 
   if (compact) {
     return (
-      <div className={cn("flex items-center gap-2", className)}>
+      <div className={cn('flex items-center gap-2', className)}>
         <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
         <span className="text-sm truncate">{location}</span>
         
@@ -76,7 +77,7 @@ export function LocationWithDistance({
   }
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-2', className)}>
       <div className="flex items-start gap-2">
         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">

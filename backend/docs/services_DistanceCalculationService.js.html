@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/DistanceCalculationService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/DistanceCalculationService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const knex = require('../config/database');
+const LocationDataService = require('./LocationDataService');
+
+/**
+ * Service for calculating and managing distances between users and locations
+ * Handles batch calculations, rate limiting, and error recovery
+ */
+class DistanceCalculationService {
+  constructor() {
+    this.locationDataService = new LocationDataService();
+    // Rate limiting: OpenRouteService free tier allows 2000 requests/day
+    this.rateLimitDelay = 1000; // 1 second between requests
+    this.maxRetries = 3;
+    this.retryDelay = 5000; // 5 seconds between retries
+  }
+  
+  /**
+   * Calculate distance between a user and a location
+   * @param {string} userId - User ID
+   * @param {string} locationId - Location ID
+   * @param {Object} options - Calculation options
+   * @returns {Promise&lt;Object>} Distance calculation result
+   */
+  async calculateUserLocationDistance(userId, locationId, options = {}) {
+    try {
+      // Get user location data
+      const userLocation = await this.locationDataService.getUserLocation(userId);
+      if (!userLocation) {
+        throw new Error(`No location data found for user ${userId}`);
+      }
+      
+      if (!userLocation.latitude || !userLocation.longitude) {
+        throw new Error(`User ${userId} location data missing coordinates`);
+      }
+      
+      // Get game location data
+      const gameLocation = await knex('locations')
+        .where('id', locationId)
+        .where('is_active', true)
+        .first();
+        
+      if (!gameLocation) {
+        throw new Error(`Location ${locationId} not found or inactive`);
+      }
+      
+      if (!gameLocation.latitude || !gameLocation.longitude) {
+        throw new Error(`Location ${locationId} missing coordinates`);
+      }
+      
+      // Calculate distance using maps library
+      const { calculateDistanceAndDriveTime } = require('../../lib/maps');
+      
+      const origin = {
+        lat: parseFloat(userLocation.latitude),
+        lng: parseFloat(userLocation.longitude)
+      };
+      
+      const destination = {
+        lat: parseFloat(gameLocation.latitude),
+        lng: parseFloat(gameLocation.longitude)
+      };
+      
+      console.log(`Calculating distance from user ${userId} to location ${locationId}...`);
+      
+      // Perform the distance calculation
+      const distanceResult = await calculateDistanceAndDriveTime(origin, destination);
+      
+      if (!distanceResult) {
+        throw new Error('Distance calculation failed - no route found');
+      }
+      
+      // Prepare distance data for storage
+      const distanceData = {
+        user_id: userId,
+        location_id: locationId,
+        distance_meters: distanceResult.distanceValue,
+        distance_text: distanceResult.distance,
+        drive_time_seconds: distanceResult.durationValue,
+        drive_time_text: distanceResult.duration,
+        drive_time_minutes: Math.round(distanceResult.durationValue / 60),
+        calculation_provider: 'openrouteservice',
+        calculated_at: knex.fn.now(),
+        route_data: JSON.stringify({
+          origin,
+          destination,
+          calculatedAt: new Date().toISOString()
+        }),
+        calculation_successful: true,
+        calculation_error: null,
+        calculation_attempts: 1,
+        last_calculation_attempt: knex.fn.now(),
+        needs_recalculation: false
+      };
+      
+      // Store or update the distance record
+      const existingDistance = await knex('user_location_distances')
+        .where('user_id', userId)
+        .where('location_id', locationId)
+        .first();
+      
+      let savedDistance;
+      if (existingDistance) {
+        [savedDistance] = await knex('user_location_distances')
+          .where('user_id', userId)
+          .where('location_id', locationId)
+          .update({
+            ...distanceData,
+            calculation_attempts: existingDistance.calculation_attempts + 1,
+            updated_at: knex.fn.now()
+          })
+          .returning('*');
+      } else {
+        [savedDistance] = await knex('user_location_distances')
+          .insert(distanceData)
+          .returning('*');
+      }
+      
+      console.log(`Distance calculated: ${distanceResult.distance} (${distanceResult.duration})`);
+      
+      return savedDistance;
+    } catch (error) {
+      // Store failed calculation attempt
+      await this.recordFailedCalculation(userId, locationId, error.message);
+      console.error(`Distance calculation failed for user ${userId} to location ${locationId}:`, error.message);
+      throw error;
+    }
+  }
+  
+  /**
+   * Calculate distances for a user to all locations
+   * @param {string} userId - User ID
+   * @returns {Promise&lt;Object>} Batch calculation results
+   */
+  async calculateUserDistancesToAllLocations(userId) {
+    try {
+      console.log(`Calculating distances for user ${userId} to all locations...`);
+      
+      // Get all active locations
+      const locations = await knex('locations')
+        .where('is_active', true)
+        .select('id', 'name');
+      
+      const results = [];
+      const errors = [];
+      
+      for (const location of locations) {
+        try {
+          const result = await this.calculateUserLocationDistance(userId, location.id);
+          results.push(result);
+          
+          // Rate limiting delay
+          await this.delay(this.rateLimitDelay);
+        } catch (error) {
+          console.error(`Failed to calculate distance to ${location.name}:`, error.message);
+          errors.push({
+            locationId: location.id,
+            locationName: location.name,
+            error: error.message
+          });
+          
+          // Still apply delay even on error to respect rate limits
+          await this.delay(this.rateLimitDelay);
+        }
+      }
+      
+      console.log(`Distance calculation completed for user ${userId}: ${results.length} successful, ${errors.length} failed`);
+      
+      return {
+        userId,
+        successful: results,
+        failed: errors,
+        totalLocations: locations.length
+      };
+    } catch (error) {
+      console.error(`Batch distance calculation failed for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Calculate distances for all users to a specific location
+   * @param {string} locationId - Location ID
+   * @returns {Promise&lt;Object>} Batch calculation results
+   */
+  async calculateAllUsersDistanceToLocation(locationId) {
+    try {
+      console.log(`Calculating distances for all users to location ${locationId}...`);
+      
+      // Get all users with location data
+      const users = await knex('user_locations')
+        .join('users', 'user_locations.user_id', 'users.id')
+        .where('users.role', 'referee')
+        .whereNotNull('user_locations.latitude')
+        .whereNotNull('user_locations.longitude')
+        .select('user_locations.user_id', 'users.name');
+      
+      const results = [];
+      const errors = [];
+      
+      for (const user of users) {
+        try {
+          const result = await this.calculateUserLocationDistance(user.user_id, locationId);
+          results.push(result);
+          
+          // Rate limiting delay
+          await this.delay(this.rateLimitDelay);
+        } catch (error) {
+          console.error(`Failed to calculate distance for user ${user.name}:`, error.message);
+          errors.push({
+            userId: user.user_id,
+            userName: user.name,
+            error: error.message
+          });
+          
+          // Rate limiting delay even on error
+          await this.delay(this.rateLimitDelay);
+        }
+      }
+      
+      console.log(`Distance calculation completed for location ${locationId}: ${results.length} successful, ${errors.length} failed`);
+      
+      return {
+        locationId,
+        successful: results,
+        failed: errors,
+        totalUsers: users.length
+      };
+    } catch (error) {
+      console.error(`Batch distance calculation failed for location ${locationId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get distances for a user to all locations, with optional filtering
+   * @param {string} userId - User ID
+   * @param {Object} filters - Filtering options
+   * @returns {Promise&lt;Array>} Distance records
+   */
+  async getUserDistances(userId, filters = {}) {
+    try {
+      let query = knex('user_location_distances')
+        .join('locations', 'user_location_distances.location_id', 'locations.id')
+        .where('user_location_distances.user_id', userId)
+        .where('user_location_distances.calculation_successful', true)
+        .where('locations.is_active', true);
+      
+      // Apply filters
+      if (filters.maxDriveTimeMinutes) {
+        query = query.where('user_location_distances.drive_time_minutes', '&lt;=', filters.maxDriveTimeMinutes);
+      }
+      
+      if (filters.maxDistanceMeters) {
+        query = query.where('user_location_distances.distance_meters', '&lt;=', filters.maxDistanceMeters);
+      }
+      
+      if (filters.city) {
+        query = query.where('locations.city', 'ilike', `%${filters.city}%`);
+      }
+      
+      // Select relevant fields
+      query = query.select(
+        'user_location_distances.*',
+        'locations.name as location_name',
+        'locations.address as location_address',
+        'locations.city as location_city'
+      );
+      
+      // Order by drive time
+      query = query.orderBy('user_location_distances.drive_time_minutes', 'asc');
+      
+      const distances = await query;
+      
+      return distances;
+    } catch (error) {
+      console.error(`Error fetching distances for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Record a failed calculation attempt
+   * @param {string} userId - User ID
+   * @param {string} locationId - Location ID
+   * @param {string} errorMessage - Error message
+   */
+  async recordFailedCalculation(userId, locationId, errorMessage) {
+    try {
+      const existingRecord = await knex('user_location_distances')
+        .where('user_id', userId)
+        .where('location_id', locationId)
+        .first();
+      
+      if (existingRecord) {
+        await knex('user_location_distances')
+          .where('user_id', userId)
+          .where('location_id', locationId)
+          .update({
+            calculation_successful: false,
+            calculation_error: errorMessage,
+            calculation_attempts: existingRecord.calculation_attempts + 1,
+            last_calculation_attempt: knex.fn.now(),
+            needs_recalculation: true,
+            updated_at: knex.fn.now()
+          });
+      } else {
+        await knex('user_location_distances')
+          .insert({
+            user_id: userId,
+            location_id: locationId,
+            calculation_successful: false,
+            calculation_error: errorMessage,
+            calculation_attempts: 1,
+            last_calculation_attempt: knex.fn.now(),
+            needs_recalculation: true
+          });
+      }
+    } catch (error) {
+      console.error('Error recording failed calculation:', error);
+    }
+  }
+  
+  /**
+   * Retry failed distance calculations
+   * @param {number} maxRetries - Maximum number of records to retry
+   * @returns {Promise&lt;Object>} Retry results
+   */
+  async retryFailedCalculations(maxRetries = 10) {
+    try {
+      console.log(`Retrying failed distance calculations (max ${maxRetries})...`);
+      
+      const failedCalculations = await knex('user_location_distances')
+        .where('calculation_successful', false)
+        .where('needs_recalculation', true)
+        .where('calculation_attempts', '&lt;', this.maxRetries)
+        .limit(maxRetries)
+        .select('user_id', 'location_id', 'calculation_attempts');
+      
+      const results = [];
+      const errors = [];
+      
+      for (const calc of failedCalculations) {
+        try {
+          const result = await this.calculateUserLocationDistance(calc.user_id, calc.location_id);
+          results.push(result);
+          
+          // Rate limiting delay
+          await this.delay(this.rateLimitDelay);
+        } catch (error) {
+          errors.push({
+            userId: calc.user_id,
+            locationId: calc.location_id,
+            attempts: calc.calculation_attempts,
+            error: error.message
+          });
+          
+          // Rate limiting delay even on error
+          await this.delay(this.rateLimitDelay);
+        }
+      }
+      
+      console.log(`Retry completed: ${results.length} successful, ${errors.length} still failed`);
+      
+      return {
+        successful: results,
+        failed: errors,
+        totalRetried: failedCalculations.length
+      };
+    } catch (error) {
+      console.error('Error retrying failed calculations:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get calculation statistics
+   * @returns {Promise&lt;Object>} Calculation stats
+   */
+  async getCalculationStats() {
+    try {
+      const stats = await knex('user_location_distances')
+        .select(
+          knex.raw('COUNT(*) as total_calculations'),
+          knex.raw('COUNT(*) FILTER (WHERE calculation_successful = true) as successful_calculations'),
+          knex.raw('COUNT(*) FILTER (WHERE calculation_successful = false) as failed_calculations'),
+          knex.raw('COUNT(*) FILTER (WHERE needs_recalculation = true) as need_recalculation'),
+          knex.raw('AVG(drive_time_minutes) FILTER (WHERE calculation_successful = true) as avg_drive_time_minutes'),
+          knex.raw('AVG(distance_meters) FILTER (WHERE calculation_successful = true) as avg_distance_meters')
+        )
+        .first();
+      
+      return {
+        totalCalculations: parseInt(stats.total_calculations),
+        successfulCalculations: parseInt(stats.successful_calculations),
+        failedCalculations: parseInt(stats.failed_calculations),
+        needRecalculation: parseInt(stats.need_recalculation),
+        averageDriveTimeMinutes: parseFloat(stats.avg_drive_time_minutes) || 0,
+        averageDistanceMeters: parseFloat(stats.avg_distance_meters) || 0
+      };
+    } catch (error) {
+      console.error('Error getting calculation stats:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Simple delay function for rate limiting
+   * @param {number} ms - Milliseconds to delay
+   */
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  /**
+   * Initialize distance calculations for all existing users and locations
+   * @returns {Promise&lt;Object>} Initialization results
+   */
+  async initializeAllDistances() {
+    try {
+      console.log('Initializing distance calculations for all users and locations...');
+      
+      const users = await knex('user_locations')
+        .join('users', 'user_locations.user_id', 'users.id')
+        .where('users.role', 'referee')
+        .whereNotNull('user_locations.latitude')
+        .whereNotNull('user_locations.longitude')
+        .select('user_locations.user_id', 'users.name');
+      
+      const locations = await knex('locations')
+        .where('is_active', true)
+        .select('id', 'name');
+      
+      console.log(`Found ${users.length} users and ${locations.length} locations`);
+      console.log(`Total distance calculations needed: ${users.length * locations.length}`);
+      
+      // Calculate rate limiting requirements
+      const totalCalculations = users.length * locations.length;
+      const estimatedTimeMinutes = Math.ceil((totalCalculations * this.rateLimitDelay) / 60000);
+      
+      console.log(`Estimated completion time: ${estimatedTimeMinutes} minutes`);
+      
+      const allResults = [];
+      const allErrors = [];
+      
+      for (const user of users) {
+        try {
+          const userResult = await this.calculateUserDistancesToAllLocations(user.user_id);
+          allResults.push(userResult);
+          
+          console.log(`Progress: Completed ${allResults.length}/${users.length} users`);
+        } catch (error) {
+          console.error(`Failed batch calculation for user ${user.name}:`, error.message);
+          allErrors.push({
+            userId: user.user_id,
+            userName: user.name,
+            error: error.message
+          });
+        }
+      }
+      
+      const totalSuccessful = allResults.reduce((sum, result) => sum + result.successful.length, 0);
+      const totalFailed = allResults.reduce((sum, result) => sum + result.failed.length, 0) + allErrors.length;
+      
+      console.log(`Distance initialization completed: ${totalSuccessful} successful, ${totalFailed} failed`);
+      
+      return {
+        totalUsers: users.length,
+        totalLocations: locations.length,
+        totalCalculations: totalCalculations,
+        successfulCalculations: totalSuccessful,
+        failedCalculations: totalFailed,
+        userResults: allResults,
+        userErrors: allErrors
+      };
+    } catch (error) {
+      console.error('Error initializing distances:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = DistanceCalculationService;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
