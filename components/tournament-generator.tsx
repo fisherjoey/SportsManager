@@ -55,6 +55,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { useApi, League, Team, Tournament, TournamentFormat } from '@/lib/api'
+import { TournamentDiagram } from '@/components/tournament-diagram'
 
 interface TournamentForm {
   name: string
@@ -836,6 +837,9 @@ export function TournamentGenerator() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Tournament Diagram */}
+              <TournamentDiagram tournament={generatedTournament} />
 
               {/* Games Preview */}
               <Card>
