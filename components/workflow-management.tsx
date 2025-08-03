@@ -1,10 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Workflow, 
   Play, 
@@ -17,6 +13,11 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 
@@ -37,7 +38,7 @@ interface WorkflowData {
 export function WorkflowManagement() {
   const [workflows, setWorkflows] = useState<WorkflowData[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState('all')
 
   useEffect(() => {
     fetchWorkflows()
@@ -52,40 +53,40 @@ export function WorkflowManagement() {
       // Mock data for demonstration
       const mockWorkflows: WorkflowData[] = [
         {
-          id: "wf-1",
-          name: "Weekly Game Assignment",
-          description: "Automatically assign referees to games based on availability",
-          status: "active",
-          triggerType: "scheduled",
+          id: 'wf-1',
+          name: 'Weekly Game Assignment',
+          description: 'Automatically assign referees to games based on availability',
+          status: 'active',
+          triggerType: 'scheduled',
           steps: 5,
-          createdAt: "2024-01-15",
-          lastRun: "2024-02-01",
-          nextRun: "2024-02-08",
+          createdAt: '2024-01-15',
+          lastRun: '2024-02-01',
+          nextRun: '2024-02-08',
           runCount: 45,
           successRate: 96.7
         },
         {
-          id: "wf-2", 
-          name: "Referee Onboarding",
-          description: "Process new referee registrations and certifications",
-          status: "active",
-          triggerType: "event",
+          id: 'wf-2', 
+          name: 'Referee Onboarding',
+          description: 'Process new referee registrations and certifications',
+          status: 'active',
+          triggerType: 'event',
           steps: 8,
-          createdAt: "2024-01-10",
-          lastRun: "2024-02-03",
+          createdAt: '2024-01-10',
+          lastRun: '2024-02-03',
           runCount: 23,
           successRate: 100
         },
         {
-          id: "wf-3",
-          name: "Monthly Financial Reports",
-          description: "Generate and distribute monthly financial summaries",
-          status: "paused",
-          triggerType: "scheduled",
+          id: 'wf-3',
+          name: 'Monthly Financial Reports',
+          description: 'Generate and distribute monthly financial summaries',
+          status: 'paused',
+          triggerType: 'scheduled',
           steps: 4,
-          createdAt: "2024-01-20",
-          lastRun: "2024-01-31",
-          nextRun: "2024-03-01",
+          createdAt: '2024-01-20',
+          lastRun: '2024-01-31',
+          nextRun: '2024-03-01',
           runCount: 2,
           successRate: 100
         }
@@ -95,9 +96,9 @@ export function WorkflowManagement() {
     } catch (error) {
       console.error('Error fetching workflows:', error)
       toast({
-        title: "Error",
-        description: "Failed to load workflows",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load workflows',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -106,32 +107,32 @@ export function WorkflowManagement() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'paused':
-        return <Pause className="w-4 h-4 text-yellow-500" />
-      case 'draft':
-        return <Clock className="w-4 h-4 text-gray-500" />
-      default:
-        return <AlertTriangle className="w-4 h-4 text-red-500" />
+    case 'active':
+      return <CheckCircle className="w-4 h-4 text-green-500" />
+    case 'paused':
+      return <Pause className="w-4 h-4 text-yellow-500" />
+    case 'draft':
+      return <Clock className="w-4 h-4 text-gray-500" />
+    default:
+      return <AlertTriangle className="w-4 h-4 text-red-500" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-      case 'paused':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-      default:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+    case 'active':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+    case 'paused':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+    case 'draft':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+    default:
+      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
     }
   }
 
   const filteredWorkflows = workflows.filter(workflow => {
-    if (activeTab === "all") return true
+    if (activeTab === 'all') return true
     return workflow.status === activeTab
   })
 
@@ -222,8 +223,8 @@ export function WorkflowManagement() {
                 <Workflow className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No workflows found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {activeTab === "all" ? 
-                    "Create your first workflow to automate business processes" :
+                  {activeTab === 'all' ? 
+                    'Create your first workflow to automate business processes' :
                     `No ${activeTab} workflows found`
                   }
                 </p>

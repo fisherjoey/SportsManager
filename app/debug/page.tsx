@@ -1,13 +1,38 @@
-"use client"
+'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+
+function BrowserInfo() {
+  const [browserInfo, setBrowserInfo] = useState({
+    url: '',
+    userAgent: '',
+    localStorage: ''
+  })
+
+  useEffect(() => {
+    setBrowserInfo({
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      localStorage: Object.keys(localStorage).join(', ')
+    })
+  }, [])
+
+  return (
+    <>
+      <p><strong>URL:</strong> {browserInfo.url || 'Loading...'}</p>
+      <p><strong>User Agent:</strong> {browserInfo.userAgent || 'Loading...'}</p>
+      <p><strong>Local Storage:</strong> {browserInfo.localStorage || 'Loading...'}</p>
+    </>
+  )
+}
 
 export default function DebugPage() {
   const [authStatus, setAuthStatus] = useState('checking...')
-  const [currentUser, setCurrentUser] = useState(null)
+  const [, setCurrentUser] = useState(null)
   const [apiStatus, setApiStatus] = useState('checking...')
 
   useEffect(() => {
@@ -18,7 +43,7 @@ export default function DebugPage() {
         const allTokens = {
           'token': localStorage.getItem('token'),
           'auth_token': localStorage.getItem('auth_token'),
-          'authToken': localStorage.getItem('authToken'),
+          'authToken': localStorage.getItem('authToken')
         }
         
         if (token) {
@@ -70,7 +95,7 @@ export default function DebugPage() {
     { name: 'Expenses', path: '/expenses' },
     { name: 'Expense Approvals', path: '/expense-approvals' },
     { name: 'Budget', path: '/budget' },
-    { name: 'Games', path: '/games' },
+    { name: 'Games', path: '/games' }
   ]
 
   return (
@@ -120,9 +145,7 @@ export default function DebugPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
-            <p><strong>URL:</strong> {typeof window !== 'undefined' ? window.location.href : 'N/A'}</p>
-            <p><strong>User Agent:</strong> {typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'}</p>
-            <p><strong>Local Storage:</strong> {typeof localStorage !== 'undefined' ? Object.keys(localStorage).join(', ') : 'N/A'}</p>
+            <BrowserInfo />
           </div>
         </CardContent>
       </Card>

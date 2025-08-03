@@ -1,14 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   CreditCard,
   User,
@@ -24,6 +16,15 @@ import {
   TrendingUp,
   Info
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 
 interface PaymentMethod {
@@ -99,7 +100,7 @@ export function PaymentMethodSelector({
       toast({
         title: 'Error loading payment methods',
         description: 'Please try again or contact support.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsLoading(false)
@@ -149,7 +150,7 @@ export function PaymentMethodSelector({
       toast({
         title: 'Amount exceeds spending limit',
         description: `This payment method has a limit of $${method.spendingLimit.toFixed(2)}`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -159,7 +160,7 @@ export function PaymentMethodSelector({
       toast({
         title: 'Insufficient budget remaining',
         description: `Only $${method.remainingBudget.toFixed(2)} remaining in budget`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -170,31 +171,31 @@ export function PaymentMethodSelector({
 
   const getMethodIcon = (type: string) => {
     switch (type) {
-      case 'person_reimbursement':
-        return <User className="h-5 w-5" />
-      case 'purchase_order':
-        return <FileText className="h-5 w-5" />
-      case 'credit_card':
-        return <CreditCard className="h-5 w-5" />
-      case 'direct_vendor':
-        return <Building className="h-5 w-5" />
-      default:
-        return <DollarSign className="h-5 w-5" />
+    case 'person_reimbursement':
+      return <User className="h-5 w-5" />
+    case 'purchase_order':
+      return <FileText className="h-5 w-5" />
+    case 'credit_card':
+      return <CreditCard className="h-5 w-5" />
+    case 'direct_vendor':
+      return <Building className="h-5 w-5" />
+    default:
+      return <DollarSign className="h-5 w-5" />
     }
   }
 
   const getMethodTypeLabel = (type: string) => {
     switch (type) {
-      case 'person_reimbursement':
-        return 'Personal Reimbursement'
-      case 'purchase_order':
-        return 'Purchase Order'
-      case 'credit_card':
-        return 'Company Credit Card'
-      case 'direct_vendor':
-        return 'Direct Vendor Payment'
-      default:
-        return 'Payment Method'
+    case 'person_reimbursement':
+      return 'Personal Reimbursement'
+    case 'purchase_order':
+      return 'Purchase Order'
+    case 'credit_card':
+      return 'Company Credit Card'
+    case 'direct_vendor':
+      return 'Direct Vendor Payment'
+    default:
+      return 'Payment Method'
     }
   }
 

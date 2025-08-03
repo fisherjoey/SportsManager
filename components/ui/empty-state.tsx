@@ -1,8 +1,6 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import React from 'react'
 import { 
   FileX, 
   Users, 
@@ -13,7 +11,10 @@ import {
   Search,
   Filter,
   Inbox
-} from "lucide-react"
+} from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface EmptyStateProps {
   icon?: React.ComponentType<{ className?: string }>
@@ -22,14 +23,14 @@ interface EmptyStateProps {
   action?: {
     label: string
     onClick: () => void
-    variant?: "default" | "outline" | "secondary"
+    variant?: 'default' | 'outline' | 'secondary'
   }
   secondaryAction?: {
     label: string
     onClick: () => void
   }
   className?: string
-  size?: "sm" | "md" | "lg"
+  size?: 'sm' | 'md' | 'lg'
 }
 
 export function EmptyState({
@@ -39,26 +40,26 @@ export function EmptyState({
   action,
   secondaryAction,
   className,
-  size = "md"
+  size = 'md'
 }: EmptyStateProps) {
   const sizeClasses = {
     sm: {
-      container: "py-8",
-      icon: "h-12 w-12",
-      title: "text-lg",
-      description: "text-sm"
+      container: 'py-8',
+      icon: 'h-12 w-12',
+      title: 'text-lg',
+      description: 'text-sm'
     },
     md: {
-      container: "py-12",
-      icon: "h-16 w-16", 
-      title: "text-xl",
-      description: "text-base"
+      container: 'py-12',
+      icon: 'h-16 w-16', 
+      title: 'text-xl',
+      description: 'text-base'
     },
     lg: {
-      container: "py-16",
-      icon: "h-20 w-20",
-      title: "text-2xl", 
-      description: "text-lg"
+      container: 'py-16',
+      icon: 'h-20 w-20',
+      title: 'text-2xl', 
+      description: 'text-lg'
     }
   }
 
@@ -66,16 +67,16 @@ export function EmptyState({
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center text-center",
+      'flex flex-col items-center justify-center text-center',
       classes.container,
       className
     )}>
-      <Icon className={cn("text-muted-foreground mb-4", classes.icon)} />
-      <h3 className={cn("font-semibold text-foreground mb-2", classes.title)}>
+      <Icon className={cn('text-muted-foreground mb-4', classes.icon)} />
+      <h3 className={cn('font-semibold text-foreground mb-2', classes.title)}>
         {title}
       </h3>
       {description && (
-        <p className={cn("text-muted-foreground mb-6 max-w-md", classes.description)}>
+        <p className={cn('text-muted-foreground mb-6 max-w-md', classes.description)}>
           {description}
         </p>
       )}
@@ -83,7 +84,7 @@ export function EmptyState({
         <div className="flex items-center gap-2">
           <Button
             onClick={action.onClick}
-            variant={action.variant || "default"}
+            variant={action.variant || 'default'}
           >
             {action.label}
           </Button>
@@ -109,7 +110,7 @@ export function NoGamesEmptyState({ onCreateGame }: { onCreateGame?: () => void 
       title="No games found"
       description="There are no games scheduled yet. Create your first game to get started."
       action={onCreateGame ? {
-        label: "Create Game",
+        label: 'Create Game',
         onClick: onCreateGame
       } : undefined}
     />
@@ -123,7 +124,7 @@ export function NoRefereesEmptyState({ onAddReferee }: { onAddReferee?: () => vo
       title="No referees found"
       description="There are no referees in the system yet. Add your first referee to get started."
       action={onAddReferee ? {
-        label: "Add Referee", 
+        label: 'Add Referee', 
         onClick: onAddReferee
       } : undefined}
     />
@@ -137,7 +138,7 @@ export function NoLocationsEmptyState({ onAddLocation }: { onAddLocation?: () =>
       title="No locations found"
       description="There are no venues configured yet. Add your first location to get started."
       action={onAddLocation ? {
-        label: "Add Location",
+        label: 'Add Location',
         onClick: onAddLocation
       } : undefined}
     />
@@ -151,7 +152,7 @@ export function NoTeamsEmptyState({ onAddTeam }: { onAddTeam?: () => void }) {
       title="No teams found"
       description="There are no teams in the system yet. Add your first team to get started."
       action={onAddTeam ? {
-        label: "Add Team",
+        label: 'Add Team',
         onClick: onAddTeam
       } : undefined}
     />
@@ -161,7 +162,7 @@ export function NoTeamsEmptyState({ onAddTeam }: { onAddTeam?: () => void }) {
 export function NoSearchResultsEmptyState({ 
   onClearFilters,
   searchTerm,
-  entityType = "items"
+  entityType = 'items'
 }: { 
   onClearFilters?: () => void
   searchTerm?: string
@@ -177,9 +178,9 @@ export function NoSearchResultsEmptyState({
           : `No ${entityType} match your current filters. Try adjusting your filters.`
       }
       action={onClearFilters ? {
-        label: "Clear Filters",
+        label: 'Clear Filters',
         onClick: onClearFilters,
-        variant: "outline"
+        variant: 'outline'
       } : undefined}
       size="sm"
     />
@@ -193,7 +194,7 @@ export function NoAssignmentsEmptyState({ onAssignReferees }: { onAssignReferees
       title="No assignments yet"
       description="This game doesn't have any referees assigned yet. Assign referees to get started."
       action={onAssignReferees ? {
-        label: "Assign Referees",
+        label: 'Assign Referees',
         onClick: onAssignReferees
       } : undefined}
       size="sm"
@@ -206,7 +207,7 @@ export function TableEmptyState({
   title, 
   description, 
   onAction,
-  actionLabel = "Add New"
+  actionLabel = 'Add New'
 }: {
   title: string
   description?: string

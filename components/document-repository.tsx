@@ -1,13 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Search, 
   Filter, 
@@ -37,13 +30,21 @@ import {
   X,
   Check
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -51,7 +52,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -211,7 +212,7 @@ export function DocumentRepository() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to load documents',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -328,14 +329,14 @@ export function DocumentRepository() {
 
       toast({
         title: 'Success',
-        description: 'Document downloaded successfully',
+        description: 'Document downloaded successfully'
       })
     } catch (error: any) {
       console.error('Download error:', error)
       toast({
         title: 'Error',
         description: error?.message || 'Failed to download document',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -345,7 +346,7 @@ export function DocumentRepository() {
       toast({
         title: 'Error',
         description: 'Please provide a file and title',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -366,7 +367,7 @@ export function DocumentRepository() {
       
       toast({
         title: 'Success',
-        description: 'Document uploaded successfully',
+        description: 'Document uploaded successfully'
       })
       
       setShowUploadDialog(false)
@@ -386,7 +387,7 @@ export function DocumentRepository() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to upload document',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setUploading(false)
@@ -418,7 +419,7 @@ export function DocumentRepository() {
 
       toast({
         title: 'Success',
-        description: `Document ${approvalDialog.status} successfully`,
+        description: `Document ${approvalDialog.status} successfully`
       })
       
       setShowApprovalDialog(false)
@@ -429,7 +430,7 @@ export function DocumentRepository() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to update document status',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -444,7 +445,7 @@ export function DocumentRepository() {
       
       toast({
         title: 'Success',
-        description: 'Document acknowledged successfully',
+        description: 'Document acknowledged successfully'
       })
       
       setShowAcknowledgmentDialog(false)
@@ -455,7 +456,7 @@ export function DocumentRepository() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to acknowledge document',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }

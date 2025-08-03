@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState } from 'react'
 
-import { useState } from "react"
-import { CustomFormDialog } from "@/components/ui/form-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { ContactFieldGroup } from "@/components/ui/contact-field-group"
-import { calgaryBasketballVenues } from "@/lib/mock-data"
+import { CustomFormDialog } from '@/components/ui/form-dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { ContactFieldGroup } from '@/components/ui/contact-field-group'
+import { calgaryBasketballVenues } from '@/lib/mock-data'
 
 interface CreateTeamDialogProps {
   open: boolean
@@ -19,19 +19,19 @@ interface CreateTeamDialogProps {
 
 export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTeamDialogProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    division: "",
-    location: "",
-    homeVenue: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
+    name: '',
+    division: '',
+    location: '',
+    homeVenue: '',
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
     foundedYear: new Date().getFullYear(),
-    website: "",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    notes: "",
-    isActive: true,
+    website: '',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    notes: '',
+    isActive: true
   })
 
   const handleSubmit = async (data: any) => {
@@ -40,24 +40,24 @@ export function CreateTeamDialog({ open, onOpenChange, onCreateTeam }: CreateTea
       ...data,
       colors: {
         primary: formData.primaryColor,
-        secondary: formData.secondaryColor,
-      },
+        secondary: formData.secondaryColor
+      }
     }
     await onCreateTeam(teamData)
     setFormData({
-      name: "",
-      division: "",
-      location: "",
-      homeVenue: "",
-      contactName: "",
-      contactEmail: "",
-      contactPhone: "",
+      name: '',
+      division: '',
+      location: '',
+      homeVenue: '',
+      contactName: '',
+      contactEmail: '',
+      contactPhone: '',
       foundedYear: new Date().getFullYear(),
-      website: "",
-      primaryColor: "#000000",
-      secondaryColor: "#FFFFFF",
-      notes: "",
-      isActive: true,
+      website: '',
+      primaryColor: '#000000',
+      secondaryColor: '#FFFFFF',
+      notes: '',
+      isActive: true
     })
   }
 

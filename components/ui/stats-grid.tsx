@@ -1,8 +1,9 @@
-"use client"
+'use client'
 
-import { LucideIcon } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { LucideIcon } from 'lucide-react'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface StatItem {
   title: string
@@ -24,9 +25,9 @@ export function StatsGrid({
   className 
 }: StatsGridProps) {
   const gridClass = {
-    2: "md:grid-cols-2",
-    3: "md:grid-cols-3", 
-    4: "md:grid-cols-2 lg:grid-cols-4"
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-3', 
+    4: 'md:grid-cols-2 lg:grid-cols-4'
   }[columns]
 
   return (
@@ -35,7 +36,7 @@ export function StatsGrid({
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            <stat.icon className={cn("h-4 w-4", stat.color || "text-muted-foreground")} />
+            <stat.icon className={cn('h-4 w-4', stat.color || 'text-muted-foreground')} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>

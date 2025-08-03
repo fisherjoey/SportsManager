@@ -1,12 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   DollarSign, 
   TrendingUp, 
@@ -37,12 +31,20 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts'
-import { ReceiptUpload } from './receipt-upload'
-import { ExpenseList } from './expense-list'
-import { BudgetTracker } from './budget-tracker'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+
+import { ReceiptUpload } from './receipt-upload'
+import { ExpenseList } from './expense-list'
+import { BudgetTracker } from './budget-tracker'
 
 interface FinancialMetrics {
   totalExpenses: number
@@ -108,7 +110,7 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
       toast({
         title: 'Error',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -360,7 +362,7 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
                     <div className="flex items-center gap-2">
                       <Badge variant={
                         receipt.status === 'completed' ? 'default' : 
-                        receipt.status === 'processing' ? 'secondary' : 'destructive'
+                          receipt.status === 'processing' ? 'secondary' : 'destructive'
                       }>
                         {receipt.status}
                       </Badge>

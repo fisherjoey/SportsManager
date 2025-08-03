@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,19 +13,20 @@ import {
   getSortedRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  useReactTable,
-} from "@tanstack/react-table"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { LayoutGrid, Table as TableIcon } from "lucide-react"
+  useReactTable
+} from '@tanstack/react-table'
+import { LayoutGrid, Table as TableIcon } from 'lucide-react'
 
-import { DataTablePagination } from "./DataTablePagination"
-import { DataTableToolbar } from "./DataTableToolbar"
-import { MobileFilterSheet } from "./MobileFilterSheet"
-import { GameMobileCard } from "./GameMobileCard"
-import { RefereeMobileCard } from "./RefereeMobileCard"
-import { Game, Team, Referee } from "./types"
-import { formatTeamName } from "@/lib/team-utils"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { formatTeamName } from '@/lib/team-utils'
+
+import { DataTablePagination } from './DataTablePagination'
+import { DataTableToolbar } from './DataTableToolbar'
+import { MobileFilterSheet } from './MobileFilterSheet'
+import { GameMobileCard } from './GameMobileCard'
+import { RefereeMobileCard } from './RefereeMobileCard'
+import { Game, Team, Referee } from './types'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -35,20 +36,20 @@ interface DataTableProps<TData, TValue> {
   onAssignReferee?: (game: Game) => void
   onEditReferee?: (referee: Referee) => void
   onViewProfile?: (referee: Referee) => void
-  mobileCardType?: "game" | "referee"
+  mobileCardType?: 'game' | 'referee'
   enableViewToggle?: boolean
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchKey = "home_team_name",
+  searchKey = 'home_team_name',
   loading = false,
   onAssignReferee,
   onEditReferee,
   onViewProfile,
-  mobileCardType = "game",
-  enableViewToggle = false,
+  mobileCardType = 'game',
+  enableViewToggle = false
 }: DataTableProps<TData, TValue>) {
   // Generate storage key based on table type
   const storageKey = `datatable-${mobileCardType}-state`
@@ -70,14 +71,14 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(storedState?.columnFilters || [])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(storedState?.columnVisibility || {})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [globalFilter, setGlobalFilter] = React.useState(storedState?.globalFilter || "")
+  const [globalFilter, setGlobalFilter] = React.useState(storedState?.globalFilter || '')
   const [startDate, setStartDate] = React.useState<Date | undefined>(
     storedState?.startDate ? new Date(storedState.startDate) : undefined
   )
   const [endDate, setEndDate] = React.useState<Date | undefined>(
     storedState?.endDate ? new Date(storedState.endDate) : undefined
   )
-  const [viewMode, setViewMode] = React.useState<"table" | "cards">(storedState?.viewMode || "table")
+  const [viewMode, setViewMode] = React.useState<'table' | 'cards'>(storedState?.viewMode || 'table')
 
   // Save state to localStorage whenever it changes
   React.useEffect(() => {
@@ -118,7 +119,7 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
-      globalFilter,
+      globalFilter
     },
     enableRowSelection: true,
     onSortingChange: setSorting,
@@ -133,56 +134,56 @@ export function DataTable<TData, TValue>({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: (row, columnId, filterValue) => {
-      if (mobileCardType === "referee") {
+      if (mobileCardType === 'referee') {
         // Referee search functionality
         const searchableText = [
-          row.getValue("name"),
-          row.getValue("email"),
-          row.getValue("phone"),
-          row.getValue("location"),
-          row.getValue("level"),
-          row.getValue("certificationLevel"),
-          ...(row.getValue("certifications") as string[] || []),
-          ...(row.getValue("preferredPositions") as string[] || []),
+          row.getValue('name'),
+          row.getValue('email'),
+          row.getValue('phone'),
+          row.getValue('location'),
+          row.getValue('level'),
+          row.getValue('certificationLevel'),
+          ...(row.getValue('certifications') as string[] || []),
+          ...(row.getValue('preferredPositions') as string[] || [])
         ]
           .filter(Boolean)
-          .join(" ")
+          .join(' ')
           .toLowerCase()
 
         return searchableText.includes(filterValue.toLowerCase())
       } else {
         // Game search functionality
-        const homeTeam = row.getValue("homeTeam") as Team
-        const awayTeam = row.getValue("awayTeam") as Team
+        const homeTeam = row.getValue('homeTeam') as Team
+        const awayTeam = row.getValue('awayTeam') as Team
         const homeTeamName = formatTeamName(homeTeam)
         const awayTeamName = formatTeamName(awayTeam)
         
         const searchableText = [
           homeTeamName,
           awayTeamName,
-          row.getValue("location"),
-          row.getValue("level"),
-          row.getValue("division"),
-          row.getValue("season"),
-          row.getValue("status"),
+          row.getValue('location'),
+          row.getValue('level'),
+          row.getValue('division'),
+          row.getValue('season'),
+          row.getValue('status')
         ]
           .filter(Boolean)
-          .join(" ")
+          .join(' ')
           .toLowerCase()
 
         return searchableText.includes(filterValue.toLowerCase())
       }
-    },
+    }
   })
 
   // Apply date filter to table
   React.useEffect(() => {
     // Check if date column exists before trying to access it
     const columns = table?.getAllColumns()
-    const hasDateColumn = columns?.some(col => col.id === "date")
+    const hasDateColumn = columns?.some(col => col.id === 'date')
     if (!hasDateColumn) return
     
-    const dateColumn = table?.getColumn("date")
+    const dateColumn = table?.getColumn('date')
     if (!dateColumn) return
 
     if (!startDate && !endDate) {
@@ -195,7 +196,7 @@ export function DataTable<TData, TValue>({
 
   const clearAllFilters = () => {
     table.resetColumnFilters()
-    setGlobalFilter("")
+    setGlobalFilter('')
     setStartDate(undefined)
     setEndDate(undefined)
   }
@@ -227,17 +228,17 @@ export function DataTable<TData, TValue>({
           {enableViewToggle && (
             <div className="flex items-center border rounded-md">
               <Button
-                variant={viewMode === "table" ? "default" : "ghost"}
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode("table")}
+                onClick={() => setViewMode('table')}
                 className="rounded-r-none"
               >
                 <TableIcon className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === "cards" ? "default" : "ghost"}
+                variant={viewMode === 'cards' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode("cards")}
+                onClick={() => setViewMode('cards')}
                 className="rounded-l-none"
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -268,7 +269,7 @@ export function DataTable<TData, TValue>({
       </div>
       
       {/* Desktop Table View */}
-      {viewMode === "table" && (
+      {viewMode === 'table' && (
         <div className="hidden lg:block rounded-md border">
           <div className="max-h-[500px] overflow-auto">
             <Table className="table-fixed data-table">
@@ -278,27 +279,27 @@ export function DataTable<TData, TValue>({
                     {headerGroup.headers.map((header, index) => {
                       // Define optimized widths for each column based on content
                       const columnWidths = [
-                        "w-10", // select checkbox - 40px
-                        "w-36", // name - 144px (name + cert level)
-                        "w-48", // contact - 192px (email + phone, longest content)
-                        "w-20", // level - 80px (short badge)
-                        "w-24", // location - 96px (location + radius)
-                        "w-28", // certifications - 112px (cert badges)
-                        "w-20", // status - 80px (available/unavailable)
-                        "w-10", // actions - 40px (just menu button)
-                      ];
+                        'w-10', // select checkbox - 40px
+                        'w-36', // name - 144px (name + cert level)
+                        'w-48', // contact - 192px (email + phone, longest content)
+                        'w-20', // level - 80px (short badge)
+                        'w-24', // location - 96px (location + radius)
+                        'w-28', // certifications - 112px (cert badges)
+                        'w-20', // status - 80px (available/unavailable)
+                        'w-10' // actions - 40px (just menu button)
+                      ]
                       
                       return (
                         <TableHead 
                           key={header.id} 
-                          className={`text-xs font-medium h-10 px-1 ${columnWidths[index] || "w-32"}`}
+                          className={`text-xs font-medium h-10 px-1 ${columnWidths[index] || 'w-32'}`}
                         >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       )
                     })}
@@ -322,26 +323,26 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
+                      data-state={row.getIsSelected() && 'selected'}
                       className="hover:bg-muted/50"
                     >
                       {row.getVisibleCells().map((cell, index) => {
                         // Use the same optimized widths for body cells
                         const columnWidths = [
-                          "w-10", // select checkbox - 40px
-                          "w-36", // name - 144px (name + cert level)
-                          "w-48", // contact - 192px (email + phone, longest content)
-                          "w-20", // level - 80px (short badge)
-                          "w-24", // location - 96px (location + radius)
-                          "w-28", // certifications - 112px (cert badges)
-                          "w-20", // status - 80px (available/unavailable)
-                          "w-10", // actions - 40px (just menu button)
-                        ];
+                          'w-10', // select checkbox - 40px
+                          'w-36', // name - 144px (name + cert level)
+                          'w-48', // contact - 192px (email + phone, longest content)
+                          'w-20', // level - 80px (short badge)
+                          'w-24', // location - 96px (location + radius)
+                          'w-28', // certifications - 112px (cert badges)
+                          'w-20', // status - 80px (available/unavailable)
+                          'w-10' // actions - 40px (just menu button)
+                        ]
                         
                         return (
                           <TableCell 
                             key={cell.id} 
-                            className={`p-1 text-xs align-top ${columnWidths[index] || "w-32"}`}
+                            className={`p-1 text-xs align-top ${columnWidths[index] || 'w-32'}`}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -369,7 +370,7 @@ export function DataTable<TData, TValue>({
       )}
 
       {/* Desktop Card View */}
-      {viewMode === "cards" && (
+      {viewMode === 'cards' && (
         <div className="hidden lg:block space-y-4 max-h-[600px] overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -378,7 +379,7 @@ export function DataTable<TData, TValue>({
             </div>
           ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => {
-              if (mobileCardType === "referee") {
+              if (mobileCardType === 'referee') {
                 return (
                   <RefereeMobileCard
                     key={row.id}
@@ -418,7 +419,7 @@ export function DataTable<TData, TValue>({
           </div>
         ) : table.getRowModel().rows?.length ? (
           table.getRowModel().rows.map((row) => {
-            if (mobileCardType === "referee") {
+            if (mobileCardType === 'referee') {
               return (
                 <RefereeMobileCard
                   key={row.id}

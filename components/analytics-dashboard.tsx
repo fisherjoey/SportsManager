@@ -1,12 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -49,6 +43,13 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
@@ -180,7 +181,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
       toast({
         title: 'Error',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -193,13 +194,13 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
       await loadAnalyticsData()
       toast({
         title: 'Analytics Refreshed',
-        description: 'Latest data has been loaded successfully',
+        description: 'Latest data has been loaded successfully'
       })
     } catch (error) {
       toast({
         title: 'Refresh Failed',
         description: 'Failed to refresh analytics data',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setRefreshing(false)
@@ -208,9 +209,9 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-      case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />
-      case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />
-      default: return <Activity className="h-4 w-4 text-gray-500" />
+    case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />
+    case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />
+    default: return <Activity className="h-4 w-4 text-gray-500" />
     }
   }
 
@@ -253,7 +254,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount)
   }
 

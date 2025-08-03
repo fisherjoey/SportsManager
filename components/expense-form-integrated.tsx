@@ -1,18 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   Upload, 
   FileText, 
@@ -29,6 +17,19 @@ import {
   Send,
   Brain
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 
 interface ExtractedData {
@@ -125,7 +126,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
 
       toast({
         title: 'Receipt Data Extracted',
-        description: `Auto-filled form with data from ${extracted.merchant}. Please review and edit as needed.`,
+        description: `Auto-filled form with data from ${extracted.merchant}. Please review and edit as needed.`
       })
     }
   }, [receiptData, categories])
@@ -182,7 +183,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Invalid file type',
         description: `${file.name} is not a supported file type`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -191,7 +192,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'File too large',
         description: `${file.name} is larger than 10MB`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -235,7 +236,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
             
             toast({
               title: 'Receipt Uploaded Successfully',
-              description: 'Processing receipt data...',
+              description: 'Processing receipt data...'
             })
           } catch (error) {
             console.error('Error fetching receipt details:', error)
@@ -252,7 +253,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Upload Failed',
         description: error.message || 'Failed to upload receipt',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsUploading(false)
@@ -269,7 +270,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Receipt Required',
         description: 'Please upload a receipt first',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -278,7 +279,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Payment Method Required',
         description: 'Please select a payment method',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -287,7 +288,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Business Purpose Required',
         description: 'Please provide a business purpose for this expense',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -311,7 +312,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       
       toast({
         title: 'Expense Created',
-        description: 'Your expense has been submitted successfully',
+        description: 'Your expense has been submitted successfully'
       })
 
       // Reset form
@@ -335,7 +336,7 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
       toast({
         title: 'Submission Failed',
         description: error.message || 'Failed to create expense',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsSubmitting(false)

@@ -1,23 +1,24 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Bell, BellDot, X, Check, AlertCircle, Info, Megaphone } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from 'react'
+import { Bell, BellDot, X, Check, AlertCircle, Info, Megaphone } from 'lucide-react'
+import { format } from 'date-fns'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { apiClient, Communication } from "@/lib/api"
-import { useAuth } from "@/components/auth-provider"
-import { format } from "date-fns"
-import { toast } from "sonner"
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { apiClient, Communication } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
 
 export function NotificationsBell() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Communication[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -71,45 +72,45 @@ export function NotificationsBell() {
 
   const getPriorityIcon = (priority: string) => {
     switch (priority.toLowerCase()) {
-      case 'urgent':
-      case 'high':
-        return <AlertCircle className="h-4 w-4 text-red-500" />
-      case 'medium':
-        return <Info className="h-4 w-4 text-yellow-500" />
-      case 'low':
-        return <Info className="h-4 w-4 text-blue-500" />
-      default:
-        return <Info className="h-4 w-4 text-gray-500" />
+    case 'urgent':
+    case 'high':
+      return <AlertCircle className="h-4 w-4 text-red-500" />
+    case 'medium':
+      return <Info className="h-4 w-4 text-yellow-500" />
+    case 'low':
+      return <Info className="h-4 w-4 text-blue-500" />
+    default:
+      return <Info className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'announcement':
-        return <Megaphone className="h-4 w-4" />
-      case 'assignment':
-        return <Bell className="h-4 w-4" />
-      default:
-        return <Info className="h-4 w-4" />
+    case 'announcement':
+      return <Megaphone className="h-4 w-4" />
+    case 'assignment':
+      return <Bell className="h-4 w-4" />
+    default:
+      return <Info className="h-4 w-4" />
     }
   }
 
   useEffect(() => {
-    if (user) {
+    if (user && isAuthenticated) {
       fetchUnreadCount()
       // Refresh unread count every 30 seconds
       const interval = setInterval(fetchUnreadCount, 30000)
       return () => clearInterval(interval)
     }
-  }, [user])
+  }, [user, isAuthenticated])
 
   useEffect(() => {
-    if (open && notifications.length === 0) {
+    if (open && notifications.length === 0 && isAuthenticated) {
       fetchNotifications()
     }
-  }, [open])
+  }, [open, isAuthenticated])
 
-  if (!user) return null
+  if (!user || !isAuthenticated) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

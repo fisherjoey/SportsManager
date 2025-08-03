@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import React from "react"
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
-import { MixerHorizontalIcon, DragHandleDots2Icon } from "@radix-ui/react-icons"
-import { Table } from "@tanstack/react-table"
+import React from 'react'
+import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu'
+import { MixerHorizontalIcon, DragHandleDots2Icon } from '@radix-ui/react-icons'
+import { Table } from '@tanstack/react-table'
 import {
   DndContext,
   closestCenter,
@@ -11,27 +11,27 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core"
+  DragEndEvent
+} from '@dnd-kit/core'
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable"
+  useSortable
+} from '@dnd-kit/sortable'
 import {
-  CSS,
-} from "@dnd-kit/utilities"
+  CSS
+} from '@dnd-kit/utilities'
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>
@@ -51,13 +51,13 @@ function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) 
     setNodeRef,
     transform,
     transition,
-    isDragging,
+    isDragging
   } = useSortable({ id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : 1
   }
 
   return (
@@ -84,12 +84,12 @@ function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) 
 }
 
 export function DataTableViewOptions<TData>({
-  table,
+  table
 }: DataTableViewOptionsProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+      coordinateGetter: sortableKeyboardCoordinates
     })
   )
 
@@ -98,36 +98,36 @@ export function DataTableViewOptions<TData>({
     .getAllColumns()
     .filter(
       (column) =>
-        typeof column.accessorFn !== "undefined" && column.getCanHide()
+        typeof column.accessorFn !== 'undefined' && column.getCanHide()
     )
 
   // Map column IDs to display names
   const columnNameMap: Record<string, string> = {
-    id: "Game #",
-    homeTeam: "Home Team",
-    awayTeam: "Away Team",
-    date: "Date & Time", 
-    location: "Location",
-    level: "Level",
-    division: "Division",
-    season: "Season",
-    wageMultiplier: "Pay Modifier",
-    status: "Status",
-    notes: "Referees",
+    id: 'Game #',
+    homeTeam: 'Home Team',
+    awayTeam: 'Away Team',
+    date: 'Date & Time', 
+    location: 'Location',
+    level: 'Level',
+    division: 'Division',
+    season: 'Season',
+    wageMultiplier: 'Pay Modifier',
+    status: 'Status',
+    notes: 'Referees',
     // Referee columns
-    name: "Name",
-    contact: "Contact",
-    certifications: "Certifications", 
-    isAvailable: "Status"
+    name: 'Name',
+    contact: 'Contact',
+    certifications: 'Certifications', 
+    isAvailable: 'Status'
   }
 
   // Create ordered column items
   const [columnItems, setColumnItems] = React.useState<ColumnItem[]>(() => 
     allColumns.map((column) => ({
       id: column.id,
-      displayName: columnNameMap[column.id] || column.id.replace(/_/g, " "),
+      displayName: columnNameMap[column.id] || column.id.replace(/_/g, ' '),
       isVisible: column.getIsVisible(),
-      column,
+      column
     }))
   )
 

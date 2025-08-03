@@ -1,11 +1,12 @@
-"use client"
+'use client'
 
 import React from 'react'
+import { AlertTriangle, LogIn } from 'lucide-react'
+import Link from 'next/link'
+
 import { useAuth } from '@/components/auth-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, LogIn } from 'lucide-react'
-import Link from 'next/link'
 
 interface ProtectedRouteProps {
   children: React.ReactNode

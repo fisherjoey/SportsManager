@@ -1,12 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Users, 
   Building2, 
@@ -40,11 +34,19 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+
 import { EmployeeManagement } from './employee-management'
 import { AssetTracking } from './asset-tracking'
 import { DocumentRepository } from './document-repository'
 import { ComplianceTracking } from './compliance-tracking'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface OrganizationalMetrics {
   totalEmployees: number

@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
-import { LoginForm } from "@/components/login-form"
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+import { useAuth } from '@/components/auth-provider'
+import { LoginForm } from '@/components/login-form'
 
 export default function LoginPage() {
   const { isAuthenticated } = useAuth()
@@ -12,7 +13,7 @@ export default function LoginPage() {
   useEffect(() => {
     // If already authenticated, redirect to homepage
     if (isAuthenticated) {
-      router.push("/")
+      router.push('/')
     }
   }, [isAuthenticated, router])
 

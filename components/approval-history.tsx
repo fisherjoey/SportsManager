@@ -1,7 +1,6 @@
-"use client"
+'use client'
 
 import React from 'react'
-import { Badge } from '@/components/ui/badge'
 import { 
   CheckCircle2, 
   XCircle, 
@@ -11,6 +10,8 @@ import {
   ArrowRight,
   AlertTriangle
 } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
 
 interface ApprovalHistoryItem {
   id: string
@@ -31,16 +32,16 @@ interface ApprovalHistoryProps {
 export function ApprovalHistory({ history }: ApprovalHistoryProps) {
   const getDecisionIcon = (decision: string) => {
     switch (decision) {
-      case 'approved':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
-      case 'rejected':
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case 'delegated':
-        return <ArrowRight className="h-4 w-4 text-blue-600" />
-      case 'pending':
-        return <Clock className="h-4 w-4 text-orange-600" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
+    case 'approved':
+      return <CheckCircle2 className="h-4 w-4 text-green-600" />
+    case 'rejected':
+      return <XCircle className="h-4 w-4 text-red-600" />
+    case 'delegated':
+      return <ArrowRight className="h-4 w-4 text-blue-600" />
+    case 'pending':
+      return <Clock className="h-4 w-4 text-orange-600" />
+    default:
+      return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
 

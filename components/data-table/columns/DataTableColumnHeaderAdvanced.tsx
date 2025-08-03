@@ -1,20 +1,20 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   CaretSortIcon,
   EyeNoneIcon,
-  MagnifyingGlassIcon,
-} from "@radix-ui/react-icons"
-import { Column } from "@tanstack/react-table"
-import { Check, ChevronDown, X, Filter } from "lucide-react"
+  MagnifyingGlassIcon
+} from '@radix-ui/react-icons'
+import { Column } from '@tanstack/react-table'
+import { Check, ChevronDown, X, Filter } from 'lucide-react'
 
-import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,14 +22,14 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { DateRangeFilter } from "@/components/data-table/DateRangeFilter"
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { DateRangeFilter } from '@/components/data-table/DateRangeFilter'
 
 interface DataTableColumnHeaderAdvancedProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -50,10 +50,10 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
   filterable = true,
   filterOptions = [],
   filterSections = [],
-  dateRangeFilter = false,
+  dateRangeFilter = false
 }: DataTableColumnHeaderAdvancedProps<TData, TValue>) {
   const [searchValue, setSearchValue] = React.useState(
-    (column.getFilterValue() as string) || ""
+    (column.getFilterValue() as string) || ''
   )
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)
@@ -134,7 +134,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
   }
 
   const clearAllFilters = () => {
-    setSearchValue("")
+    setSearchValue('')
     setStartDate(undefined)
     setEndDate(undefined)
     column.setFilterValue(undefined)
@@ -148,7 +148,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
   const [isColumnMenuOpen, setIsColumnMenuOpen] = React.useState(false)
 
   return (
-    <div className={cn("flex items-center justify-between h-10", className)}>
+    <div className={cn('flex items-center justify-between h-10', className)}>
       <div className="flex items-center space-x-2">
         <Popover open={isColumnMenuOpen} onOpenChange={setIsColumnMenuOpen}>
           <PopoverTrigger asChild>
@@ -190,7 +190,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                         variant="ghost"
                         size="sm"
                         className="absolute right-1 top-0 h-8 w-6 p-0"
-                        onClick={() => handleSearch("")}
+                        onClick={() => handleSearch('')}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -205,7 +205,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                   <label className="text-xs font-medium text-muted-foreground">Sort</label>
                   <div className="flex gap-2">
                     <Button
-                      variant={sortDirection === "asc" ? "default" : "outline"}
+                      variant={sortDirection === 'asc' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => column.toggleSorting(false)}
                       className="text-xs"
@@ -214,7 +214,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                       Ascending
                     </Button>
                     <Button
-                      variant={sortDirection === "desc" ? "default" : "outline"}
+                      variant={sortDirection === 'desc' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => column.toggleSorting(true)}
                       className="text-xs"
@@ -270,14 +270,14 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                                 <div
                                   key={option.id || option.value}
                                   className={cn(
-                                    "flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent",
-                                    isSelected && "bg-accent"
+                                    'flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent',
+                                    isSelected && 'bg-accent'
                                   )}
                                   onClick={() => handleFilterToggle(option.value)}
                                 >
                                   <div className={cn(
-                                    "h-4 w-4 rounded border",
-                                    isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+                                    'h-4 w-4 rounded border',
+                                    isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
                                   )}>
                                     {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                                   </div>
@@ -320,14 +320,14 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
                           <div
                             key={option.id || option.value}
                             className={cn(
-                              "flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent",
-                              isSelected && "bg-accent"
+                              'flex items-center space-x-2 px-2 py-1 rounded cursor-pointer hover:bg-accent',
+                              isSelected && 'bg-accent'
                             )}
                             onClick={() => handleFilterToggle(option.value)}
                           >
                             <div className={cn(
-                              "h-4 w-4 rounded border",
-                              isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+                              'h-4 w-4 rounded border',
+                              isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
                             )}>
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
@@ -407,7 +407,7 @@ export function DataTableColumnHeaderAdvanced<TData, TValue>({
           >
             <Filter className="h-3 w-3 text-primary" />
             <Badge variant="secondary" className="h-4 px-1 text-xs bg-accent text-accent-foreground border-border">
-              {selectedValues.size > 0 ? selectedValues.size : "1"}
+              {selectedValues.size > 0 ? selectedValues.size : '1'}
             </Badge>
           </div>
         )}

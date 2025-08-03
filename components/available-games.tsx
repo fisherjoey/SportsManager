@@ -1,20 +1,21 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, Trophy } from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
-import { useApi, type Game } from "@/lib/api"
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
-import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
+import { useState, useEffect } from 'react'
+import { Search, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, Trophy } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { useAuth } from '@/components/auth-provider'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi, type Game } from '@/lib/api'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
+import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
 
 export function AvailableGames() {
   const { user } = useAuth()
@@ -22,10 +23,10 @@ export function AvailableGames() {
   const api = useApi()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [levelFilter, setLevelFilter] = useState("all")
-  const [distanceFilter, setDistanceFilter] = useState("all")
-  const [refereeLevel, setRefereeLevel] = useState<string>("")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [levelFilter, setLevelFilter] = useState('all')
+  const [distanceFilter, setDistanceFilter] = useState('all')
+  const [refereeLevel, setRefereeLevel] = useState<string>('')
   const [allowedDivisions, setAllowedDivisions] = useState<string[]>([])
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     ageGroups: [],
@@ -49,21 +50,21 @@ export function AvailableGames() {
       
       if (response.success) {
         setGames(response.data.games || [])
-        setRefereeLevel(response.data.referee_level || "")
+        setRefereeLevel(response.data.referee_level || '')
         setAllowedDivisions(response.data.allowed_divisions || [])
       } else if (response.message) {
         toast({
-          variant: "destructive",
-          title: "No level assigned",
-          description: response.message,
+          variant: 'destructive',
+          title: 'No level assigned',
+          description: response.message
         })
       }
     } catch (error) {
       console.error('Failed to fetch available games:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load available games.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load available games.'
       })
     } finally {
       setLoading(false)
@@ -78,9 +79,9 @@ export function AvailableGames() {
       game.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLevel = levelFilter === "all" || game.level === levelFilter
+    const matchesLevel = levelFilter === 'all' || game.level === levelFilter
     // In a real app, you'd calculate actual distance based on user location
-    const matchesDistance = distanceFilter === "all" || true
+    const matchesDistance = distanceFilter === 'all' || true
     return matchesSearch && matchesLevel && matchesDistance
   })
 
@@ -93,8 +94,8 @@ export function AvailableGames() {
 
       if (response.success) {
         toast({
-          title: "Game accepted!",
-          description: `${response.message} Final wage: $${response.data.wageBreakdown.finalWage}`,
+          title: 'Game accepted!',
+          description: `${response.message} Final wage: $${response.data.wageBreakdown.finalWage}`
         })
         
         // Refresh available games
@@ -103,9 +104,9 @@ export function AvailableGames() {
     } catch (error: any) {
       console.error('Failed to accept game:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to accept game.",
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Failed to accept game.'
       })
     }
   }
@@ -130,7 +131,7 @@ export function AvailableGames() {
       <PageHeader
         icon={Trophy}
         title="Available Games"
-        description={refereeLevel ? `Your level: ${refereeLevel} - Qualified for: ${allowedDivisions.join(", ")}` : "Games available for self-assignment"}
+        description={refereeLevel ? `Your level: ${refereeLevel} - Qualified for: ${allowedDivisions.join(', ')}` : 'Games available for self-assignment'}
       />
 
       <div className="grid gap-4 md:grid-cols-3">

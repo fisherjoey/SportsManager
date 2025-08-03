@@ -1,43 +1,44 @@
-"use client"
+'use client'
 
-import { useState, useEffect, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
-import { useApi } from "@/lib/api"
-import { useAuth } from "@/components/auth-provider"
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
 
 function CompleteSignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
   const api = useApi()
-  const { login } = useAuth()
+  const {} = useAuth()
   const { toast } = useToast()
 
-  const [invitation, setInvitation] = useState<any>(null)
+  const [invitation, setInvitation] = useState<unknown>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    location: "",
-    postalCode: "",
-    level: "Recreational",
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    location: '',
+    postalCode: '',
+    level: 'Recreational',
     maxDistance: 25
   })
 
   useEffect(() => {
     if (!token) {
       toast({
-        variant: "destructive",
-        title: "Invalid Link",
-        description: "This invitation link is invalid or missing.",
+        variant: 'destructive',
+        title: 'Invalid Link',
+        description: 'This invitation link is invalid or missing.'
       })
       router.push('/')
       return
@@ -49,12 +50,12 @@ function CompleteSignupContent() {
         setInvitation(response.data.invitation)
         setLoading(false)
       })
-      .catch(error => {
-        console.error('Failed to fetch invitation:', error)
+      .catch(() => {
+        // console.error('Failed to fetch invitation:', error)
         toast({
-          variant: "destructive",
-          title: "Invalid Invitation",
-          description: "This invitation link is invalid or has expired.",
+          variant: 'destructive',
+          title: 'Invalid Invitation',
+          description: 'This invitation link is invalid or has expired.'
         })
         router.push('/')
       })
@@ -65,18 +66,18 @@ function CompleteSignupContent() {
     
     if (formData.password !== formData.confirmPassword) {
       toast({
-        variant: "destructive",
-        title: "Password Mismatch",
-        description: "Passwords do not match.",
+        variant: 'destructive',
+        title: 'Password Mismatch',
+        description: 'Passwords do not match.'
       })
       return
     }
 
     if (formData.password.length < 6) {
       toast({
-        variant: "destructive",
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long.",
+        variant: 'destructive',
+        title: 'Password Too Short',
+        description: 'Password must be at least 6 characters long.'
       })
       return
     }
@@ -84,7 +85,7 @@ function CompleteSignupContent() {
     setSubmitting(true)
 
     try {
-      const response = await api.completeInvitation(token!, {
+      const response = await api.completeInvitation(token as string, {
         password: formData.password,
         phone: formData.phone || undefined,
         location: formData.location || undefined,
@@ -97,8 +98,8 @@ function CompleteSignupContent() {
       api.setToken(response.data.token)
       
       toast({
-        title: "Account Created",
-        description: "Your account has been created successfully!",
+        title: 'Account Created',
+        description: 'Your account has been created successfully!'
       })
 
       // Redirect to appropriate dashboard
@@ -107,12 +108,12 @@ function CompleteSignupContent() {
       } else {
         router.push('/referee')
       }
-    } catch (error) {
-      console.error('Failed to complete signup:', error)
+    } catch {
+      // console.error('Failed to complete signup:', error)
       toast({
-        variant: "destructive",
-        title: "Signup Failed",
-        description: "Failed to create your account. Please try again.",
+        variant: 'destructive',
+        title: 'Signup Failed',
+        description: 'Failed to create your account. Please try again.'
       })
     } finally {
       setSubmitting(false)
@@ -255,7 +256,7 @@ function CompleteSignupContent() {
               )}
 
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Creating Account..." : "Complete Signup"}
+                {submitting ? 'Creating Account...' : 'Complete Signup'}
               </Button>
             </form>
           </CardContent>

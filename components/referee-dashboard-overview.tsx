@@ -1,14 +1,15 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Calendar, Clock, DollarSign, MapPin, User, CheckCircle, CalendarClock, Trophy } from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { mockGames, Team } from "@/lib/mock-data"
-import { useAuth } from "@/components/auth-provider"
-import { formatTeamName } from "@/lib/team-utils"
+import { Calendar, Clock, DollarSign, MapPin, User, CheckCircle, CalendarClock, Trophy } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { mockGames, Team } from '@/lib/mock-data'
+import { useAuth } from '@/components/auth-provider'
+import { formatTeamName } from '@/lib/team-utils'
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
@@ -19,11 +20,11 @@ export function RefereeDashboardOverview() {
     console.log(`Navigating to: ${view}`)
   }
 
-  const myAssignments = mockGames.filter((game) => game.assignedReferees?.includes(user?.name || ""))
+  const myAssignments = mockGames.filter((game) => game.assignedReferees?.includes(user?.name || ''))
 
   const upcomingAssignments = myAssignments.filter((game) => new Date(game.date) > new Date()).slice(0, 3)
 
-  const availableGames = mockGames.filter((game) => game.status === "up-for-grabs").slice(0, 3)
+  const availableGames = mockGames.filter((game) => game.status === 'up-for-grabs').slice(0, 3)
 
   const thisWeekEarnings = myAssignments
     .filter((game) => {
@@ -36,33 +37,33 @@ export function RefereeDashboardOverview() {
 
   const stats = [
     {
-      title: "Upcoming Games",
+      title: 'Upcoming Games',
       value: upcomingAssignments.length,
       icon: Calendar,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "This Week Earnings",
+      title: 'This Week Earnings',
       value: `$${thisWeekEarnings}`,
       icon: DollarSign,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "Available Games",
+      title: 'Available Games',
       value: availableGames.length,
       icon: Clock,
-      color: "text-orange-600",
+      color: 'text-orange-600'
     },
     {
-      title: "Games This Month",
+      title: 'Games This Month',
       value: myAssignments.filter((game) => {
         const gameDate = new Date(game.date)
         const now = new Date()
         return gameDate.getMonth() === now.getMonth() && gameDate.getFullYear() === now.getFullYear()
       }).length,
       icon: MapPin,
-      color: "text-purple-600",
-    },
+      color: 'text-purple-600'
+    }
   ]
 
   return (

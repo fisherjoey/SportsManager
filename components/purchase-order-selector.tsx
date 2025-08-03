@@ -1,16 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   FileText,
   Search,
@@ -25,6 +15,17 @@ import {
   TrendingUp,
   Package
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 
 interface PurchaseOrder {
@@ -113,7 +114,7 @@ export function PurchaseOrderSelector({
       toast({
         title: 'Error loading purchase orders',
         description: 'Please try again or contact support.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       
       // Fallback with mock data for development
@@ -238,7 +239,7 @@ export function PurchaseOrderSelector({
       toast({
         title: 'Insufficient budget remaining',
         description: `Only $${order.remainingAmount.toFixed(2)} remaining in this PO`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -248,7 +249,7 @@ export function PurchaseOrderSelector({
       toast({
         title: 'Purchase order expired',
         description: 'This purchase order has expired and cannot be used',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }

@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
 import { TeamDetailsDialog } from './team-details-dialog'
 
 const mockOnOpenChange = jest.fn()
@@ -18,18 +19,18 @@ const mockTeam = {
   website: 'https://flames.com',
   colors: {
     primary: '#FF0000',
-    secondary: '#FFFFFF',
+    secondary: '#FFFFFF'
   },
   notes: 'Test team notes',
   isActive: true,
   createdAt: '2023-01-01T00:00:00Z',
-  updatedAt: '2023-01-02T00:00:00Z',
+  updatedAt: '2023-01-02T00:00:00Z'
 }
 
 const defaultProps = {
   open: false,
   onOpenChange: mockOnOpenChange,
-  team: mockTeam,
+  team: mockTeam
 }
 
 describe('TeamDetailsDialog', () => {

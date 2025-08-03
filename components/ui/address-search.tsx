@@ -1,7 +1,8 @@
-"use client"
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { Search, MapPin, Loader2, Building2, Home } from 'lucide-react'
+
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -139,14 +140,14 @@ export function AddressSearch({
   // Get icon for address type
   const getTypeIcon = (type?: string) => {
     switch (type) {
-      case 'establishment':
-      case 'poi':
-        return Building2
-      case 'street_address':
-      case 'address':
-        return Home
-      default:
-        return MapPin
+    case 'establishment':
+    case 'poi':
+      return Building2
+    case 'street_address':
+    case 'address':
+      return Home
+    default:
+      return MapPin
     }
   }
 
@@ -175,25 +176,25 @@ export function AddressSearch({
     if (!showResults || results.length === 0) return
 
     switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setSelectedIndex(prev => (prev + 1) % results.length)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setSelectedIndex(prev => (prev - 1 + results.length) % results.length)
-        break
-      case 'Enter':
-        e.preventDefault()
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
-          handleAddressSelect(results[selectedIndex])
-        }
-        break
-      case 'Escape':
-        setShowResults(false)
-        setSelectedIndex(-1)
-        inputRef.current?.blur()
-        break
+    case 'ArrowDown':
+      e.preventDefault()
+      setSelectedIndex(prev => (prev + 1) % results.length)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      setSelectedIndex(prev => (prev - 1 + results.length) % results.length)
+      break
+    case 'Enter':
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < results.length) {
+        handleAddressSelect(results[selectedIndex])
+      }
+      break
+    case 'Escape':
+      setShowResults(false)
+      setSelectedIndex(-1)
+      inputRef.current?.blur()
+      break
     }
   }
 
@@ -215,7 +216,7 @@ export function AddressSearch({
   }, [])
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -259,8 +260,8 @@ export function AddressSearch({
                 key={suggestion.id}
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start p-3 h-auto text-left hover:bg-accent/50",
-                  index === selectedIndex && "bg-accent"
+                  'w-full justify-start p-3 h-auto text-left hover:bg-accent/50',
+                  index === selectedIndex && 'bg-accent'
                 )}
                 onClick={() => handleAddressSelect(suggestion)}
               >
@@ -275,8 +276,8 @@ export function AddressSearch({
                   {suggestion.type && suggestion.type !== 'address' && (
                     <Badge variant="secondary" className="text-xs">
                       {suggestion.type === 'establishment' ? 'Business' : 
-                       suggestion.type === 'poi' ? 'Point of Interest' : 
-                       suggestion.type}
+                        suggestion.type === 'poi' ? 'Point of Interest' : 
+                          suggestion.type}
                     </Badge>
                   )}
                 </div>

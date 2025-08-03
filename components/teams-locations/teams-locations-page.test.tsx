@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
 import { TeamsLocationsPage } from './teams-locations-page'
 
 // Mock the API hook
@@ -9,16 +10,16 @@ const mockCreateTeam = jest.fn()
 jest.mock('@/lib/api', () => ({
   useApi: () => ({
     getTeams: mockGetTeams,
-    createTeam: mockCreateTeam,
-  }),
+    createTeam: mockCreateTeam
+  })
 }))
 
 // Mock the toast hook
 const mockToast = jest.fn()
 jest.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({
-    toast: mockToast,
-  }),
+    toast: mockToast
+  })
 }))
 
 // Mock the dialog components
@@ -43,7 +44,7 @@ jest.mock('./create-team-dialog', () => ({
         </button>
       )}
     </div>
-  ),
+  )
 }))
 
 jest.mock('./create-location-dialog', () => ({
@@ -51,7 +52,7 @@ jest.mock('./create-location-dialog', () => ({
     <div data-testid="create-location-dialog">
       {open && <div>Create Location Dialog</div>}
     </div>
-  ),
+  )
 }))
 
 jest.mock('./team-details-dialog', () => ({
@@ -59,7 +60,7 @@ jest.mock('./team-details-dialog', () => ({
     <div data-testid="team-details-dialog">
       {open && team && <div>Team Details: {team.name}</div>}
     </div>
-  ),
+  )
 }))
 
 jest.mock('./location-details-dialog', () => ({
@@ -67,7 +68,7 @@ jest.mock('./location-details-dialog', () => ({
     <div data-testid="location-details-dialog">
       {open && <div>Location Details</div>}
     </div>
-  ),
+  )
 }))
 
 const mockTeamsData = {
@@ -88,7 +89,7 @@ const mockTeamsData = {
         notes: 'Test notes',
         is_active: true,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z'
       },
       {
         id: '2',
@@ -101,10 +102,10 @@ const mockTeamsData = {
         home_venue: 'Rogers Place',
         is_active: false,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z',
-      },
-    ],
-  },
+        updated_at: '2023-01-01T00:00:00Z'
+      }
+    ]
+  }
 }
 
 describe('TeamsLocationsPage', () => {
@@ -244,9 +245,9 @@ describe('TeamsLocationsPage', () => {
           colors: { primary: '#000000', secondary: '#FFFFFF' },
           is_active: true,
           created_at: '2023-01-01T00:00:00Z',
-          updated_at: '2023-01-01T00:00:00Z',
-        },
-      },
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      }
     }
 
     mockCreateTeam.mockResolvedValue(mockCreateResponse)
@@ -276,13 +277,13 @@ describe('TeamsLocationsPage', () => {
         contact_phone: '403-555-0123',
         home_venue: 'Test Arena',
         colors: { primary: '#000000', secondary: '#FFFFFF' },
-        is_active: true,
+        is_active: true
       })
     })
 
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Success',
-      description: 'Team created successfully',
+      description: 'Team created successfully'
     })
   })
 
@@ -307,7 +308,7 @@ describe('TeamsLocationsPage', () => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Failed to create team',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     })
   })
@@ -321,7 +322,7 @@ describe('TeamsLocationsPage', () => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Failed to load teams and locations data',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     })
   })

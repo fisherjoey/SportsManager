@@ -1,13 +1,6 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Progress } from "@/components/ui/progress"
+import React, { useState } from 'react'
 import {
   Brain,
   Zap,
@@ -21,10 +14,18 @@ import {
   Settings,
   Play,
   Download,
-  RefreshCw,
-} from "lucide-react"
-import { apiClient } from "@/lib/api"
-import { formatTeamName, formatGameMatchup, type Team } from "@/lib/team-utils"
+  RefreshCw
+} from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
+import { Progress } from '@/components/ui/progress'
+import { apiClient } from '@/lib/api'
+import { formatGameMatchup, type Team } from '@/lib/team-utils'
 
 interface OptimizationSettings {
   maxGamesPerRefereePerDay: number
@@ -86,67 +87,67 @@ interface Referee {
 // Mock data for demonstration
 const mockGames: Game[] = [
   {
-    id: "1",
-    homeTeam: "Lakers",
-    awayTeam: "Warriors",
-    date: "2024-01-15",
-    time: "19:00",
-    division: "Premier",
-    location: "Downtown Arena",
-    status: "unassigned",
+    id: '1',
+    homeTeam: 'Lakers',
+    awayTeam: 'Warriors',
+    date: '2024-01-15',
+    time: '19:00',
+    division: 'Premier',
+    location: 'Downtown Arena',
+    status: 'unassigned',
     assignedReferees: []
   },
   {
-    id: "2", 
-    homeTeam: "Bulls",
-    awayTeam: "Celtics",
-    date: "2024-01-15",
-    time: "21:00",
-    division: "Premier",
-    location: "Downtown Arena",
-    status: "unassigned",
+    id: '2', 
+    homeTeam: 'Bulls',
+    awayTeam: 'Celtics',
+    date: '2024-01-15',
+    time: '21:00',
+    division: 'Premier',
+    location: 'Downtown Arena',
+    status: 'unassigned',
     assignedReferees: []
   },
   {
-    id: "3",
-    homeTeam: "Heat",
-    awayTeam: "Spurs",
-    date: "2024-01-16",
-    time: "18:00", 
-    division: "Championship",
-    location: "Westside Center",
-    status: "unassigned",
+    id: '3',
+    homeTeam: 'Heat',
+    awayTeam: 'Spurs',
+    date: '2024-01-16',
+    time: '18:00', 
+    division: 'Championship',
+    location: 'Westside Center',
+    status: 'unassigned',
     assignedReferees: []
   }
 ]
 
 const mockReferees: Referee[] = [
   {
-    id: "1",
-    name: "John Smith",
-    level: "Level 5",
+    id: '1',
+    name: 'John Smith',
+    level: 'Level 5',
     experience: 15,
-    location: "Downtown",
+    location: 'Downtown',
     isAvailable: true,
-    preferredDivisions: ["Premier", "Championship"]
+    preferredDivisions: ['Premier', 'Championship']
   },
   {
-    id: "2",
-    name: "Sarah Johnson", 
-    level: "Level 4",
+    id: '2',
+    name: 'Sarah Johnson', 
+    level: 'Level 4',
     experience: 8,
-    location: "Downtown",
+    location: 'Downtown',
     isAvailable: true,
-    preferredDivisions: ["Premier"]
+    preferredDivisions: ['Premier']
   },
   {
-    id: "3",
-    name: "Mike Wilson",
-    level: "Level 5", 
+    id: '3',
+    name: 'Mike Wilson',
+    level: 'Level 5', 
     experience: 12,
-    location: "Westside",
+    location: 'Westside',
     isAvailable: true,
-    preferredDivisions: ["Championship", "Premier"]
+    preferredDivisions: ['Championship', 'Premier']
   }
 ]
 
@@ -160,7 +161,7 @@ async function generateBulkAssignments(
     // Create a temporary AI rule for bulk assignment
     const ruleData = {
       name: `Bulk Assignment ${new Date().toISOString()}`,
-      description: "Temporary rule for enterprise bulk assignment",
+      description: 'Temporary rule for enterprise bulk assignment',
       enabled: true,
       schedule: { type: 'manual' as const },
       criteria: {
@@ -202,7 +203,7 @@ async function generateBulkAssignments(
             refereeId: ref.refereeId,
             refereeName: ref.refereeName,
             confidence: Math.round(ref.confidence * 100),
-            role: ref.position || "Referee"
+            role: ref.position || 'Referee'
           })),
           reasoning: assignment.conflicts && assignment.conflicts.length > 0 
             ? `Assignment with ${assignment.conflicts.length} minor conflicts` 
@@ -213,7 +214,7 @@ async function generateBulkAssignments(
           .filter(game => !assignments.find(a => a.gameId === game.id))
           .map(game => ({
             gameId: game.id,
-            reason: "No suitable referees available for this game"
+            reason: 'No suitable referees available for this game'
           }))
 
         // Clean up temporary rule
@@ -233,7 +234,7 @@ async function generateBulkAssignments(
       }
     }
   } catch (error) {
-    console.warn('Backend AI assignment failed, using fallback algorithm:', error)
+    // console.warn('Backend AI assignment failed, using fallback algorithm:', error)
   }
 
   // Fallback to mock implementation
@@ -257,14 +258,14 @@ async function generateBulkAssignments(
           refereeId: ref.id,
           refereeName: ref.name,
           confidence: 85 + Math.floor(Math.random() * 15),
-          role: "Referee"
+          role: 'Referee'
         })),
-        reasoning: `Optimal assignment based on experience, location proximity, and division preference`
+        reasoning: 'Optimal assignment based on experience, location proximity, and division preference'
       })
     } else {
       unassignedGames.push({
         gameId: game.id,
-        reason: "Insufficient qualified referees available"
+        reason: 'Insufficient qualified referees available'
       })
     }
   }
@@ -295,7 +296,7 @@ export function AIAssignmentsEnterprise() {
     preferredDivisionWeight: 30,
     experienceWeight: 20,
     workloadBalanceWeight: 30,
-    minimumRestBetweenGames: 30,
+    minimumRestBetweenGames: 30
   })
 
   // Load real data from backend
@@ -338,7 +339,7 @@ export function AIAssignmentsEnterprise() {
           setAvailableReferees(transformedReferees)
         }
       } catch (error) {
-        console.warn('Failed to load real data, using mock data:', error)
+        // console.warn('Failed to load real data, using mock data:', error)
       } finally {
         setLoading(false)
       }
@@ -347,7 +348,7 @@ export function AIAssignmentsEnterprise() {
     loadData()
   }, [])
 
-  const unassignedGames = games.filter((game) => game.status === "unassigned")
+  const unassignedGames = games.filter((game) => game.status === 'unassigned')
 
   const handleBulkAssignment = async () => {
     setIsGenerating(true)
@@ -355,9 +356,9 @@ export function AIAssignmentsEnterprise() {
       const gamesToAssign =
         selectedGames.length > 0 ? games.filter((g) => selectedGames.includes(g.id)) : unassignedGames
 
-      console.log(
-        `Starting bulk assignment for ${gamesToAssign.length} games with ${availableReferees.length} referees`,
-      )
+      // console.log(
+      //   `Starting bulk assignment for ${gamesToAssign.length} games with ${availableReferees.length} referees`,
+      // )
 
       const result = await generateBulkAssignments(gamesToAssign, availableReferees, {
         maxGamesPerRefereePerDay: optimizationSettings.maxGamesPerRefereePerDay,
@@ -366,12 +367,12 @@ export function AIAssignmentsEnterprise() {
         preferredDivisionWeight: optimizationSettings.preferredDivisionWeight / 100,
         experienceWeight: optimizationSettings.experienceWeight / 100,
         workloadBalanceWeight: optimizationSettings.workloadBalanceWeight / 100,
-        minimumRestBetweenGames: optimizationSettings.minimumRestBetweenGames,
+        minimumRestBetweenGames: optimizationSettings.minimumRestBetweenGames
       })
 
       setBulkResult(result)
     } catch (error) {
-      console.error("Bulk assignment failed:", error)
+      // console.error('Bulk assignment failed:', error)
     }
     setIsGenerating(false)
   }
@@ -385,8 +386,8 @@ export function AIAssignmentsEnterprise() {
         return {
           ...game,
           assignedReferees: assignment.assignedReferees.map((ref) => ref.refereeId),
-          status: "assigned" as const,
-          updatedAt: new Date().toISOString(),
+          status: 'assigned' as const,
+          updatedAt: new Date().toISOString()
         }
       }
       return game
@@ -407,8 +408,8 @@ export function AIAssignmentsEnterprise() {
         return {
           ...game,
           assignedReferees: assignment.assignedReferees.map((ref) => ref.refereeId),
-          status: "assigned" as const,
-          updatedAt: new Date().toISOString(),
+          status: 'assigned' as const,
+          updatedAt: new Date().toISOString()
         }
       }
       return game
@@ -419,41 +420,41 @@ export function AIAssignmentsEnterprise() {
     // Remove this assignment from the result
     setBulkResult({
       ...bulkResult,
-      assignments: bulkResult.assignments.filter((a) => a.gameId !== gameId),
+      assignments: bulkResult.assignments.filter((a) => a.gameId !== gameId)
     })
   }
 
   const aiStats = [
     {
-      title: "Unassigned Games",
+      title: 'Unassigned Games',
       value: unassignedGames.length,
       icon: AlertTriangle,
-      color: "text-red-600",
-      description: "Games needing assignment",
+      color: 'text-red-600',
+      description: 'Games needing assignment'
     },
     {
-      title: "Available Referees",
+      title: 'Available Referees',
       value: availableReferees.length,
       icon: Users,
-      color: "text-success",
-      description: "Ready for assignment",
+      color: 'text-success',
+      description: 'Ready for assignment'
     },
     {
-      title: "Selected Games",
+      title: 'Selected Games',
       value: selectedGames.length,
       icon: Target,
-      color: "text-primary",
-      description: "Games selected for assignment",
+      color: 'text-primary',
+      description: 'Games selected for assignment'
     },
     {
-      title: "Optimization Score",
+      title: 'Optimization Score',
       value: bulkResult
         ? `${Math.round((bulkResult.optimizationMetrics.workloadBalance + bulkResult.optimizationMetrics.preferenceMatch) / 2)}%`
-        : "N/A",
+        : 'N/A',
       icon: TrendingUp,
-      color: "text-muted-foreground",
-      description: "Overall assignment quality",
-    },
+      color: 'text-muted-foreground',
+      description: 'Overall assignment quality'
+    }
   ]
 
   if (loading) {
@@ -899,7 +900,7 @@ export function AIAssignmentsEnterprise() {
                                 {game ? formatGameMatchup(game.homeTeam, game.awayTeam) : 'Unknown vs Unknown'}
                               </h4>
                               <p className="text-sm text-muted-foreground">
-                                {game?.division} • {new Date(game?.date || "").toLocaleDateString()} at {game?.time}
+                                {game?.division} • {new Date(game?.date || '').toLocaleDateString()} at {game?.time}
                               </p>
                             </div>
                             <Button
@@ -993,10 +994,10 @@ export function AIAssignmentsEnterprise() {
                   <Badge variant="secondary">
                     {bulkResult
                       ? Math.round(
-                          (bulkResult.assignments.length /
+                        (bulkResult.assignments.length /
                             (bulkResult.assignments.length + bulkResult.unassignedGames.length)) *
                             100,
-                        )
+                      )
                       : 0}
                     %
                   </Badge>

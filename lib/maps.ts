@@ -45,7 +45,7 @@ export async function calculateDistanceAndDriveTime(
     
     // Use OpenRouteService for routing (free tier: 2000 requests/day)
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     }
     
     if (apiKey) {
@@ -62,7 +62,7 @@ export async function calculateDistanceAndDriveTime(
       {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       }
     )
     
@@ -94,7 +94,7 @@ export async function calculateDistanceAndDriveTime(
       distance: distanceText,
       duration: durationText,
       distanceValue: distanceMeters,
-      durationValue: durationSeconds,
+      durationValue: durationSeconds
     }
   } catch (error) {
     console.error('Error calculating distance:', error)
@@ -129,7 +129,7 @@ export async function geocodeAddress(address: string): Promise<Location | null> 
     const result = data[0]
     return {
       lat: parseFloat(result.lat),
-      lng: parseFloat(result.lon),
+      lng: parseFloat(result.lon)
     }
   } catch (error) {
     console.error('Error geocoding address:', error)
@@ -162,7 +162,7 @@ export function generateGoogleMapsURL(
   
   if (typeof destination === 'string') {
     const params = new URLSearchParams({
-      q: destination,
+      q: destination
     })
     
     if (origin) {
@@ -178,7 +178,7 @@ export function generateGoogleMapsURL(
     return `${baseURL}/search/?${params.toString()}`
   } else {
     const params = new URLSearchParams({
-      q: `${destination.lat},${destination.lng}`,
+      q: `${destination.lat},${destination.lng}`
     })
     
     if (origin) {
@@ -220,7 +220,7 @@ export function getCurrentLocation(): Promise<Location | null> {
       (position) => {
         resolve({
           lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lng: position.coords.longitude
         })
       },
       (error) => {

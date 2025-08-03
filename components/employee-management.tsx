@@ -1,16 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Progress } from '@/components/ui/progress'
 import { 
   Search, 
   Filter, 
@@ -31,13 +21,24 @@ import {
   Users,
   TrendingUp
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -46,7 +47,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from '@/components/ui/dialog'
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -118,7 +119,7 @@ export function EmployeeManagement() {
       toast({
         title: 'Error',
         description: 'Failed to load initial data',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -231,7 +232,7 @@ export function EmployeeManagement() {
       await apiClient.createEmployee(employeeData)
       toast({
         title: 'Success',
-        description: 'Employee created successfully',
+        description: 'Employee created successfully'
       })
       setShowAddDialog(false)
       await loadEmployees() // Refresh data
@@ -249,7 +250,7 @@ export function EmployeeManagement() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to create employee. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -259,7 +260,7 @@ export function EmployeeManagement() {
       await apiClient.updateEmployee(id, employeeData)
       toast({
         title: 'Success',
-        description: 'Employee updated successfully',
+        description: 'Employee updated successfully'
       })
       await loadEmployees() // Refresh data
       await loadStats() // Refresh stats
@@ -276,7 +277,7 @@ export function EmployeeManagement() {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to update employee. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -333,7 +334,7 @@ export function EmployeeManagement() {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(salary)
   }
 

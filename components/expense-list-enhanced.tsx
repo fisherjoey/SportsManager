@@ -1,15 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
 import { 
   Search, 
   Filter, 
@@ -35,6 +26,16 @@ import {
   RefreshCw,
   Plus
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +45,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu'
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -179,7 +180,7 @@ export function ExpenseListEnhanced({
       toast({
         title: 'Error',
         description: 'Failed to load expenses',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       
       // Mock data for development
@@ -325,21 +326,21 @@ export function ExpenseListEnhanced({
       let startDate: Date
 
       switch (filters.dateRange) {
-        case 'today':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-          break
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-          break
-        case 'month':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-          break
-        case 'quarter':
-          const quarter = Math.floor(now.getMonth() / 3)
-          startDate = new Date(now.getFullYear(), quarter * 3, 1)
-          break
-        default:
-          startDate = new Date(0)
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        break
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        break
+      case 'quarter':
+        const quarter = Math.floor(now.getMonth() / 3)
+        startDate = new Date(now.getFullYear(), quarter * 3, 1)
+        break
+      default:
+        startDate = new Date(0)
       }
 
       filtered = filtered.filter(expense => 
@@ -357,29 +358,29 @@ export function ExpenseListEnhanced({
       let bValue: any
 
       switch (sortField) {
-        case 'amount':
-          aValue = a.amount
-          bValue = b.amount
-          break
-        case 'transactionDate':
-          aValue = new Date(a.transactionDate)
-          bValue = new Date(b.transactionDate)
-          break
-        case 'submittedAt':
-          aValue = new Date(a.submittedAt)
-          bValue = new Date(b.submittedAt)
-          break
-        case 'merchant':
-          aValue = a.merchant.toLowerCase()
-          bValue = b.merchant.toLowerCase()
-          break
-        case 'status':
-          aValue = a.status
-          bValue = b.status
-          break
-        default:
-          aValue = a.submittedAt
-          bValue = b.submittedAt
+      case 'amount':
+        aValue = a.amount
+        bValue = b.amount
+        break
+      case 'transactionDate':
+        aValue = new Date(a.transactionDate)
+        bValue = new Date(b.transactionDate)
+        break
+      case 'submittedAt':
+        aValue = new Date(a.submittedAt)
+        bValue = new Date(b.submittedAt)
+        break
+      case 'merchant':
+        aValue = a.merchant.toLowerCase()
+        bValue = b.merchant.toLowerCase()
+        break
+      case 'status':
+        aValue = a.status
+        bValue = b.status
+        break
+      default:
+        aValue = a.submittedAt
+        bValue = b.submittedAt
       }
 
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
@@ -484,7 +485,7 @@ export function ExpenseListEnhanced({
       toast({
         title: 'No expenses selected',
         description: 'Please select expenses to perform bulk actions',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -506,7 +507,7 @@ export function ExpenseListEnhanced({
 
       toast({
         title: 'Success',
-        description: `Bulk ${action} completed for ${selectedExpenses.length} expenses`,
+        description: `Bulk ${action} completed for ${selectedExpenses.length} expenses`
       })
 
       setSelectedExpenses([])
@@ -516,7 +517,7 @@ export function ExpenseListEnhanced({
       toast({
         title: 'Error',
         description: 'Failed to perform bulk action',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -549,14 +550,14 @@ export function ExpenseListEnhanced({
 
       toast({
         title: 'Export successful',
-        description: 'Expenses exported to Excel file',
+        description: 'Expenses exported to Excel file'
       })
     } catch (error) {
       console.error('Export error:', error)
       toast({
         title: 'Export failed',
         description: 'Failed to export expenses',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -1004,8 +1005,8 @@ export function ExpenseListEnhanced({
               <p className="text-lg font-medium mb-2">No expenses found</p>
               <p className="text-muted-foreground text-center">
                 {expenses.length === 0 
-                  ? "No expenses have been submitted yet" 
-                  : "Try adjusting your filters to see more expenses"
+                  ? 'No expenses have been submitted yet' 
+                  : 'Try adjusting your filters to see more expenses'
                 }
               </p>
             </div>

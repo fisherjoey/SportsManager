@@ -1,15 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { apiClient, Asset as APIAsset, AssetMaintenance, AssetCheckout } from '@/lib/api'
 import { 
   Search, 
   Filter, 
@@ -34,13 +25,23 @@ import {
   FileText,
   Wrench
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { apiClient, Asset as APIAsset, AssetMaintenance, AssetCheckout } from '@/lib/api'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -48,7 +49,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -193,7 +194,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to load assets. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -231,7 +232,7 @@ export function AssetTracking() {
       
       toast({
         title: 'Success',
-        description: 'Maintenance scheduled successfully',
+        description: 'Maintenance scheduled successfully'
       })
       
       setShowMaintenanceDialog(false)
@@ -244,7 +245,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to schedule maintenance. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -332,7 +333,7 @@ export function AssetTracking() {
 
       toast({
         title: 'Success',
-        description: 'Asset checked out successfully',
+        description: 'Asset checked out successfully'
       })
 
       setShowCheckoutDialog(false)
@@ -343,7 +344,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to checkout asset. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -368,7 +369,7 @@ export function AssetTracking() {
 
       toast({
         title: 'Success',
-        description: 'Asset checked in successfully',
+        description: 'Asset checked in successfully'
       })
 
       setSelectedAsset(null)
@@ -378,7 +379,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to checkin asset. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -398,7 +399,7 @@ export function AssetTracking() {
       
       toast({
         title: 'Success',
-        description: 'Asset created successfully',
+        description: 'Asset created successfully'
       })
       
       setShowAddDialog(false)
@@ -408,7 +409,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to create asset. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -429,7 +430,7 @@ export function AssetTracking() {
       
       toast({
         title: 'Success',
-        description: 'Asset updated successfully',
+        description: 'Asset updated successfully'
       })
       
       setShowEditDialog(false)
@@ -441,7 +442,7 @@ export function AssetTracking() {
       toast({
         title: 'Error',
         description: 'Failed to update asset. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }

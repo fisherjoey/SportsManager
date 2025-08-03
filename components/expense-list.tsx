@@ -1,14 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Search, 
   Filter, 
@@ -27,13 +19,22 @@ import {
   ChevronDown,
   MoreHorizontal
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -121,7 +122,7 @@ export function ExpenseList() {
       toast({
         title: 'Error',
         description: 'Failed to load expenses',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -172,21 +173,21 @@ export function ExpenseList() {
       let startDate: Date
 
       switch (filters.dateRange) {
-        case 'today':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-          break
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-          break
-        case 'month':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-          break
-        case 'quarter':
-          const quarter = Math.floor(now.getMonth() / 3)
-          startDate = new Date(now.getFullYear(), quarter * 3, 1)
-          break
-        default:
-          startDate = new Date(0)
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        break
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        break
+      case 'quarter':
+        const quarter = Math.floor(now.getMonth() / 3)
+        startDate = new Date(now.getFullYear(), quarter * 3, 1)
+        break
+      default:
+        startDate = new Date(0)
       }
 
       filtered = filtered.filter(expense => 
@@ -247,7 +248,7 @@ export function ExpenseList() {
       toast({
         title: 'No expenses selected',
         description: 'Please select expenses to perform bulk actions',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -266,7 +267,7 @@ export function ExpenseList() {
 
       toast({
         title: 'Success',
-        description: `Bulk ${action} completed for ${selectedExpenses.length} expenses`,
+        description: `Bulk ${action} completed for ${selectedExpenses.length} expenses`
       })
 
       setSelectedExpenses([])
@@ -276,7 +277,7 @@ export function ExpenseList() {
       toast({
         title: 'Error',
         description: 'Failed to perform bulk action',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -306,14 +307,14 @@ export function ExpenseList() {
 
       toast({
         title: 'Export successful',
-        description: 'Expenses exported to Excel file',
+        description: 'Expenses exported to Excel file'
       })
     } catch (error) {
       console.error('Export error:', error)
       toast({
         title: 'Export failed',
         description: 'Failed to export expenses',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -336,7 +337,7 @@ export function ExpenseList() {
         />
       ),
       enableSorting: false,
-      enableHiding: false,
+      enableHiding: false
     },
     {
       accessorKey: 'description',
@@ -661,8 +662,8 @@ export function ExpenseList() {
             <p className="text-lg font-medium mb-2">No expenses found</p>
             <p className="text-muted-foreground text-center">
               {expenses.length === 0 
-                ? "No expenses have been submitted yet" 
-                : "Try adjusting your filters to see more expenses"
+                ? 'No expenses have been submitted yet' 
+                : 'Try adjusting your filters to see more expenses'
               }
             </p>
           </CardContent>

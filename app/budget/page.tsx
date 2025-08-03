@@ -1,7 +1,7 @@
 'use client'
 
-import { useAuth } from "@/components/auth-provider"
-import { LoginForm } from "@/components/login-form"
+import { useAuth } from '@/components/auth-provider'
+import { LoginForm } from '@/components/login-form'
 import { BudgetTracker } from '@/components/budget-tracker'
 
 export default function BudgetPage() {

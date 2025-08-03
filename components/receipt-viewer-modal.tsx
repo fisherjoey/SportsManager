@@ -1,13 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   Download, 
   X, 
@@ -22,6 +15,14 @@ import {
   Plus,
   Check
 } from 'lucide-react'
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api'
@@ -141,7 +142,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       toast({
         title: 'Error',
         description: 'Failed to load receipt details',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -155,14 +156,14 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       await apiClient.downloadReceipt(receiptId)
       toast({
         title: 'Download started',
-        description: 'Receipt file download has begun',
+        description: 'Receipt file download has begun'
       })
     } catch (error) {
       console.error('Download error:', error)
       toast({
         title: 'Download failed',
         description: 'Failed to download receipt file',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -178,7 +179,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       toast({
         title: 'Error',
         description: 'Failed to load referees for reimbursement assignment',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -198,7 +199,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       setReimbursementData(response.expenseData)
       toast({
         title: 'Success',
-        description: 'Reimbursement assigned successfully',
+        description: 'Reimbursement assigned successfully'
       })
       setSelectedUserId('')
       setReimbursementNotes('')
@@ -207,7 +208,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to assign reimbursement',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setAssigningReimbursement(false)
@@ -231,16 +232,16 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'processed':
-        return <Badge variant="default" className="bg-green-500">Processed</Badge>
-      case 'processing':
-        return <Badge variant="secondary">Processing</Badge>
-      case 'manual_review':
-        return <Badge variant="destructive">Needs Review</Badge>
-      case 'failed':
-        return <Badge variant="destructive">Failed</Badge>
-      default:
-        return <Badge variant="outline">Unknown</Badge>
+    case 'processed':
+      return <Badge variant="default" className="bg-green-500">Processed</Badge>
+    case 'processing':
+      return <Badge variant="secondary">Processing</Badge>
+    case 'manual_review':
+      return <Badge variant="destructive">Needs Review</Badge>
+    case 'failed':
+      return <Badge variant="destructive">Failed</Badge>
+    default:
+      return <Badge variant="outline">Unknown</Badge>
     }
   }
 

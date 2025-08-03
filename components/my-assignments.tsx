@@ -1,18 +1,19 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckCircle, XCircle, Clock, MapPin, DollarSign, User } from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
-import { useApi } from "@/lib/api"
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
-import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
+import { useState, useEffect } from 'react'
+import { CheckCircle, XCircle, Clock, MapPin, DollarSign, User } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { useAuth } from '@/components/auth-provider'
+import { useToast } from '@/components/ui/use-toast'
+import { useApi } from '@/lib/api'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
+import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
 
 export function MyAssignments() {
   const { user } = useAuth()
@@ -42,23 +43,23 @@ export function MyAssignments() {
     } catch (error) {
       console.error('Failed to fetch assignments:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load assignments.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load assignments.'
       })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAcceptDecline = async (assignmentId: string, action: "accept" | "decline") => {
+  const handleAcceptDecline = async (assignmentId: string, action: 'accept' | 'decline') => {
     try {
-      const status = action === "accept" ? "accepted" : "declined"
+      const status = action === 'accept' ? 'accepted' : 'declined'
       await api.updateAssignmentStatus(assignmentId, status)
       
       toast({
-        title: action === "accept" ? "Assignment accepted" : "Assignment declined",
-        description: `You have ${action}ed the game assignment.`,
+        title: action === 'accept' ? 'Assignment accepted' : 'Assignment declined',
+        description: `You have ${action}ed the game assignment.`
       })
       
       // Refresh assignments
@@ -66,9 +67,9 @@ export function MyAssignments() {
     } catch (error) {
       console.error('Failed to update assignment:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update assignment.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update assignment.'
       })
     }
   }
@@ -126,8 +127,8 @@ export function MyAssignments() {
                   return gameDate.getMonth() === now.getMonth() && gameDate.getFullYear() === now.getFullYear()
                 })
                 .reduce((total, assignment) => {
-                  const wage = assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate || 0;
-                  return total + wage;
+                  const wage = assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate || 0
+                  return total + wage
                 }, 0)}
             </div>
           </CardContent>
@@ -184,13 +185,13 @@ export function MyAssignments() {
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
                           className={
                             assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
-                            assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
-                            'text-red-600 border-red-600'
+                              assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
+                                'text-red-600 border-red-600'
                           }
                         >
                           {assignment.status === 'pending' ? 'Pending' : 
-                           assignment.status === 'accepted' ? 'Accepted' : 
-                           assignment.status === 'declined' ? 'Declined' : assignment.status}
+                            assignment.status === 'accepted' ? 'Accepted' : 
+                              assignment.status === 'declined' ? 'Declined' : assignment.status}
                         </Badge>
                       </div>
 
@@ -229,7 +230,7 @@ export function MyAssignments() {
                           <Button
                             size="mobile"
                             variant="outline"
-                            onClick={() => handleAcceptDecline(assignment.id, "accept")}
+                            onClick={() => handleAcceptDecline(assignment.id, 'accept')}
                             className="flex-1 text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
@@ -238,7 +239,7 @@ export function MyAssignments() {
                           <Button
                             size="mobile"
                             variant="outline"
-                            onClick={() => handleAcceptDecline(assignment.id, "decline")}
+                            onClick={() => handleAcceptDecline(assignment.id, 'decline')}
                             className="flex-1 text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100"
                           >
                             <XCircle className="h-4 w-4 mr-2" />
@@ -325,13 +326,13 @@ export function MyAssignments() {
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
                           className={
                             assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
-                            assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
-                            'text-red-600 border-red-600'
+                              assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
+                                'text-red-600 border-red-600'
                           }
                         >
                           {assignment.status === 'pending' ? 'Pending' : 
-                           assignment.status === 'accepted' ? 'Accepted' : 
-                           assignment.status === 'declined' ? 'Declined' : assignment.status}
+                            assignment.status === 'accepted' ? 'Accepted' : 
+                              assignment.status === 'declined' ? 'Declined' : assignment.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -340,7 +341,7 @@ export function MyAssignments() {
                             <Button
                               size="mobileSm"
                               variant="outline"
-                              onClick={() => handleAcceptDecline(assignment.id, "accept")}
+                              onClick={() => handleAcceptDecline(assignment.id, 'accept')}
                               className="text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100 min-w-[44px] touch-manipulation"
                             >
                               <CheckCircle className="h-4 w-4 md:mr-1" />
@@ -349,7 +350,7 @@ export function MyAssignments() {
                             <Button
                               size="mobileSm"
                               variant="outline"
-                              onClick={() => handleAcceptDecline(assignment.id, "decline")}
+                              onClick={() => handleAcceptDecline(assignment.id, 'decline')}
                               className="text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100 min-w-[44px] touch-manipulation"
                             >
                               <XCircle className="h-4 w-4 md:mr-1" />

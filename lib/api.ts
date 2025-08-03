@@ -1,6 +1,16 @@
+/**
+ * @fileoverview API Client Library
+ * 
+ * This module provides a centralized API client for making HTTP requests to the backend.
+ * It handles authentication, request/response formatting, error handling, and provides
+ * typed methods for all API endpoints in the sports management application.
+ * 
+ * @module lib/api
+ */
+
 import { AvailabilityWindow, AvailabilityResponse } from './types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 interface ApiResponse<T> {
   data?: T;
@@ -11,73 +21,101 @@ interface ApiResponse<T> {
   };
 }
 
+/**
+ * API Client class for making HTTP requests to the backend
+ * 
+ * Provides a centralized way to interact with the API, handling authentication,
+ * request formatting, and response parsing. Automatically manages JWT tokens
+ * and provides methods for all major API endpoints.
+ * 
+ * @class ApiClient
+ */
 class ApiClient {
-  private baseURL: string;
-  private token: string | null = null;
+  private baseURL: string
+  private token: string | null = null
 
+  /**
+   * Create an API client instance
+   * 
+   * @param {string} baseURL - Base URL for all API requests
+   */
   constructor(baseURL: string) {
-    this.baseURL = baseURL;
-    this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    this.baseURL = baseURL
+    this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
   }
 
   setToken(token: string) {
-    this.token = token;
+    this.token = token
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_token', token)
     }
   }
 
   removeToken() {
-    this.token = null;
+    this.token = null
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token')
     }
   }
 
   getToken() {
-    return this.token;
+    return this.token
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
+    const url = `${this.baseURL}${endpoint}`
+    const method = options.method || 'GET'
     const headers: HeadersInit = {
-      ...options.headers,
-    };
+      ...options.headers
+    }
 
     // Only set Content-Type to application/json if it's not a FormData request
     // and no Content-Type is already specified
     if (!(options.body instanceof FormData) && !headers['Content-Type'] && !headers['content-type']) {
-      headers['Content-Type'] = 'application/json';
+      headers['Content-Type'] = 'application/json'
     }
 
     if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+      headers.Authorization = `Bearer ${this.token}`
     }
 
     const config: RequestInit = {
       ...options,
-      headers,
-    };
+      headers
+    }
 
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(url, config)
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`
+        console.error(`API Error [${method}] ${url}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          body: config.body
+        })
+        throw new Error(errorMessage)
       }
 
       if (response.status === 204) {
-        return undefined as T;
+        return undefined as T
       }
 
-      return await response.json();
+      return await response.json()
     } catch (error) {
-      console.error(`API request failed: ${endpoint}`, error);
-      throw error;
+      if (error instanceof Error && !error.message.includes('HTTP')) {
+        console.error(`Network/Parse Error [${method}] ${url}:`, {
+          message: error.message,
+          name: error.name,
+          body: config.body
+        })
+      }
+      throw error
     }
   }
 
@@ -86,19 +124,19 @@ class ApiClient {
   async login(email: string, password: string) {
     return this.request<{ token: string; user: any }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+      body: JSON.stringify({ email, password })
+    })
   }
 
   async register(userData: any) {
     return this.request<{ token: string; user: any }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(userData),
-    });
+      body: JSON.stringify(userData)
+    })
   }
 
   async getProfile() {
-    return this.request<{ user: any }>('/auth/me');
+    return this.request<{ user: any }>('/auth/me')
   }
 
   // Games endpoints
@@ -112,17 +150,17 @@ class ApiClient {
     limit?: number;
   }) {
     // Transform frontend params to backend format
-    const transformedParams: any = {};
-    if (params?.status) transformedParams.status = params.status;
-    if (params?.level) transformedParams.level = params.level;
-    if (params?.startDate) transformedParams.date_from = params.startDate;
-    if (params?.endDate) transformedParams.date_to = params.endDate;
-    if (params?.search) transformedParams.search = params.search;
-    if (params?.page) transformedParams.page = params.page;
-    if (params?.limit) transformedParams.limit = params.limit;
+    const transformedParams: any = {}
+    if (params?.status) transformedParams.status = params.status
+    if (params?.level) transformedParams.level = params.level
+    if (params?.startDate) transformedParams.date_from = params.startDate
+    if (params?.endDate) transformedParams.date_to = params.endDate
+    if (params?.search) transformedParams.search = params.search
+    if (params?.page) transformedParams.page = params.page
+    if (params?.limit) transformedParams.limit = params.limit
     
-    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : '';
-    const response = await this.request<{ data: any[]; pagination: any }>(`/games${queryString ? `?${queryString}` : ''}`);
+    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : ''
+    const response = await this.request<{ data: any[]; pagination: any }>(`/games${queryString ? `?${queryString}` : ''}`)
     
     // Transform backend response to frontend format
     const transformedGames = response.data.map((game: any) => ({
@@ -142,13 +180,13 @@ class ApiClient {
       notes: game.notes || '',
       createdAt: game.createdAt || game.created_at,
       updatedAt: game.updatedAt || game.updated_at
-    }));
+    }))
     
-    return { data: transformedGames, pagination: response.pagination };
+    return { data: transformedGames, pagination: response.pagination }
   }
 
   async getGame(id: string) {
-    const response = await this.request<any>(`/games/${id}`);
+    const response = await this.request<any>(`/games/${id}`)
     
     // Transform backend response to frontend format
     return {
@@ -164,7 +202,7 @@ class ApiClient {
       notes: response.notes,
       createdAt: response.created_at,
       updatedAt: response.updated_at
-    };
+    }
   }
 
   async createGame(gameData: {
@@ -189,44 +227,44 @@ class ApiClient {
       level: gameData.level,
       pay_rate: gameData.payRate,
       notes: gameData.notes
-    };
+    }
     
     return this.request<any>('/games', {
       method: 'POST',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async updateGame(id: string, gameData: Partial<any>) {
     // Transform frontend camelCase to backend snake_case
-    const transformedData: any = {};
-    if (gameData.homeTeam) transformedData.home_team_name = gameData.homeTeam;
-    if (gameData.awayTeam) transformedData.away_team_name = gameData.awayTeam;
-    if (gameData.date) transformedData.game_date = gameData.date;
-    if (gameData.time) transformedData.game_time = gameData.time;
-    if (gameData.location) transformedData.location = gameData.location;
-    if (gameData.level) transformedData.level = gameData.level;
-    if (gameData.payRate) transformedData.pay_rate = gameData.payRate;
-    if (gameData.notes) transformedData.notes = gameData.notes;
-    if (gameData.status) transformedData.status = gameData.status;
+    const transformedData: any = {}
+    if (gameData.homeTeam) transformedData.home_team_name = gameData.homeTeam
+    if (gameData.awayTeam) transformedData.away_team_name = gameData.awayTeam
+    if (gameData.date) transformedData.game_date = gameData.date
+    if (gameData.time) transformedData.game_time = gameData.time
+    if (gameData.location) transformedData.location = gameData.location
+    if (gameData.level) transformedData.level = gameData.level
+    if (gameData.payRate) transformedData.pay_rate = gameData.payRate
+    if (gameData.notes) transformedData.notes = gameData.notes
+    if (gameData.status) transformedData.status = gameData.status
     
     return this.request<{ success: boolean; data: { game: Game } }>(`/games/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async updateGameStatus(id: string, status: string) {
     return this.request<{ success: boolean; data: { game: Game } }>(`/games/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+      body: JSON.stringify({ status })
+    })
   }
 
   async deleteGame(id: string) {
     return this.request<{ success: boolean; message: string }>(`/games/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Referees endpoints
@@ -238,18 +276,19 @@ class ApiClient {
     limit?: number;
   }) {
     // Transform frontend params to backend format
-    const transformedParams: any = {};
-    if (params?.certificationLevel) transformedParams.level = params.certificationLevel;
-    if (params?.available !== undefined) transformedParams.available = params.available;
-    if (params?.search) transformedParams.search = params.search;
-    if (params?.page) transformedParams.page = params.page;
-    if (params?.limit) transformedParams.limit = params.limit;
+    const transformedParams: any = {}
+    if (params?.certificationLevel) transformedParams.level = params.certificationLevel
+    if (params?.available !== undefined) transformedParams.available = params.available
+    if (params?.search) transformedParams.search = params.search
+    if (params?.page) transformedParams.page = params.page
+    if (params?.limit) transformedParams.limit = params.limit
     
-    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : '';
-    const response = await this.request<{ data: any[]; pagination: any }>(`/referees${queryString ? `?${queryString}` : ''}`);
+    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : ''
+    const response = await this.request<{ success: boolean; data: { referees: any[]; total: number } }>(`/referees${queryString ? `?${queryString}` : ''}`)
     
     // Transform backend response to frontend format
-    const transformedReferees = response.data.map((referee: any) => ({
+    const referees = response.data?.referees || []
+    const transformedReferees = referees.map((referee: any) => ({
       id: referee.id,
       name: referee.name,
       email: referee.email,
@@ -269,13 +308,23 @@ class ApiClient {
       isWhiteWhistle: referee.is_white_whistle || false,
       createdAt: referee.created_at,
       updatedAt: referee.updated_at
-    }));
+    }))
     
-    return { success: true, data: { referees: transformedReferees, pagination: response.pagination } };
+    return { 
+      success: true, 
+      data: { 
+        referees: transformedReferees, 
+        pagination: {
+          total: response.data?.total || transformedReferees.length,
+          page: params?.page || 1,
+          limit: params?.limit || 50
+        }
+      } 
+    }
   }
 
   async getReferee(id: string) {
-    const response = await this.request<{ success: boolean; data: { referee: any } }>(`/referees/${id}`);
+    const response = await this.request<{ success: boolean; data: { referee: any } }>(`/referees/${id}`)
     
     // Transform backend response to frontend format
     const transformedReferee = {
@@ -296,70 +345,70 @@ class ApiClient {
       postalCode: response.data.referee.postal_code,
       createdAt: response.data.referee.created_at,
       updatedAt: response.data.referee.updated_at
-    };
+    }
     
-    return { success: true, data: { referee: transformedReferee } };
+    return { success: true, data: { referee: transformedReferee } }
   }
 
   async getRefereeProfile() {
-    return this.request<{ success: boolean; data: { referee: Referee } }>('/referees/profile');
+    return this.request<{ success: boolean; data: { referee: Referee } }>('/referees/profile')
   }
 
   async updateReferee(id: string, refereeData: Partial<any>) {
     // Transform frontend camelCase to backend snake_case
-    const transformedData: any = {};
-    if (refereeData.name) transformedData.name = refereeData.name;
-    if (refereeData.email) transformedData.email = refereeData.email;
-    if (refereeData.phone) transformedData.phone = refereeData.phone;
-    if (refereeData.certificationLevel) transformedData.level = refereeData.certificationLevel;
-    if (refereeData.location) transformedData.location = refereeData.location;
-    if (refereeData.isAvailable !== undefined) transformedData.is_available = refereeData.isAvailable;
-    if (refereeData.availabilityStrategy) transformedData.availability_strategy = refereeData.availabilityStrategy;
+    const transformedData: any = {}
+    if (refereeData.name) transformedData.name = refereeData.name
+    if (refereeData.email) transformedData.email = refereeData.email
+    if (refereeData.phone) transformedData.phone = refereeData.phone
+    if (refereeData.certificationLevel) transformedData.level = refereeData.certificationLevel
+    if (refereeData.location) transformedData.location = refereeData.location
+    if (refereeData.isAvailable !== undefined) transformedData.is_available = refereeData.isAvailable
+    if (refereeData.availabilityStrategy) transformedData.availability_strategy = refereeData.availabilityStrategy
     
     return this.request<{ success: boolean; data: { referee: Referee } }>(`/referees/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async updateRefereeAvailability(id: string, isAvailable: boolean) {
     return this.request<{ success: boolean; data: { referee: Referee } }>(`/referees/${id}/availability`, {
       method: 'PATCH',
-      body: JSON.stringify({ is_available: isAvailable }),
-    });
+      body: JSON.stringify({ is_available: isAvailable })
+    })
   }
 
   // Availability Windows API
   async getRefereeAvailabilityWindows(id: string, params?: { startDate?: string; endDate?: string }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
-    const url = `/availability/referees/${id}${queryString ? `?${queryString}` : ''}`;
-    return this.request<AvailabilityResponse>(url);
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    const url = `/availability/referees/${id}${queryString ? `?${queryString}` : ''}`
+    return this.request<AvailabilityResponse>(url)
   }
 
   async createAvailabilityWindow(refereeId: string, window: Partial<AvailabilityWindow>) {
     return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/referees/${refereeId}`, {
       method: 'POST',
-      body: JSON.stringify(window),
-    });
+      body: JSON.stringify(window)
+    })
   }
   async createBulkAvailabilityWindows(refereeId: string, windows: Partial<AvailabilityWindow>[]) {
     return this.request<{ success: boolean; data: { created: number; windows: AvailabilityWindow[] } }>('/availability/bulk', {
       method: 'POST',
-      body: JSON.stringify({ referee_id: refereeId, windows }),
-    });
+      body: JSON.stringify({ referee_id: refereeId, windows })
+    })
   }
 
   async updateAvailabilityWindow(windowId: string, updates: Partial<AvailabilityWindow>) {
     return this.request<{ success: boolean; data: AvailabilityWindow }>(`/availability/${windowId}`, {
       method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+      body: JSON.stringify(updates)
+    })
   }
 
   async deleteAvailabilityWindow(windowId: string) {
     return this.request<{ success: boolean; message: string }>(`/availability/${windowId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async checkAvailabilityConflicts(params: {
@@ -368,7 +417,7 @@ class ApiClient {
     end_time: string;
     referee_id?: string;
   }) {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    const queryString = new URLSearchParams(params as Record<string, string>).toString()
     return this.request<{
       success: boolean;
       data: {
@@ -376,7 +425,7 @@ class ApiClient {
         gameConflicts: any[];
         totalConflicts: number;
       };
-    }>(`/availability/conflicts?${queryString}`);
+    }>(`/availability/conflicts?${queryString}`)
   }
 
   async createBulkAvailability(refereeId: string, windows: Partial<AvailabilityWindow>[]) {
@@ -395,9 +444,9 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({
         referee_id: refereeId,
-        windows,
-      }),
-    });
+        windows
+      })
+    })
   }
 
   async getRefereeAssignments(id: string, params?: {
@@ -406,19 +455,19 @@ class ApiClient {
     endDate?: string;
   }) {
     // Transform frontend params to backend format
-    const transformedParams: any = {};
-    if (params?.status) transformedParams.status = params.status;
-    if (params?.startDate) transformedParams.start_date = params.startDate;
-    if (params?.endDate) transformedParams.end_date = params.endDate;
+    const transformedParams: any = {}
+    if (params?.status) transformedParams.status = params.status
+    if (params?.startDate) transformedParams.start_date = params.startDate
+    if (params?.endDate) transformedParams.end_date = params.endDate
     
-    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : '';
-    return this.request<{ success: boolean; data: { assignments: Assignment[] } }>(`/referees/${id}/assignments${queryString ? `?${queryString}` : ''}`);
+    const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : ''
+    return this.request<{ success: boolean; data: { assignments: Assignment[] } }>(`/referees/${id}/assignments${queryString ? `?${queryString}` : ''}`)
   }
 
   async deleteReferee(id: string) {
     return this.request<{ success: boolean; message: string }>(`/referees/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Assignments endpoints
@@ -429,12 +478,12 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as any).toString() : '';
-    return this.request<{ success: boolean; data: { assignments: Assignment[]; pagination: any } }>(`/assignments${queryString ? `?${queryString}` : ''}`);
+    const queryString = params ? new URLSearchParams(params as any).toString() : ''
+    return this.request<{ success: boolean; data: { assignments: Assignment[]; pagination: any } }>(`/assignments${queryString ? `?${queryString}` : ''}`)
   }
 
   async getAssignment(id: string) {
-    return this.request<{ success: boolean; data: { assignment: Assignment } }>(`/assignments/${id}`);
+    return this.request<{ success: boolean; data: { assignment: Assignment } }>(`/assignments/${id}`)
   }
 
   async createAssignment(assignmentData: {
@@ -449,25 +498,25 @@ class ApiClient {
       user_id: assignmentData.refereeId,
       position_id: assignmentData.positionId || 'e468e96b-4ae8-448d-b0f7-86f688f3402b', // Default to Referee 1
       assigned_by: assignmentData.assignedBy
-    };
+    }
     
     return this.request<{ success: boolean; data: { assignment: Assignment } }>('/assignments', {
       method: 'POST',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async updateAssignmentStatus(id: string, status: string, reason?: string) {
     return this.request<{ success: boolean; data: { assignment: Assignment } }>(`/assignments/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status, reason }),
-    });
+      body: JSON.stringify({ status, reason })
+    })
   }
 
   async deleteAssignment(id: string) {
     return this.request<{ success: boolean; message: string }>(`/assignments/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async createBulkAssignments(assignments: Array<{
@@ -476,8 +525,8 @@ class ApiClient {
   }>) {
     return this.request<{ success: boolean; data: { assignments: Assignment[]; summary: any } }>('/assignments/bulk', {
       method: 'POST',
-      body: JSON.stringify({ assignments }),
-    });
+      body: JSON.stringify({ assignments })
+    })
   }
 
   async getAvailableGames(params?: {
@@ -485,12 +534,12 @@ class ApiClient {
     endDate?: string;
     level?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as any).toString() : '';
-    return this.request<{ success: boolean; data: { games: Game[] } }>(`/assignments/available-games${queryString ? `?${queryString}` : ''}`);
+    const queryString = params ? new URLSearchParams(params as any).toString() : ''
+    return this.request<{ success: boolean; data: { games: Game[] } }>(`/assignments/available-games${queryString ? `?${queryString}` : ''}`)
   }
 
   async getAvailableReferees(gameId: string) {
-    const response = await this.request<Referee[]>(`/assignments/available-referees/${gameId}`);
+    const response = await this.request<Referee[]>(`/assignments/available-referees/${gameId}`)
     
     // Transform backend response to frontend format
     const transformedReferees = response.map((referee: any) => ({
@@ -510,14 +559,14 @@ class ApiClient {
       postalCode: referee.postal_code,
       createdAt: referee.created_at,
       updatedAt: referee.updated_at
-    }));
+    }))
     
-    return transformedReferees;
+    return transformedReferees
   }
 
   // Referee Levels endpoints
   async getRefereeLevels() {
-    return this.request<{ success: boolean; data: RefereeLevel[] }>('/referee-levels');
+    return this.request<{ success: boolean; data: RefereeLevel[] }>('/referee-levels')
   }
 
   async assignRefereeLevel(refereeId: string, levelData: {
@@ -528,8 +577,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: { referee: any }; message: string }>(`/referee-levels/${refereeId}/assign`, {
       method: 'PUT',
-      body: JSON.stringify(levelData),
-    });
+      body: JSON.stringify(levelData)
+    })
   }
 
   async checkAssignmentEligibility(gameId: string, refereeId: string) {
@@ -542,7 +591,7 @@ class ApiClient {
         game_level?: string;
         allowed_divisions?: string[];
       } 
-    }>(`/referee-levels/check-assignment/${gameId}/${refereeId}`);
+    }>(`/referee-levels/check-assignment/${gameId}/${refereeId}`)
   }
 
   // Self-assignment endpoints
@@ -559,8 +608,8 @@ class ApiClient {
       message: string; 
     }>('/self-assignment', {
       method: 'POST',
-      body: JSON.stringify(gameData),
-    });
+      body: JSON.stringify(gameData)
+    })
   }
 
   async getAvailableGamesForSelfAssignment() {
@@ -572,7 +621,7 @@ class ApiClient {
         allowed_divisions?: string[];
       };
       message?: string;
-    }>('/self-assignment/available');
+    }>('/self-assignment/available')
   }
 
   // League endpoints
@@ -586,14 +635,14 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         leagues: League[];
         pagination: any;
       };
-    }>(`/leagues${queryString ? `?${queryString}` : ''}`);
+    }>(`/leagues${queryString ? `?${queryString}` : ''}`)
   }
 
   async getLeague(id: string) {
@@ -605,7 +654,7 @@ class ApiClient {
         games: Game[];
         stats: any;
       };
-    }>(`/leagues/${id}`);
+    }>(`/leagues/${id}`)
   }
 
   async createLeague(leagueData: Partial<League>) {
@@ -615,8 +664,8 @@ class ApiClient {
       message: string;
     }>('/leagues', {
       method: 'POST',
-      body: JSON.stringify(leagueData),
-    });
+      body: JSON.stringify(leagueData)
+    })
   }
 
   async createBulkLeagues(data: {
@@ -637,8 +686,8 @@ class ApiClient {
       message: string;
     }>('/leagues/bulk', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async updateLeague(id: string, leagueData: Partial<League>) {
@@ -648,8 +697,8 @@ class ApiClient {
       message: string;
     }>(`/leagues/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(leagueData),
-    });
+      body: JSON.stringify(leagueData)
+    })
   }
 
   async deleteLeague(id: string) {
@@ -657,8 +706,8 @@ class ApiClient {
       success: boolean;
       message: string;
     }>(`/leagues/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async getLeagueFilterOptions() {
@@ -672,7 +721,7 @@ class ApiClient {
         seasons: string[];
         levels: string[];
       };
-    }>('/leagues/options/filters');
+    }>('/leagues/options/filters')
   }
 
   // Team endpoints
@@ -686,14 +735,14 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         teams: Team[];
         pagination: any;
       };
-    }>(`/teams${queryString ? `?${queryString}` : ''}`);
+    }>(`/teams${queryString ? `?${queryString}` : ''}`)
   }
 
   async getTeam(id: string) {
@@ -704,7 +753,7 @@ class ApiClient {
         games: Game[];
         stats: any;
       };
-    }>(`/teams/${id}`);
+    }>(`/teams/${id}`)
   }
 
   async createTeam(teamData: Partial<Team>) {
@@ -714,8 +763,8 @@ class ApiClient {
       message: string;
     }>('/teams', {
       method: 'POST',
-      body: JSON.stringify(teamData),
-    });
+      body: JSON.stringify(teamData)
+    })
   }
 
   async createBulkTeams(data: {
@@ -732,8 +781,8 @@ class ApiClient {
       message: string;
     }>('/teams/bulk', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async generateTeams(data: {
@@ -753,8 +802,8 @@ class ApiClient {
       message: string;
     }>('/teams/generate', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async updateTeam(id: string, teamData: Partial<Team>) {
@@ -764,8 +813,8 @@ class ApiClient {
       message: string;
     }>(`/teams/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(teamData),
-    });
+      body: JSON.stringify(teamData)
+    })
   }
 
   async deleteTeam(id: string) {
@@ -773,8 +822,8 @@ class ApiClient {
       success: boolean;
       message: string;
     }>(`/teams/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async getTeamsForLeague(leagueId: string) {
@@ -784,7 +833,7 @@ class ApiClient {
         league: League;
         teams: Team[];
       };
-    }>(`/teams/league/${leagueId}`);
+    }>(`/teams/league/${leagueId}`)
   }
 
   // Tournament endpoints
@@ -811,8 +860,8 @@ class ApiClient {
       message: string;
     }>('/tournaments/generate', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async createTournamentGames(data: {
@@ -828,8 +877,8 @@ class ApiClient {
       message: string;
     }>('/tournaments/create-games', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async getTournamentFormats() {
@@ -838,7 +887,7 @@ class ApiClient {
       data: {
         formats: TournamentFormat[];
       };
-    }>('/tournaments/formats');
+    }>('/tournaments/formats')
   }
 
   async estimateTournament(params: {
@@ -849,7 +898,7 @@ class ApiClient {
     advance_per_group?: number;
     games_per_day?: number;
   }) {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    const queryString = new URLSearchParams(params as Record<string, string>).toString()
     return this.request<{
       success: boolean;
       data: {
@@ -857,7 +906,7 @@ class ApiClient {
         team_count: number;
         estimate: any;
       };
-    }>(`/tournaments/estimate?${queryString}`);
+    }>(`/tournaments/estimate?${queryString}`)
   }
 
   // Invitation endpoints
@@ -872,12 +921,12 @@ class ApiClient {
       first_name: invitationData.firstName,
       last_name: invitationData.lastName,
       role: invitationData.role || 'referee'
-    };
+    }
     
     return this.request<{ success: boolean; data: { invitation: any; invitation_link: string } }>('/invitations', {
       method: 'POST',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async getInvitations(params?: {
@@ -885,12 +934,12 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as any).toString() : '';
-    return this.request<{ success: boolean; data: { invitations: any[] } }>(`/invitations${queryString ? `?${queryString}` : ''}`);
+    const queryString = params ? new URLSearchParams(params as any).toString() : ''
+    return this.request<{ success: boolean; data: { invitations: any[] } }>(`/invitations${queryString ? `?${queryString}` : ''}`)
   }
 
   async getInvitation(token: string) {
-    return this.request<{ success: boolean; data: { invitation: any } }>(`/invitations/${token}`);
+    return this.request<{ success: boolean; data: { invitation: any } }>(`/invitations/${token}`)
   }
 
   async completeInvitation(token: string, signupData: {
@@ -908,23 +957,23 @@ class ApiClient {
       postal_code: signupData.postalCode,
       level: signupData.level,
       max_distance: signupData.maxDistance
-    };
+    }
     
     return this.request<{ success: boolean; data: { token: string; user: any } }>(`/invitations/${token}/complete`, {
       method: 'POST',
-      body: JSON.stringify(transformedData),
-    });
+      body: JSON.stringify(transformedData)
+    })
   }
 
   async cancelInvitation(id: string) {
     return this.request<{ success: boolean; message: string }>(`/invitations/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Organization settings endpoints
   async getOrganizationSettings() {
-    return this.request<{ success: boolean; data: OrganizationSettings }>('/organization/settings');
+    return this.request<{ success: boolean; data: OrganizationSettings }>('/organization/settings')
   }
 
   async updateOrganizationSettings(settings: {
@@ -935,18 +984,18 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: OrganizationSettings; message: string }>('/organization/settings', {
       method: 'PUT',
-      body: JSON.stringify(settings),
-    });
+      body: JSON.stringify(settings)
+    })
   }
 
   // Posts endpoints
   async getPosts(includeDrafts = false) {
-    const params = includeDrafts ? '?include_drafts=true' : '';
-    return this.request<{ success: boolean; data: { posts: Post[] } }>(`/posts${params}`);
+    const params = includeDrafts ? '?include_drafts=true' : ''
+    return this.request<{ success: boolean; data: { posts: Post[] } }>(`/posts${params}`)
   }
 
   async getPostCategories() {
-    return this.request<{ success: boolean; data: PostCategory[] }>('/posts/categories');
+    return this.request<{ success: boolean; data: PostCategory[] }>('/posts/categories')
   }
 
   async createPost(postData: {
@@ -959,8 +1008,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Post }>('/posts', {
       method: 'POST',
-      body: JSON.stringify(postData),
-    });
+      body: JSON.stringify(postData)
+    })
   }
 
   async updatePost(id: string, postData: Partial<{
@@ -973,14 +1022,14 @@ class ApiClient {
   }>) {
     return this.request<{ success: boolean; data: Post }>(`/posts/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(postData),
-    });
+      body: JSON.stringify(postData)
+    })
   }
 
   async deletePost(id: string) {
     return this.request<{ success: boolean; message: string }>(`/posts/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // AI Assignment Rules endpoints
@@ -990,16 +1039,16 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const searchParams = new URLSearchParams();
+    const searchParams = new URLSearchParams()
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
-          searchParams.append(key, value.toString());
+          searchParams.append(key, value.toString())
         }
-      });
+      })
     }
-    const query = searchParams.toString();
-    return this.request<{ success: boolean; data: AIAssignmentRule[] }>(`/ai-assignment-rules${query ? `?${query}` : ''}`);
+    const query = searchParams.toString()
+    return this.request<{ success: boolean; data: AIAssignmentRule[] }>(`/ai-assignment-rules${query ? `?${query}` : ''}`)
   }
 
   async createAIAssignmentRule(ruleData: {
@@ -1047,31 +1096,31 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: AIAssignmentRule }>('/ai-assignment-rules', {
       method: 'POST',
-      body: JSON.stringify(ruleData),
-    });
+      body: JSON.stringify(ruleData)
+    })
   }
 
   async getAIAssignmentRule(id: string) {
-    return this.request<{ success: boolean; data: AIAssignmentRule & { partnerPreferences: any[] } }>(`/ai-assignment-rules/${id}`);
+    return this.request<{ success: boolean; data: AIAssignmentRule & { partnerPreferences: any[] } }>(`/ai-assignment-rules/${id}`)
   }
 
   async updateAIAssignmentRule(id: string, ruleData: any) {
     return this.request<{ success: boolean; data: AIAssignmentRule }>(`/ai-assignment-rules/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(ruleData),
-    });
+      body: JSON.stringify(ruleData)
+    })
   }
 
   async deleteAIAssignmentRule(id: string) {
     return this.request<{ success: boolean }>(`/ai-assignment-rules/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async toggleAIAssignmentRule(id: string) {
     return this.request<{ success: boolean; data: AIAssignmentRule }>(`/ai-assignment-rules/${id}/toggle`, {
-      method: 'POST',
-    });
+      method: 'POST'
+    })
   }
 
   async runAIAssignmentRule(id: string, params: {
@@ -1081,8 +1130,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: AIAssignmentResult }>(`/ai-assignment-rules/${id}/run`, {
       method: 'POST',
-      body: JSON.stringify(params),
-    });
+      body: JSON.stringify(params)
+    })
   }
 
   async getAIAssignmentRuleRuns(id: string, params?: {
@@ -1090,20 +1139,20 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const searchParams = new URLSearchParams();
+    const searchParams = new URLSearchParams()
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
-          searchParams.append(key, value.toString());
+          searchParams.append(key, value.toString())
         }
-      });
+      })
     }
-    const query = searchParams.toString();
-    return this.request<{ success: boolean; data: AIAssignmentRuleRun[] }>(`/ai-assignment-rules/${id}/runs${query ? `?${query}` : ''}`);
+    const query = searchParams.toString()
+    return this.request<{ success: boolean; data: AIAssignmentRuleRun[] }>(`/ai-assignment-rules/${id}/runs${query ? `?${query}` : ''}`)
   }
 
   async getAIAssignmentRuleRunDetails(runId: string) {
-    return this.request<{ success: boolean; data: AIAssignmentRuleRun }>(`/ai-assignment-rules/runs/${runId}`);
+    return this.request<{ success: boolean; data: AIAssignmentRuleRun }>(`/ai-assignment-rules/runs/${runId}`)
   }
 
   async getAIAssignmentAnalytics(params?: { days?: number }) {
@@ -1111,7 +1160,7 @@ class ApiClient {
       Object.entries(params)
         .filter(([, value]) => value !== undefined && value !== '')
         .map(([key, value]) => [key, String(value)])
-    ).toString() : '';
+    ).toString() : ''
     
     return this.request<{ 
       success: boolean; 
@@ -1155,7 +1204,7 @@ class ApiClient {
           runsWithConflicts: number;
         };
       }
-    }>(`/ai-assignment-rules/analytics${query ? `?${query}` : ''}`);
+    }>(`/ai-assignment-rules/analytics${query ? `?${query}` : ''}`)
   }
 
   async addPartnerPreference(ruleId: string, preference: {
@@ -1165,20 +1214,20 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: any }>(`/ai-assignment-rules/${ruleId}/partner-preferences`, {
       method: 'POST',
-      body: JSON.stringify(preference),
-    });
+      body: JSON.stringify(preference)
+    })
   }
 
   async deletePartnerPreference(ruleId: string, prefId: string) {
     return this.request<{ success: boolean }>(`/ai-assignment-rules/${ruleId}/partner-preferences/${prefId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Employee Management API endpoints
   async getEmployeeDepartments(params?: { hierarchy?: boolean }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
-    return this.request<Department[]>(`/employees/departments${queryString ? `?${queryString}` : ''}`);
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    return this.request<Department[]>(`/employees/departments${queryString ? `?${queryString}` : ''}`)
   }
 
   async createEmployeeDepartment(departmentData: {
@@ -1191,15 +1240,15 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Department }>('/employees/departments', {
       method: 'POST',
-      body: JSON.stringify(departmentData),
-    });
+      body: JSON.stringify(departmentData)
+    })
   }
 
   async updateEmployeeDepartment(id: string, departmentData: Partial<Department>) {
     return this.request<{ success: boolean; data: Department }>(`/employees/departments/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(departmentData),
-    });
+      body: JSON.stringify(departmentData)
+    })
   }
 
   async getEmployeePositions(params?: {
@@ -1207,8 +1256,8 @@ class ApiClient {
     level?: string;
     active?: boolean;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
-    return this.request<JobPosition[]>(`/employees/positions${queryString ? `?${queryString}` : ''}`);
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    return this.request<JobPosition[]>(`/employees/positions${queryString ? `?${queryString}` : ''}`)
   }
 
   async createEmployeePosition(positionData: {
@@ -1224,8 +1273,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: JobPosition }>('/employees/positions', {
       method: 'POST',
-      body: JSON.stringify(positionData),
-    });
+      body: JSON.stringify(positionData)
+    })
   }
 
   async getEmployees(params?: {
@@ -1236,7 +1285,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       employees: Employee[];
       pagination: {
@@ -1245,11 +1294,11 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/employees${queryString ? `?${queryString}` : ''}`);
+    }>(`/employees${queryString ? `?${queryString}` : ''}`)
   }
 
   async getEmployee(id: string) {
-    return this.request<{ success: boolean; data: Employee }>(`/employees/${id}`);
+    return this.request<{ success: boolean; data: Employee }>(`/employees/${id}`)
   }
 
   async createEmployee(employeeData: {
@@ -1267,19 +1316,19 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Employee }>('/employees', {
       method: 'POST',
-      body: JSON.stringify(employeeData),
-    });
+      body: JSON.stringify(employeeData)
+    })
   }
 
   async updateEmployee(id: string, employeeData: Partial<Employee>) {
     return this.request<{ success: boolean; data: Employee }>(`/employees/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(employeeData),
-    });
+      body: JSON.stringify(employeeData)
+    })
   }
 
   async getEmployeeEvaluations(id: string) {
-    return this.request<{ success: boolean; data: EmployeeEvaluation[] }>(`/employees/${id}/evaluations`);
+    return this.request<{ success: boolean; data: EmployeeEvaluation[] }>(`/employees/${id}/evaluations`)
   }
 
   async createEmployeeEvaluation(id: string, evaluationData: {
@@ -1297,12 +1346,12 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: EmployeeEvaluation }>(`/employees/${id}/evaluations`, {
       method: 'POST',
-      body: JSON.stringify(evaluationData),
-    });
+      body: JSON.stringify(evaluationData)
+    })
   }
 
   async getEmployeeTraining(id: string) {
-    return this.request<{ success: boolean; data: TrainingRecord[] }>(`/employees/${id}/training`);
+    return this.request<{ success: boolean; data: TrainingRecord[] }>(`/employees/${id}/training`)
   }
 
   async createEmployeeTraining(id: string, trainingData: {
@@ -1318,8 +1367,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: TrainingRecord }>(`/employees/${id}/training`, {
       method: 'POST',
-      body: JSON.stringify(trainingData),
-    });
+      body: JSON.stringify(trainingData)
+    })
   }
 
   async getEmployeeStats() {
@@ -1335,7 +1384,7 @@ class ApiClient {
         activeTrainingPrograms: number;
         averageTenure: number;
       };
-    }>('/employees/stats/overview');
+    }>('/employees/stats/overview')
   }
 
   // Asset Management API endpoints
@@ -1347,7 +1396,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       assets: Asset[];
       pagination: {
@@ -1356,11 +1405,11 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/assets${queryString ? `?${queryString}` : ''}`);
+    }>(`/assets${queryString ? `?${queryString}` : ''}`)
   }
 
   async getAsset(id: string) {
-    return this.request<{ success: boolean; data: Asset }>(`/assets/${id}`);
+    return this.request<{ success: boolean; data: Asset }>(`/assets/${id}`)
   }
 
   async createAsset(assetData: {
@@ -1379,19 +1428,19 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Asset }>('/assets', {
       method: 'POST',
-      body: JSON.stringify(assetData),
-    });
+      body: JSON.stringify(assetData)
+    })
   }
 
   async updateAsset(id: string, assetData: Partial<Asset>) {
     return this.request<{ success: boolean; data: Asset }>(`/assets/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(assetData),
-    });
+      body: JSON.stringify(assetData)
+    })
   }
 
   async getAssetMaintenance(id: string) {
-    return this.request<{ success: boolean; data: AssetMaintenance[] }>(`/assets/${id}/maintenance`);
+    return this.request<{ success: boolean; data: AssetMaintenance[] }>(`/assets/${id}/maintenance`)
   }
 
   async createAssetMaintenance(id: string, maintenanceData: {
@@ -1404,8 +1453,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: AssetMaintenance }>(`/assets/${id}/maintenance`, {
       method: 'POST',
-      body: JSON.stringify(maintenanceData),
-    });
+      body: JSON.stringify(maintenanceData)
+    })
   }
 
   async checkoutAsset(id: string, checkoutData: {
@@ -1416,8 +1465,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: AssetCheckout }>(`/assets/${id}/checkout`, {
       method: 'POST',
-      body: JSON.stringify(checkoutData),
-    });
+      body: JSON.stringify(checkoutData)
+    })
   }
 
   async checkinAsset(checkoutId: string, checkinData: {
@@ -1427,8 +1476,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: AssetCheckout }>(`/assets/checkout/${checkoutId}/checkin`, {
       method: 'POST',
-      body: JSON.stringify(checkinData),
-    });
+      body: JSON.stringify(checkinData)
+    })
   }
 
   async getAssetStats() {
@@ -1445,7 +1494,7 @@ class ApiClient {
         maintenanceDue: any[];
         overallValue: number;
       };
-    }>('/assets/stats/overview');
+    }>('/assets/stats/overview')
   }
 
   // Document Management API endpoints
@@ -1457,7 +1506,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       documents: Document[];
       pagination: {
@@ -1466,19 +1515,19 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/documents${queryString ? `?${queryString}` : ''}`);
+    }>(`/documents${queryString ? `?${queryString}` : ''}`)
   }
 
   async getDocument(id: string) {
-    return this.request<{ success: boolean; data: Document }>(`/documents/${id}`);
+    return this.request<{ success: boolean; data: Document }>(`/documents/${id}`)
   }
 
   async createDocument(formData: FormData) {
     return this.request<{ success: boolean; data: Document }>('/documents', {
       method: 'POST',
       body: formData,
-      headers: {}, // Let browser set content-type for FormData
-    });
+      headers: {} // Let browser set content-type for FormData
+    })
   }
 
   async updateDocument(id: string, documentData: {
@@ -1491,8 +1540,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Document }>(`/documents/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(documentData),
-    });
+      body: JSON.stringify(documentData)
+    })
   }
 
   async approveDocument(id: string, approvalData: {
@@ -1501,8 +1550,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Document }>(`/documents/${id}/approve`, {
       method: 'POST',
-      body: JSON.stringify(approvalData),
-    });
+      body: JSON.stringify(approvalData)
+    })
   }
 
   async acknowledgeDocument(id: string, acknowledgmentData: {
@@ -1511,16 +1560,16 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: DocumentAcknowledgment }>(`/documents/${id}/acknowledge`, {
       method: 'POST',
-      body: JSON.stringify(acknowledgmentData),
-    });
+      body: JSON.stringify(acknowledgmentData)
+    })
   }
 
   async downloadDocument(id: string) {
-    return this.request<Blob>(`/documents/${id}/download`, {}, true);
+    return this.request<Blob>(`/documents/${id}/download`, {}, true)
   }
 
   async getPendingAcknowledgments() {
-    return this.request<{ success: boolean; data: DocumentAcknowledgment[] }>('/documents/acknowledgments/pending');
+    return this.request<{ success: boolean; data: DocumentAcknowledgment[] }>('/documents/acknowledgments/pending')
   }
 
   // Compliance Management API endpoints
@@ -1532,7 +1581,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       items: ComplianceItem[];
       pagination: {
@@ -1541,7 +1590,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/compliance/tracking${queryString ? `?${queryString}` : ''}`);
+    }>(`/compliance/tracking${queryString ? `?${queryString}` : ''}`)
   }
 
   async createComplianceItem(itemData: {
@@ -1556,15 +1605,15 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: ComplianceItem }>('/compliance/tracking', {
       method: 'POST',
-      body: JSON.stringify(itemData),
-    });
+      body: JSON.stringify(itemData)
+    })
   }
 
   async updateComplianceItem(id: string, itemData: Partial<ComplianceItem>) {
     return this.request<{ success: boolean; data: ComplianceItem }>(`/compliance/tracking/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(itemData),
-    });
+      body: JSON.stringify(itemData)
+    })
   }
 
   async getComplianceIncidents(params?: {
@@ -1575,7 +1624,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       incidents: ComplianceIncident[];
       pagination: {
@@ -1584,7 +1633,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/compliance/incidents${queryString ? `?${queryString}` : ''}`);
+    }>(`/compliance/incidents${queryString ? `?${queryString}` : ''}`)
   }
 
   async createComplianceIncident(incidentData: {
@@ -1600,8 +1649,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: ComplianceIncident }>('/compliance/incidents', {
       method: 'POST',
-      body: JSON.stringify(incidentData),
-    });
+      body: JSON.stringify(incidentData)
+    })
   }
 
   async getRiskAssessments(params?: {
@@ -1611,7 +1660,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       assessments: RiskAssessment[];
       pagination: {
@@ -1620,7 +1669,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/compliance/risks${queryString ? `?${queryString}` : ''}`);
+    }>(`/compliance/risks${queryString ? `?${queryString}` : ''}`)
   }
 
   async createRiskAssessment(assessmentData: {
@@ -1636,8 +1685,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: RiskAssessment }>('/compliance/risks', {
       method: 'POST',
-      body: JSON.stringify(assessmentData),
-    });
+      body: JSON.stringify(assessmentData)
+    })
   }
 
   async getComplianceDashboard() {
@@ -1664,12 +1713,12 @@ class ApiClient {
         trends: any[];
         upcomingDeadlines: any[];
       };
-    }>('/compliance/stats/dashboard');
+    }>('/compliance/stats/dashboard')
   }
 
   // Budget Management API endpoints
   async getBudgetPeriods() {
-    return this.request<{ success: boolean; data: BudgetPeriod[] }>('/budgets/periods');
+    return this.request<{ success: boolean; data: BudgetPeriod[] }>('/budgets/periods')
   }
 
   async createBudgetPeriod(periodData: {
@@ -1681,12 +1730,12 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: BudgetPeriod }>('/budgets/periods', {
       method: 'POST',
-      body: JSON.stringify(periodData),
-    });
+      body: JSON.stringify(periodData)
+    })
   }
 
   async getBudgetCategories() {
-    return this.request<{ success: boolean; data: BudgetCategory[] }>('/budgets/categories');
+    return this.request<{ success: boolean; data: BudgetCategory[] }>('/budgets/categories')
   }
 
   async createBudgetCategory(categoryData: {
@@ -1698,8 +1747,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: BudgetCategory }>('/budgets/categories', {
       method: 'POST',
-      body: JSON.stringify(categoryData),
-    });
+      body: JSON.stringify(categoryData)
+    })
   }
 
   async getBudgets(params?: {
@@ -1710,7 +1759,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       budgets: Budget[];
       pagination: {
@@ -1719,7 +1768,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/budgets${queryString ? `?${queryString}` : ''}`);
+    }>(`/budgets${queryString ? `?${queryString}` : ''}`)
   }
 
   async createBudget(budgetData: {
@@ -1733,8 +1782,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Budget }>('/budgets', {
       method: 'POST',
-      body: JSON.stringify(budgetData),
-    });
+      body: JSON.stringify(budgetData)
+    })
   }
 
   async getBudget(id: string) {
@@ -1753,20 +1802,20 @@ class ApiClient {
           variancePercentage: number;
         };
       };
-    }>(`/budgets/${id}`);
+    }>(`/budgets/${id}`)
   }
 
   async updateBudget(id: string, budgetData: Partial<Budget>) {
     return this.request<{ success: boolean; data: Budget }>(`/budgets/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(budgetData),
-    });
+      body: JSON.stringify(budgetData)
+    })
   }
 
   async deleteBudget(id: string) {
     return this.request<{ success: boolean; message?: string }>(`/budgets/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Expense Management API endpoints
@@ -1783,9 +1832,9 @@ class ApiClient {
       jobId: string;
     }>('/expenses/receipts/upload', {
       method: 'POST',
-      body: formData,
+      body: formData
       // Don't set headers at all - let browser set multipart/form-data automatically
-    });
+    })
   }
 
   async getReceipts(params?: {
@@ -1799,7 +1848,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       receipts: Receipt[];
       pagination: {
@@ -1808,19 +1857,19 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/expenses/receipts${queryString ? `?${queryString}` : ''}`);
+    }>(`/expenses/receipts${queryString ? `?${queryString}` : ''}`)
   }
 
   async getReceipt(id: string) {
     return this.request<{
       receipt: Receipt;
       processingLogs: ProcessingLog[];
-    }>(`/expenses/receipts/${id}`);
+    }>(`/expenses/receipts/${id}`)
   }
 
   // Alias for getReceipt - used by receipt upload component
   async getReceiptDetails(id: string) {
-    return this.getReceipt(id);
+    return this.getReceipt(id)
   }
 
   async processReceipt(id: string) {
@@ -1829,8 +1878,8 @@ class ApiClient {
       jobId: string;
       status: string;
     }>(`/expenses/receipts/${id}/process`, {
-      method: 'POST',
-    });
+      method: 'POST'
+    })
   }
 
   async approveExpense(id: string, approvalData: {
@@ -1842,55 +1891,55 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Receipt }>(`/expenses/receipts/${id}/approve`, {
       method: 'POST',
-      body: JSON.stringify(approvalData),
-    });
+      body: JSON.stringify(approvalData)
+    })
   }
 
   async deleteReceipt(id: string) {
     return this.request<{ success: boolean; message: string }>(`/expenses/receipts/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   async downloadReceipt(id: string) {
-    const token = this.getToken();
+    const token = this.getToken()
     const response = await fetch(`${this.baseURL}/expenses/receipts/${id}/download`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+        'Authorization': `Bearer ${token}`
+      }
+    })
 
     if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText}`);
+      throw new Error(`Download failed: ${response.statusText}`)
     }
 
     // Get filename from Content-Disposition header
-    const contentDisposition = response.headers.get('Content-Disposition');
-    let filename = 'receipt';
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = 'receipt'
     if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/)
       if (filenameMatch) {
-        filename = filenameMatch[1];
+        filename = filenameMatch[1]
       }
     }
 
     // Create blob and trigger download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   }
 
   async getExpenseCategories() {
     return this.request<{
       categories: ExpenseCategory[];
-    }>('/expenses/categories');
+    }>('/expenses/categories')
   }
 
   async getExpenseReports(params?: {
@@ -1899,7 +1948,7 @@ class ApiClient {
     category?: string;
     status?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       reports: any[];
       summary: {
@@ -1908,7 +1957,7 @@ class ApiClient {
         averageAmount: number;
         pendingApprovals: number;
       };
-    }>(`/expenses/reports${queryString ? `?${queryString}` : ''}`);
+    }>(`/expenses/reports${queryString ? `?${queryString}` : ''}`)
   }
 
   // Payment Methods API endpoints
@@ -1932,7 +1981,7 @@ class ApiClient {
         confidence?: number;
         reason?: string;
       }>;
-    }>('/payment-methods');
+    }>('/payment-methods')
   }
 
   async detectPaymentMethod(data: {
@@ -1951,8 +2000,8 @@ class ApiClient {
       }>;
     }>('/payment-methods/detect', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   // Purchase Orders API endpoints
@@ -1963,7 +2012,7 @@ class ApiClient {
     department?: string;
     search?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       purchaseOrders: Array<{
         id: string;
@@ -2000,7 +2049,7 @@ class ApiClient {
         restrictions?: string[];
         approvalNotes?: string;
       }>;
-    }>(`/purchase-orders${queryString ? `?${queryString}` : ''}`);
+    }>(`/purchase-orders${queryString ? `?${queryString}` : ''}`)
   }
 
   async getPurchaseOrder(id: string) {
@@ -2008,7 +2057,7 @@ class ApiClient {
       purchaseOrder: any;
       lineItems: any[];
       usage: any[];
-    }>(`/purchase-orders/${id}`);
+    }>(`/purchase-orders/${id}`)
   }
 
   // Company Credit Cards API endpoints
@@ -2019,7 +2068,7 @@ class ApiClient {
     department?: string;
     search?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       creditCards: Array<{
         id: string;
@@ -2070,7 +2119,7 @@ class ApiClient {
         createdAt: string;
         updatedAt: string;
       }>;
-    }>(`/company-credit-cards${queryString ? `?${queryString}` : ''}`);
+    }>(`/company-credit-cards${queryString ? `?${queryString}` : ''}`)
   }
 
   async getCompanyCreditCard(id: string) {
@@ -2078,7 +2127,7 @@ class ApiClient {
       creditCard: any;
       transactions: any[];
       usage: any[];
-    }>(`/company-credit-cards/${id}`);
+    }>(`/company-credit-cards/${id}`)
   }
 
   // Enhanced Expense Management API endpoints
@@ -2106,8 +2155,8 @@ class ApiClient {
       message: string;
     }>('/expenses', {
       method: 'POST',
-      body: JSON.stringify(expenseData),
-    });
+      body: JSON.stringify(expenseData)
+    })
   }
 
   async updateExpense(id: string, expenseData: Partial<{
@@ -2129,8 +2178,8 @@ class ApiClient {
       message: string;
     }>(`/expenses/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(expenseData),
-    });
+      body: JSON.stringify(expenseData)
+    })
   }
 
   async getExpenses(params?: {
@@ -2148,7 +2197,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       expenses: any[];
       pagination: {
@@ -2157,7 +2206,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/expenses${queryString ? `?${queryString}` : ''}`);
+    }>(`/expenses${queryString ? `?${queryString}` : ''}`)
   }
 
   async getExpense(id: string) {
@@ -2168,7 +2217,7 @@ class ApiClient {
       paymentMethod: any;
       purchaseOrder?: any;
       creditCard?: any;
-    }>(`/expenses/${id}`);
+    }>(`/expenses/${id}`)
   }
 
   async saveDraftExpense(expenseData: any) {
@@ -2180,8 +2229,8 @@ class ApiClient {
       message: string;
     }>('/expenses/draft', {
       method: 'POST',
-      body: JSON.stringify(expenseData),
-    });
+      body: JSON.stringify(expenseData)
+    })
   }
 
   // Expense Approval API endpoints
@@ -2193,7 +2242,7 @@ class ApiClient {
     amount_max?: string;
     search?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       expenses: any[];
       summary: {
@@ -2202,7 +2251,7 @@ class ApiClient {
         high_priority_count: number;
         total_amount: number;
       };
-    }>(`/expenses/pending-approval${queryString ? `?${queryString}` : ''}`);
+    }>(`/expenses/pending-approval${queryString ? `?${queryString}` : ''}`)
   }
 
   async approveExpense(expenseId: string, data: {
@@ -2216,8 +2265,8 @@ class ApiClient {
       expense: any;
     }>(`/expenses/${expenseId}/approve`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async rejectExpense(expenseId: string, data: {
@@ -2231,8 +2280,8 @@ class ApiClient {
       expense: any;
     }>(`/expenses/${expenseId}/reject`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async delegateExpense(expenseId: string, data: {
@@ -2245,14 +2294,14 @@ class ApiClient {
       expense: any;
     }>(`/expenses/${expenseId}/delegate`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(data)
+    })
   }
 
   async getExpenseApprovalHistory(expenseId: string) {
     return this.request<{
       history: any[];
-    }>(`/expenses/${expenseId}/approval-history`);
+    }>(`/expenses/${expenseId}/approval-history`)
   }
 
   // Financial Reports API endpoints
@@ -2260,7 +2309,7 @@ class ApiClient {
     period_id?: string;
     department_id?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2268,7 +2317,7 @@ class ApiClient {
         summary: any;
         variances: any[];
       };
-    }>(`/financial-reports/budget-variance${queryString ? `?${queryString}` : ''}`);
+    }>(`/financial-reports/budget-variance${queryString ? `?${queryString}` : ''}`)
   }
 
   async getCashFlowReport(params?: {
@@ -2276,7 +2325,7 @@ class ApiClient {
     end_date?: string;
     granularity?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2284,7 +2333,7 @@ class ApiClient {
         summary: any;
         periods: any[];
       };
-    }>(`/financial-reports/cash-flow${queryString ? `?${queryString}` : ''}`);
+    }>(`/financial-reports/cash-flow${queryString ? `?${queryString}` : ''}`)
   }
 
   async getExpenseAnalysisReport(params?: {
@@ -2294,7 +2343,7 @@ class ApiClient {
     category_id?: string;
     department_id?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2302,13 +2351,13 @@ class ApiClient {
         summary: any;
         breakdown: any[];
       };
-    }>(`/financial-reports/expense-analysis${queryString ? `?${queryString}` : ''}`);
+    }>(`/financial-reports/expense-analysis${queryString ? `?${queryString}` : ''}`)
   }
 
   async getFinancialKPIs(params?: {
     period?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2316,7 +2365,7 @@ class ApiClient {
         trends: any[];
         benchmarks: any[];
       };
-    }>(`/financial-reports/kpis${queryString ? `?${queryString}` : ''}`);
+    }>(`/financial-reports/kpis${queryString ? `?${queryString}` : ''}`)
   }
 
   // Organizational Analytics API endpoints
@@ -2324,7 +2373,7 @@ class ApiClient {
     department_id?: string;
     period?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2333,13 +2382,13 @@ class ApiClient {
         trends: any[];
         topPerformers: any[];
       };
-    }>(`/analytics/organizational/employees/performance${queryString ? `?${queryString}` : ''}`);
+    }>(`/analytics/organizational/employees/performance${queryString ? `?${queryString}` : ''}`)
   }
 
   async getEmployeeRetentionAnalytics(params?: {
     period?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2349,14 +2398,14 @@ class ApiClient {
         departmentBreakdown: any[];
         exitReasons: any[];
       };
-    }>(`/analytics/organizational/employees/retention${queryString ? `?${queryString}` : ''}`);
+    }>(`/analytics/organizational/employees/retention${queryString ? `?${queryString}` : ''}`)
   }
 
   async getTrainingAnalytics(params?: {
     period?: string;
     department_id?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2365,7 +2414,7 @@ class ApiClient {
         programEffectiveness: any[];
         upcomingTraining: any[];
       };
-    }>(`/analytics/organizational/employees/training${queryString ? `?${queryString}` : ''}`);
+    }>(`/analytics/organizational/employees/training${queryString ? `?${queryString}` : ''}`)
   }
 
   async getOrganizationalHealthMetrics() {
@@ -2377,7 +2426,7 @@ class ApiClient {
         trends: any[];
         recommendations: any[];
       };
-    }>('/analytics/organizational/health/overview');
+    }>('/analytics/organizational/health/overview')
   }
 
   async getExecutiveDashboard() {
@@ -2389,7 +2438,7 @@ class ApiClient {
         alerts: any[];
         recentActivity: any[];
       };
-    }>('/analytics/organizational/dashboard/executive');
+    }>('/analytics/organizational/dashboard/executive')
   }
 
   // Workflow Management API endpoints
@@ -2397,7 +2446,7 @@ class ApiClient {
     return this.request<{
       success: boolean;
       data: WorkflowDefinition[];
-    }>('/workflows/definitions');
+    }>('/workflows/definitions')
   }
 
   async createWorkflowDefinition(workflowData: {
@@ -2410,8 +2459,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: WorkflowDefinition }>('/workflows/definitions', {
       method: 'POST',
-      body: JSON.stringify(workflowData),
-    });
+      body: JSON.stringify(workflowData)
+    })
   }
 
   async getWorkflowInstances(params?: {
@@ -2421,7 +2470,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       instances: WorkflowInstance[];
       pagination: {
@@ -2430,7 +2479,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/workflows/instances${queryString ? `?${queryString}` : ''}`);
+    }>(`/workflows/instances${queryString ? `?${queryString}` : ''}`)
   }
 
   async startWorkflow(workflowData: {
@@ -2440,8 +2489,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: WorkflowInstance }>('/workflows/instances', {
       method: 'POST',
-      body: JSON.stringify(workflowData),
-    });
+      body: JSON.stringify(workflowData)
+    })
   }
 
   async getWorkflowInstance(id: string) {
@@ -2452,7 +2501,7 @@ class ApiClient {
         steps: WorkflowStep[];
         history: any[];
       };
-    }>(`/workflows/instances/${id}`);
+    }>(`/workflows/instances/${id}`)
   }
 
   async completeWorkflowStep(stepId: string, stepData: {
@@ -2462,8 +2511,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: WorkflowStep }>(`/workflows/steps/${stepId}/complete`, {
       method: 'POST',
-      body: JSON.stringify(stepData),
-    });
+      body: JSON.stringify(stepData)
+    })
   }
 
   async getAssignedTasks(params?: {
@@ -2472,7 +2521,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       tasks: WorkflowTask[];
       pagination: {
@@ -2481,7 +2530,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/workflows/tasks/assigned${queryString ? `?${queryString}` : ''}`);
+    }>(`/workflows/tasks/assigned${queryString ? `?${queryString}` : ''}`)
   }
 
   // Communications API endpoints
@@ -2492,7 +2541,7 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       communications: Communication[];
       pagination: {
@@ -2501,7 +2550,7 @@ class ApiClient {
         total: number;
         totalPages: number;
       };
-    }>(`/communications${queryString ? `?${queryString}` : ''}`);
+    }>(`/communications${queryString ? `?${queryString}` : ''}`)
   }
 
   async createCommunication(communicationData: {
@@ -2515,25 +2564,25 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: Communication }>('/communications', {
       method: 'POST',
-      body: JSON.stringify(communicationData),
-    });
+      body: JSON.stringify(communicationData)
+    })
   }
 
   async getCommunication(id: string) {
-    return this.request<{ success: boolean; data: Communication }>(`/communications/${id}`);
+    return this.request<{ success: boolean; data: Communication }>(`/communications/${id}`)
   }
 
   async updateCommunication(id: string, communicationData: Partial<Communication>) {
     return this.request<{ success: boolean; data: Communication }>(`/communications/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(communicationData),
-    });
+      body: JSON.stringify(communicationData)
+    })
   }
 
   async publishCommunication(id: string) {
     return this.request<{ success: boolean; data: Communication }>(`/communications/${id}/publish`, {
-      method: 'POST',
-    });
+      method: 'POST'
+    })
   }
 
   async acknowledgeCommunication(id: string, acknowledgmentData: {
@@ -2542,8 +2591,8 @@ class ApiClient {
   }) {
     return this.request<{ success: boolean; data: any }>(`/communications/${id}/acknowledge`, {
       method: 'POST',
-      body: JSON.stringify(acknowledgmentData),
-    });
+      body: JSON.stringify(acknowledgmentData)
+    })
   }
 
   async getUnreadCommunicationsCount() {
@@ -2554,7 +2603,7 @@ class ApiClient {
         byPriority: any;
         byType: any;
       };
-    }>('/communications/unread/count');
+    }>('/communications/unread/count')
   }
 
   // Employee Management API
@@ -2566,21 +2615,21 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         employees: Employee[];
         pagination: any;
       };
-    }>(`/employees${queryString ? `?${queryString}` : ''}`);
+    }>(`/employees${queryString ? `?${queryString}` : ''}`)
   }
 
   async getEmployee(id: string) {
     return this.request<{
       success: boolean;
       data: { employee: Employee };
-    }>(`/employees/${id}`);
+    }>(`/employees/${id}`)
   }
 
   async createEmployee(employeeData: Partial<Employee>) {
@@ -2590,8 +2639,8 @@ class ApiClient {
       message: string;
     }>('/employees', {
       method: 'POST',
-      body: JSON.stringify(employeeData),
-    });
+      body: JSON.stringify(employeeData)
+    })
   }
 
   async updateEmployee(id: string, employeeData: Partial<Employee>) {
@@ -2601,8 +2650,8 @@ class ApiClient {
       message: string;
     }>(`/employees/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(employeeData),
-    });
+      body: JSON.stringify(employeeData)
+    })
   }
 
   async deleteEmployee(id: string) {
@@ -2610,8 +2659,8 @@ class ApiClient {
       success: boolean;
       message: string;
     }>(`/employees/${id}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'
+    })
   }
 
   // Asset Management API
@@ -2623,21 +2672,21 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         assets: Asset[];
         pagination: any;
       };
-    }>(`/assets${queryString ? `?${queryString}` : ''}`);
+    }>(`/assets${queryString ? `?${queryString}` : ''}`)
   }
 
   async getAsset(id: string) {
     return this.request<{
       success: boolean;
       data: { asset: Asset };
-    }>(`/assets/${id}`);
+    }>(`/assets/${id}`)
   }
 
   async createAsset(assetData: Partial<Asset>) {
@@ -2647,8 +2696,8 @@ class ApiClient {
       message: string;
     }>('/assets', {
       method: 'POST',
-      body: JSON.stringify(assetData),
-    });
+      body: JSON.stringify(assetData)
+    })
   }
 
   async updateAsset(id: string, assetData: Partial<Asset>) {
@@ -2658,8 +2707,8 @@ class ApiClient {
       message: string;
     }>(`/assets/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(assetData),
-    });
+      body: JSON.stringify(assetData)
+    })
   }
 
   async checkoutAsset(id: string, checkoutData: {
@@ -2673,8 +2722,8 @@ class ApiClient {
       message: string;
     }>(`/assets/${id}/checkout`, {
       method: 'POST',
-      body: JSON.stringify(checkoutData),
-    });
+      body: JSON.stringify(checkoutData)
+    })
   }
 
   async checkinAsset(id: string, checkinData: {
@@ -2687,8 +2736,8 @@ class ApiClient {
       message: string;
     }>(`/assets/${id}/checkin`, {
       method: 'POST',
-      body: JSON.stringify(checkinData),
-    });
+      body: JSON.stringify(checkinData)
+    })
   }
 
   // Document Management API
@@ -2700,14 +2749,14 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         documents: Document[];
         pagination: any;
       };
-    }>(`/documents${queryString ? `?${queryString}` : ''}`);
+    }>(`/documents${queryString ? `?${queryString}` : ''}`)
   }
 
   async uploadDocument(formData: FormData) {
@@ -2717,15 +2766,15 @@ class ApiClient {
       message: string;
     }>('/documents/upload', {
       method: 'POST',
-      body: formData,
-    });
+      body: formData
+    })
   }
 
   async getDocument(id: string) {
     return this.request<{
       success: boolean;
       data: { document: Document };
-    }>(`/documents/${id}`);
+    }>(`/documents/${id}`)
   }
 
   async acknowledgeDocument(id: string, acknowledgmentData: {
@@ -2737,8 +2786,8 @@ class ApiClient {
       data: any;
     }>(`/documents/${id}/acknowledge`, {
       method: 'POST',
-      body: JSON.stringify(acknowledgmentData),
-    });
+      body: JSON.stringify(acknowledgmentData)
+    })
   }
 
   // Budget Management API
@@ -2749,14 +2798,14 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         budgets: Budget[];
         pagination: any;
       };
-    }>(`/budgets${queryString ? `?${queryString}` : ''}`);
+    }>(`/budgets${queryString ? `?${queryString}` : ''}`)
   }
 
   async createBudget(budgetData: Partial<Budget>) {
@@ -2766,8 +2815,8 @@ class ApiClient {
       message: string;
     }>('/budgets', {
       method: 'POST',
-      body: JSON.stringify(budgetData),
-    });
+      body: JSON.stringify(budgetData)
+    })
   }
 
   async updateBudget(id: string, budgetData: Partial<Budget>) {
@@ -2777,8 +2826,8 @@ class ApiClient {
       message: string;
     }>(`/budgets/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(budgetData),
-    });
+      body: JSON.stringify(budgetData)
+    })
   }
 
   // Organizational Analytics API
@@ -2787,7 +2836,7 @@ class ApiClient {
     department?: string;
     metric?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
@@ -2795,7 +2844,7 @@ class ApiClient {
         insights: any[];
         kpis: any;
       };
-    }>(`/organizational-analytics${queryString ? `?${queryString}` : ''}`);
+    }>(`/organizational-analytics${queryString ? `?${queryString}` : ''}`)
   }
 
   async getFinancialReports(params?: {
@@ -2803,14 +2852,14 @@ class ApiClient {
     period?: string;
     format?: string;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         reports: any[];
         summary: any;
       };
-    }>(`/financial-reports${queryString ? `?${queryString}` : ''}`);
+    }>(`/financial-reports${queryString ? `?${queryString}` : ''}`)
   }
 
   // Workflow Management API
@@ -2821,14 +2870,14 @@ class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
     return this.request<{
       success: boolean;
       data: {
         workflows: WorkflowInstance[];
         pagination: any;
       };
-    }>(`/workflows${queryString ? `?${queryString}` : ''}`);
+    }>(`/workflows${queryString ? `?${queryString}` : ''}`)
   }
 
   async triggerWorkflow(workflowType: string, inputData: any) {
@@ -2840,9 +2889,9 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({
         workflow_type: workflowType,
-        input_data: inputData,
-      }),
-    });
+        input_data: inputData
+      })
+    })
   }
 }
 
@@ -2866,7 +2915,7 @@ export interface Game {
   location: string;
   level: string;
   payRate: number;
-  status: "assigned" | "unassigned" | "up-for-grabs" | "completed" | "cancelled";
+  status: 'assigned' | 'unassigned' | 'up-for-grabs' | 'completed' | 'cancelled';
   wageMultiplier?: number;
   wageMultiplierReason?: string;
   finalWage?: number;
@@ -2881,11 +2930,11 @@ export interface Referee {
   name: string;
   email: string;
   phone?: string;
-  role: "referee";
-  certificationLevel: "Level 1" | "Level 2" | "Level 3" | "Level 4";
+  role: 'referee';
+  certificationLevel: 'Level 1' | 'Level 2' | 'Level 3' | 'Level 4';
   location?: string;
   isAvailable: boolean;
-  availabilityStrategy?: "WHITELIST" | "BLACKLIST";
+  availabilityStrategy?: 'WHITELIST' | 'BLACKLIST';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -2896,7 +2945,7 @@ export interface Assignment {
   refereeId: string;
   assignedAt: string;
   assignedBy?: string;
-  status: "pending" | "accepted" | "declined" | "completed" | "cancelled";
+  status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
   calculatedWage?: number;
   reason?: string;
   game?: Game;
@@ -2928,7 +2977,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "referee"; // Keep for backward compatibility
+  role: 'admin' | 'referee'; // Keep for backward compatibility
   roles: string[]; // New array-based roles system
   referee_id?: string; // Add referee_id for referees
   phone?: string;
@@ -3054,7 +3103,7 @@ export interface PostCategory {
 }
 
 // Create and export API client instance
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient(API_BASE_URL)
 
 // AI Assignment Rule interfaces
 export interface AIAssignmentRule {
@@ -3591,5 +3640,5 @@ export interface WorkflowTask {
 
 // Hook for easy React integration
 export function useApi() {
-  return apiClient;
+  return apiClient
 }

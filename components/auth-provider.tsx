@@ -1,10 +1,33 @@
-"use client"
+/**
+ * @fileoverview Authentication Provider Component
+ * 
+ * This module provides authentication context and functionality for the entire application.
+ * It manages user login/logout, token storage, profile updates, and role-based access control.
+ * The provider wraps the application and makes authentication state available to all components.
+ * 
+ * @module components/AuthProvider
+ */
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
-import { apiClient, type User } from "@/lib/api"
-import { useToast } from "@/components/ui/use-toast"
+'use client'
 
+import type React from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+
+import { apiClient, type User } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
+
+/**
+ * Type definition for the Authentication Context
+ * 
+ * @typedef {Object} AuthContextType
+ * @property {User | null} user - Current authenticated user object or null if not authenticated
+ * @property {boolean} isAuthenticated - Boolean indicating if user is currently authenticated
+ * @property {Function} login - Function to authenticate user with email and password
+ * @property {Function} logout - Function to logout user and clear authentication state
+ * @property {Function} updateProfile - Function to update user profile information
+ * @property {Function} hasRole - Function to check if user has a specific role
+ * @property {Function} hasAnyRole - Function to check if user has any of the specified roles
+ */
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
@@ -17,14 +40,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+/**
+ * Authentication Provider Component
+ * 
+ * Provides authentication context to the entire application. Manages user login/logout,
+ * token persistence, and role-based access control. Should wrap the root of the application.
+ * 
+ * @component
+ * @param {Object} props - Component properties
+ * @param {React.ReactNode} props.children - Child components to provide authentication context to
+ * @returns {JSX.Element} Provider component that wraps children with authentication context
+ * 
+ * @example
+ * ```tsx
+ * <AuthProvider>
+ *   <App />
+ * </AuthProvider>
+ * ```
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+    
     // Check for stored auth on mount
-    const storedToken = localStorage.getItem("auth_token")
+    const storedToken = localStorage.getItem('auth_token')
     if (storedToken) {
       apiClient.setToken(storedToken)
       // Verify token by fetching user profile
@@ -37,11 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {
           // Token invalid, clear storage
-          localStorage.removeItem("auth_token")
+          localStorage.removeItem('auth_token')
           apiClient.removeToken()
         })
     }
-  }, [])
+  }, [isClient])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -58,9 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Login failed:', error)
       toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Please check your email and password and try again.",
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Please check your email and password and try again.'
       })
       return false
     }
@@ -82,9 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Failed to update profile:', error)
         toast({
-          variant: "destructive",
-          title: "Update Failed",
-          description: "Failed to update your profile. Please try again.",
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: 'Failed to update your profile. Please try again.'
         })
       }
     }
@@ -128,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }

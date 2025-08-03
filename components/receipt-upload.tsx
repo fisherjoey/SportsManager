@@ -1,16 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useCallback, useRef } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Upload, 
   Camera, 
@@ -25,6 +15,17 @@ import {
   Download,
   Trash2
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
@@ -105,7 +106,7 @@ export function ReceiptUpload() {
       toast({
         title: 'Error Loading Receipts',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       
       // Set empty array to prevent UI issues
@@ -147,7 +148,7 @@ export function ReceiptUpload() {
         toast({
           title: 'Invalid file type',
           description: `${file.name} is not a supported file type`,
-          variant: 'destructive',
+          variant: 'destructive'
         })
         return false
       }
@@ -156,7 +157,7 @@ export function ReceiptUpload() {
         toast({
           title: 'File too large',
           description: `${file.name} is larger than 10MB`,
-          variant: 'destructive',
+          variant: 'destructive'
         })
         return false
       }
@@ -222,13 +223,13 @@ export function ReceiptUpload() {
           const confidence = Math.round((response.processing.confidence || 0) * 100)
           toast({
             title: 'Upload and processing complete',
-            description: `${file.name} processed successfully with ${confidence}% confidence`,
+            description: `${file.name} processed successfully with ${confidence}% confidence`
           })
         } else {
           toast({
             title: 'Upload successful, processing failed',
             description: response.processing.fallbackMessage || 'Manual data entry may be required',
-            variant: 'destructive',
+            variant: 'destructive'
           })
         }
         
@@ -250,7 +251,7 @@ export function ReceiptUpload() {
         
         toast({
           title: 'Upload successful',
-          description: `${file.name} uploaded and processing started`,
+          description: `${file.name} uploaded and processing started`
         })
       }
 
@@ -293,7 +294,7 @@ export function ReceiptUpload() {
       toast({
         title: errorTitle,
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -345,19 +346,19 @@ export function ReceiptUpload() {
           if (receipt.processing_status === 'processed') {
             toast({
               title: 'Processing complete',
-              description: `Receipt processed successfully with ${Math.round((receipt.extraction_confidence || 0) * 100)}% confidence`,
+              description: `Receipt processed successfully with ${Math.round((receipt.extraction_confidence || 0) * 100)}% confidence`
             })
           } else if (receipt.processing_status === 'manual_review') {
             toast({
               title: 'Manual review required',
               description: 'Receipt needs manual review. Check the processed receipts tab.',
-              variant: 'destructive',
+              variant: 'destructive'
             })
           } else if (receipt.processing_status === 'failed') {
             toast({
               title: 'Processing failed',
               description: receipt.processing_notes || 'Receipt processing failed. Please try again.',
-              variant: 'destructive',
+              variant: 'destructive'
             })
           }
           
@@ -385,7 +386,7 @@ export function ReceiptUpload() {
           toast({
             title: 'Processing timeout',
             description: 'Processing is taking longer than expected. Check the receipts list for updates.',
-            variant: 'destructive',
+            variant: 'destructive'
           })
         }
       } catch (error) {
@@ -407,7 +408,7 @@ export function ReceiptUpload() {
           toast({
             title: 'Status check failed',
             description: 'Unable to check processing status. Please check the receipts list manually.',
-            variant: 'destructive',
+            variant: 'destructive'
           })
         }
       }
@@ -435,7 +436,7 @@ export function ReceiptUpload() {
       await apiClient.downloadReceipt(receiptId)
       toast({
         title: 'Download started',
-        description: 'Receipt download has begun',
+        description: 'Receipt download has begun'
       })
     } catch (error) {
       console.error('Download error:', error)
@@ -450,7 +451,7 @@ export function ReceiptUpload() {
       toast({
         title: 'Download Error',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -472,16 +473,16 @@ export function ReceiptUpload() {
 
   const getStatusBadge = (receipt: ReceiptData) => {
     switch (receipt.status) {
-      case 'completed':
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Complete</Badge>
-      case 'processing':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Processing</Badge>
-      case 'manual_review':
-        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Review Needed</Badge>
-      case 'error':
-        return <Badge variant="destructive"><X className="w-3 h-3 mr-1" />Error</Badge>
-      default:
-        return <Badge variant="outline">Uploaded</Badge>
+    case 'completed':
+      return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Complete</Badge>
+    case 'processing':
+      return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Processing</Badge>
+    case 'manual_review':
+      return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Review Needed</Badge>
+    case 'error':
+      return <Badge variant="destructive"><X className="w-3 h-3 mr-1" />Error</Badge>
+    default:
+      return <Badge variant="outline">Uploaded</Badge>
     }
   }
 
@@ -626,8 +627,8 @@ export function ReceiptUpload() {
                             <div className="flex flex-col">
                               <span className="text-sm">
                                 {upload.finalStatus === 'processed' ? 'Complete' :
-                                 upload.finalStatus === 'manual_review' ? 'Review Needed' :
-                                 upload.finalStatus === 'failed' ? 'Failed' : 'Complete'}
+                                  upload.finalStatus === 'manual_review' ? 'Review Needed' :
+                                    upload.finalStatus === 'failed' ? 'Failed' : 'Complete'}
                               </span>
                               {upload.processingDetails?.confidence && (
                                 <span className="text-xs text-muted-foreground">

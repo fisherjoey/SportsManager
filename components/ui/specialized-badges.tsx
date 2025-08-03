@@ -1,8 +1,6 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import React from 'react'
 import { 
   CheckCircle, 
   XCircle, 
@@ -11,11 +9,14 @@ import {
   UserCheck,
   Trophy,
   Users
-} from "lucide-react"
+} from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 // Status Badge Component
 interface StatusBadgeProps {
-  status: "completed" | "pending" | "failed" | "in_progress" | "cancelled" | "available" | "unavailable" | "assigned" | "unassigned" | "full" | "partial" | "up_for_grabs"
+  status: 'completed' | 'pending' | 'failed' | 'in_progress' | 'cancelled' | 'available' | 'unavailable' | 'assigned' | 'unassigned' | 'full' | 'partial' | 'up_for_grabs'
   children?: React.ReactNode
   className?: string
   showIcon?: boolean
@@ -24,63 +25,63 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, children, className, showIcon = false }: StatusBadgeProps) {
   const statusConfig = {
     completed: {
-      variant: "default" as const,
-      className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
+      variant: 'default' as const,
+      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
       icon: CheckCircle
     },
     pending: {
-      variant: "secondary" as const,
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      variant: 'secondary' as const,
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       icon: Clock
     },
     failed: {
-      variant: "destructive" as const,
-      className: "bg-red-100 text-red-800 border-red-200",
+      variant: 'destructive' as const,
+      className: 'bg-red-100 text-red-800 border-red-200',
       icon: XCircle
     },
     in_progress: {
-      variant: "default" as const,
-      className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100",
+      variant: 'default' as const,
+      className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
       icon: Clock
     },
     cancelled: {
-      variant: "secondary" as const,
-      className: "bg-gray-100 text-gray-600 border-gray-200",
+      variant: 'secondary' as const,
+      className: 'bg-gray-100 text-gray-600 border-gray-200',
       icon: XCircle
     },
     available: {
-      variant: "default" as const,
-      className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
+      variant: 'default' as const,
+      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
       icon: CheckCircle
     },
     unavailable: {
-      variant: "secondary" as const,
-      className: "bg-gray-100 text-gray-600 border-gray-200",
+      variant: 'secondary' as const,
+      className: 'bg-gray-100 text-gray-600 border-gray-200',
       icon: XCircle
     },
     assigned: {
-      variant: "default" as const,
-      className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
+      variant: 'default' as const,
+      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
       icon: UserCheck
     },
     unassigned: {
-      variant: "destructive" as const,
-      className: "bg-red-100 text-red-800 border-red-200",
+      variant: 'destructive' as const,
+      className: 'bg-red-100 text-red-800 border-red-200',
       icon: AlertCircle
     },
     full: {
-      variant: "default" as const,
-      className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
+      variant: 'default' as const,
+      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
       icon: CheckCircle
     },
     partial: {
-      variant: "secondary" as const,
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      variant: 'secondary' as const,
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       icon: UserCheck
     },
     up_for_grabs: {
-      variant: "outline" as const,
-      className: "border-orange-200 text-orange-800",
+      variant: 'outline' as const,
+      className: 'border-orange-200 text-orange-800',
       icon: AlertCircle
     }
   }
@@ -101,7 +102,7 @@ export function StatusBadge({ status, children, className, showIcon = false }: S
 
 // Level Badge Component
 interface LevelBadgeProps {
-  level: "Recreational" | "Competitive" | "Elite" | "Rookie" | "Junior" | "Senior" | string
+  level: 'Recreational' | 'Competitive' | 'Elite' | 'Rookie' | 'Junior' | 'Senior' | string
   children?: React.ReactNode
   className?: string
   showIcon?: boolean
@@ -109,28 +110,28 @@ interface LevelBadgeProps {
 
 export function LevelBadge({ level, children, className, showIcon = false }: LevelBadgeProps) {
   const levelConfig = {
-    "Recreational": {
-      className: "bg-green-100 text-green-800 border-green-200"
+    'Recreational': {
+      className: 'bg-green-100 text-green-800 border-green-200'
     },
-    "Competitive": {
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200"
+    'Competitive': {
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
     },
-    "Elite": {
-      className: "bg-red-100 text-red-800 border-red-200"
+    'Elite': {
+      className: 'bg-red-100 text-red-800 border-red-200'
     },
-    "Rookie": {
-      className: "bg-blue-100 text-blue-800 border-blue-200"
+    'Rookie': {
+      className: 'bg-blue-100 text-blue-800 border-blue-200'
     },
-    "Junior": {
-      className: "bg-purple-100 text-purple-800 border-purple-200"
+    'Junior': {
+      className: 'bg-purple-100 text-purple-800 border-purple-200'
     },
-    "Senior": {
-      className: "bg-orange-100 text-orange-800 border-orange-200"
+    'Senior': {
+      className: 'bg-orange-100 text-orange-800 border-orange-200'
     }
   }
 
   const config = levelConfig[level as keyof typeof levelConfig] || {
-    className: "bg-gray-100 text-gray-800 border-gray-200"
+    className: 'bg-gray-100 text-gray-800 border-gray-200'
   }
 
   return (
@@ -151,7 +152,7 @@ interface CountBadgeProps {
   label?: string
   className?: string
   showIcon?: boolean
-  variant?: "default" | "secondary" | "outline" | "destructive"
+  variant?: 'default' | 'secondary' | 'outline' | 'destructive'
 }
 
 export function CountBadge({ 
@@ -160,7 +161,7 @@ export function CountBadge({
   label, 
   className, 
   showIcon = false,
-  variant = "secondary"
+  variant = 'secondary'
 }: CountBadgeProps) {
   const displayText = total 
     ? `${count}/${total}${label ? ` ${label}` : ''}`
@@ -168,10 +169,10 @@ export function CountBadge({
 
   const badgeVariant = total 
     ? count >= total 
-      ? "default" 
+      ? 'default' 
       : count > 0 
-        ? "secondary" 
-        : "destructive"
+        ? 'secondary' 
+        : 'destructive'
     : variant
 
   return (
@@ -232,39 +233,39 @@ export function AvailabilityBadge({
 }: AvailabilityBadgeProps) {
   return (
     <StatusBadge 
-      status={isAvailable ? "available" : "unavailable"} 
+      status={isAvailable ? 'available' : 'unavailable'} 
       className={className}
       showIcon
     >
-      {availabilityText || (isAvailable ? "Available" : "Unavailable")}
+      {availabilityText || (isAvailable ? 'Available' : 'Unavailable')}
     </StatusBadge>
   )
 }
 
 // Game Type Badge
 interface GameTypeBadgeProps {
-  type: "Community" | "Club" | "Tournament" | "Private Tournament" | string
+  type: 'Community' | 'Club' | 'Tournament' | 'Private Tournament' | string
   className?: string
 }
 
 export function GameTypeBadge({ type, className }: GameTypeBadgeProps) {
   const typeConfig = {
-    "Community": {
-      className: "bg-blue-100 text-blue-800 border-blue-200"
+    'Community': {
+      className: 'bg-blue-100 text-blue-800 border-blue-200'
     },
-    "Club": {
-      className: "bg-green-100 text-green-800 border-green-200"
+    'Club': {
+      className: 'bg-green-100 text-green-800 border-green-200'
     },
-    "Tournament": {
-      className: "bg-purple-100 text-purple-800 border-purple-200"
+    'Tournament': {
+      className: 'bg-purple-100 text-purple-800 border-purple-200'
     },
-    "Private Tournament": {
-      className: "bg-orange-100 text-orange-800 border-orange-200"
+    'Private Tournament': {
+      className: 'bg-orange-100 text-orange-800 border-orange-200'
     }
   }
 
   const config = typeConfig[type as keyof typeof typeConfig] || {
-    className: "bg-gray-100 text-gray-800 border-gray-200"
+    className: 'bg-gray-100 text-gray-800 border-gray-200'
   }
 
   return (

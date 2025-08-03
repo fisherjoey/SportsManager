@@ -1,16 +1,5 @@
-"use client"
+'use client'
 
-import { 
-  BaseEntityCard,
-  InfoRow,
-  BadgeRow,
-  CollapsibleSection
-} from "@/components/ui/base-entity-card"
-import { 
-  AssignmentStatusBadge,
-  LevelBadge
-} from "@/components/ui/specialized-badges"
-import { Badge } from "@/components/ui/badge"
 import { 
   Calendar, 
   MapPin, 
@@ -21,10 +10,23 @@ import {
   Eye,
   UserCheck,
   Clock
-} from "lucide-react"
-import { Game } from "./types"
-import { LocationWithDistance } from "@/components/ui/location-with-distance"
-import { formatTeamName } from "@/lib/team-utils"
+} from 'lucide-react'
+
+import { 
+  BaseEntityCard,
+  InfoRow,
+  BadgeRow,
+  CollapsibleSection
+} from '@/components/ui/base-entity-card'
+import { 
+  AssignmentStatusBadge,
+  LevelBadge
+} from '@/components/ui/specialized-badges'
+import { Badge } from '@/components/ui/badge'
+import { LocationWithDistance } from '@/components/ui/location-with-distance'
+import { formatTeamName } from '@/lib/team-utils'
+
+import { Game } from './types'
 
 // Enhanced error handling functions (mirrored from game-management.tsx)
 const displayTeamName = (team: any) => {
@@ -45,16 +47,16 @@ const displayWageInfo = (payRate: number, multiplier: number = 1.0) => {
 function GameTypeBadge({ gameType }: { gameType: string }) {
   const getGameTypeColor = (type: string) => {
     switch (type?.toLowerCase()) {
-      case 'tournament':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'private tournament':
-        return 'bg-indigo-100 text-indigo-800 border-indigo-200'
-      case 'club':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'community':
-        return 'bg-green-100 text-green-800 border-green-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+    case 'tournament':
+      return 'bg-purple-100 text-purple-800 border-purple-200'
+    case 'private tournament':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    case 'club':
+      return 'bg-blue-100 text-blue-800 border-blue-200'
+    case 'community':
+      return 'bg-green-100 text-green-800 border-green-200'
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
   
@@ -90,10 +92,10 @@ export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: 
   const assignedCount = assignments.length
 
   // Determine game status for actions
-  const isUpForGrabs = game.status === "up-for-grabs"
+  const isUpForGrabs = game.status === 'up-for-grabs'
 
-  const payRate = parseFloat(game.payRate || (game as any).pay_rate || "0")
-  const multiplier = parseFloat(game.wageMultiplier || (game as any).wage_multiplier || "1")
+  const payRate = parseFloat(game.payRate || (game as any).pay_rate || '0')
+  const multiplier = parseFloat(game.wageMultiplier || (game as any).wage_multiplier || '1')
   const multiplierReason = game.wageMultiplierReason || (game as any).wage_multiplier_reason
   const finalAmount = payRate * multiplier
 
@@ -105,22 +107,22 @@ export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: 
 
   const actions = [
     ...(canAssign ? [{
-      label: "Assign Referee",
+      label: 'Assign Referee',
       icon: Users,
       onClick: () => onAssignReferee?.(game)
     }] : []),
     {
-      label: "View details",
+      label: 'View details',
       icon: Eye,
       onClick: () => console.log('View details')
     },
     {
-      label: "Edit game",
+      label: 'Edit game',
       icon: Edit,
       onClick: () => console.log('Edit game')
     },
     ...(!isUpForGrabs ? [{
-      label: "Mark as up for grabs",
+      label: 'Mark as up for grabs',
       icon: UserCheck,
       onClick: () => console.log('Mark as up for grabs')
     }] : [])

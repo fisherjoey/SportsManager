@@ -1,12 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   CheckCircle2, 
   XCircle, 
@@ -22,9 +16,17 @@ import {
   UserCheck,
   Eye
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+
 import { ApprovalHistory } from './approval-history'
 
 interface ExpenseApprovalDetailsProps {
@@ -231,10 +233,10 @@ export function ExpenseApprovalDetails({ expense, onApproved, onRejected }: Expe
 
   const getPaymentMethodIcon = (type: string) => {
     switch (type) {
-      case 'person_reimbursement': return UserCheck
-      case 'purchase_order': return FileText
-      case 'credit_card': return CreditCard
-      default: return DollarSign
+    case 'person_reimbursement': return UserCheck
+    case 'purchase_order': return FileText
+    case 'credit_card': return CreditCard
+    default: return DollarSign
     }
   }
 

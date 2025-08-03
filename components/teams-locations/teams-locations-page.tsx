@@ -1,13 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
+import { useState, useEffect } from 'react'
 import {
   Search,
   Plus,
@@ -18,28 +11,37 @@ import {
   Mail,
   DollarSign,
   ParkingMeterIcon as Parking,
-  Eye,
-} from "lucide-react"
-import { LocationWithDistance } from "@/components/ui/location-with-distance"
-import { apiClient } from "@/lib/api"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { StatsGrid } from "@/components/ui/stats-grid"
+  Eye
+} from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { LocationWithDistance } from '@/components/ui/location-with-distance'
+import { apiClient } from '@/lib/api'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+
 // import { useNotifications } from "@/providers/notification-provider"
-import { TeamDetailsDialog } from "./team-details-dialog"
-import { LocationDetailsDialog } from "./location-details-dialog"
-import { CreateTeamDialog } from "./create-team-dialog"
-import { CreateLocationDialog } from "./create-location-dialog"
+import { TeamDetailsDialog } from './team-details-dialog'
+import { LocationDetailsDialog } from './location-details-dialog'
+import { CreateTeamDialog } from './create-team-dialog'
+import { CreateLocationDialog } from './create-location-dialog'
 
 export function TeamsLocationsPage() {
   const [teams, setTeams] = useState([])
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [divisionFilter, setDivisionFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [locationFilter, setLocationFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [divisionFilter, setDivisionFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false)
@@ -112,8 +114,8 @@ export function TeamsLocationsPage() {
       team.contact_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.organization?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDivision = divisionFilter === "all" || team.division === divisionFilter
-    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? true : false)
+    const matchesDivision = divisionFilter === 'all' || team.division === divisionFilter
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? true : false)
     
     return matchesSearch && matchesDivision && matchesStatus
   })
@@ -124,8 +126,8 @@ export function TeamsLocationsPage() {
       location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       location.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       location.city.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLocation = locationFilter === "all" || location.city === locationFilter
-    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? location.is_active : !location.is_active)
+    const matchesLocation = locationFilter === 'all' || location.city === locationFilter
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? location.is_active : !location.is_active)
     
     return matchesSearch && matchesLocation && matchesStatus
   })
@@ -209,56 +211,56 @@ export function TeamsLocationsPage() {
 
   const teamStats = [
     {
-      title: "Total Teams",
+      title: 'Total Teams',
       value: teams.length,
       icon: Users,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Active Teams",
+      title: 'Active Teams',
       value: teams.length, // All teams from backend are considered active for now
       icon: Users,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "Organizations",
+      title: 'Organizations',
       value: new Set(teams.map((t) => t.organization).filter(Boolean)).size,
       icon: Building,
-      color: "text-purple-600",
+      color: 'text-purple-600'
     },
     {
-      title: "Total Games",
+      title: 'Total Games',
       value: teams.reduce((sum, t) => sum + (parseInt(t.game_count) || 0), 0),
       icon: MapPin,
-      color: "text-orange-600",
-    },
+      color: 'text-orange-600'
+    }
   ]
 
   const locationStats = [
     {
-      title: "Total Venues",
+      title: 'Total Venues',
       value: locations.length,
       icon: Building,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Active Venues",
+      title: 'Active Venues',
       value: locations.filter((l) => l.is_active !== false).length,
       icon: Building,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "Total Capacity",
+      title: 'Total Capacity',
       value: locations.reduce((sum, l) => sum + (parseInt(l.capacity) || 0), 0).toLocaleString(),
       icon: Users,
-      color: "text-purple-600",
+      color: 'text-purple-600'
     },
     {
-      title: "With Pricing",
+      title: 'With Pricing',
       value: locations.filter((l) => l.hourly_rate || l.game_rate).length,
       icon: DollarSign,
-      color: "text-orange-600",
-    },
+      color: 'text-orange-600'
+    }
   ]
 
   // Column definitions for teams table - includes all database fields
@@ -541,7 +543,7 @@ export function TeamsLocationsPage() {
       filterType: 'search',
       accessor: (location) => {
         const facilities = Array.isArray(location.facilities) ? location.facilities : 
-                          (location.facilities ? JSON.parse(location.facilities) : [])
+          (location.facilities ? JSON.parse(location.facilities) : [])
         return (
           <div className="flex flex-wrap gap-1">
             {facilities?.slice(0, 2).map((facility, idx) => (
@@ -604,8 +606,8 @@ export function TeamsLocationsPage() {
         { value: 'inactive', label: 'Inactive' }
       ],
       accessor: (location) => (
-        <Badge variant={location.is_active ? "default" : "secondary"}>
-          {location.is_active ? "Active" : "Inactive"}
+        <Badge variant={location.is_active ? 'default' : 'secondary'}>
+          {location.is_active ? 'Active' : 'Inactive'}
         </Badge>
       )
     },
@@ -718,11 +720,11 @@ export function TeamsLocationsPage() {
         </div>
       </Card>
     )
-  };
+  }
 
   const LocationCard: React.FC<{ location: any }> = ({ location }) => {
     const facilities = Array.isArray(location.facilities) ? location.facilities : 
-                      (location.facilities ? JSON.parse(location.facilities) : [])
+      (location.facilities ? JSON.parse(location.facilities) : [])
     
     const formatPhoneNumber = (phone: string) => {
       if (!phone) return null
@@ -743,8 +745,8 @@ export function TeamsLocationsPage() {
               {location.city}, {location.province}
             </p>
           </div>
-          <Badge variant={location.is_active ? "default" : "secondary"}>
-            {location.is_active ? "Active" : "Inactive"}
+          <Badge variant={location.is_active ? 'default' : 'secondary'}>
+            {location.is_active ? 'Active' : 'Inactive'}
           </Badge>
         </div>
         
@@ -846,7 +848,7 @@ export function TeamsLocationsPage() {
         </div>
       </Card>
     )
-  };
+  }
 
   return (
     <PageLayout>

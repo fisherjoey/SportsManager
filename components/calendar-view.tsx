@@ -1,15 +1,16 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, CalendarIcon, Calendar, Users, Clock, AlertTriangle, Sparkles } from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { mockGames, Team } from "@/lib/mock-data"
-import { useAuth } from "@/components/auth-provider"
-import { formatTeamName } from "@/lib/team-utils"
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight, CalendarIcon, Calendar, Users, Clock, AlertTriangle, Sparkles } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { mockGames, Team } from '@/lib/mock-data'
+import { useAuth } from '@/components/auth-provider'
+import { formatTeamName } from '@/lib/team-utils'
 
 interface CalendarViewProps {
   onDateClick?: (date: string) => void
@@ -19,10 +20,10 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
   const { user } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
 
-  const isAdmin = user?.role === "admin"
+  const isAdmin = user?.role === 'admin'
   const relevantGames = isAdmin
     ? mockGames
-    : mockGames.filter((game) => game.assignedReferees?.includes(user?.name || "") || game.status === "up-for-grabs")
+    : mockGames.filter((game) => game.assignedReferees?.includes(user?.name || '') || game.status === 'up-for-grabs')
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
@@ -60,10 +61,10 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
     }
   }
 
-  const navigateMonth = (direction: "prev" | "next") => {
+  const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev)
-      if (direction === "prev") {
+      if (direction === 'prev') {
         newDate.setMonth(prev.getMonth() - 1)
       } else {
         newDate.setMonth(prev.getMonth() + 1)
@@ -98,13 +99,13 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         <div 
           key={day} 
           className={`h-32 border border-gray-200 p-2 ${
-            isToday ? "bg-blue-50 border-blue-300" : ""
-          } ${dailySummary?.needsAttention ? "border-l-4 border-l-red-400" : ""} ${
-            dailySummary && onDateClick ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""
+            isToday ? 'bg-blue-50 border-blue-300' : ''
+          } ${dailySummary?.needsAttention ? 'border-l-4 border-l-red-400' : ''} ${
+            dailySummary && onDateClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''
           }`}
           onClick={handleDayClick}
         >
-          <div className={`text-sm font-medium mb-2 ${isToday ? "text-blue-600" : ""}`}>{day}</div>
+          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600' : ''}`}>{day}</div>
           {dailySummary ? (
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -145,38 +146,38 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
   }
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
   ]
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
     <PageLayout>
       <PageHeader
         icon={Calendar}
         title="Game Calendar"
-        description={isAdmin ? "Overview of all scheduled games and assignments" : "Your game assignments and available opportunities"}
+        description={isAdmin ? 'Overview of all scheduled games and assignments' : 'Your game assignments and available opportunities'}
       >
         <Badge variant="outline" className="text-blue-600 border-blue-600">
           <Sparkles className="h-3 w-3 mr-1" />
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
         </Badge>
         <div className="flex items-center space-x-1">
-          <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
+          <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
+          <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -216,7 +217,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
                   return (
                     gameDate.getMonth() === currentDate.getMonth() &&
                     gameDate.getFullYear() === currentDate.getFullYear() &&
-                    game.status === "assigned"
+                    game.status === 'assigned'
                   )
                 }).length
               }
@@ -237,7 +238,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
                   return (
                     gameDate.getMonth() === currentDate.getMonth() &&
                     gameDate.getFullYear() === currentDate.getFullYear() &&
-                    game.status === "up-for-grabs"
+                    game.status === 'up-for-grabs'
                   )
                 }).length
               }
@@ -258,7 +259,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
                   return (
                     gameDate.getMonth() === currentDate.getMonth() &&
                     gameDate.getFullYear() === currentDate.getFullYear() &&
-                    game.status === "unassigned"
+                    game.status === 'unassigned'
                   )
                 }).length
               }
@@ -275,7 +276,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
             Interactive Calendar
           </CardTitle>
           <CardDescription>
-            {isAdmin ? "All games across the organization with assignment status" : "Your assigned games and opportunities for additional work"}
+            {isAdmin ? 'All games across the organization with assignment status' : 'Your assigned games and opportunities for additional work'}
           </CardDescription>
         </CardHeader>
         <CardContent>

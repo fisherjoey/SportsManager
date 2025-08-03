@@ -53,6 +53,7 @@ import {
 } from 'recharts'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { useAuth } from '@/components/auth-provider'
 import { apiClient, Budget, BudgetPeriod, BudgetCategory, BudgetAllocation } from '@/lib/api'
 
 // Simple Error Boundary for the budget tracker
@@ -172,6 +173,7 @@ interface BudgetSummary {
 }
 
 function BudgetTrackerInner() {
+  const { isAuthenticated } = useAuth()
   const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
   const [budgetPeriods, setBudgetPeriods] = useState<BudgetPeriod[]>([])
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
@@ -197,14 +199,16 @@ function BudgetTrackerInner() {
   })
 
   useEffect(() => {
-    loadInitialData()
-  }, [])
+    if (isAuthenticated) {
+      loadInitialData()
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
-    if (selectedPeriod) {
+    if (selectedPeriod && isAuthenticated) {
       loadBudgetData()
     }
-  }, [selectedPeriod])
+  }, [selectedPeriod, isAuthenticated])
 
   // Retry mechanism for failed API calls
   const retryApiCall = async (apiCall: () => Promise<any>, maxRetries = 2) => {
@@ -246,6 +250,12 @@ function BudgetTrackerInner() {
   }
 
   const loadInitialData = async () => {
+    if (!isAuthenticated) {
+      setError('Authentication required to load budget data')
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -297,6 +307,12 @@ function BudgetTrackerInner() {
   }
 
   const loadBudgetData = async () => {
+    if (!isAuthenticated) {
+      setError('Authentication required to load budget data')
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       

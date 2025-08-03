@@ -5,7 +5,7 @@
 export interface Team {
   organization: string
   ageGroup: string
-  gender: "Boys" | "Girls"
+  gender: 'Boys' | 'Girls'
   rank: number
 }
 

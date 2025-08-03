@@ -1,23 +1,25 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Edit2, Eye, Copy, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import React, { useState } from 'react'
+import { ColumnDef } from '@tanstack/react-table'
+import { MoreHorizontal, Edit2, Eye, Copy, Trash2 } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DataTableColumnHeaderAdvanced } from "./columns/DataTableColumnHeaderAdvanced"
-import { LevelBadge, StatusBadge } from "@/components/ui/specialized-badges"
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LevelBadge, StatusBadge } from '@/components/ui/specialized-badges'
+
+import { DataTableColumnHeaderAdvanced } from './columns/DataTableColumnHeaderAdvanced'
 
 // Types for reusable column patterns
 export interface BaseAction {
@@ -25,7 +27,7 @@ export interface BaseAction {
   icon: React.ComponentType<{ className?: string }>
   onClick: (item: any) => void
   disabled?: (item: any) => boolean
-  variant?: "default" | "destructive"
+  variant?: 'default' | 'destructive'
 }
 
 export interface ColumnAction extends BaseAction {
@@ -36,8 +38,8 @@ export interface ColumnAction extends BaseAction {
 export function EditableText({ 
   value, 
   onSave, 
-  placeholder = "Click to edit",
-  className = "",
+  placeholder = 'Click to edit',
+  className = '',
   disabled = false
 }: {
   value: string
@@ -97,10 +99,10 @@ export function EditableSelect({
   value, 
   options,
   onSave, 
-  className = "",
+  className = '',
   displayValue,
-  badgeVariant = "outline",
-  badgeClassName = "",
+  badgeVariant = 'outline',
+  badgeClassName = '',
   disabled = false
 }: {
   value: string
@@ -108,7 +110,7 @@ export function EditableSelect({
   onSave: (newValue: string) => void
   className?: string
   displayValue?: string
-  badgeVariant?: "default" | "secondary" | "destructive" | "outline"
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline'
   badgeClassName?: string
   disabled?: boolean
 }) {
@@ -165,7 +167,7 @@ export function EditableSelect({
 
 // Standard column creators
 export const createSelectColumn = <T,>(): ColumnDef<T> => ({
-  id: "select",
+  id: 'select',
   header: ({ table }) => (
     <Checkbox
       checked={table.getIsAllPageRowsSelected()}
@@ -183,11 +185,11 @@ export const createSelectColumn = <T,>(): ColumnDef<T> => ({
     />
   ),
   enableSorting: false,
-  enableHiding: false,
+  enableHiding: false
 })
 
 export const createActionsColumn = <T,>(actions: ColumnAction[]): ColumnDef<T> => ({
-  id: "actions",
+  id: 'actions',
   enableHiding: false,
   cell: ({ row }) => {
     const item = row.original
@@ -217,7 +219,7 @@ export const createActionsColumn = <T,>(actions: ColumnAction[]): ColumnDef<T> =
               key={index}
               onClick={() => action.onClick(item)}
               disabled={action.disabled?.(item)}
-              className={action.variant === "destructive" ? "text-red-600" : ""}
+              className={action.variant === 'destructive' ? 'text-red-600' : ''}
             >
               <action.icon className="mr-2 h-4 w-4" />
               {action.label}
@@ -226,7 +228,7 @@ export const createActionsColumn = <T,>(actions: ColumnAction[]): ColumnDef<T> =
         </DropdownMenuContent>
       </DropdownMenu>
     )
-  },
+  }
 })
 
 // Standard text column with optional editing
@@ -242,145 +244,145 @@ export const createTextColumn = <T,>(
     className?: string
   } = {}
 ): ColumnDef<T> => ({
-  accessorKey: accessorKey as string,
-  header: ({ column }) => (
-    <DataTableColumnHeaderAdvanced 
-      column={column} 
-      title={title} 
-      searchable={options.searchable}
-      filterable={false}
-    />
-  ),
-  cell: ({ row }) => {
-    const item = row.original
-    const value = row.getValue(accessorKey as string) as string
-    const displayValue = options.formatter ? options.formatter(value) : value
+    accessorKey: accessorKey as string,
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title={title} 
+        searchable={options.searchable}
+        filterable={false}
+      />
+    ),
+    cell: ({ row }) => {
+      const item = row.original
+      const value = row.getValue(accessorKey as string) as string
+      const displayValue = options.formatter ? options.formatter(value) : value
 
-    if (options.editable && options.onEdit) {
+      if (options.editable && options.onEdit) {
+        return (
+          <EditableText
+            value={displayValue}
+            onSave={(newValue) => options.onEdit!(item, newValue)}
+            placeholder={options.placeholder}
+            className={options.className}
+          />
+        )
+      }
+
       return (
-        <EditableText
-          value={displayValue}
-          onSave={(newValue) => options.onEdit!(item, newValue)}
-          placeholder={options.placeholder}
-          className={options.className}
-        />
+        <div className={`text-sm ${options.className || ''}`}>
+          {displayValue}
+        </div>
       )
     }
-
-    return (
-      <div className={`text-sm ${options.className || ''}`}>
-        {displayValue}
-      </div>
-    )
-  },
-})
+  })
 
 // Badge column (for status, level, etc.)
 export const createBadgeColumn = <T,>(
   accessorKey: keyof T,
   title: string,
   options: {
-    type?: "status" | "level" | "custom"
+    type?: 'status' | 'level' | 'custom'
     editable?: boolean
     onEdit?: (item: T, value: string) => void
     selectOptions?: { label: string; value: string }[]
-    variant?: "default" | "secondary" | "destructive" | "outline"
+    variant?: 'default' | 'secondary' | 'destructive' | 'outline'
     className?: string
   } = {}
 ): ColumnDef<T> => ({
-  accessorKey: accessorKey as string,
-  header: ({ column }) => (
-    <DataTableColumnHeaderAdvanced 
-      column={column} 
-      title={title} 
-      searchable={false}
-      filterable={true}
-    />
-  ),
-  cell: ({ row }) => {
-    const item = row.original
-    const value = row.getValue(accessorKey as string) as string
+    accessorKey: accessorKey as string,
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title={title} 
+        searchable={false}
+        filterable={true}
+      />
+    ),
+    cell: ({ row }) => {
+      const item = row.original
+      const value = row.getValue(accessorKey as string) as string
 
-    if (options.editable && options.onEdit && options.selectOptions) {
+      if (options.editable && options.onEdit && options.selectOptions) {
+        return (
+          <EditableSelect
+            value={value}
+            options={options.selectOptions}
+            onSave={(newValue) => options.onEdit!(item, newValue)}
+            badgeVariant={options.variant}
+            badgeClassName={options.className}
+          />
+        )
+      }
+
+      // Use specialized badges based on type
+      if (options.type === 'status') {
+        return (
+          <StatusBadge status={value as any} className={options.className} />
+        )
+      }
+
+      if (options.type === 'level') {
+        return (
+          <LevelBadge level={value} className={options.className} />
+        )
+      }
+
+      // Default badge
       return (
-        <EditableSelect
-          value={value}
-          options={options.selectOptions}
-          onSave={(newValue) => options.onEdit!(item, newValue)}
-          badgeVariant={options.variant}
-          badgeClassName={options.className}
-        />
+        <Badge variant={options.variant || 'outline'} className={options.className}>
+          {value}
+        </Badge>
       )
     }
-
-    // Use specialized badges based on type
-    if (options.type === "status") {
-      return (
-        <StatusBadge status={value as any} className={options.className} />
-      )
-    }
-
-    if (options.type === "level") {
-      return (
-        <LevelBadge level={value} className={options.className} />
-      )
-    }
-
-    // Default badge
-    return (
-      <Badge variant={options.variant || "outline"} className={options.className}>
-        {value}
-      </Badge>
-    )
-  },
-})
+  })
 
 // Contact info column (email + phone)
 export const createContactColumn = <T,>(
   emailKey: keyof T,
   phoneKey: keyof T,
-  title: string = "Contact"
+  title: string = 'Contact'
 ): ColumnDef<T> => ({
-  id: "contact",
-  header: ({ column }) => (
-    <DataTableColumnHeaderAdvanced 
-      column={column} 
-      title={title} 
-      searchable={true}
-      filterable={false}
-    />
-  ),
-  cell: ({ row }) => {
-    const email = row.getValue(emailKey as string) as string
-    const phone = row.getValue(phoneKey as string) as string
+    id: 'contact',
+    header: ({ column }) => (
+      <DataTableColumnHeaderAdvanced 
+        column={column} 
+        title={title} 
+        searchable={true}
+        filterable={false}
+      />
+    ),
+    cell: ({ row }) => {
+      const email = row.getValue(emailKey as string) as string
+      const phone = row.getValue(phoneKey as string) as string
 
-    return (
-      <div className="space-y-1">
-        <div className="text-sm truncate">{email}</div>
-        <div className="text-xs text-muted-foreground truncate">{phone}</div>
-      </div>
-    )
-  },
-})
+      return (
+        <div className="space-y-1">
+          <div className="text-sm truncate">{email}</div>
+          <div className="text-xs text-muted-foreground truncate">{phone}</div>
+        </div>
+      )
+    }
+  })
 
 // Standard actions for common entities
 export const createStandardActions = {
   view: (onView: (item: any) => void): ColumnAction => ({
-    label: "View details",
+    label: 'View details',
     icon: Eye,
     onClick: onView
   }),
 
   edit: (onEdit: (item: any) => void): ColumnAction => ({
-    label: "Edit",
+    label: 'Edit',
     icon: Edit2,
     onClick: onEdit
   }),
 
   delete: (onDelete: (item: any) => void): ColumnAction => ({
-    label: "Delete",
+    label: 'Delete',
     icon: Trash2,
     onClick: onDelete,
-    variant: "destructive" as const
+    variant: 'destructive' as const
   })
 }

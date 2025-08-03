@@ -1,27 +1,24 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useAuth } from "@/components/auth-provider"
+import { useState, useEffect } from 'react'
 import { 
   MessageSquare, 
-  Send, 
-  Plus, 
-  Clock, 
-  User,
-  AlertCircle,
-  CheckCircle,
-  X
-} from "lucide-react"
-import { format } from "date-fns"
-import { toast } from "sonner"
+  Send,
+  AlertCircle
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { toast } from 'sonner'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useAuth } from '@/components/auth-provider'
+
 
 interface AssignmentComment {
   id: string
@@ -103,8 +100,8 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
       
       // Using mock data for now
       setComments(mockComments)
-    } catch (error) {
-      console.error('Error fetching assignment comments:', error)
+    } catch {
+      // console.error('Error fetching assignment comments:', error)
       toast.error('Failed to load comments')
     } finally {
       setLoading(false)
@@ -135,8 +132,8 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
       setComments([...comments, comment])
       setNewComment('')
       toast.success('Comment added successfully')
-    } catch (error) {
-      console.error('Error adding comment:', error)
+    } catch {
+      // console.error('Error adding comment:', error)
       toast.error('Failed to add comment')
     }
   }
@@ -144,11 +141,11 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
   const getStatusChangeDisplay = (statusChange: { from: string; to: string }) => {
     const getStatusColor = (status: string) => {
       switch (status.toLowerCase()) {
-        case 'confirmed': return 'text-green-600'
-        case 'pending': return 'text-yellow-600'
-        case 'declined': return 'text-red-600'
-        case 'cancelled': return 'text-gray-600'
-        default: return 'text-gray-600'
+      case 'confirmed': return 'text-green-600'
+      case 'pending': return 'text-yellow-600'
+      case 'declined': return 'text-red-600'
+      case 'cancelled': return 'text-gray-600'
+      default: return 'text-gray-600'
       }
     }
 
@@ -173,15 +170,15 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
           <p>No comments yet</p>
         </div>
       ) : (
-        <ScrollArea className={compact ? "h-[200px]" : "h-[300px]"}>
+        <ScrollArea className={compact ? 'h-[200px]' : 'h-[300px]'}>
           <div className="space-y-4 pr-4">
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className={`text-xs ${
                     comment.user_role === 'admin' ? 'bg-blue-100 text-blue-600' :
-                    comment.user_role === 'referee' ? 'bg-green-100 text-green-600' :
-                    'bg-gray-100 text-gray-600'
+                      comment.user_role === 'referee' ? 'bg-green-100 text-green-600' :
+                        'bg-gray-100 text-gray-600'
                   }`}>
                     {comment.user_role === 'system' ? 'SY' : getUserInitials(comment.user_name)}
                   </AvatarFallback>

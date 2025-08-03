@@ -1,14 +1,8 @@
-"use client"
+'use client'
 
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Shield, 
   AlertTriangle, 
@@ -24,14 +18,6 @@ import {
   Eye,
   MoreHorizontal
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { 
   BarChart, 
   Bar, 
@@ -47,6 +33,21 @@ import {
   Pie,
   Cell
 } from 'recharts'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient, ComplianceItem, ComplianceIncident, RiskAssessment } from '@/lib/api'
@@ -130,7 +131,7 @@ export function ComplianceTracking() {
       toast({
         title: 'Error',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -216,7 +217,7 @@ export function ComplianceTracking() {
     // TODO: Implement create item modal
     toast({
       title: 'Coming Soon',
-      description: 'Create compliance item functionality will be implemented.',
+      description: 'Create compliance item functionality will be implemented.'
     })
   }
 
@@ -226,14 +227,14 @@ export function ComplianceTracking() {
       await loadComplianceData()
       toast({
         title: 'Success',
-        description: 'Compliance item status updated successfully.',
+        description: 'Compliance item status updated successfully.'
       })
     } catch (error) {
       console.error('Error updating compliance item:', error)
       toast({
         title: 'Error',
         description: 'Failed to update compliance item status.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -251,14 +252,14 @@ export function ComplianceTracking() {
       await loadComplianceData()
       toast({
         title: 'Success',
-        description: 'Compliance incident created successfully.',
+        description: 'Compliance incident created successfully.'
       })
     } catch (error) {
       console.error('Error creating compliance incident:', error)
       toast({
         title: 'Error',
         description: 'Failed to create compliance incident.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -278,14 +279,14 @@ export function ComplianceTracking() {
       await loadComplianceData()
       toast({
         title: 'Success',
-        description: 'Risk assessment created successfully.',
+        description: 'Risk assessment created successfully.'
       })
     } catch (error) {
       console.error('Error creating risk assessment:', error)
       toast({
         title: 'Error',
         description: 'Failed to create risk assessment.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     }
   }
@@ -294,7 +295,7 @@ export function ComplianceTracking() {
     // TODO: Implement export functionality
     toast({
       title: 'Coming Soon',
-      description: 'Export report functionality will be implemented.',
+      description: 'Export report functionality will be implemented.'
     })
   }
 

@@ -1,8 +1,9 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import React from 'react'
+
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface ContactFieldGroupProps {
   nameValue?: string
@@ -20,29 +21,29 @@ interface ContactFieldGroupProps {
   phonePlaceholder?: string
   className?: string
   disabled?: boolean
-  layout?: "stacked" | "grid" | "inline"
+  layout?: 'stacked' | 'grid' | 'inline'
 }
 
 export function ContactFieldGroup({
-  nameValue = "",
-  emailValue = "",
-  phoneValue = "",
+  nameValue = '',
+  emailValue = '',
+  phoneValue = '',
   onNameChange,
   onEmailChange,
   onPhoneChange,
   nameRequired = false,
   emailRequired = false,
   phoneRequired = false,
-  nameLabel = "Contact Name",
-  emailLabel = "Contact Email",
-  phoneLabel = "Contact Phone",
-  phonePlaceholder = "(403) 555-0123",
-  className = "",
+  nameLabel = 'Contact Name',
+  emailLabel = 'Contact Email',
+  phoneLabel = 'Contact Phone',
+  phonePlaceholder = '(403) 555-0123',
+  className = '',
   disabled = false,
-  layout = "stacked"
+  layout = 'stacked'
 }: ContactFieldGroupProps) {
-  const gridClass = layout === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : 
-                   layout === "inline" ? "flex flex-wrap gap-4" : "space-y-4"
+  const gridClass = layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 
+    layout === 'inline' ? 'flex flex-wrap gap-4' : 'space-y-4'
 
   return (
     <div className={`${gridClass} ${className}`}>
@@ -98,7 +99,7 @@ interface SimpleContactFieldsProps {
 export function SimpleContactFields({ 
   required = false, 
   disabled = false, 
-  className = "" 
+  className = '' 
 }: SimpleContactFieldsProps) {
   return (
     <div className={`space-y-4 ${className}`}>

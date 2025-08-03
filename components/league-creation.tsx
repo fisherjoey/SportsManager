@@ -1,36 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
 import { 
   Plus, 
   Copy, 
@@ -47,10 +17,41 @@ import {
   Shield,
   Sparkles,
   BarChart3
-} from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { useApi, League, Team } from "@/lib/api"
+} from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@/components/ui/tabs'
+import { useToast } from '@/components/ui/use-toast'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { useApi, League, Team } from '@/lib/api'
 
 interface BulkLeagueForm {
   organization: string
@@ -137,9 +138,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error fetching leagues:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch leagues",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch leagues',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -153,9 +154,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error fetching filter options:', error)
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load filter options. Some features may not work properly.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load filter options. Some features may not work properly.'
       })
     }
   }
@@ -167,9 +168,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error fetching teams:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch teams for league",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch teams for league',
+        variant: 'destructive'
       })
     }
   }
@@ -188,18 +189,18 @@ export function LeagueCreation() {
     try {
       if (!bulkLeagueForm.organization || !bulkLeagueForm.season) {
         toast({
-          title: "Error",
-          description: "Organization and season are required",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Organization and season are required',
+          variant: 'destructive'
         })
         return
       }
 
       if (bulkLeagueForm.age_groups.length === 0 || bulkLeagueForm.genders.length === 0 || bulkLeagueForm.divisions.length === 0) {
         toast({
-          title: "Error", 
-          description: "Please select at least one option for age groups, genders, and divisions",
-          variant: "destructive",
+          title: 'Error', 
+          description: 'Please select at least one option for age groups, genders, and divisions',
+          variant: 'destructive'
         })
         return
       }
@@ -208,8 +209,8 @@ export function LeagueCreation() {
       const response = await api.createBulkLeagues(bulkLeagueForm)
       
       toast({
-        title: "Success",
-        description: response.message,
+        title: 'Success',
+        description: response.message
       })
       
       setShowBulkLeagueDialog(false)
@@ -226,9 +227,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error creating bulk leagues:', error)
       toast({
-        title: "Error",
-        description: "Failed to create leagues",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create leagues',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -240,9 +241,9 @@ export function LeagueCreation() {
     try {
       if (!bulkTeamForm.league_id || bulkTeamForm.teams.length === 0) {
         toast({
-          title: "Error",
-          description: "Please select a league and add at least one team",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Please select a league and add at least one team',
+          variant: 'destructive'
         })
         return
       }
@@ -251,8 +252,8 @@ export function LeagueCreation() {
       const response = await api.createBulkTeams(bulkTeamForm)
       
       toast({
-        title: "Success",
-        description: response.message,
+        title: 'Success',
+        description: response.message
       })
       
       setShowBulkTeamDialog(false)
@@ -267,9 +268,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error creating bulk teams:', error)
       toast({
-        title: "Error",
-        description: "Failed to create teams",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create teams',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -281,9 +282,9 @@ export function LeagueCreation() {
     try {
       if (!generateTeamsForm.league_id || generateTeamsForm.count < 1) {
         toast({
-          title: "Error",
-          description: "Please select a league and specify team count",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Please select a league and specify team count',
+          variant: 'destructive'
         })
         return
       }
@@ -292,8 +293,8 @@ export function LeagueCreation() {
       const response = await api.generateTeams(generateTeamsForm)
       
       toast({
-        title: "Success",
-        description: response.message,
+        title: 'Success',
+        description: response.message
       })
       
       setShowGenerateTeamsDialog(false)
@@ -311,9 +312,9 @@ export function LeagueCreation() {
     } catch (error) {
       console.error('Error generating teams:', error)
       toast({
-        title: "Error",
-        description: "Failed to generate teams",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to generate teams',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -348,32 +349,32 @@ export function LeagueCreation() {
   // Stats for leagues overview
   const stats = [
     {
-      title: "Active Leagues",
+      title: 'Active Leagues',
       value: leagues.length,
       icon: Shield,
-      color: "text-blue-600",
-      description: "Currently active leagues",
+      color: 'text-blue-600',
+      description: 'Currently active leagues'
     },
     {
-      title: "Total Teams",
+      title: 'Total Teams',
       value: leagues.reduce((sum, league) => sum + (league.team_count || 0), 0),
       icon: Users,
-      color: "text-green-600", 
-      description: "Teams across all leagues",
+      color: 'text-green-600', 
+      description: 'Teams across all leagues'
     },
     {
-      title: "Total Games",
+      title: 'Total Games',
       value: leagues.reduce((sum, league) => sum + (league.game_count || 0), 0),
       icon: Calendar,
-      color: "text-purple-600",
-      description: "Games scheduled or played",
+      color: 'text-purple-600',
+      description: 'Games scheduled or played'
     },
     {
-      title: "Organizations",
+      title: 'Organizations',
       value: new Set(leagues.map(l => l.organization)).size,
       icon: BarChart3,
-      color: "text-orange-600",
-      description: "Different organizations",
+      color: 'text-orange-600',
+      description: 'Different organizations'
     }
   ]
 
@@ -397,186 +398,186 @@ export function LeagueCreation() {
       <Dialog open={showBulkLeagueDialog} onOpenChange={setShowBulkLeagueDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-                <DialogTitle>Bulk Create Leagues</DialogTitle>
-                <DialogDescription>
+            <DialogTitle>Bulk Create Leagues</DialogTitle>
+            <DialogDescription>
                   Create multiple leagues at once by selecting combinations of age groups, genders, and divisions
-                </DialogDescription>
-              </DialogHeader>
+            </DialogDescription>
+          </DialogHeader>
               
-              <div className="space-y-6">
-                {/* Organization and Season */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Organization *</Label>
-                    <Input
-                      id="organization"
-                      placeholder="e.g., Calgary, Okotoks, Airdrie"
-                      value={bulkLeagueForm.organization}
-                      onChange={(e) => setBulkLeagueForm(prev => ({ ...prev, organization: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="season">Season *</Label>
-                    <Input
-                      id="season"
-                      placeholder="e.g., Winter 2025, Spring 2025"
-                      value={bulkLeagueForm.season}
-                      onChange={(e) => setBulkLeagueForm(prev => ({ ...prev, season: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                {/* Level */}
-                <div className="space-y-2">
-                  <Label>Competition Level *</Label>
-                  <Select 
-                    value={bulkLeagueForm.level} 
-                    onValueChange={(value) => setBulkLeagueForm(prev => ({ ...prev, level: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {levels.map(level => (
-                        <SelectItem key={level} value={level}>{level}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Age Groups */}
-                <div className="space-y-3">
-                  <Label>Age Groups * (Select multiple)</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {ageGroups.map(age => (
-                      <div key={age} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`age-${age}`}
-                          checked={bulkLeagueForm.age_groups.includes(age)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setBulkLeagueForm(prev => ({ 
-                                ...prev, 
-                                age_groups: [...prev.age_groups, age] 
-                              }))
-                            } else {
-                              setBulkLeagueForm(prev => ({ 
-                                ...prev, 
-                                age_groups: prev.age_groups.filter(g => g !== age) 
-                              }))
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`age-${age}`} className="text-sm">{age}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Genders */}
-                <div className="space-y-3">
-                  <Label>Genders * (Select multiple)</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {genders.map(gender => (
-                      <div key={gender} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`gender-${gender}`}
-                          checked={bulkLeagueForm.genders.includes(gender)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setBulkLeagueForm(prev => ({ 
-                                ...prev, 
-                                genders: [...prev.genders, gender] 
-                              }))
-                            } else {
-                              setBulkLeagueForm(prev => ({ 
-                                ...prev, 
-                                genders: prev.genders.filter(g => g !== gender) 
-                              }))
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`gender-${gender}`} className="text-sm">{gender}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Divisions */}
-                <div className="space-y-3">
-                  <Label>Divisions *</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(5) }))}
-                      >
-                        Divisions 1-5
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(10) }))}
-                      >
-                        Divisions 1-10
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(15) }))}
-                      >
-                        Divisions 1-15
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter divisions, one per line (e.g., Division 1, Premier, Elite)"
-                      value={bulkLeagueForm.divisions.join('\n')}
-                      onChange={(e) => setBulkLeagueForm(prev => ({ 
-                        ...prev, 
-                        divisions: e.target.value.split('\n').filter(d => d.trim()) 
-                      }))}
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
-                {/* Preview */}
-                {bulkLeagueForm.age_groups.length > 0 && bulkLeagueForm.genders.length > 0 && bulkLeagueForm.divisions.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Info className="h-4 w-4" />
-                      Preview ({bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length} leagues will be created)
-                    </Label>
-                    <div className="max-h-32 overflow-y-auto bg-muted p-3 rounded-md text-sm">
-                      {bulkLeagueForm.age_groups.slice(0, 3).map(age =>
-                        bulkLeagueForm.genders.slice(0, 2).map(gender =>
-                          bulkLeagueForm.divisions.slice(0, 2).map(division => (
-                            <div key={`${age}-${gender}-${division}`}>
-                              {bulkLeagueForm.organization} {age} {gender} {division} - {bulkLeagueForm.season}
-                            </div>
-                          ))
-                        )
-                      )}
-                      {(bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length) > 12 && (
-                        <div className="text-muted-foreground">... and {(bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length) - 12} more</div>
-                      )}
-                    </div>
-                  </div>
-                )}
+          <div className="space-y-6">
+            {/* Organization and Season */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="organization">Organization *</Label>
+                <Input
+                  id="organization"
+                  placeholder="e.g., Calgary, Okotoks, Airdrie"
+                  value={bulkLeagueForm.organization}
+                  onChange={(e) => setBulkLeagueForm(prev => ({ ...prev, organization: e.target.value }))}
+                />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="season">Season *</Label>
+                <Input
+                  id="season"
+                  placeholder="e.g., Winter 2025, Spring 2025"
+                  value={bulkLeagueForm.season}
+                  onChange={(e) => setBulkLeagueForm(prev => ({ ...prev, season: e.target.value }))}
+                />
+              </div>
+            </div>
 
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowBulkLeagueDialog(false)}>
+            {/* Level */}
+            <div className="space-y-2">
+              <Label>Competition Level *</Label>
+              <Select 
+                value={bulkLeagueForm.level} 
+                onValueChange={(value) => setBulkLeagueForm(prev => ({ ...prev, level: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {levels.map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Age Groups */}
+            <div className="space-y-3">
+              <Label>Age Groups * (Select multiple)</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {ageGroups.map(age => (
+                  <div key={age} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`age-${age}`}
+                      checked={bulkLeagueForm.age_groups.includes(age)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setBulkLeagueForm(prev => ({ 
+                            ...prev, 
+                            age_groups: [...prev.age_groups, age] 
+                          }))
+                        } else {
+                          setBulkLeagueForm(prev => ({ 
+                            ...prev, 
+                            age_groups: prev.age_groups.filter(g => g !== age) 
+                          }))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`age-${age}`} className="text-sm">{age}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Genders */}
+            <div className="space-y-3">
+              <Label>Genders * (Select multiple)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {genders.map(gender => (
+                  <div key={gender} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`gender-${gender}`}
+                      checked={bulkLeagueForm.genders.includes(gender)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setBulkLeagueForm(prev => ({ 
+                            ...prev, 
+                            genders: [...prev.genders, gender] 
+                          }))
+                        } else {
+                          setBulkLeagueForm(prev => ({ 
+                            ...prev, 
+                            genders: prev.genders.filter(g => g !== gender) 
+                          }))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`gender-${gender}`} className="text-sm">{gender}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Divisions */}
+            <div className="space-y-3">
+              <Label>Divisions *</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(5) }))}
+                  >
+                        Divisions 1-5
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(10) }))}
+                  >
+                        Divisions 1-10
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkLeagueForm(prev => ({ ...prev, divisions: generateDivisions(15) }))}
+                  >
+                        Divisions 1-15
+                  </Button>
+                </div>
+                <Textarea
+                  placeholder="Enter divisions, one per line (e.g., Division 1, Premier, Elite)"
+                  value={bulkLeagueForm.divisions.join('\n')}
+                  onChange={(e) => setBulkLeagueForm(prev => ({ 
+                    ...prev, 
+                    divisions: e.target.value.split('\n').filter(d => d.trim()) 
+                  }))}
+                  rows={4}
+                />
+              </div>
+            </div>
+
+            {/* Preview */}
+            {bulkLeagueForm.age_groups.length > 0 && bulkLeagueForm.genders.length > 0 && bulkLeagueForm.divisions.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                      Preview ({bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length} leagues will be created)
+                </Label>
+                <div className="max-h-32 overflow-y-auto bg-muted p-3 rounded-md text-sm">
+                  {bulkLeagueForm.age_groups.slice(0, 3).map(age =>
+                    bulkLeagueForm.genders.slice(0, 2).map(gender =>
+                      bulkLeagueForm.divisions.slice(0, 2).map(division => (
+                        <div key={`${age}-${gender}-${division}`}>
+                          {bulkLeagueForm.organization} {age} {gender} {division} - {bulkLeagueForm.season}
+                        </div>
+                      ))
+                    )
+                  )}
+                  {(bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length) > 12 && (
+                    <div className="text-muted-foreground">... and {(bulkLeagueForm.age_groups.length * bulkLeagueForm.genders.length * bulkLeagueForm.divisions.length) - 12} more</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkLeagueDialog(false)}>
                   Cancel
-                </Button>
-                <Button onClick={handleBulkLeagueSubmit} disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Leagues'}
-                </Button>
-              </DialogFooter>
+            </Button>
+            <Button onClick={handleBulkLeagueSubmit} disabled={loading}>
+              {loading ? 'Creating...' : 'Create Leagues'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -852,7 +853,7 @@ export function LeagueCreation() {
                     <Button
                       key={pattern}
                       type="button"
-                      variant={generateTeamsForm.name_pattern === pattern ? "default" : "outline"}
+                      variant={generateTeamsForm.name_pattern === pattern ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setGenerateTeamsForm(prev => ({ ...prev, name_pattern: pattern }))}
                       className="text-xs justify-start"
@@ -870,7 +871,7 @@ export function LeagueCreation() {
                   }))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Use <code className="bg-muted px-1 rounded">{"{number}"}</code> where you want the team number to appear
+                  Use <code className="bg-muted px-1 rounded">{'{number}'}</code> where you want the team number to appear
                 </p>
               </div>
             </div>
@@ -891,7 +892,7 @@ export function LeagueCreation() {
                     }))}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Each team will get: "{generateTeamsForm.location_base} - Field {"{number}"}"
+                    Each team will get: "{generateTeamsForm.location_base} - Field {'{number}'}"
                   </p>
                 </div>
                 

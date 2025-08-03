@@ -1,15 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { apiClient, Communication } from "@/lib/api"
-import { useAuth } from "@/components/auth-provider"
-import { EmergencyBroadcast, QuickEmergencyBroadcast } from "@/components/emergency-broadcast"
+import { useState, useEffect } from 'react'
 import { 
   Megaphone, 
   Bell, 
@@ -23,9 +14,19 @@ import {
   Clock,
   RefreshCw,
   Plus
-} from "lucide-react"
-import { format } from "date-fns"
-import { toast } from "sonner"
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { toast } from 'sonner'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { apiClient, Communication } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
+import { EmergencyBroadcast, QuickEmergencyBroadcast } from '@/components/emergency-broadcast'
 
 interface Post {
   id: string
@@ -99,41 +100,41 @@ export function AnnouncementBoard() {
 
   const getPriorityIcon = (priority: string) => {
     switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'high':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />
-      case 'medium':
-        return <Bell className="h-4 w-4 text-yellow-500" />
-      case 'low':
-        return <MessageCircle className="h-4 w-4 text-blue-500" />
-      default:
-        return <MessageCircle className="h-4 w-4 text-gray-500" />
+    case 'urgent':
+      return <AlertTriangle className="h-4 w-4 text-red-500" />
+    case 'high':
+      return <AlertTriangle className="h-4 w-4 text-orange-500" />
+    case 'medium':
+      return <Bell className="h-4 w-4 text-yellow-500" />
+    case 'low':
+      return <MessageCircle className="h-4 w-4 text-blue-500" />
+    default:
+      return <MessageCircle className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getTypeIcon = (type: string) => {
     switch (type?.toLowerCase()) {
-      case 'emergency':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'announcement':
-        return <Megaphone className="h-4 w-4 text-blue-500" />
-      case 'assignment':
-        return <Bell className="h-4 w-4 text-green-500" />
-      default:
-        return <MessageCircle className="h-4 w-4 text-gray-500" />
+    case 'emergency':
+      return <AlertTriangle className="h-4 w-4 text-red-500" />
+    case 'announcement':
+      return <Megaphone className="h-4 w-4 text-blue-500" />
+    case 'assignment':
+      return <Bell className="h-4 w-4 text-green-500" />
+    default:
+      return <MessageCircle className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getCategoryIcon = (iconName?: string) => {
     // Simple mapping - you could expand this
     switch (iconName) {
-      case 'Megaphone':
-        return <Megaphone className="w-4 h-4" />
-      case 'Calendar':
-        return <Calendar className="w-4 h-4" />
-      default:
-        return <MessageCircle className="w-4 h-4" />
+    case 'Megaphone':
+      return <Megaphone className="w-4 h-4" />
+    case 'Calendar':
+      return <Calendar className="w-4 h-4" />
+    default:
+      return <MessageCircle className="w-4 h-4" />
     }
   }
 
@@ -292,40 +293,40 @@ interface AnnouncementCardProps {
 function AnnouncementCard({ item, type, onAcknowledge }: AnnouncementCardProps) {
   const getPriorityIcon = (priority: string) => {
     switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'high':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />
-      case 'medium':
-        return <Bell className="h-4 w-4 text-yellow-500" />
-      case 'low':
-        return <MessageCircle className="h-4 w-4 text-blue-500" />
-      default:
-        return <MessageCircle className="h-4 w-4 text-gray-500" />
+    case 'urgent':
+      return <AlertTriangle className="h-4 w-4 text-red-500" />
+    case 'high':
+      return <AlertTriangle className="h-4 w-4 text-orange-500" />
+    case 'medium':
+      return <Bell className="h-4 w-4 text-yellow-500" />
+    case 'low':
+      return <MessageCircle className="h-4 w-4 text-blue-500" />
+    default:
+      return <MessageCircle className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getTypeIcon = (itemType: string) => {
     switch (itemType?.toLowerCase()) {
-      case 'emergency':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'announcement':
-        return <Megaphone className="h-4 w-4 text-blue-500" />
-      case 'assignment':
-        return <Bell className="h-4 w-4 text-green-500" />
-      default:
-        return <MessageCircle className="h-4 w-4 text-gray-500" />
+    case 'emergency':
+      return <AlertTriangle className="h-4 w-4 text-red-500" />
+    case 'announcement':
+      return <Megaphone className="h-4 w-4 text-blue-500" />
+    case 'assignment':
+      return <Bell className="h-4 w-4 text-green-500" />
+    default:
+      return <MessageCircle className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getCategoryIcon = (iconName?: string) => {
     switch (iconName) {
-      case 'Megaphone':
-        return <Megaphone className="w-4 h-4" />
-      case 'Calendar':
-        return <Calendar className="w-4 h-4" />
-      default:
-        return <MessageCircle className="w-4 h-4" />
+    case 'Megaphone':
+      return <Megaphone className="w-4 h-4" />
+    case 'Calendar':
+      return <Calendar className="w-4 h-4" />
+    default:
+      return <MessageCircle className="w-4 h-4" />
     }
   }
 
@@ -376,8 +377,8 @@ function AnnouncementCard({ item, type, onAcknowledge }: AnnouncementCardProps) 
                 <Calendar className="w-4 h-4" />
                 {format(new Date(
                   type === 'communication' && 'sent_at' in item ? item.sent_at || item.created_at || '' :
-                  'published_at' in item ? item.published_at || item.created_at || '' :
-                  item.created_at || ''
+                    'published_at' in item ? item.published_at || item.created_at || '' :
+                      item.created_at || ''
                 ), 'MMM d, yyyy h:mm a')}
               </div>
               

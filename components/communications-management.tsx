@@ -1,21 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { RichTextEditor } from "@/components/rich-text-editor"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { apiClient, Communication } from "@/lib/api"
-import { useAuth } from "@/components/auth-provider"
+import { useState, useEffect } from 'react'
 import { 
   Plus, 
   Edit, 
@@ -38,9 +23,25 @@ import {
   Zap,
   Archive,
   MessageSquare
-} from "lucide-react"
-import { format } from "date-fns"
-import { toast } from "sonner"
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { toast } from 'sonner'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { RichTextEditor } from '@/components/rich-text-editor'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { apiClient, Communication } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
 
 interface CommunicationFormData {
   title: string
@@ -60,14 +61,14 @@ const COMMUNICATION_TYPES = [
   { value: 'announcement', label: 'Announcement', icon: Megaphone, description: 'General announcements' },
   { value: 'assignment', label: 'Assignment', icon: Bell, description: 'Game assignment notifications' },
   { value: 'emergency', label: 'Emergency', icon: AlertTriangle, description: 'Urgent communications' },
-  { value: 'update', label: 'Update', icon: MessageCircle, description: 'System or game updates' },
+  { value: 'update', label: 'Update', icon: MessageCircle, description: 'System or game updates' }
 ]
 
 const PRIORITY_LEVELS = [
   { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-800', icon: MessageSquare },
   { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800', icon: Bell },
   { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
-  { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800', icon: AlertTriangle },
+  { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800', icon: AlertTriangle }
 ]
 
 export function CommunicationsManagement() {
@@ -205,11 +206,11 @@ export function CommunicationsManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-green-100 text-green-800'
-      case 'draft': return 'bg-yellow-100 text-yellow-800'
-      case 'scheduled': return 'bg-blue-100 text-blue-800'
-      case 'archived': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+    case 'published': return 'bg-green-100 text-green-800'
+    case 'draft': return 'bg-yellow-100 text-yellow-800'
+    case 'scheduled': return 'bg-blue-100 text-blue-800'
+    case 'archived': return 'bg-gray-100 text-gray-800'
+    default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -226,28 +227,28 @@ export function CommunicationsManagement() {
 
   const stats = [
     {
-      title: "Total Communications",
+      title: 'Total Communications',
       value: communications.length,
       icon: MessageSquare,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Published",
+      title: 'Published',
       value: communications.filter(c => c.status === 'published').length,
       icon: Send,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "Drafts",
+      title: 'Drafts',
       value: communications.filter(c => c.status === 'draft').length,
       icon: Edit,
-      color: "text-orange-600",
+      color: 'text-orange-600'
     },
     {
-      title: "Urgent",
+      title: 'Urgent',
       value: communications.filter(c => c.priority === 'urgent').length,
       icon: AlertTriangle,
-      color: "text-red-600",
+      color: 'text-red-600'
     }
   ]
 
@@ -295,7 +296,7 @@ export function CommunicationsManagement() {
         title="Communications"
         description="Manage announcements, notifications, and team communications"
       >
-        <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+        <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}>
           <Plus className="h-5 w-5 mr-2" />
           New Communication
         </Button>

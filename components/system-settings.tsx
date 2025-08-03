@@ -1,15 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { 
   Database, 
   Server, 
@@ -26,6 +17,16 @@ import {
   Key,
   Clock
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 
@@ -84,7 +85,7 @@ export function SystemSettings() {
   const [settings, setSettings] = useState<SystemSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState("general")
+  const [activeTab, setActiveTab] = useState('general')
 
   useEffect(() => {
     fetchSettings()
@@ -99,20 +100,20 @@ export function SystemSettings() {
       // Mock data for demonstration
       const mockSettings: SystemSettings = {
         general: {
-          siteName: "SyncedSport",
-          siteDescription: "Sports Management and Referee Assignment System",
-          timezone: "America/New_York",
-          dateFormat: "MM/DD/YYYY",
-          currency: "USD",
-          language: "en"
+          siteName: 'SyncedSport',
+          siteDescription: 'Sports Management and Referee Assignment System',
+          timezone: 'America/New_York',
+          dateFormat: 'MM/DD/YYYY',
+          currency: 'USD',
+          language: 'en'
         },
         email: {
-          smtpHost: "smtp.gmail.com",
+          smtpHost: 'smtp.gmail.com',
           smtpPort: 587,
-          smtpUser: "noreply@syncedsport.com",
-          smtpPassword: "••••••••",
-          fromEmail: "noreply@syncedsport.com",
-          fromName: "SyncedSport",
+          smtpUser: 'noreply@syncedsport.com',
+          smtpPassword: '••••••••',
+          fromEmail: 'noreply@syncedsport.com',
+          fromName: 'SyncedSport',
           enabled: true
         },
         notifications: {
@@ -137,14 +138,14 @@ export function SystemSettings() {
           rateLimitPerMinute: 60,
           apiLoggingEnabled: true,
           corsEnabled: true,
-          allowedOrigins: "https://app.syncedsport.com"
+          allowedOrigins: 'https://app.syncedsport.com'
         },
         backup: {
           autoBackupEnabled: true,
-          backupFrequency: "daily",
+          backupFrequency: 'daily',
           retentionDays: 30,
-          lastBackup: "2024-02-04T02:00:00Z",
-          nextBackup: "2024-02-05T02:00:00Z"
+          lastBackup: '2024-02-04T02:00:00Z',
+          nextBackup: '2024-02-05T02:00:00Z'
         }
       }
       
@@ -152,9 +153,9 @@ export function SystemSettings() {
     } catch (error) {
       console.error('Error fetching settings:', error)
       toast({
-        title: "Error",
-        description: "Failed to load system settings",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load system settings',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -170,15 +171,15 @@ export function SystemSettings() {
       // await apiClient.put('/api/system/settings', settings)
       
       toast({
-        title: "Settings saved",
-        description: "System settings have been updated successfully"
+        title: 'Settings saved',
+        description: 'System settings have been updated successfully'
       })
     } catch (error) {
       console.error('Error saving settings:', error)
       toast({
-        title: "Error",
-        description: "Failed to save system settings",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to save system settings',
+        variant: 'destructive'
       })
     } finally {
       setSaving(false)

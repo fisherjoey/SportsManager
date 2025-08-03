@@ -1,12 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Shield, 
   AlertTriangle, 
@@ -21,6 +15,13 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 
@@ -55,10 +56,10 @@ export function SecurityAudit() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [securityMetrics, setSecurityMetrics] = useState<SecurityMetrics | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("logs")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [riskFilter, setRiskFilter] = useState("all")
+  const [activeTab, setActiveTab] = useState('logs')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [riskFilter, setRiskFilter] = useState('all')
 
   useEffect(() => {
     fetchSecurityData()
@@ -76,52 +77,52 @@ export function SecurityAudit() {
       // Mock data for demonstration
       const mockLogs: AuditLogEntry[] = [
         {
-          id: "log-1",
-          timestamp: "2024-02-04T10:30:00Z",
-          user: "admin@example.com",
-          action: "LOGIN",
-          resource: "/admin/dashboard",
-          ip: "192.168.1.100",
-          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          status: "success",
-          details: "User logged in successfully",
-          riskLevel: "low"
+          id: 'log-1',
+          timestamp: '2024-02-04T10:30:00Z',
+          user: 'admin@example.com',
+          action: 'LOGIN',
+          resource: '/admin/dashboard',
+          ip: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          status: 'success',
+          details: 'User logged in successfully',
+          riskLevel: 'low'
         },
         {
-          id: "log-2",
-          timestamp: "2024-02-04T10:25:00Z",
-          user: "user@example.com",
-          action: "FAILED_LOGIN",
-          resource: "/login",
-          ip: "192.168.1.50",
-          userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
-          status: "failure",
-          details: "Invalid password attempt",
-          riskLevel: "medium"
+          id: 'log-2',
+          timestamp: '2024-02-04T10:25:00Z',
+          user: 'user@example.com',
+          action: 'FAILED_LOGIN',
+          resource: '/login',
+          ip: '192.168.1.50',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+          status: 'failure',
+          details: 'Invalid password attempt',
+          riskLevel: 'medium'
         },
         {
-          id: "log-3",
-          timestamp: "2024-02-04T09:15:00Z",
-          user: "admin@example.com",
-          action: "DELETE_GAME",
-          resource: "/api/games/123",
-          ip: "192.168.1.100",
-          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          status: "success",
-          details: "Game deleted: CMBA U12 vs Rangers",
-          riskLevel: "high"
+          id: 'log-3',
+          timestamp: '2024-02-04T09:15:00Z',
+          user: 'admin@example.com',
+          action: 'DELETE_GAME',
+          resource: '/api/games/123',
+          ip: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          status: 'success',
+          details: 'Game deleted: CMBA U12 vs Rangers',
+          riskLevel: 'high'
         },
         {
-          id: "log-4",
-          timestamp: "2024-02-04T08:45:00Z",  
-          user: "system@example.com",
-          action: "SECURITY_SCAN",
-          resource: "/system/security",
-          ip: "127.0.0.1",
-          userAgent: "SecurityBot/1.0",
-          status: "warning",
-          details: "Detected unusual login pattern",
-          riskLevel: "critical"
+          id: 'log-4',
+          timestamp: '2024-02-04T08:45:00Z',  
+          user: 'system@example.com',
+          action: 'SECURITY_SCAN',
+          resource: '/system/security',
+          ip: '127.0.0.1',
+          userAgent: 'SecurityBot/1.0',
+          status: 'warning',
+          details: 'Detected unusual login pattern',
+          riskLevel: 'critical'
         }
       ]
 
@@ -130,7 +131,7 @@ export function SecurityAudit() {
         failedLogins: 12,
         activeUsers: 45,
         securityAlerts: 3,
-        lastSecurityScan: "2024-02-04T08:45:00Z",
+        lastSecurityScan: '2024-02-04T08:45:00Z',
         vulnerabilities: {
           critical: 0,
           high: 2,
@@ -144,9 +145,9 @@ export function SecurityAudit() {
     } catch (error) {
       console.error('Error fetching security data:', error)
       toast({
-        title: "Error",
-        description: "Failed to load security data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load security data',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -155,29 +156,29 @@ export function SecurityAudit() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'failure':
-        return <XCircle className="w-4 h-4 text-red-500" />
-      case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />
+    case 'success':
+      return <CheckCircle className="w-4 h-4 text-green-500" />
+    case 'failure':
+      return <XCircle className="w-4 h-4 text-red-500" />
+    case 'warning':
+      return <AlertTriangle className="w-4 h-4 text-yellow-500" />
+    default:
+      return <Clock className="w-4 h-4 text-gray-500" />
     }
   }
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'critical':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-      case 'high':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-      case 'low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+    case 'critical':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+    case 'high':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+    case 'medium':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+    case 'low':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
     }
   }
 
@@ -185,8 +186,8 @@ export function SecurityAudit() {
     const matchesSearch = log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.resource.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || log.status === statusFilter
-    const matchesRisk = riskFilter === "all" || log.riskLevel === riskFilter
+    const matchesStatus = statusFilter === 'all' || log.status === statusFilter
+    const matchesRisk = riskFilter === 'all' || log.riskLevel === riskFilter
     
     return matchesSearch && matchesStatus && matchesRisk
   })

@@ -1,16 +1,5 @@
-"use client"
+'use client'
 
-import { 
-  BaseEntityCard,
-  InfoRow,
-  BadgeRow,
-  CollapsibleSection
-} from "@/components/ui/base-entity-card"
-import { 
-  LevelBadge,
-  AvailabilityBadge
-} from "@/components/ui/specialized-badges"
-import { Badge } from "@/components/ui/badge"
 import { 
   User, 
   Mail, 
@@ -21,8 +10,21 @@ import {
   Eye,
   MessageSquare,
   Shield
-} from "lucide-react"
-import { Referee } from "./types"
+} from 'lucide-react'
+
+import { 
+  BaseEntityCard,
+  InfoRow,
+  BadgeRow,
+  CollapsibleSection
+} from '@/components/ui/base-entity-card'
+import { 
+  LevelBadge,
+  AvailabilityBadge
+} from '@/components/ui/specialized-badges'
+import { Badge } from '@/components/ui/badge'
+
+import { Referee } from './types'
 
 interface RefereeMobileCardProps {
   referee: Referee
@@ -42,17 +44,17 @@ export function RefereeMobileCard({
 
   const actions = [
     {
-      label: "View profile",
+      label: 'View profile',
       icon: Eye,
       onClick: () => onViewProfile?.(referee)
     },
     {
-      label: "Edit referee",
+      label: 'Edit referee',
       icon: Edit,
       onClick: () => onEditReferee?.(referee)
     },
     {
-      label: "Send message",
+      label: 'Send message',
       icon: MessageSquare,
       onClick: () => console.log('Send message')
     }
@@ -103,7 +105,7 @@ export function RefereeMobileCard({
           <LevelBadge level={referee.level} />
           <AvailabilityBadge
             isAvailable={referee.isAvailable}
-            availabilityText={referee.isAvailable ? "Available: July 20" : "Unavailable"}
+            availabilityText={referee.isAvailable ? 'Available: July 20' : 'Unavailable'}
           />
         </div>
       </BadgeRow>

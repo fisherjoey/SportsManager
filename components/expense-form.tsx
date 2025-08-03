@@ -1,19 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   Upload, 
   Camera, 
@@ -37,6 +24,20 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 import { PaymentMethodSelector } from '@/components/payment-method-selector'
 import { ReceiptUpload } from '@/components/receipt-upload'
@@ -45,14 +46,14 @@ import { CreditCardSelector } from '@/components/credit-card-selector'
 
 // Form validation schema
 const expenseFormSchema = z.object({
-  receiptId: z.string().uuid("Please upload a receipt first"),
-  paymentMethodId: z.string().uuid("Please select a payment method"),
-  amount: z.number().min(0.01, "Amount must be greater than 0"),
-  vendorName: z.string().min(1, "Vendor name is required"),
-  transactionDate: z.string().min(1, "Transaction date is required"),
+  receiptId: z.string().uuid('Please upload a receipt first'),
+  paymentMethodId: z.string().uuid('Please select a payment method'),
+  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  vendorName: z.string().min(1, 'Vendor name is required'),
+  transactionDate: z.string().min(1, 'Transaction date is required'),
   categoryId: z.string().optional(),
   description: z.string().optional(),
-  businessPurpose: z.string().min(1, "Business purpose is required"),
+  businessPurpose: z.string().min(1, 'Business purpose is required'),
   projectCode: z.string().optional(),
   purchaseOrderId: z.string().optional(),
   creditCardId: z.string().optional(),
@@ -151,7 +152,7 @@ export function ExpenseForm({
       toast({
         title: 'Error loading categories',
         description: 'Using default categories. Please check your connection.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsLoadingCategories(false)
@@ -178,7 +179,7 @@ export function ExpenseForm({
           
           toast({
             title: 'Payment method detected',
-            description: `Auto-selected ${topSuggestion.name} (${Math.round(topSuggestion.confidence * 100)}% confidence)`,
+            description: `Auto-selected ${topSuggestion.name} (${Math.round(topSuggestion.confidence * 100)}% confidence)`
           })
         }
       }
@@ -228,7 +229,7 @@ export function ExpenseForm({
       
       toast({
         title: 'Receipt data extracted',
-        description: `Auto-populated fields with ${Math.round(extracted.confidence * 100)}% confidence`,
+        description: `Auto-populated fields with ${Math.round(extracted.confidence * 100)}% confidence`
       })
     }
     
@@ -255,7 +256,7 @@ export function ExpenseForm({
         toast({
           title: 'Purchase Order Required',
           description: 'Please select a purchase order for this payment method.',
-          variant: 'destructive',
+          variant: 'destructive'
         })
         return
       }
@@ -264,7 +265,7 @@ export function ExpenseForm({
         toast({
           title: 'Credit Card Required',
           description: 'Please select a credit card for this payment method.',
-          variant: 'destructive',
+          variant: 'destructive'
         })
         return
       }
@@ -278,7 +279,7 @@ export function ExpenseForm({
       
       toast({
         title: 'Expense submitted successfully',
-        description: 'Your expense has been submitted for processing.',
+        description: 'Your expense has been submitted for processing.'
       })
       
       // Reset form after successful submission
@@ -292,7 +293,7 @@ export function ExpenseForm({
       toast({
         title: 'Submission failed',
         description: error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsSubmitting(false)
@@ -313,14 +314,14 @@ export function ExpenseForm({
       
       toast({
         title: 'Draft saved',
-        description: 'Your expense draft has been saved.',
+        description: 'Your expense draft has been saved.'
       })
     } catch (error) {
       console.error('Save draft error:', error)
       toast({
         title: 'Save failed',
         description: 'Unable to save draft. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsSavingDraft(false)
@@ -333,11 +334,11 @@ export function ExpenseForm({
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'urgent': return 'text-red-600 bg-red-50 border-red-200'
-      case 'high': return 'text-orange-600 bg-orange-50 border-orange-200'
-      case 'normal': return 'text-blue-600 bg-blue-50 border-blue-200'
-      case 'low': return 'text-gray-600 bg-gray-50 border-gray-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+    case 'urgent': return 'text-red-600 bg-red-50 border-red-200'
+    case 'high': return 'text-orange-600 bg-orange-50 border-orange-200'
+    case 'normal': return 'text-blue-600 bg-blue-50 border-blue-200'
+    case 'low': return 'text-gray-600 bg-gray-50 border-gray-200'
+    default: return 'text-gray-600 bg-gray-50 border-gray-200'
     }
   }
 

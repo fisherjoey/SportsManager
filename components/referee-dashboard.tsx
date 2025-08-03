@@ -1,21 +1,22 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useAuth } from "@/components/auth-provider"
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { RefereeDashboardOverview } from "@/components/referee-dashboard-overview"
-import { MyAssignments } from "@/components/my-assignments"
-import { AvailableGames } from "@/components/available-games"
-import { CalendarView } from "@/components/calendar-view"
-import { ProfileSettings } from "@/components/profile-settings"
-import { AvailabilityCalendar } from "@/components/availability-calendar"
-import { ExpenseFormIntegrated } from "@/components/expense-form-integrated"
-import { ExpenseListEnhanced } from "@/components/expense-list-enhanced"
+import { useState, useEffect } from 'react'
+
+import { useAuth } from '@/components/auth-provider'
+import { SidebarProvider } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/app-sidebar'
+import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { RefereeDashboardOverview } from '@/components/referee-dashboard-overview'
+import { MyAssignments } from '@/components/my-assignments'
+import { AvailableGames } from '@/components/available-games'
+import { CalendarView } from '@/components/calendar-view'
+import { ProfileSettings } from '@/components/profile-settings'
+import { AvailabilityCalendar } from '@/components/availability-calendar'
+import { ExpenseFormIntegrated } from '@/components/expense-form-integrated'
+import { ExpenseListEnhanced } from '@/components/expense-list-enhanced'
 
 export function RefereeDashboard() {
-  const [activeView, setActiveView] = useState("dashboard")
+  const [activeView, setActiveView] = useState('dashboard')
   const { user } = useAuth()
 
   // Initialize from URL on mount and handle browser navigation
@@ -51,27 +52,27 @@ export function RefereeDashboard() {
 
   const renderContent = () => {
     switch (activeView) {
-      case "dashboard":
-        return <RefereeDashboardOverview />
-      case "assignments":
-        return <MyAssignments />
-      case "available":
-        return <AvailableGames />
-      case "availability":
-        if (user?.role === "admin") {
-          return <div className="p-4 text-center text-muted-foreground">Availability management is only available for referee users. Use the Referees section to view individual referee availability.</div>
-        }
-        return user?.referee_id ? <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} /> : <div className="p-4 text-center text-muted-foreground">Please complete your referee profile to manage availability.</div>
-      case "expenses":
-        return <ExpenseListEnhanced onCreateExpense={() => handleViewChange("expense-create")} />
-      case "expense-create":
-        return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange("expenses")} />
-      case "calendar":
-        return <CalendarView />
-      case "profile":
-        return <ProfileSettings />
-      default:
-        return <RefereeDashboardOverview />
+    case 'dashboard':
+      return <RefereeDashboardOverview />
+    case 'assignments':
+      return <MyAssignments />
+    case 'available':
+      return <AvailableGames />
+    case 'availability':
+      if (user?.role === 'admin') {
+        return <div className="p-4 text-center text-muted-foreground">Availability management is only available for referee users. Use the Referees section to view individual referee availability.</div>
+      }
+      return user?.referee_id ? <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} /> : <div className="p-4 text-center text-muted-foreground">Please complete your referee profile to manage availability.</div>
+    case 'expenses':
+      return <ExpenseListEnhanced onCreateExpense={() => handleViewChange('expense-create')} />
+    case 'expense-create':
+      return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange('expenses')} />
+    case 'calendar':
+      return <CalendarView />
+    case 'profile':
+      return <ProfileSettings />
+    default:
+      return <RefereeDashboardOverview />
     }
   }
 

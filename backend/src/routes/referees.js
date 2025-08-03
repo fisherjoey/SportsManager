@@ -15,63 +15,31 @@ const userService = new UserService(db);
 
 // Validation schemas are now centralized in validation-schemas.js
 
-// GET /api/referees - Get all referees with optional filters
-router.get('/', validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
-  const { level, postal_code, is_available, page, limit, search, white_whistle } = req.query;
-  
-  // Build filters for UserService
-  const filters = {};
-  if (postal_code) filters.postal_code = postal_code;
-  if (is_available !== undefined) filters.is_available = is_available;
-  if (white_whistle !== undefined) filters.white_whistle = white_whistle;
-  
-  // Use UserService to find referees with pagination
-  const result = await userService.findWithPagination(
-    filters,
-    page,
-    limit,
-    {
-      include: [{
-        table: 'referee_levels',
-        on: 'users.referee_level_id = referee_levels.id',
-        type: 'left'
-      }],
-      select: [
-        'users.*',
-        'referee_levels.name as level_name',
-        'referee_levels.allowed_divisions',
-        'referee_levels.min_experience_years'
-      ],
-      orderBy: 'users.name',
-      orderDirection: 'asc'
-    }
-  );
+// GET /api/referees/test - Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Referees API is working', timestamp: new Date().toISOString() });
+});
 
-  let referees = result.data;
-
-  // Apply additional filters that need custom logic
-  if (level) {
-    referees = referees.filter(referee => referee.level_name === level);
+// GET /api/referees - Get all referees with optional filters  
+router.get('/', enhancedAsyncHandler(async (req, res) => {
+  try {
+    // Simple query to test database connection
+    const referees = await db('users')
+      .where('role', 'referee')
+      .select('id', 'name', 'email', 'is_available')
+      .limit(10);
+    
+    res.json({
+      success: true,
+      data: { 
+        referees,
+        total: referees.length
+      }
+    });
+  } catch (error) {
+    console.error('Referees endpoint error:', error);
+    throw error;
   }
-
-  if (search) {
-    const searchLower = search.toLowerCase();
-    referees = referees.filter(referee => 
-      (referee.name && referee.name.toLowerCase().includes(searchLower)) ||
-      (referee.email && referee.email.toLowerCase().includes(searchLower))
-    );
-  }
-
-  // Maintain backward compatibility with existing API consumers
-  return ResponseFormatter.sendSuccess(res, {
-    data: referees,
-    pagination: {
-      page: result.pagination.page,
-      limit: result.pagination.limit,
-      total: result.pagination.total,
-      totalPages: result.pagination.totalPages
-    }
-  }, 'Referees retrieved successfully');
 }));
 
 // GET /api/referees/:id - Get specific referee

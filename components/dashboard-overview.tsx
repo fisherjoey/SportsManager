@@ -1,19 +1,21 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Calendar, Clock, Users, AlertCircle, Plus, Home, Sparkles, TrendingUp, MapPin, DollarSign, Target, Trophy, Star, Activity } from "lucide-react"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { StatsGrid } from "@/components/ui/stats-grid"
-import { LoadingSpinner, CardLoadingSpinner } from "@/components/ui/loading-spinner"
-import { EmptyState, NoGamesEmptyState } from "@/components/ui/empty-state"
-import { StatusBadge, LevelBadge, GameTypeBadge, AssignmentStatusBadge, CountBadge } from "@/components/ui/specialized-badges"
-import { apiClient, type Assignment, type Referee } from "@/lib/api"
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
-import { AnnouncementBoard } from "@/components/announcement-board"
+import { useState, useEffect } from 'react'
+import { Calendar, Clock, Users, AlertCircle, Plus, Home, Sparkles, TrendingUp, MapPin, DollarSign, Target, Trophy, Star, Activity } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+import { LoadingSpinner, CardLoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState, NoGamesEmptyState } from '@/components/ui/empty-state'
+import { StatusBadge, LevelBadge, GameTypeBadge, AssignmentStatusBadge, CountBadge } from '@/components/ui/specialized-badges'
+import { apiClient, type Assignment, type Referee } from '@/lib/api'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
+import { AnnouncementBoard } from '@/components/announcement-board'
+import { useAuth } from '@/components/auth-provider'
 
 // Enhanced interfaces with proper typing
 interface EnhancedGame {
@@ -22,7 +24,7 @@ interface EnhancedGame {
     id?: string
     organization: string
     ageGroup: string
-    gender: "Boys" | "Girls"
+    gender: 'Boys' | 'Girls'
     rank: number
     name?: string
     league?: {
@@ -36,7 +38,7 @@ interface EnhancedGame {
     id?: string
     organization: string
     ageGroup: string
-    gender: "Boys" | "Girls"
+    gender: 'Boys' | 'Girls'
     rank: number
     name?: string
     league?: {
@@ -54,15 +56,15 @@ interface EnhancedGame {
     capacity?: number
     facilities?: string[]
   }
-  level: "Recreational" | "Competitive" | "Elite"
-  gameType?: "Community" | "Club" | "Tournament" | "Private Tournament"
+  level: 'Recreational' | 'Competitive' | 'Elite'
+  gameType?: 'Community' | 'Club' | 'Tournament' | 'Private Tournament'
   division?: string
   payRate: number
   wageMultiplier?: number
   wageMultiplierReason?: string
   finalWage?: number
   refsNeeded?: number
-  status: "assigned" | "unassigned" | "up-for-grabs" | "completed" | "cancelled"
+  status: 'assigned' | 'unassigned' | 'up-for-grabs' | 'completed' | 'cancelled'
   assignments?: Assignment[]
   assignedCount: number
   createdAt: string
@@ -74,7 +76,7 @@ interface RefereePerformanceMetrics {
   completedAssignments: number
   completionRate: number
   averageRating?: number
-  availabilityStatus: "available" | "unavailable"
+  availabilityStatus: 'available' | 'unavailable'
   upcomingGames: number
   recentAssignments: Assignment[]
   performanceTrends: {
@@ -167,7 +169,7 @@ const calculateRefereePerformance = (assignments: Assignment[]): RefereePerforma
     totalAssignments: assignments.length,
     completedAssignments: completed.length,
     completionRate: assignments.length > 0 ? (completed.length / assignments.length) * 100 : 0,
-    availabilityStatus: "available", // This would come from API
+    availabilityStatus: 'available', // This would come from API
     upcomingGames: upcoming.length,
     recentAssignments: assignments.slice(0, 5),
     performanceTrends: {
@@ -185,6 +187,7 @@ const calculateRefereePerformance = (assignments: Assignment[]): RefereePerforma
 }
 
 export function DashboardOverview() {
+  const { isAuthenticated } = useAuth()
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     games: [],
     referees: [],
@@ -196,6 +199,11 @@ export function DashboardOverview() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!isAuthenticated) {
+        setLoading(false)
+        return
+      }
+      
       try {
         setLoading(true)
         setError(null)
@@ -226,7 +234,7 @@ export function DashboardOverview() {
           finalWage: (typeof game.payRate === 'string' ? parseFloat(game.payRate) : (game.payRate || 0)) * (game.wageMultiplier || 1.0),
           refsNeeded: game.refsNeeded || 2,
           assignedCount: game.assignments?.length || 0,
-          gameType: game.gameType || "Community"
+          gameType: game.gameType || 'Community'
         }))
         
         const referees = refereesResponse.data?.referees || []
@@ -260,7 +268,7 @@ export function DashboardOverview() {
     }
 
     fetchData()
-  }, [])
+  }, [isAuthenticated])
 
   if (loading) {
     return (
@@ -293,7 +301,7 @@ export function DashboardOverview() {
           title="Failed to Load Dashboard"
           description={error}
           action={{
-            label: "Try Again",
+            label: 'Try Again',
             onClick: () => window.location.reload()
           }}
         />
@@ -308,11 +316,11 @@ export function DashboardOverview() {
   const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   
   const upcomingGames = games
-    .filter((game) => new Date(game.date) > now && game.status === "assigned")
+    .filter((game) => new Date(game.date) > now && game.status === 'assigned')
     .slice(0, 5)
 
-  const unassignedGames = games.filter((game) => game.status === "unassigned")
-  const upForGrabsGames = games.filter((game) => game.status === "up-for-grabs")
+  const unassignedGames = games.filter((game) => game.status === 'unassigned')
+  const upForGrabsGames = games.filter((game) => game.status === 'up-for-grabs')
   const thisWeekGames = games.filter((game) => {
     const gameDate = new Date(game.date)
     return gameDate >= now && gameDate <= weekFromNow
@@ -320,33 +328,33 @@ export function DashboardOverview() {
 
   const stats = [
     {
-      title: "Total Games This Week",
+      title: 'Total Games This Week',
       value: thisWeekGames.length,
       icon: Calendar,
-      color: "text-blue-600",
-      description: "Games scheduled this week",
+      color: 'text-blue-600',
+      description: 'Games scheduled this week'
     },
     {
-      title: "Unassigned Games",
+      title: 'Unassigned Games',
       value: unassignedGames.length,
       icon: AlertCircle,
-      color: "text-red-600",
-      description: "Games needing referees",
+      color: 'text-red-600',
+      description: 'Games needing referees'
     },
     {
-      title: "Up for Grabs",
+      title: 'Up for Grabs',
       value: upForGrabsGames.length,
       icon: Clock,
-      color: "text-orange-600",
-      description: "Available for pickup",
+      color: 'text-orange-600',
+      description: 'Available for pickup'
     },
     {
-      title: "Active Referees",
+      title: 'Active Referees',
       value: referees.filter(r => r.isAvailable).length,
       icon: Users,
-      color: "text-green-600",
-      description: "Available for assignment",
-    },
+      color: 'text-green-600',
+      description: 'Available for assignment'
+    }
   ]
 
   // Render referee performance card if user is a referee
@@ -385,7 +393,7 @@ export function DashboardOverview() {
               <div className="text-center">
                 <div className="flex items-center justify-center">
                   <StatusBadge 
-                    status={refereePerformance.availabilityStatus === "available" ? "available" : "unavailable"} 
+                    status={refereePerformance.availabilityStatus === 'available' ? 'available' : 'unavailable'} 
                     showIcon 
                   />
                 </div>
@@ -457,7 +465,7 @@ export function DashboardOverview() {
         )}
         
         {/* Upcoming Games Card */}
-        <Card className={refereePerformance ? "lg:col-span-1" : "lg:col-span-2"}>
+        <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-2'}>
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="h-5 w-5 mr-2 text-green-600" />
@@ -543,7 +551,7 @@ export function DashboardOverview() {
         </Card>
 
         {/* Needs Attention Card */}
-        <Card className={refereePerformance ? "lg:col-span-1" : "lg:col-span-1"}>
+        <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-1'}>
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2 text-red-600" />

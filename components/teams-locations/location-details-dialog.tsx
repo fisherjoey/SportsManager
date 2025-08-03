@@ -1,9 +1,5 @@
-"use client"
+'use client'
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
   MapPin,
   Phone,
@@ -13,9 +9,14 @@ import {
   ParkingMeterIcon as Parking,
   Clock,
   Accessibility,
-  Edit,
-} from "lucide-react"
-import type { Location } from "@/lib/mock-data"
+  Edit
+} from 'lucide-react'
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import type { Location } from '@/lib/mock-data'
 
 interface LocationDetailsDialogProps {
   open: boolean
@@ -37,8 +38,8 @@ export function LocationDetailsDialog({ open, onOpenChange, location }: Location
                 {location.address}, {location.city}, {location.province}
               </DialogDescription>
             </div>
-            <Badge variant={location.isActive ? "default" : "secondary"}>
-              {location.isActive ? "Active" : "Inactive"}
+            <Badge variant={location.isActive ? 'default' : 'secondary'}>
+              {location.isActive ? 'Active' : 'Inactive'}
             </Badge>
           </div>
         </DialogHeader>
@@ -158,7 +159,7 @@ export function LocationDetailsDialog({ open, onOpenChange, location }: Location
                     <div key={day} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm font-medium">{day}</span>
                       <span className="text-sm text-muted-foreground">
-                        {hours.available ? `${hours.open} - ${hours.close}` : "Closed"}
+                        {hours.available ? `${hours.open} - ${hours.close}` : 'Closed'}
                       </span>
                     </div>
                   ))}

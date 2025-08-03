@@ -1,16 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { toast } from '@/components/ui/use-toast'
 import { 
   CreditCard,
   Search,
@@ -26,6 +16,17 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 
 interface CompanyCreditCard {
@@ -131,7 +132,7 @@ export function CreditCardSelector({
       toast({
         title: 'Error loading credit cards',
         description: 'Please try again or contact support.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       
       // Fallback with mock data for development
@@ -343,7 +344,7 @@ export function CreditCardSelector({
       toast({
         title: 'Insufficient credit limit',
         description: `Only $${card.remainingLimit.toFixed(2)} remaining on this card`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -353,7 +354,7 @@ export function CreditCardSelector({
       toast({
         title: 'Transaction limit exceeded',
         description: `This card has a transaction limit of $${card.restrictions.maxTransactionAmount.toFixed(2)}`,
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -363,7 +364,7 @@ export function CreditCardSelector({
       toast({
         title: 'Card expired',
         description: 'This credit card has expired and cannot be used',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -374,7 +375,7 @@ export function CreditCardSelector({
         expectedAmount >= card.restrictions.approvalThreshold) {
       toast({
         title: 'Approval required',
-        description: `This transaction requires approval for amounts over $${card.restrictions.approvalThreshold.toFixed(2)}`,
+        description: `This transaction requires approval for amounts over $${card.restrictions.approvalThreshold.toFixed(2)}`
       })
     }
 
