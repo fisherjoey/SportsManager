@@ -2893,6 +2893,127 @@ class ApiClient {
       })
     })
   }
+
+  // AI Assignment Suggestions endpoints
+  async generateAISuggestions(gameIds: string[], factors?: {
+    proximity_weight?: number;
+    availability_weight?: number;
+    experience_weight?: number;
+    performance_weight?: number;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        suggestions: Array<{
+          id: string;
+          game_id: string;
+          referee_id: string;
+          confidence_score: number;
+          reasoning: string;
+          factors: {
+            proximity: number;
+            availability: number;
+            experience: number;
+            past_performance: number;
+            historical_bonus?: number;
+          };
+          score_breakdown: {
+            base_score: number;
+            proximity_points: number;
+            availability_points: number;
+            experience_points: number;
+            performance_points: number;
+            historical_bonus_points: number;
+            final_score: number;
+          };
+          conflict_warnings?: string[];
+          created_at: string;
+        }>;
+      };
+    }>('/assignments/ai-suggestions', {
+      method: 'POST',
+      body: JSON.stringify({
+        game_ids: gameIds,
+        factors: factors || {}
+      })
+    })
+  }
+
+  async getAISuggestions(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryString = params ? new URLSearchParams(params as any).toString() : ''
+    return this.request<{
+      success: boolean;
+      data: {
+        suggestions: Array<{
+          id: string;
+          game_id: string;
+          referee_id: string;
+          referee_name: string;
+          game_details: {
+            date: string;
+            time: string;
+            location: string;
+            home_team: string;
+            away_team: string;
+          };
+          confidence_score: number;
+          reasoning: string;
+          factors: {
+            proximity: number;
+            availability: number;
+            experience: number;
+            past_performance: number;
+            historical_bonus?: number;
+          };
+          score_breakdown: {
+            base_score: number;
+            proximity_points: number;
+            availability_points: number;
+            experience_points: number;
+            performance_points: number;
+            historical_bonus_points: number;
+            final_score: number;
+          };
+          status: string;
+          created_at: string;
+        }>;
+      };
+    }>(`/assignments/ai-suggestions${queryString ? `?${queryString}` : ''}`)
+  }
+
+  async acceptAISuggestion(suggestionId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        assignment: {
+          id: string;
+          game_id: string;
+          referee_id: string;
+          status: string;
+          assigned_at: string;
+        };
+      };
+      message: string;
+    }>(`/assignments/ai-suggestions/${suggestionId}/accept`, {
+      method: 'PUT'
+    })
+  }
+
+  async rejectAISuggestion(suggestionId: string, reason?: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/assignments/ai-suggestions/${suggestionId}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        reason: reason || ''
+      })
+    })
+  }
 }
 
 // Types (updated to match backend schema)

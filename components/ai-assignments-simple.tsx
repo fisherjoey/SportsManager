@@ -400,67 +400,39 @@ export default function AIAssignmentsSimple() {
     setLoading(true)
     
     try {
-      // Try to use backend AI assignment rules API
-      const ruleData = {
-        name: `Auto-generated rule for ${chunk.location}`,
-        description: `AI suggestions for ${chunk.games.length} games at ${chunk.location}`,
-        enabled: true,
-        schedule_type: 'manual',
-        game_types: [chunk.games[0]?.division || 'Open'],
-        age_groups: [chunk.games[0]?.division || 'Open'],
-        max_days_ahead: 7,
-        min_referee_level: 'Rookie',
-        prioritize_experience: true,
-        avoid_back_to_back: true,
-        max_distance: 50,
-        ai_system_type: 'algorithmic',
-        distance_weight: 40,
-        skill_weight: 30,
-        experience_weight: 20,
-        partner_preference_weight: 10
+      // Use the new AI suggestions API
+      const gameIds = chunk.games.map(g => g.id)
+      const factors = {
+        proximity_weight: 0.3,
+        availability_weight: 0.4,
+        experience_weight: 0.2,
+        performance_weight: 0.1
       }
 
-      // Create temporary rule and run it
-      const createResponse = await apiClient.createAIAssignmentRule(ruleData)
+      const response = await apiClient.generateAISuggestions(gameIds, factors)
       
-      if (createResponse.success) {
-        const runResponse = await apiClient.runAIAssignmentRule(createResponse.data.id, {
-          dryRun: true,
-          gameIds: chunk.games.map(g => parseInt(g.id)),
-          contextComments: [`Chunk assignment for ${chunk.location} on ${chunk.date}`]
-        })
+      if (response.success && response.data.suggestions) {
+        // Transform backend results to our suggestions format
+        const suggestions: AIAssignmentSuggestion[] = response.data.suggestions.map(suggestion => ({
+          gameId: suggestion.game_id,
+          refereeId: suggestion.referee_id,
+          refereeName: referees.find(r => r.id === suggestion.referee_id)?.name || 'Unknown Referee',
+          confidence: suggestion.confidence_score,
+          reasoning: suggestion.reasoning,
+          conflicts: suggestion.conflict_warnings || undefined
+        }))
 
-        if (runResponse.success) {
-          // Transform backend results to our suggestions format
-          const suggestions: AIAssignmentSuggestion[] = []
-          
-          if (runResponse.data.assignments) {
-            runResponse.data.assignments.forEach((assignment: any) => {
-              if (assignment.assignedReferees) {
-                assignment.assignedReferees.forEach((ref: any) => {
-                  suggestions.push({
-                    gameId: assignment.gameId?.toString() || '',
-                    refereeId: ref.refereeId?.toString() || '',
-                    refereeName: ref.refereeName || 'Unknown',
-                    confidence: ref.confidence || 0.8,
-                    reasoning: ref.reasoning || 'AI algorithm suggestion',
-                    conflicts: assignment.conflicts || undefined
-                  })
-                })
-              }
-            })
-          }
-
-          const updatedChunk = { ...chunk, suggestions }
-          setChunks(prev => prev.map(c => c.id === chunk.id ? updatedChunk : c))
-          setSelectedChunk(updatedChunk)
-          setShowSuggestions(true)
-          setLoading(false)
-          return
-        }
+        const updatedChunk = { ...chunk, suggestions }
+        setChunks(prev => prev.map(c => c.id === chunk.id ? updatedChunk : c))
+        setSelectedChunk(updatedChunk)
+        setShowSuggestions(true)
+        setLoading(false)
+        return
+      } else {
+        throw new Error('AI suggestions API returned unsuccessful response')
       }
     } catch (error) {
-      console.error('Backend AI assignment failed, falling back to local logic:', error)
+      console.error('Backend AI suggestions failed, falling back to local logic:', error)
     }
 
     // Fallback to local AI logic if backend fails

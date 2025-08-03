@@ -3,6 +3,10 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const aiServices = require('../services/aiServices');
+const logger = require('../utils/logger');
+const { generateRequestId } = require('../utils/security');
+const batchProcessor = require('../utils/batching');
 
 // Validation schemas
 const generateSuggestionsSchema = Joi.object({
@@ -19,9 +23,117 @@ const rejectSuggestionSchema = Joi.object({
   reason: Joi.string().max(500).optional()
 });
 
-// AI suggestion generation service (mock implementation)
+// AI suggestion generation service using the enhanced AI service
 class AIAssignmentService {
   static async generateSuggestions(games, referees, factors = {}) {
+    try {
+      // Use batching for large datasets
+      const batchResult = await batchProcessor.processBatches(
+        games, 
+        referees, 
+        async (batchGames, batchReferees) => {
+          // Use the enhanced AI service for referee assignments
+          const aiResult = await aiServices.generateRefereeAssignments(batchGames, batchReferees, factors);
+          
+          if (!aiResult.success) {
+            throw new Error('AI assignment generation failed');
+          }
+          
+          return aiResult.assignments;
+        },
+        {
+          operation: 'generateSuggestions',
+          totalGames: games.length,
+          totalReferees: referees.length
+        }
+      );
+
+      // Handle batched results
+      let allAssignments = [];
+      if (batchResult.results) {
+        // Batched processing
+        allAssignments = batchResult.results.flat();
+        
+        if (batchResult.errors && batchResult.errors.length > 0) {
+          logger.logWarning('Some batches failed during AI suggestion generation', {
+            component: 'AIAssignmentService',
+            failedBatches: batchResult.errors.length,
+            totalBatches: batchResult.batchInfo.totalBatches
+          });
+        }
+      } else {
+        // Single batch processing
+        allAssignments = batchResult;
+      }
+
+      const suggestions = [];
+      
+      // Transform AI results to suggestions format
+      for (const assignment of allAssignments) {
+        const game = games.find(g => g.id === assignment.gameId);
+        if (!game) continue;
+
+        for (const refereeAssignment of assignment.assignedReferees) {
+          const referee = referees.find(r => r.id === refereeAssignment.refereeId);
+          if (!referee) continue;
+
+          // Check for conflicts using existing conflict detection
+          const conflictCheck = await this.checkRefereeConflicts(game, referee);
+          
+          const suggestion = {
+            id: require('crypto').randomUUID(),
+            game_id: game.id,
+            referee_id: referee.id,
+            confidence_score: refereeAssignment.confidence,
+            reasoning: refereeAssignment.reasoning,
+            proximity_score: refereeAssignment.factors?.proximity || 0.5,
+            availability_score: refereeAssignment.factors?.availability || 0.5,
+            experience_score: refereeAssignment.factors?.experience || 0.5,
+            performance_score: refereeAssignment.factors?.level_match || 0.5,
+            historical_bonus: 0, // Could be enhanced with historical data
+            status: 'pending',
+            created_at: new Date()
+          };
+
+          // Add conflict warnings if any exist
+          if (conflictCheck.warnings.length > 0) {
+            suggestion.conflict_warnings = conflictCheck.warnings;
+            // Slightly reduce confidence for potential conflicts
+            suggestion.confidence_score = Math.max(0.1, suggestion.confidence_score - 0.1);
+          }
+
+          if (suggestion.confidence_score >= 0.3) { // Minimum confidence threshold
+            suggestions.push(suggestion);
+          }
+        }
+      }
+      
+      // Sort by confidence score descending, then by conflict warnings (fewer warnings first)
+      return suggestions.sort((a, b) => {
+        if (Math.abs(a.confidence_score - b.confidence_score) < 0.05) {
+          // If confidence scores are very close, prefer ones with fewer warnings
+          const aWarnings = a.conflict_warnings ? a.conflict_warnings.length : 0;
+          const bWarnings = b.conflict_warnings ? b.conflict_warnings.length : 0;
+          return aWarnings - bWarnings;
+        }
+        return b.confidence_score - a.confidence_score;
+      });
+
+    } catch (error) {
+      logger.logError('AI assignment service error', {
+        component: 'AIAssignmentService',
+        operation: 'generateSuggestions',
+        gamesCount: games.length,
+        refereesCount: referees.length
+      }, error);
+      
+      // Fallback to the original mock implementation
+      return this.generateSuggestionsLegacy(games, referees, factors);
+    }
+  }
+
+  // Keep the existing implementation as fallback
+  static async generateSuggestionsLegacy(games, referees, factors = {}) {
     const suggestions = [];
     
     for (const game of games) {
@@ -458,12 +570,29 @@ class AIAssignmentService {
 
 // POST /api/assignments/ai-suggestions - Generate AI suggestions
 router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
   try {
+    logger.logInfo('AI suggestions request received', {
+      component: 'ai-suggestions',
+      operation: 'generate',
+      requestId,
+      userId: req.user.userId
+    });
+    
     const { error, value } = generateSuggestionsSchema.validate(req.body);
     if (error) {
+      logger.logWarning('Invalid request data for AI suggestions', {
+        component: 'ai-suggestions',
+        requestId,
+        validationError: error.details[0].message
+      });
+      
       return res.status(400).json({
         success: false,
-        error: error.details[0].message
+        error: error.details[0].message,
+        requestId
       });
     }
 
@@ -480,9 +609,17 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       });
 
     if (games.length !== game_ids.length) {
+      logger.logWarning('Some games not found or already assigned', {
+        component: 'ai-suggestions',
+        requestId,
+        requestedGames: game_ids.length,
+        foundGames: games.length
+      });
+      
       return res.status(404).json({
         success: false,
-        error: 'One or more games not found or already assigned'
+        error: 'One or more games not found or already assigned',
+        requestId
       });
     }
 
@@ -492,8 +629,14 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       .where('created_at', '<', db.raw("NOW() - INTERVAL '1 hour'"))
       .update({ status: 'expired' });
 
-    // Generate new suggestions
-    const suggestions = await AIAssignmentService.generateSuggestions(games, [], factors);
+    // Get available referees for all games
+    const availableReferees = await db('users')
+      .join('referees', 'users.id', 'referees.user_id')
+      .where('referees.is_available', true)
+      .select('users.*', 'referees.*');
+
+    // Generate new suggestions using enhanced AI service
+    const suggestions = await AIAssignmentService.generateSuggestions(games, availableReferees, factors);
 
     // Store suggestions in database
     const suggestionInserts = suggestions.map(s => ({
@@ -505,8 +648,18 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       await db('ai_suggestions').insert(suggestionInserts);
     }
 
+    const duration = Date.now() - startTime;
+    
+    logger.logAssignment('generate_suggestions', true, {
+      requestId,
+      duration,
+      suggestionsGenerated: suggestions.length,
+      gamesProcessed: games.length
+    });
+
     res.json({
       success: true,
+      requestId,
       data: {
         suggestions: suggestions.map(s => ({
           id: s.id,
@@ -537,10 +690,26 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error generating AI suggestions:', error);
+    const duration = Date.now() - startTime;
+    
+    logger.logError('Error generating AI suggestions', {
+      component: 'ai-suggestions',
+      operation: 'generate',
+      requestId,
+      duration,
+      userId: req.user.userId
+    }, error);
+    
+    logger.logAssignment('generate_suggestions', false, {
+      requestId,
+      duration,
+      errorMessage: error.message
+    });
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to generate AI suggestions'
+      error: 'Failed to generate AI suggestions',
+      requestId
     });
   }
 });
