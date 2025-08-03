@@ -233,7 +233,7 @@ async function generateBulkAssignments(
         }
       }
     }
-  } catch (error) {
+  } catch {
     // console.warn('Backend AI assignment failed, using fallback algorithm:', error)
   }
 
@@ -338,7 +338,7 @@ export function AIAssignmentsEnterprise() {
           }))
           setAvailableReferees(transformedReferees)
         }
-      } catch (error) {
+      } catch {
         // console.warn('Failed to load real data, using mock data:', error)
       } finally {
         setLoading(false)
@@ -371,7 +371,7 @@ export function AIAssignmentsEnterprise() {
       })
 
       setBulkResult(result)
-    } catch (error) {
+    } catch {
       // console.error('Bulk assignment failed:', error)
     }
     setIsGenerating(false)
