@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const aiServices = require('../services/aiServices');
 
 // Validation schemas
 const generateSuggestionsSchema = Joi.object({
@@ -19,9 +20,79 @@ const rejectSuggestionSchema = Joi.object({
   reason: Joi.string().max(500).optional()
 });
 
-// AI suggestion generation service (mock implementation)
+// AI suggestion generation service using the enhanced AI service
 class AIAssignmentService {
   static async generateSuggestions(games, referees, factors = {}) {
+    try {
+      // Use the enhanced AI service for referee assignments
+      const aiResult = await aiServices.generateRefereeAssignments(games, referees, factors);
+      
+      if (!aiResult.success) {
+        throw new Error('AI assignment generation failed');
+      }
+
+      const suggestions = [];
+      
+      // Transform AI results to suggestions format
+      for (const assignment of aiResult.assignments) {
+        const game = games.find(g => g.id === assignment.gameId);
+        if (!game) continue;
+
+        for (const refereeAssignment of assignment.assignedReferees) {
+          const referee = referees.find(r => r.id === refereeAssignment.refereeId);
+          if (!referee) continue;
+
+          // Check for conflicts using existing conflict detection
+          const conflictCheck = await this.checkRefereeConflicts(game, referee);
+          
+          const suggestion = {
+            id: require('crypto').randomUUID(),
+            game_id: game.id,
+            referee_id: referee.id,
+            confidence_score: refereeAssignment.confidence,
+            reasoning: refereeAssignment.reasoning,
+            proximity_score: refereeAssignment.factors?.proximity || 0.5,
+            availability_score: refereeAssignment.factors?.availability || 0.5,
+            experience_score: refereeAssignment.factors?.experience || 0.5,
+            performance_score: refereeAssignment.factors?.level_match || 0.5,
+            historical_bonus: 0, // Could be enhanced with historical data
+            status: 'pending',
+            created_at: new Date()
+          };
+
+          // Add conflict warnings if any exist
+          if (conflictCheck.warnings.length > 0) {
+            suggestion.conflict_warnings = conflictCheck.warnings;
+            // Slightly reduce confidence for potential conflicts
+            suggestion.confidence_score = Math.max(0.1, suggestion.confidence_score - 0.1);
+          }
+
+          if (suggestion.confidence_score >= 0.3) { // Minimum confidence threshold
+            suggestions.push(suggestion);
+          }
+        }
+      }
+      
+      // Sort by confidence score descending, then by conflict warnings (fewer warnings first)
+      return suggestions.sort((a, b) => {
+        if (Math.abs(a.confidence_score - b.confidence_score) < 0.05) {
+          // If confidence scores are very close, prefer ones with fewer warnings
+          const aWarnings = a.conflict_warnings ? a.conflict_warnings.length : 0;
+          const bWarnings = b.conflict_warnings ? b.conflict_warnings.length : 0;
+          return aWarnings - bWarnings;
+        }
+        return b.confidence_score - a.confidence_score;
+      });
+
+    } catch (error) {
+      console.error('AI assignment service error:', error);
+      // Fallback to the original mock implementation
+      return this.generateSuggestionsLegacy(games, referees, factors);
+    }
+  }
+
+  // Keep the existing implementation as fallback
+  static async generateSuggestionsLegacy(games, referees, factors = {}) {
     const suggestions = [];
     
     for (const game of games) {
@@ -492,8 +563,14 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
       .where('created_at', '<', db.raw("NOW() - INTERVAL '1 hour'"))
       .update({ status: 'expired' });
 
-    // Generate new suggestions
-    const suggestions = await AIAssignmentService.generateSuggestions(games, [], factors);
+    // Get available referees for all games
+    const availableReferees = await db('users')
+      .join('referees', 'users.id', 'referees.user_id')
+      .where('referees.is_available', true)
+      .select('users.*', 'referees.*');
+
+    // Generate new suggestions using enhanced AI service
+    const suggestions = await AIAssignmentService.generateSuggestions(games, availableReferees, factors);
 
     // Store suggestions in database
     const suggestionInserts = suggestions.map(s => ({

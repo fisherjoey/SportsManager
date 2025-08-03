@@ -989,6 +989,359 @@ Categorize now:`;
   }
 
   /**
+   * Generate AI-powered referee assignment suggestions
+   * @param {Array} games - Array of game objects to assign referees to
+   * @param {Array} referees - Array of available referee objects
+   * @param {Object} assignmentRules - Configuration rules for assignments
+   * @returns {Promise<Object>} Assignment suggestions with confidence scores
+   */
+  async generateRefereeAssignments(games, referees, assignmentRules = {}) {
+    await this.ensureInitialized();
+    
+    if (!this.openaiClient) {
+      return this.generateAssignmentsFallback(games, referees, assignmentRules);
+    }
+
+    try {
+      const prompt = this.buildAssignmentPrompt(games, referees, assignmentRules);
+      
+      const completion = await this.callLLMWithRetry({
+        model: process.env.OPENAI_API_KEY ? 'gpt-4o-mini' : (process.env.DEEPSEEK_MODEL || 'deepseek-chat'),
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert sports assignment AI. You optimize referee assignments based on proximity, availability, experience, and historical patterns. Return only valid JSON with assignment suggestions.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1, // Low temperature for consistent assignments
+        max_tokens: 4000
+      });
+
+      const response = completion.choices[0].message.content.trim();
+      const assignments = await this.parseAssignmentResponse(response, games, referees);
+      
+      return {
+        success: true,
+        assignments,
+        tokensUsed: completion.usage?.total_tokens || 0,
+        method: 'ai_assignment',
+        confidence: this.calculateOverallAssignmentConfidence(assignments)
+      };
+
+    } catch (error) {
+      console.error('AI assignment generation error:', error);
+      
+      // Fallback to algorithmic assignment
+      console.log('Falling back to algorithmic assignment method');
+      const fallbackResult = this.generateAssignmentsFallback(games, referees, assignmentRules);
+      return {
+        ...fallbackResult,
+        fallbackReason: error.message
+      };
+    }
+  }
+
+  /**
+   * Build assignment prompt for LLM
+   * @private
+   */
+  buildAssignmentPrompt(games, referees, rules) {
+    const gamesInfo = games.map(game => ({
+      id: game.id,
+      date: game.game_date,
+      time: game.game_time,
+      location: game.location,
+      postalCode: game.postal_code,
+      level: game.level,
+      homeTeam: game.home_team_name,
+      awayTeam: game.away_team_name,
+      refereesNeeded: game.refs_needed || 2
+    }));
+
+    const refereesInfo = referees.map(ref => ({
+      id: ref.id,
+      name: ref.name,
+      level: ref.level,
+      location: ref.location,
+      postalCode: ref.postal_code,
+      maxDistance: ref.max_distance,
+      isAvailable: ref.is_available,
+      experience: ref.experience || 1
+    }));
+
+    return `Assign referees to games optimally. Consider:
+
+ASSIGNMENT RULES:
+- Proximity weight: ${rules.proximity_weight || 0.3}
+- Availability weight: ${rules.availability_weight || 0.4}
+- Experience weight: ${rules.experience_weight || 0.2}
+- Performance weight: ${rules.performance_weight || 0.1}
+- Max distance: ${rules.max_distance || 50}km
+- Avoid back-to-back: ${rules.avoid_back_to_back || true}
+- Prioritize experience: ${rules.prioritize_experience || true}
+
+GAMES TO ASSIGN:
+${JSON.stringify(gamesInfo, null, 2)}
+
+AVAILABLE REFEREES:
+${JSON.stringify(refereesInfo, null, 2)}
+
+ASSIGNMENT FACTORS:
+1. Proximity: Prefer referees with closer postal codes
+2. Level Match: Match referee level to game level (Senior > Junior > Rookie)
+3. Availability: Only assign available referees
+4. Experience: Consider referee experience for appropriate games
+5. Workload Balance: Distribute assignments fairly
+
+Return JSON format:
+{
+  "assignments": [
+    {
+      "gameId": "game_id",
+      "assignedReferees": [
+        {
+          "refereeId": "referee_id",
+          "confidence": 0.85,
+          "reasoning": "brief_explanation",
+          "factors": {
+            "proximity": 0.9,
+            "availability": 1.0,
+            "experience": 0.8,
+            "level_match": 0.9
+          }
+        }
+      ],
+      "conflicts": []
+    }
+  ],
+  "overallConfidence": 0.82,
+  "unassignedGames": [],
+  "summary": "brief_summary"
+}
+
+Rules:
+1. Assign exactly the required number of referees per game
+2. Never assign unavailable referees
+3. Prefer closer referees (postal code matching)
+4. Match experience level to game requirements
+5. Explain reasoning for each assignment
+6. Return only JSON, no explanations
+
+Generate assignments now:`;
+  }
+
+  /**
+   * Parse assignment response from LLM
+   * @private
+   */
+  async parseAssignmentResponse(response, games, referees) {
+    try {
+      const data = JSON.parse(response);
+      return data.assignments || [];
+    } catch (e) {
+      console.warn('JSON parsing failed, trying alternative parsing');
+      
+      // Try extracting JSON from markdown
+      const markdownMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (markdownMatch) {
+        try {
+          const data = JSON.parse(markdownMatch[1]);
+          return data.assignments || [];
+        } catch (e2) {
+          console.warn('Markdown JSON parsing failed');
+        }
+      }
+      
+      // Fallback to algorithmic assignment
+      console.log('Falling back to algorithmic assignment due to parsing failure');
+      return this.generateAssignmentsFallback(games, referees).assignments;
+    }
+  }
+
+  /**
+   * Fallback algorithmic assignment when AI fails
+   * @private
+   */
+  generateAssignmentsFallback(games, referees, rules = {}) {
+    const assignments = [];
+    
+    for (const game of games) {
+      const gameAssignment = {
+        gameId: game.id,
+        assignedReferees: [],
+        conflicts: []
+      };
+
+      // Filter available referees
+      const availableRefs = referees.filter(ref => ref.is_available !== false);
+      
+      // Score and rank referees for this game
+      const scoredReferees = availableRefs.map(ref => {
+        const score = this.calculateRefereeScore(ref, game, rules);
+        return { referee: ref, score };
+      }).sort((a, b) => b.score.total - a.score.total);
+
+      // Assign top referees
+      const refereesNeeded = game.refs_needed || 2;
+      const assignedRefs = scoredReferees.slice(0, refereesNeeded);
+
+      for (const { referee, score } of assignedRefs) {
+        gameAssignment.assignedReferees.push({
+          refereeId: referee.id,
+          confidence: Math.min(0.95, score.total),
+          reasoning: this.generateAssignmentReasoning(referee, game, score),
+          factors: score.factors
+        });
+      }
+
+      // Check for insufficient referees
+      if (gameAssignment.assignedReferees.length < refereesNeeded) {
+        gameAssignment.conflicts.push(
+          `Only ${gameAssignment.assignedReferees.length} of ${refereesNeeded} referees assigned`
+        );
+      }
+
+      assignments.push(gameAssignment);
+    }
+
+    return {
+      success: true,
+      assignments,
+      method: 'algorithmic_fallback',
+      confidence: this.calculateOverallAssignmentConfidence(assignments)
+    };
+  }
+
+  /**
+   * Calculate referee score for a specific game
+   * @private
+   */
+  calculateRefereeScore(referee, game, rules) {
+    const factors = {
+      proximity: this.calculateProximityFactor(referee, game),
+      availability: referee.is_available ? 1.0 : 0.0,
+      experience: this.calculateExperienceFactor(referee, game),
+      level_match: this.calculateLevelMatchFactor(referee, game)
+    };
+
+    const weights = {
+      proximity: rules.proximity_weight || 0.3,
+      availability: rules.availability_weight || 0.4,
+      experience: rules.experience_weight || 0.2,
+      level_match: rules.performance_weight || 0.1
+    };
+
+    const total = (
+      factors.proximity * weights.proximity +
+      factors.availability * weights.availability +
+      factors.experience * weights.experience +
+      factors.level_match * weights.level_match
+    );
+
+    return { total, factors };
+  }
+
+  /**
+   * Calculate proximity factor based on postal codes
+   * @private
+   */
+  calculateProximityFactor(referee, game) {
+    if (!referee.postal_code || !game.postal_code) return 0.5;
+    
+    const refCode = referee.postal_code.replace(/\s/g, '').toUpperCase();
+    const gameCode = game.postal_code.replace(/\s/g, '').toUpperCase();
+    
+    // Same postal code = 1.0
+    if (refCode === gameCode) return 1.0;
+    
+    // Same first 3 characters (FSA/ZIP prefix) = 0.8
+    if (refCode.substring(0, 3) === gameCode.substring(0, 3)) return 0.8;
+    
+    // Same first 2 characters = 0.6
+    if (refCode.substring(0, 2) === gameCode.substring(0, 2)) return 0.6;
+    
+    // Same first character = 0.4
+    if (refCode.substring(0, 1) === gameCode.substring(0, 1)) return 0.4;
+    
+    return 0.3; // Different regions
+  }
+
+  /**
+   * Calculate experience factor
+   * @private
+   */
+  calculateExperienceFactor(referee, game) {
+    const experience = referee.experience || 1;
+    
+    // Normalize experience to 0-1 scale (assuming max 20 years)
+    const normalizedExp = Math.min(experience / 20, 1.0);
+    
+    // Boost for high experience
+    return normalizedExp >= 0.5 ? normalizedExp : normalizedExp * 0.8;
+  }
+
+  /**
+   * Calculate level match factor
+   * @private
+   */
+  calculateLevelMatchFactor(referee, game) {
+    const levelMap = { 'Rookie': 1, 'Junior': 2, 'Senior': 3, 'Elite': 4 };
+    const refLevel = levelMap[referee.level] || 1;
+    const gameLevel = levelMap[game.level] || 2;
+    
+    // Perfect match = 1.0
+    if (refLevel === gameLevel) return 1.0;
+    
+    // Higher qualified referee = 0.9
+    if (refLevel > gameLevel) return 0.9;
+    
+    // Lower qualified referee = penalty
+    const difference = gameLevel - refLevel;
+    return Math.max(0.3, 1.0 - (difference * 0.2));
+  }
+
+  /**
+   * Generate reasoning text for assignment
+   * @private
+   */
+  generateAssignmentReasoning(referee, game, score) {
+    const reasons = [];
+    
+    if (score.factors.proximity >= 0.8) reasons.push('close location');
+    if (score.factors.level_match >= 0.9) reasons.push('perfect level match');
+    if (score.factors.experience >= 0.7) reasons.push('experienced referee');
+    if (score.factors.availability === 1.0) reasons.push('confirmed available');
+    
+    if (reasons.length === 0) reasons.push('best available option');
+    
+    return `${referee.level} referee, ${reasons.join(', ')}`;
+  }
+
+  /**
+   * Calculate overall confidence for all assignments
+   * @private
+   */
+  calculateOverallAssignmentConfidence(assignments) {
+    if (!assignments || assignments.length === 0) return 0;
+    
+    let totalConfidence = 0;
+    let totalAssignments = 0;
+    
+    for (const assignment of assignments) {
+      for (const ref of assignment.assignedReferees || []) {
+        totalConfidence += ref.confidence || 0;
+        totalAssignments++;
+      }
+    }
+    
+    return totalAssignments > 0 ? totalConfidence / totalAssignments : 0;
+  }
+
+  /**
    * Convert PDF to image for OCR processing
    * @param {string} pdfPath - Path to the PDF file
    * @returns {Promise<string>} Path to the converted image
