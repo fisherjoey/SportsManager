@@ -116,6 +116,13 @@ class UserService extends BaseService {
 
       // If user is a referee, get additional referee-specific data
       if (user.role === 'referee') {
+        // Determine if user should have white whistle based on level
+        if (user.level_name && ['Rookie', 'Junior'].includes(user.level_name)) {
+          user.should_display_white_whistle = user.is_white_whistle === true;
+        } else {
+          user.should_display_white_whistle = false;
+        }
+
         // Get recent assignments
         const recentAssignments = await this.db('game_assignments')
           .join('games', 'game_assignments.game_id', 'games.id')

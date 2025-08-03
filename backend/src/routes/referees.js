@@ -23,23 +23,68 @@ router.get('/test', (req, res) => {
 // GET /api/referees - Get all referees with optional filters  
 router.get('/', enhancedAsyncHandler(async (req, res) => {
   try {
-    // Simple query to test database connection
+    // Enhanced query to include referee level and white whistle information
     const referees = await db('users')
-      .where('role', 'referee')
-      .select('id', 'name', 'email', 'is_available')
+      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+      .where('users.role', 'referee')
+      .select(
+        'users.id', 
+        'users.name', 
+        'users.email', 
+        'users.is_available',
+        'users.is_white_whistle',
+        'users.roles',
+        'referee_levels.name as level_name',
+        db.raw(`
+          CASE 
+            WHEN referee_levels.name IN ('Rookie', 'Junior') AND users.is_white_whistle = true 
+            THEN true 
+            ELSE false 
+          END as should_display_white_whistle
+        `)
+      )
       .limit(10);
     
     res.json({
       success: true,
       data: { 
         referees,
-        total: referees.length
+        pagination: {
+          total: referees.length,
+          page: 1,
+          limit: 10,
+          totalPages: Math.ceil(referees.length / 10)
+        }
       }
     });
   } catch (error) {
     console.error('Referees endpoint error:', error);
     throw error;
   }
+}));
+
+// GET /api/referees/profile - Get current user's referee profile
+router.get('/profile', authenticateToken, enhancedAsyncHandler(async (req, res) => {
+  if (req.user.role !== 'referee') {
+    throw ErrorFactory.forbidden('This endpoint is only available for referees');
+  }
+
+  // Use UserService to get referee profile
+  const referee = await userService.getUserWithRefereeDetails(req.user.id, {
+    assignmentLimit: 50
+  });
+
+  if (!referee) {
+    throw ErrorFactory.notFound('Referee profile not found');
+  }
+
+  // Maintain backward compatibility - rename assignments field
+  if (referee.recent_assignments) {
+    referee.assignments = referee.recent_assignments;
+    delete referee.recent_assignments;
+  }
+
+  return ResponseFormatter.sendSuccess(res, { referee }, 'Referee profile retrieved successfully');
 }));
 
 // GET /api/referees/:id - Get specific referee
@@ -123,6 +168,7 @@ router.put('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
 
 // PATCH /api/referees/:id/availability - Update referee availability
 router.patch('/:id/availability', 
+  authenticateToken,
   validateParams(IdParamSchema),
   validateBody(Joi.object({
     is_available: Joi.boolean().required()
