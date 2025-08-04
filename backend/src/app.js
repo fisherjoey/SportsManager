@@ -18,6 +18,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const gameRoutes = require('./routes/games');
 const refereeRoutes = require('./routes/referees');
+const refereeRoleRoutes = require('./routes/referee-roles');
 const assignmentRoutes = require('./routes/assignments');
 const invitationRoutes = require('./routes/invitations');
 // const refereeLevelRoutes = require('./routes/referee-levels'); // DISABLED: uses referees table
@@ -116,6 +117,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/referees', refereeRoutes);
+app.use('/api/referee-roles', refereeRoleRoutes);
 app.use('/api/assignments/ai-suggestions', aiSuggestionsRoutes);
 app.use('/api/assignments/patterns', historicPatternsRoutes);
 app.use('/api/assignments', assignmentRoutes);

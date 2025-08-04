@@ -6,7 +6,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
-const { UserSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
+const { UserSchemas, RefereeSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
 const { ErrorFactory } = require('../utils/errors');
 const UserService = require('../services/UserService');
 
@@ -173,6 +173,125 @@ router.get('/available/:gameId',
   })
 );
 
+// PATCH /api/referees/:id/level - Update referee level (admin only)
+router.patch('/:id/level',
+  authenticateToken,
+  requireRole('admin'),
+  validateParams(IdParamSchema),
+  validateBody(UserSchemas.levelUpdate),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    const { new_referee_level, is_white_whistle } = req.body;
+    
+    // Verify referee exists
+    const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
+    if (!existingReferee || existingReferee.role !== 'referee') {
+      throw ErrorFactory.notFound('Referee', refereeId);
+    }
+    
+    // Update referee level using UserService
+    const updatedReferee = await userService.updateRefereeLevel(
+      refereeId, 
+      new_referee_level, 
+      is_white_whistle
+    );
+    
+    return ResponseFormatter.sendSuccess(
+      res, 
+      updatedReferee, 
+      `Referee level updated to ${new_referee_level} successfully`
+    );
+  })
+);
+
+// PATCH /api/referees/:id/roles - Manage referee roles (admin only)
+router.patch('/:id/roles',
+  authenticateToken,
+  requireRole('admin'),
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    action: Joi.string().valid('assign', 'remove').required(),
+    role_name: Joi.string().required()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    const { action, role_name } = req.body;
+    
+    // Verify referee exists
+    const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
+    if (!existingReferee || existingReferee.role !== 'referee') {
+      throw ErrorFactory.notFound('Referee', refereeId);
+    }
+    
+    try {
+      if (action === 'assign') {
+        await userService.assignRefereeRole(refereeId, role_name, req.user.id);
+        return ResponseFormatter.sendSuccess(
+          res, 
+          null, 
+          `Role '${role_name}' assigned successfully`
+        );
+      } else if (action === 'remove') {
+        // Prevent removal of default 'Referee' role
+        if (role_name === 'Referee') {
+          throw ErrorFactory.forbidden('Cannot remove default Referee role');
+        }
+        
+        const success = await userService.removeRefereeRole(refereeId, role_name);
+        if (!success) {
+          throw ErrorFactory.notFound('Role assignment not found');
+        }
+        
+        return ResponseFormatter.sendSuccess(
+          res, 
+          null, 
+          `Role '${role_name}' removed successfully`
+        );
+      }
+    } catch (error) {
+      if (error.message.includes('already has role') || 
+          error.message.includes('not found')) {
+        throw ErrorFactory.conflict(error.message);
+      }
+      throw error;
+    }
+  })
+);
+
+// GET /api/referees/:id/white-whistle-status - Get white whistle display status
+router.get('/:id/white-whistle-status',
+  validateParams(IdParamSchema),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    
+    // Get referee with level information
+    const referee = await userService.getUserWithRefereeDetails(refereeId);
+    
+    if (!referee || referee.role !== 'referee') {
+      throw ErrorFactory.notFound('Referee', refereeId);
+    }
+    
+    const status = {
+      user_id: referee.id,
+      name: referee.name,
+      current_level: referee.new_referee_level || referee.level_name,
+      is_white_whistle: referee.is_white_whistle,
+      should_display_white_whistle: referee.should_display_white_whistle,
+      white_whistle_logic: {
+        rookie: 'Always displays white whistle',
+        junior: 'Displays based on individual flag',
+        senior: 'Never displays white whistle'
+      }
+    };
+    
+    return ResponseFormatter.sendSuccess(
+      res, 
+      status, 
+      'White whistle status retrieved successfully'
+    );
+  })
+);
+
 // DELETE /api/referees/:id - Delete referee
 router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
@@ -192,5 +311,63 @@ router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(Id
 
   return ResponseFormatter.sendSuccess(res, null, 'Referee deleted successfully');
 }));
+
+// GET /api/referees/levels/summary - Get summary of referee levels (admin only)
+router.get('/levels/summary',
+  authenticateToken,
+  requireRole('admin'),
+  enhancedAsyncHandler(async (req, res) => {
+    // Get referee level distribution
+    const levelDistribution = await db('users')
+      .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+      .select(
+        'referee_levels.name as level_name',
+        'users.new_referee_level',
+        db.raw('COUNT(*) as count')
+      )
+      .where('users.role', 'referee')
+      .groupBy('referee_levels.name', 'users.new_referee_level')
+      .orderBy('referee_levels.name');
+    
+    // Get white whistle statistics
+    const whiteWhistleStats = await db('users')
+      .select(
+        'new_referee_level',
+        db.raw('COUNT(*) as total'),
+        db.raw('COUNT(CASE WHEN is_white_whistle = true THEN 1 END) as with_white_whistle')
+      )
+      .where('role', 'referee')
+      .whereNotNull('new_referee_level')
+      .groupBy('new_referee_level')
+      .orderBy('new_referee_level');
+    
+    // Get role distribution
+    const roleDistribution = await db('user_referee_roles')
+      .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
+      .join('users', 'user_referee_roles.user_id', 'users.id')
+      .select(
+        'referee_roles.name as role_name',
+        db.raw('COUNT(*) as count')
+      )
+      .where('user_referee_roles.is_active', true)
+      .where('referee_roles.is_active', true)
+      .where('users.role', 'referee')
+      .groupBy('referee_roles.name')
+      .orderBy('referee_roles.name');
+    
+    const summary = {
+      level_distribution: levelDistribution,
+      white_whistle_stats: whiteWhistleStats,
+      role_distribution: roleDistribution,
+      level_system: {
+        rookie: 'Always displays white whistle',
+        junior: 'Conditionally displays white whistle',
+        senior: 'Never displays white whistle'
+      }
+    };
+    
+    return ResponseFormatter.sendSuccess(res, summary, 'Referee levels summary retrieved successfully');
+  })
+);
 
 module.exports = router;

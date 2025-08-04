@@ -352,6 +352,52 @@ const FileSchemas = {
 };
 
 /**
+ * Referee-specific validation schemas
+ */
+const RefereeSchemas = {
+  /**
+   * Schema for referee level assignment
+   */
+  levelAssignment: Joi.object({
+    user_id: Joi.string().uuid().required(),
+    new_referee_level: Joi.string().valid('Rookie', 'Junior', 'Senior').required(),
+    is_white_whistle: Joi.boolean().optional()
+  }),
+
+  /**
+   * Schema for referee role assignment
+   */
+  roleAssignment: Joi.object({
+    user_id: Joi.string().uuid().required(),
+    role_name: Joi.string().required()
+  }),
+
+  /**
+   * Schema for creating/updating referee roles
+   */
+  roleDefinition: Joi.object({
+    name: Joi.string().min(2).max(50).required(),
+    description: Joi.string().max(500).optional(),
+    permissions: Joi.object({
+      can_officiate: Joi.boolean().default(false),
+      can_evaluate: Joi.boolean().default(false),
+      can_mentor: Joi.boolean().default(false),
+      can_assign: Joi.boolean().default(false),
+      can_inspect: Joi.boolean().default(false),
+      can_audit: Joi.boolean().default(false),
+      can_be_assigned: Joi.boolean().default(true),
+      receives_full_fee: Joi.boolean().default(false),
+      has_admin_access: Joi.boolean().default(false),
+      has_scheduling_access: Joi.boolean().default(false),
+      can_view_all_games: Joi.boolean().default(false),
+      can_coordinate: Joi.boolean().default(false),
+      is_default: Joi.boolean().default(false)
+    }).default({}),
+    is_active: Joi.boolean().default(true)
+  })
+};
+
+/**
  * Availability schemas
  */
 const AvailabilitySchemas = {
@@ -391,6 +437,7 @@ module.exports = {
   
   // Entity schemas
   UserSchemas,
+  RefereeSchemas,
   GameSchemas,
   AssignmentSchemas,
   BudgetSchemas,
