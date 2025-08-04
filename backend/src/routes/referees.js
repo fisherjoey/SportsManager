@@ -20,14 +20,23 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Referees API is working', timestamp: new Date().toISOString() });
 });
 
-// GET /api/referees - Get all referees with optional filters  
+// GET /api/referees - Get all referees with enhanced details including white whistle and roles
 router.get('/', enhancedAsyncHandler(async (req, res) => {
   try {
-    // Simple query to test database connection
-    const referees = await db('users')
-      .where('role', 'referee')
-      .select('id', 'name', 'email', 'is_available')
-      .limit(10);
+    const { level, is_available, location, limit } = req.query;
+    
+    // Build filters from query parameters
+    const filters = {};
+    if (level) filters.level = level;
+    if (is_available !== undefined) filters.is_available = is_available === 'true';
+    if (location) filters.location = location;
+
+    // Build options
+    const options = {};
+    if (limit) options.limit = parseInt(limit);
+
+    // Use enhanced method to get referees with white whistle logic and roles
+    const referees = await userService.findRefereesWithEnhancedDetails(filters, options);
     
     res.json({
       success: true,
@@ -42,12 +51,12 @@ router.get('/', enhancedAsyncHandler(async (req, res) => {
   }
 }));
 
-// GET /api/referees/:id - Get specific referee
+// GET /api/referees/:id - Get specific referee with enhanced details
 router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
   
-  // Use UserService to get referee with complete details
-  const referee = await userService.getUserWithRefereeDetails(refereeId, {
+  // Use enhanced method to get referee with white whistle logic and roles
+  const referee = await userService.getRefereeWithEnhancedDetails(refereeId, {
     assignmentLimit: 50 // Get more assignments for detailed view
   });
 

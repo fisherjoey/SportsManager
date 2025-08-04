@@ -23,6 +23,7 @@ const invitationRoutes = require('./routes/invitations');
 // const refereeLevelRoutes = require('./routes/referee-levels'); // DISABLED: uses referees table
 const selfAssignmentRoutes = require('./routes/self-assignment');
 const roleRoutes = require('./routes/roles');
+const refereeRoleRoutes = require('./routes/referee-roles');
 const availabilityRoutes = require('./routes/availability');
 const leagueRoutes = require('./routes/leagues');
 const teamRoutes = require('./routes/teams');
@@ -121,6 +122,7 @@ app.use('/api/assignments/patterns', historicPatternsRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/invitations', invitationRoutes);
 // app.use('/api/referee-levels', refereeLevelRoutes); // DISABLED: uses referees table
+app.use('/api/referee-roles', refereeRoleRoutes);
 app.use('/api/self-assignment', selfAssignmentRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/availability', availabilityRoutes);

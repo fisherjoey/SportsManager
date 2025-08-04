@@ -377,6 +377,199 @@ class UserService extends BaseService {
     
     return changes;
   }
+
+  /**
+   * Determine if referee should display white whistle based on level and individual flag
+   * @param {string} levelName - Referee level name ('Rookie', 'Junior', 'Senior')
+   * @param {boolean} isWhiteWhistle - Individual white whistle flag
+   * @returns {boolean} Whether to display white whistle
+   */
+  shouldDisplayWhiteWhistle(levelName, isWhiteWhistle) {
+    switch (levelName) {
+      case 'Rookie':
+        return true; // Always display for Rookie
+      case 'Junior':
+        return Boolean(isWhiteWhistle); // Conditional based on individual flag
+      case 'Senior':
+        return false; // Never display for Senior
+      default:
+        return false; // Default to no white whistle for unknown levels
+    }
+  }
+
+  /**
+   * Get referee with enhanced details including white whistle display logic and roles
+   * @param {string} userId - User ID
+   * @param {Object} options - Query options
+   * @returns {Object} Enhanced referee details
+   */
+  async getRefereeWithEnhancedDetails(userId, options = {}) {
+    try {
+      // Get user with referee level information
+      const referee = await this.db('users')
+        .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+        .select(
+          'users.*',
+          'referee_levels.name as level_name',
+          'referee_levels.wage_amount as level_wage',
+          'referee_levels.allowed_divisions',
+          'referee_levels.description as level_description'
+        )
+        .where('users.id', userId)
+        .first();
+
+      if (!referee) {
+        throw new Error(`User not found with id: ${userId}`);
+      }
+
+      // Get user roles
+      const roles = await this.db('referee_roles')
+        .join('user_roles', 'referee_roles.id', 'user_roles.role_id')
+        .select('referee_roles.name', 'referee_roles.description')
+        .where('user_roles.user_id', userId)
+        .where('referee_roles.is_active', true);
+
+      // Add white whistle display logic
+      referee.should_display_white_whistle = this.shouldDisplayWhiteWhistle(
+        referee.level_name, 
+        referee.is_white_whistle
+      );
+
+      // Add roles array
+      referee.roles = roles.map(role => role.name);
+      referee.role_details = roles;
+
+      // If user is a referee, get additional referee-specific data
+      if (referee.role === 'referee') {
+        // Get recent assignments with enhanced details
+        const recentAssignments = await this.db('game_assignments')
+          .join('games', 'game_assignments.game_id', 'games.id')
+          .join('teams as home_teams', 'games.home_team_id', 'home_teams.id')
+          .join('teams as away_teams', 'games.away_team_id', 'away_teams.id')
+          .join('positions', 'game_assignments.position_id', 'positions.id')
+          .select(
+            'game_assignments.*',
+            'games.game_date',
+            'games.game_time',
+            'games.location',
+            'games.level',
+            'games.game_type',
+            'home_teams.name as home_team_name',
+            'away_teams.name as away_team_name',
+            'positions.name as position_name'
+          )
+          .where('game_assignments.user_id', userId)
+          .orderBy('games.game_date', 'desc')
+          .limit(options.assignmentLimit || 10);
+
+        // Get assignment statistics
+        const assignmentStats = await this.db('game_assignments')
+          .join('games', 'game_assignments.game_id', 'games.id')
+          .select(
+            this.db.raw('COUNT(*) as total_assignments'),
+            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'accepted' THEN 1 END) as accepted_assignments"),
+            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'declined' THEN 1 END) as declined_assignments"),
+            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'completed' THEN 1 END) as completed_assignments"),
+            this.db.raw('SUM(game_assignments.calculated_wage) as total_earnings'),
+            this.db.raw('AVG(game_assignments.calculated_wage) as avg_wage_per_game')
+          )
+          .where('game_assignments.user_id', userId)
+          .first();
+
+        // Add referee-specific data to user object
+        referee.recent_assignments = recentAssignments;
+        referee.assignment_stats = {
+          total: parseInt(assignmentStats.total_assignments) || 0,
+          accepted: parseInt(assignmentStats.accepted_assignments) || 0,
+          declined: parseInt(assignmentStats.declined_assignments) || 0,
+          completed: parseInt(assignmentStats.completed_assignments) || 0,
+          total_earnings: parseFloat(assignmentStats.total_earnings) || 0,
+          avg_wage_per_game: parseFloat(assignmentStats.avg_wage_per_game) || 0
+        };
+      }
+
+      return referee;
+    } catch (error) {
+      console.error(`Error getting enhanced referee details ${userId}:`, error);
+      throw new Error(`Failed to get enhanced referee details: ${error.message}`);
+    }
+  }
+
+  /**
+   * Find all referees with enhanced details including white whistle display and roles
+   * @param {Object} filters - Filters to apply
+   * @param {Object} options - Query options
+   * @returns {Array} Enhanced referee list
+   */
+  async findRefereesWithEnhancedDetails(filters = {}, options = {}) {
+    try {
+      let query = this.db('users')
+        .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+        .select(
+          'users.id',
+          'users.name',
+          'users.email',
+          'users.phone',
+          'users.is_available',
+          'users.is_white_whistle',
+          'users.postal_code',
+          'users.max_distance',
+          'users.location',
+          'users.notes',
+          'referee_levels.name as level_name',
+          'referee_levels.wage_amount as level_wage'
+        )
+        .where('users.role', 'referee');
+
+      // Apply filters
+      if (filters.level) {
+        query = query.where('referee_levels.name', filters.level);
+      }
+      if (filters.is_available !== undefined) {
+        query = query.where('users.is_available', filters.is_available);
+      }
+      if (filters.location) {
+        query = query.where('users.location', 'ilike', `%${filters.location}%`);
+      }
+
+      // Apply ordering
+      query = query.orderBy(options.orderBy || 'users.name', options.orderDirection || 'asc');
+
+      // Apply limit if specified
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      const referees = await query;
+
+      // Enhance each referee with white whistle logic and roles
+      const enhancedReferees = await Promise.all(
+        referees.map(async (referee) => {
+          // Add white whistle display logic
+          referee.should_display_white_whistle = this.shouldDisplayWhiteWhistle(
+            referee.level_name,
+            referee.is_white_whistle
+          );
+
+          // Get roles for this referee
+          const roles = await this.db('referee_roles')
+            .join('user_roles', 'referee_roles.id', 'user_roles.role_id')
+            .select('referee_roles.name')
+            .where('user_roles.user_id', referee.id)
+            .where('referee_roles.is_active', true);
+
+          referee.roles = roles.map(role => role.name);
+
+          return referee;
+        })
+      );
+
+      return enhancedReferees;
+    } catch (error) {
+      console.error('Error finding referees with enhanced details:', error);
+      throw new Error(`Failed to find referees: ${error.message}`);
+    }
+  }
 }
 
 module.exports = UserService;

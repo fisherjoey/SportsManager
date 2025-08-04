@@ -47,11 +47,13 @@ export function RefereeManagement() {
     name: '',
     email: '',
     phone: '',
-    certificationLevel: '',
+    level: '',
     location: '',
     notes: '',
     maxDistance: 50,
-    isAvailable: true
+    isAvailable: true,
+    postal_code: '',
+    isWhiteWhistle: false
   })
   const api = useApi()
   const { toast } = useToast()
@@ -113,11 +115,13 @@ export function RefereeManagement() {
       name: referee.name,
       email: referee.email,
       phone: referee.phone,
-      certificationLevel: referee.certificationLevel || '',
+      level: referee.level || referee.level_name || '',
       location: referee.location,
       notes: referee.notes || '',
       maxDistance: referee.maxDistance,
-      isAvailable: referee.isAvailable
+      isAvailable: referee.isAvailable,
+      postal_code: referee.postal_code || '',
+      isWhiteWhistle: referee.isWhiteWhistle || false
     })
     setShowEditDialog(true)
   }
@@ -135,11 +139,13 @@ export function RefereeManagement() {
         name: editForm.name,
         email: editForm.email,
         phone: editForm.phone,
-        level: editForm.certificationLevel,
+        level: editForm.level,
         location: editForm.location,
         notes: editForm.notes,
         max_distance: editForm.maxDistance,
-        is_available: editForm.isAvailable
+        is_available: editForm.isAvailable,
+        postal_code: editForm.postal_code,
+        is_white_whistle: editForm.isWhiteWhistle
       })
 
       if (response.success) {
@@ -192,8 +198,8 @@ export function RefereeManagement() {
       color: 'text-orange-600'
     },
     {
-      title: 'Elite Level',
-      value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === 'Elite').length : 0,
+      title: 'Senior Level',
+      value: Array.isArray(referees) ? referees.filter((r) => (r.level || r.level_name) === 'Senior').length : 0,
       icon: UserPlus,
       color: 'text-purple-600'
     }
@@ -208,7 +214,7 @@ export function RefereeManagement() {
       accessor: (referee) => (
         <div>
           <div className="font-medium text-sm truncate">{referee.name}</div>
-          {referee.isWhiteWhistle && (
+          {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
             <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
               <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
               White Whistle
@@ -234,31 +240,33 @@ export function RefereeManagement() {
       filterType: 'select',
       filterOptions: [
         { value: 'all', label: 'All Levels' },
-        { value: 'Learning', label: 'Learning' },
-        { value: 'Learning+', label: 'Learning+' },
-        { value: 'Growing', label: 'Growing' },
-        { value: 'Growing+', label: 'Growing+' },
-        { value: 'Teaching', label: 'Teaching' },
-        { value: 'Expert', label: 'Expert' }
+        { value: 'Rookie', label: 'Rookie' },
+        { value: 'Junior', label: 'Junior' },
+        { value: 'Senior', label: 'Senior' }
       ],
       accessor: (referee) => {
-        const level = referee.level
+        const level = referee.level || referee.level_name
         const levelColors = {
-          'Learning': 'bg-green-100 text-green-800 border-green-200',
-          'Learning+': 'bg-blue-100 text-blue-800 border-blue-200',
-          'Growing': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          'Growing+': 'bg-orange-100 text-orange-800 border-orange-200',
-          'Teaching': 'bg-purple-100 text-purple-800 border-purple-200',
-          'Expert': 'bg-red-100 text-red-800 border-red-200'
+          'Rookie': 'bg-green-100 text-green-800 border-green-200',
+          'Junior': 'bg-blue-100 text-blue-800 border-blue-200',
+          'Senior': 'bg-purple-100 text-purple-800 border-purple-200'
         }
         
         return (
-          <Badge 
-            variant="outline" 
-            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
-          >
-            {level}
-          </Badge>
+          <div className="space-y-1">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
+            >
+              {level}
+            </Badge>
+            {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+                White Whistle
+              </div>
+            )}
+          </div>
         )
       }
     },
@@ -516,18 +524,39 @@ export function RefereeManagement() {
             </div>
             
             <div>
-              <Label htmlFor="certificationLevel">Certification Level</Label>
-              <Select value={editForm.certificationLevel} onValueChange={(value) => setEditForm(prev => ({ ...prev, certificationLevel: value }))}>
+              <Label htmlFor="level">Referee Level</Label>
+              <Select value={editForm.level} onValueChange={(value) => setEditForm(prev => ({ ...prev, level: value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Recreational">Recreational</SelectItem>
-                  <SelectItem value="Competitive">Competitive</SelectItem>
-                  <SelectItem value="Elite">Elite</SelectItem>
+                  <SelectItem value="Rookie">Rookie ($25/game)</SelectItem>
+                  <SelectItem value="Junior">Junior ($35/game)</SelectItem>
+                  <SelectItem value="Senior">Senior ($45/game)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
+            <div>
+              <Label htmlFor="postal_code">Postal Code</Label>
+              <Input
+                id="postal_code"
+                value={editForm.postal_code}
+                onChange={(e) => setEditForm(prev => ({ ...prev, postal_code: e.target.value }))}
+                placeholder="e.g. T2N 1N4"
+              />
+            </div>
+            
+            {editForm.level === 'Junior' && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isWhiteWhistle"
+                  checked={editForm.isWhiteWhistle}
+                  onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isWhiteWhistle: checked as boolean }))}
+                />
+                <Label htmlFor="isWhiteWhistle">Display white whistle (Junior level only)</Label>
+              </div>
+            )}
             
             <div>
               <Label htmlFor="location">Location</Label>
@@ -607,9 +636,37 @@ export function RefereeManagement() {
               </div>
               
               <div>
-                <Label className="font-semibold">Certification Level</Label>
-                <Badge variant="secondary">{selectedReferee.certificationLevel}</Badge>
+                <Label className="font-semibold">Referee Level</Label>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary">{selectedReferee.level || selectedReferee.level_name}</Badge>
+                  {(selectedReferee.should_display_white_whistle || selectedReferee.isWhiteWhistle) && (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+                      White Whistle
+                    </div>
+                  )}
+                </div>
               </div>
+              
+              {selectedReferee.postal_code && (
+                <div>
+                  <Label className="font-semibold">Postal Code</Label>
+                  <p className="text-sm text-muted-foreground">{selectedReferee.postal_code}</p>
+                </div>
+              )}
+              
+              {selectedReferee.roles && selectedReferee.roles.length > 0 && (
+                <div>
+                  <Label className="font-semibold">Roles</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedReferee.roles.map((role, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {role}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <div>
                 <Label className="font-semibold">Location</Label>
