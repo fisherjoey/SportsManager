@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Award, Settings } from 'lucide-react'
+import { User, Award, Settings, Whistle } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -164,6 +164,40 @@ export function ProfileSettings() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     * Final game wage may vary based on game multipliers (e.g., playoffs, holidays)
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Referee Level</Label>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary">
+                    {user?.referee?.new_referee_level || user?.referee?.level || 'Not Set'}
+                  </Badge>
+                  {(user?.referee?.should_display_white_whistle || user?.referee?.is_white_whistle) && (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Whistle className="h-3 w-3 text-white fill-current mr-1" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
+                      White Whistle
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Level is managed by administrators
+                </p>
+              </div>
+
+              {(user?.referee?.role_names || user?.referee?.roles) && (
+                <div className="space-y-2">
+                  <Label>Assigned Roles</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(user.referee.role_names || user.referee.roles || []).map((role, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {role}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Roles are assigned by administrators
                   </p>
                 </div>
               )}

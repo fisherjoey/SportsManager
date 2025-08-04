@@ -29,7 +29,7 @@ class UserService extends BaseService {
     try {
       const conditions = { role, ...filters };
       
-      // For referees, include referee level information
+      // For referees, include referee level information and roles
       if (role === 'referee') {
         options.include = options.include || [];
         options.include.push({
@@ -49,7 +49,14 @@ class UserService extends BaseService {
         }
       }
       
-      return await this.findWhere(conditions, options);
+      const users = await this.findWhere(conditions, options);
+      
+      // For referees, enhance with white whistle display logic and roles
+      if (role === 'referee') {
+        return await Promise.all(users.map(user => this.enhanceRefereeData(user)));
+      }
+      
+      return users;
     } catch (error) {
       console.error(`Error finding users by role ${role}:`, error);
       throw new Error(`Failed to find users by role: ${error.message}`);
@@ -105,7 +112,7 @@ class UserService extends BaseService {
           'referee_levels.name as level_name',
           'referee_levels.allowed_divisions',
           'referee_levels.min_experience_years',
-          'referee_levels.pay_rate as level_pay_rate'
+          'referee_levels.wage_amount as level_pay_rate'
         )
         .where('users.id', userId)
         .first();
@@ -116,6 +123,9 @@ class UserService extends BaseService {
 
       // If user is a referee, get additional referee-specific data
       if (user.role === 'referee') {
+        // Enhance with white whistle display logic and roles
+        await this.enhanceRefereeData(user);
+
         // Get recent assignments
         const recentAssignments = await this.db('game_assignments')
           .join('games', 'game_assignments.game_id', 'games.id')
@@ -333,6 +343,219 @@ class UserService extends BaseService {
   }
 
   /**
+   * Enhance referee data with white whistle display logic and roles
+   * @param {Object} user - User object to enhance
+   * @returns {Object} Enhanced user object
+   */
+  async enhanceRefereeData(user) {
+    try {
+      // Determine white whistle display based on level and individual flag
+      user.should_display_white_whistle = this.shouldDisplayWhiteWhistle(
+        user.new_referee_level || user.level_name,
+        user.is_white_whistle
+      );
+
+      // Get referee roles for this user
+      const refereeRoles = await this.db('user_referee_roles')
+        .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
+        .select(
+          'referee_roles.name',
+          'referee_roles.description',
+          'referee_roles.permissions',
+          'user_referee_roles.assigned_at',
+          'user_referee_roles.is_active'
+        )
+        .where('user_referee_roles.user_id', user.id)
+        .where('user_referee_roles.is_active', true)
+        .where('referee_roles.is_active', true);
+
+      user.referee_roles = refereeRoles;
+      
+      // Add computed fields for easier access
+      user.role_names = refereeRoles.map(role => role.name);
+      user.can_evaluate = refereeRoles.some(role => {
+        const permissions = typeof role.permissions === 'string' 
+          ? JSON.parse(role.permissions) 
+          : role.permissions;
+        return permissions.can_evaluate;
+      });
+      user.can_mentor = refereeRoles.some(role => {
+        const permissions = typeof role.permissions === 'string' 
+          ? JSON.parse(role.permissions) 
+          : role.permissions;
+        return permissions.can_mentor;
+      });
+
+      return user;
+    } catch (error) {
+      console.error(`Error enhancing referee data for user ${user.id}:`, error);
+      // Return user without enhancement rather than failing
+      user.should_display_white_whistle = false;
+      user.referee_roles = [];
+      user.role_names = [];
+      user.can_evaluate = false;
+      user.can_mentor = false;
+      return user;
+    }
+  }
+
+  /**
+   * Determine if white whistle should be displayed based on CLAUDE.md specifications
+   * @param {string} level - Referee level (Rookie, Junior, Senior)
+   * @param {boolean} isWhiteWhistle - Individual white whistle flag
+   * @returns {boolean} Whether to display white whistle icon
+   */
+  shouldDisplayWhiteWhistle(level, isWhiteWhistle) {
+    if (!level) return false;
+
+    switch (level.toLowerCase()) {
+      case 'rookie':
+        return true; // Rookies always display white whistle
+      case 'junior':
+        return Boolean(isWhiteWhistle); // Conditionally based on flag
+      case 'senior':
+        return false; // Seniors never display white whistle
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Update referee level and white whistle status
+   * @param {string} userId - User ID
+   * @param {string} newLevel - New referee level (Rookie, Junior, Senior)
+   * @param {boolean} isWhiteWhistle - White whistle flag (only applies to Junior level)
+   * @returns {Object} Updated user
+   */
+  async updateRefereeLevel(userId, newLevel, isWhiteWhistle = null) {
+    try {
+      // Validate level
+      const validLevels = ['Rookie', 'Junior', 'Senior'];
+      if (!validLevels.includes(newLevel)) {
+        throw new Error(`Invalid referee level: ${newLevel}. Must be one of: ${validLevels.join(', ')}`);
+      }
+
+      // Get the referee level record
+      const refereeLevel = await this.db('referee_levels')
+        .where('name', newLevel)
+        .first();
+
+      if (!refereeLevel) {
+        throw new Error(`Referee level '${newLevel}' not found in database`);
+      }
+
+      // Determine white whistle status based on level
+      let finalWhiteWhistleStatus;
+      switch (newLevel) {
+        case 'Rookie':
+          finalWhiteWhistleStatus = true; // Always true for Rookie
+          break;
+        case 'Junior':
+          finalWhiteWhistleStatus = isWhiteWhistle !== null ? isWhiteWhistle : false;
+          break;
+        case 'Senior':
+          finalWhiteWhistleStatus = false; // Always false for Senior
+          break;
+      }
+
+      // Update user record
+      const updatedUser = await this.update(userId, {
+        new_referee_level: newLevel,
+        referee_level_id: refereeLevel.id,
+        is_white_whistle: finalWhiteWhistleStatus
+      });
+
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating referee level for user ${userId}:`, error);
+      throw new Error(`Failed to update referee level: ${error.message}`);
+    }
+  }
+
+  /**
+   * Assign role to referee
+   * @param {string} userId - User ID
+   * @param {string} roleName - Role name to assign
+   * @param {string} assignedBy - ID of admin assigning the role
+   * @returns {Object} Assignment result
+   */
+  async assignRefereeRole(userId, roleName, assignedBy) {
+    try {
+      // Verify user is a referee
+      const user = await this.findById(userId, { select: ['id', 'role'] });
+      if (!user || user.role !== 'referee') {
+        throw new Error('User is not a referee');
+      }
+
+      // Get the role
+      const role = await this.db('referee_roles')
+        .where('name', roleName)
+        .where('is_active', true)
+        .first();
+
+      if (!role) {
+        throw new Error(`Role '${roleName}' not found or inactive`);
+      }
+
+      // Check if already assigned
+      const existingAssignment = await this.db('user_referee_roles')
+        .where('user_id', userId)
+        .where('referee_role_id', role.id)
+        .where('is_active', true)
+        .first();
+
+      if (existingAssignment) {
+        throw new Error(`User already has role '${roleName}'`);
+      }
+
+      // Assign role
+      const assignment = await this.db('user_referee_roles').insert({
+        id: this.db.raw('gen_random_uuid()'),
+        user_id: userId,
+        referee_role_id: role.id,
+        assigned_by: assignedBy,
+        assigned_at: new Date(),
+        is_active: true
+      }).returning('*');
+
+      return assignment[0];
+    } catch (error) {
+      console.error(`Error assigning role ${roleName} to user ${userId}:`, error);
+      throw new Error(`Failed to assign role: ${error.message}`);
+    }
+  }
+
+  /**
+   * Remove role from referee
+   * @param {string} userId - User ID
+   * @param {string} roleName - Role name to remove
+   * @returns {boolean} Success status
+   */
+  async removeRefereeRole(userId, roleName) {
+    try {
+      // Get the role
+      const role = await this.db('referee_roles')
+        .where('name', roleName)
+        .first();
+
+      if (!role) {
+        throw new Error(`Role '${roleName}' not found`);
+      }
+
+      // Deactivate assignment
+      const result = await this.db('user_referee_roles')
+        .where('user_id', userId)
+        .where('referee_role_id', role.id)
+        .update({ is_active: false });
+
+      return result > 0;
+    } catch (error) {
+      console.error(`Error removing role ${roleName} from user ${userId}:`, error);
+      throw new Error(`Failed to remove role: ${error.message}`);
+    }
+  }
+
+  /**
    * Hook called after user creation
    * @param {Object} user - Created user
    * @param {Object} options - Creation options
@@ -340,6 +563,15 @@ class UserService extends BaseService {
   async afterCreate(user, options) {
     if (this.options.enableAuditTrail) {
       console.log(`User created: ${user.id} (${user.role})`);
+    }
+    
+    // If creating a referee, assign default role
+    if (user.role === 'referee') {
+      try {
+        await this.assignRefereeRole(user.id, 'Referee', null);
+      } catch (error) {
+        console.warn(`Failed to assign default role to new referee ${user.id}:`, error.message);
+      }
     }
   }
 

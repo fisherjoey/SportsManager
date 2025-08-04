@@ -9,7 +9,8 @@ import {
   Edit,
   Eye,
   MessageSquare,
-  Shield
+  Shield,
+  Whistle
 } from 'lucide-react'
 
 import { 
@@ -64,10 +65,13 @@ export function RefereeMobileCard({
     <div className="flex items-center gap-2">
       <User className="h-4 w-4 text-muted-foreground" />
       <span>{referee.name}</span>
+      {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
+        <Whistle className="h-3 w-3 text-white fill-current" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
+      )}
     </div>
   )
 
-  const subtitle = referee.certificationLevel
+  const subtitle = referee.new_referee_level || referee.certificationLevel
 
   return (
     <BaseEntityCard
@@ -102,7 +106,7 @@ export function RefereeMobileCard({
       {/* Level and Status */}
       <BadgeRow icon={Award}>
         <div className="flex items-center space-x-2">
-          <LevelBadge level={referee.level} />
+          <LevelBadge level={referee.new_referee_level || referee.level} />
           <AvailabilityBadge
             isAvailable={referee.isAvailable}
             availabilityText={referee.isAvailable ? 'Available: July 20' : 'Unavailable'}
@@ -110,29 +114,29 @@ export function RefereeMobileCard({
         </div>
       </BadgeRow>
 
-      {/* Certifications */}
+      {/* Roles */}
       <CollapsibleSection
         icon={Shield}
-        label="Certifications"
-        isEmpty={referee.certifications.length === 0}
-        emptyText="None listed"
+        label="Roles"
+        isEmpty={(referee.role_names || referee.roles || []).length === 0}
+        emptyText="None assigned"
       >
         <div className="flex flex-wrap gap-1">
-          {referee.certifications.slice(0, 3).map((cert, idx) => (
+          {(referee.role_names || referee.roles || []).slice(0, 3).map((role, idx) => (
             <Badge key={idx} variant="secondary" className="text-xs">
-              {cert}
+              {role}
             </Badge>
           ))}
-          {referee.certifications.length > 3 && (
+          {(referee.role_names || referee.roles || []).length > 3 && (
             <Badge variant="outline" className="text-xs">
-              +{referee.certifications.length - 3} more
+              +{(referee.role_names || referee.roles || []).length - 3} more
             </Badge>
           )}
         </div>
       </CollapsibleSection>
 
-      {/* Preferred Positions */}
-      {referee.preferredPositions.length > 0 && (
+      {/* Preferred Positions (Legacy) */}
+      {referee.preferredPositions && referee.preferredPositions.length > 0 && (
         <CollapsibleSection
           icon={Award}
           label="Preferred positions"

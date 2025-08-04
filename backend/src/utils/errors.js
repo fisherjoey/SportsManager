@@ -299,6 +299,42 @@ class ErrorFactory {
   static businessLogic(message, rule = null, context = null) {
     return new BusinessLogicError(message, rule, context);
   }
+
+  /**
+   * Create referee level validation error
+   */
+  static invalidRefereeLevel(level) {
+    return new ValidationError(
+      `Invalid referee level: ${level}. Must be one of: Rookie, Junior, Senior`,
+      { 
+        field: 'new_referee_level', 
+        value: level, 
+        allowed: ['Rookie', 'Junior', 'Senior'] 
+      }
+    );
+  }
+
+  /**
+   * Create referee role error
+   */
+  static refereeRoleError(message, operation = null, roleData = null) {
+    return new BusinessLogicError(
+      message,
+      'REFEREE_ROLE_OPERATION',
+      { operation, roleData }
+    );
+  }
+
+  /**
+   * Create white whistle logic error
+   */
+  static whiteWhistleError(level, flag, reason) {
+    return new BusinessLogicError(
+      `White whistle configuration invalid for ${level} level: ${reason}`,
+      'WHITE_WHISTLE_LOGIC',
+      { level, flag, reason }
+    );
+  }
 }
 
 /**

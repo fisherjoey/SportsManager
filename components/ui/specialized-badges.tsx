@@ -102,7 +102,7 @@ export function StatusBadge({ status, children, className, showIcon = false }: S
 
 // Level Badge Component
 interface LevelBadgeProps {
-  level: 'Recreational' | 'Competitive' | 'Elite' | 'Rookie' | 'Junior' | 'Senior' | string
+  level: 'Recreational' | 'Competitive' | 'Elite' | 'Rookie' | 'Junior' | 'Senior' | 'Learning' | 'Learning+' | 'Growing' | 'Growing+' | 'Teaching' | 'Expert' | string
   children?: React.ReactNode
   className?: string
   showIcon?: boolean
@@ -110,6 +110,7 @@ interface LevelBadgeProps {
 
 export function LevelBadge({ level, children, className, showIcon = false }: LevelBadgeProps) {
   const levelConfig = {
+    // Legacy game levels
     'Recreational': {
       className: 'bg-green-100 text-green-800 border-green-200'
     },
@@ -119,14 +120,34 @@ export function LevelBadge({ level, children, className, showIcon = false }: Lev
     'Elite': {
       className: 'bg-red-100 text-red-800 border-red-200'
     },
+    // New referee levels
     'Rookie': {
-      className: 'bg-blue-100 text-blue-800 border-blue-200'
+      className: 'bg-green-100 text-green-800 border-green-200'
     },
     'Junior': {
-      className: 'bg-purple-100 text-purple-800 border-purple-200'
+      className: 'bg-blue-100 text-blue-800 border-blue-200'
     },
     'Senior': {
+      className: 'bg-purple-100 text-purple-800 border-purple-200'
+    },
+    // Legacy referee levels
+    'Learning': {
+      className: 'bg-green-100 text-green-800 border-green-200'
+    },
+    'Learning+': {
+      className: 'bg-blue-100 text-blue-800 border-blue-200'
+    },
+    'Growing': {
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    },
+    'Growing+': {
       className: 'bg-orange-100 text-orange-800 border-orange-200'
+    },
+    'Teaching': {
+      className: 'bg-purple-100 text-purple-800 border-purple-200'
+    },
+    'Expert': {
+      className: 'bg-red-100 text-red-800 border-red-200'
     }
   }
 
