@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Calendar, Clock, Users } from 'lucide-react'
+import { UserPlus, Calendar, Clock, Users, Whistle } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -113,7 +113,7 @@ export function RefereeManagement() {
       name: referee.name,
       email: referee.email,
       phone: referee.phone,
-      certificationLevel: referee.certificationLevel || '',
+      certificationLevel: referee.new_referee_level || referee.certificationLevel || '',
       location: referee.location,
       notes: referee.notes || '',
       maxDistance: referee.maxDistance,
@@ -135,7 +135,7 @@ export function RefereeManagement() {
         name: editForm.name,
         email: editForm.email,
         phone: editForm.phone,
-        level: editForm.certificationLevel,
+        new_referee_level: editForm.certificationLevel,
         location: editForm.location,
         notes: editForm.notes,
         max_distance: editForm.maxDistance,
@@ -192,8 +192,8 @@ export function RefereeManagement() {
       color: 'text-orange-600'
     },
     {
-      title: 'Elite Level',
-      value: Array.isArray(referees) ? referees.filter((r) => r.certificationLevel === 'Elite').length : 0,
+      title: 'Senior Level',
+      value: Array.isArray(referees) ? referees.filter((r) => r.new_referee_level === 'Senior' || r.level === 'Expert').length : 0,
       icon: UserPlus,
       color: 'text-purple-600'
     }
@@ -208,9 +208,9 @@ export function RefereeManagement() {
       accessor: (referee) => (
         <div>
           <div className="font-medium text-sm truncate">{referee.name}</div>
-          {referee.isWhiteWhistle && (
+          {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
             <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
-              <span className="inline-block w-2 h-2 bg-white border border-gray-400 rounded-full mr-1"></span>
+              <Whistle className="h-3 w-3 text-white fill-current mr-1" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
               White Whistle
             </div>
           )}
@@ -234,6 +234,11 @@ export function RefereeManagement() {
       filterType: 'select',
       filterOptions: [
         { value: 'all', label: 'All Levels' },
+        // New levels
+        { value: 'Rookie', label: 'Rookie' },
+        { value: 'Junior', label: 'Junior' },
+        { value: 'Senior', label: 'Senior' },
+        // Legacy levels
         { value: 'Learning', label: 'Learning' },
         { value: 'Learning+', label: 'Learning+' },
         { value: 'Growing', label: 'Growing' },
@@ -242,8 +247,14 @@ export function RefereeManagement() {
         { value: 'Expert', label: 'Expert' }
       ],
       accessor: (referee) => {
-        const level = referee.level
+        // Prefer new level system, fallback to legacy
+        const level = referee.new_referee_level || referee.level
         const levelColors = {
+          // New levels
+          'Rookie': 'bg-green-100 text-green-800 border-green-200',
+          'Junior': 'bg-blue-100 text-blue-800 border-blue-200',
+          'Senior': 'bg-purple-100 text-purple-800 border-purple-200',
+          // Legacy levels
           'Learning': 'bg-green-100 text-green-800 border-green-200',
           'Learning+': 'bg-blue-100 text-blue-800 border-blue-200',
           'Growing': 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -253,12 +264,17 @@ export function RefereeManagement() {
         }
         
         return (
-          <Badge 
-            variant="outline" 
-            className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
-          >
-            {level}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
+            >
+              {level}
+            </Badge>
+            {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
+              <Whistle className="h-3 w-3 text-white fill-current" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
+            )}
+          </div>
         )
       }
     },
@@ -296,18 +312,33 @@ export function RefereeManagement() {
         { value: 'Referee', label: 'Referee' },
         { value: 'Evaluator', label: 'Evaluator' },
         { value: 'Mentor', label: 'Mentor' },
-        { value: 'Trainer', label: 'Trainer' },
-        { value: 'Referee Coach', label: 'Referee Coach' }
+        { value: 'Regional Lead', label: 'Regional Lead' },
+        { value: 'Assignor', label: 'Assignor' },
+        { value: 'Inspector', label: 'Inspector' }
       ],
       accessor: (referee) => {
-        const roles = referee.roles || ['Referee']
+        // Prefer new role system, fallback to legacy
+        const roles = referee.role_names || referee.roles || ['Referee']
+        
+        const roleColors = {
+          'Referee': 'bg-blue-100 text-blue-800',
+          'Evaluator': 'bg-green-100 text-green-800',
+          'Mentor': 'bg-purple-100 text-purple-800',
+          'Regional Lead': 'bg-orange-100 text-orange-800',
+          'Assignor': 'bg-red-100 text-red-800',
+          'Inspector': 'bg-gray-100 text-gray-800'
+        }
         
         return (
           <div className="space-y-1">
             {roles.slice(0, 2).map((role, index) => (
-              <div key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md truncate">
+              <Badge 
+                key={index} 
+                variant="secondary"
+                className={`text-xs ${roleColors[role as keyof typeof roleColors] || 'bg-secondary text-secondary-foreground'}`}
+              >
                 {role}
-              </div>
+              </Badge>
             ))}
             {roles.length > 2 && (
               <div className="text-xs text-muted-foreground">
@@ -522,9 +553,9 @@ export function RefereeManagement() {
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Recreational">Recreational</SelectItem>
-                  <SelectItem value="Competitive">Competitive</SelectItem>
-                  <SelectItem value="Elite">Elite</SelectItem>
+                  <SelectItem value="Rookie">Rookie</SelectItem>
+                  <SelectItem value="Junior">Junior</SelectItem>
+                  <SelectItem value="Senior">Senior</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -607,8 +638,16 @@ export function RefereeManagement() {
               </div>
               
               <div>
-                <Label className="font-semibold">Certification Level</Label>
-                <Badge variant="secondary">{selectedReferee.certificationLevel}</Badge>
+                <Label className="font-semibold">Level</Label>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary">{selectedReferee.new_referee_level || selectedReferee.certificationLevel}</Badge>
+                  {(selectedReferee.should_display_white_whistle || selectedReferee.isWhiteWhistle) && (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Whistle className="h-3 w-3 text-white fill-current mr-1" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
+                      White Whistle
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
@@ -621,6 +660,17 @@ export function RefereeManagement() {
                 <p className="text-sm text-muted-foreground">{selectedReferee.maxDistance} miles</p>
               </div>
               
+              <div>
+                <Label className="font-semibold">Roles</Label>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {(selectedReferee.role_names || selectedReferee.roles || ['Referee']).map((role, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <Label className="font-semibold">Status</Label>
                 <Badge variant={selectedReferee.isAvailable ? 'default' : 'secondary'}>

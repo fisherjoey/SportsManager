@@ -29,7 +29,7 @@ function CompleteSignupContent() {
     phone: '',
     location: '',
     postalCode: '',
-    level: 'Recreational',
+    level: 'Rookie',
     maxDistance: 25
   })
 
@@ -90,7 +90,7 @@ function CompleteSignupContent() {
         phone: formData.phone || undefined,
         location: formData.location || undefined,
         postalCode: formData.postalCode || undefined,
-        level: formData.level,
+        new_referee_level: formData.level,
         maxDistance: formData.maxDistance
       })
 
@@ -234,9 +234,9 @@ function CompleteSignupContent() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Recreational">Recreational</SelectItem>
-                        <SelectItem value="Competitive">Competitive</SelectItem>
-                        <SelectItem value="Elite">Elite</SelectItem>
+                        <SelectItem value="Rookie">Rookie</SelectItem>
+                        <SelectItem value="Junior">Junior</SelectItem>
+                        <SelectItem value="Senior">Senior</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
