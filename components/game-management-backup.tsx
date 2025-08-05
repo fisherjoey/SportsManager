@@ -462,7 +462,7 @@ export function GameManagement() {
           onClose={() => setGameToEdit(null)}
         />
       )}
-    </div>
+    </PageLayout>
   )
 }
 

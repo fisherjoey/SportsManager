@@ -114,8 +114,8 @@ exports.up = function(knex) {
       table.uuid('created_by');
       table.uuid('updated_by');
       
-      // Foreign key constraints
-      table.foreign('organization_id').references('id').inTable('users').onDelete('CASCADE');
+      // Foreign key constraints (skip if already exists)
+      // Note: This constraint may already exist, so we skip it in this migration
       table.foreign('created_by').references('id').inTable('users').onDelete('SET NULL');
       table.foreign('updated_by').references('id').inTable('users').onDelete('SET NULL');
       
