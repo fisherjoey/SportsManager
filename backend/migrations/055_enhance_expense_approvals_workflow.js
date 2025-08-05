@@ -2,8 +2,14 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = function(knex) {
-  return knex.schema
+exports.up = async function(knex) {
+  // TEMPORARILY DISABLED - This migration has conflicts
+  // TODO: Split this into multiple smaller migrations
+  console.log('⚠️  Migration 055 temporarily disabled to fix conflicts');
+  return Promise.resolve();
+  
+  // First, enhance the existing expense_approvals table
+  await knex.schema
     // First, enhance the existing expense_approvals table
     .alterTable('expense_approvals', function(table) {
       // Multi-stage approval support
@@ -114,8 +120,58 @@ exports.up = function(knex) {
       table.uuid('created_by');
       table.uuid('updated_by');
       
-      // Foreign key constraints (skip if already exists)
-      // Note: This constraint may already exist, so we skip it in this migration
+      // Foreign key constraints will be added separately if columns exist
+      // Note: Skip foreign keys here since table might already exist without these columns
+      
+      // Indexes
+      table.index(['organization_id', 'is_active']);
+      table.index(['workflow_type', 'is_active']);
+      table.index(['amount_threshold_min', 'amount_threshold_max']);
+      table.index('is_default');
+    })
+  
+  // Create approval_workflows table if it doesn't exist
+  const workflowTableExists = await knex.schema.hasTable('approval_workflows');
+  if (!workflowTableExists) {
+    await knex.schema.createTable('approval_workflows', function(table) {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('organization_id').notNullable();
+      
+      // Workflow identification
+      table.string('name').notNullable(); // "Standard Expense Approval", "High Value Purchase", etc.
+      table.text('description');
+      table.string('workflow_type').defaultTo('expense'); // expense, purchase_order, budget, etc.
+      table.boolean('is_active').defaultTo(true);
+      table.boolean('is_default').defaultTo(false);
+      
+      // Trigger conditions
+      table.json('trigger_conditions'); // When this workflow applies
+      table.decimal('amount_threshold_min', 10, 2); // Minimum amount for this workflow
+      table.decimal('amount_threshold_max', 10, 2); // Maximum amount for this workflow
+      table.json('category_restrictions'); // Which categories this applies to
+      table.json('user_restrictions'); // Which users this applies to
+      table.json('payment_method_restrictions'); // Which payment methods trigger this
+      
+      // Workflow definition
+      table.json('workflow_stages'); // Definition of all approval stages
+      table.integer('total_stages').notNullable();
+      table.boolean('allow_parallel_approval').defaultTo(false);
+      table.boolean('allow_delegation').defaultTo(true);
+      table.integer('default_escalation_hours').defaultTo(48);
+      
+      // Notification settings
+      table.json('notification_config');
+      table.boolean('send_reminders').defaultTo(true);
+      table.integer('reminder_frequency_hours').defaultTo(24);
+      table.integer('max_reminders').defaultTo(3);
+      
+      // Timestamps and audit
+      table.timestamp('created_at').defaultTo(knex.fn.now());
+      table.timestamp('updated_at').defaultTo(knex.fn.now());
+      table.uuid('created_by');
+      table.uuid('updated_by');
+      
+      // Foreign key constraints for new table only
       table.foreign('created_by').references('id').inTable('users').onDelete('SET NULL');
       table.foreign('updated_by').references('id').inTable('users').onDelete('SET NULL');
       
@@ -125,9 +181,10 @@ exports.up = function(knex) {
       table.index(['amount_threshold_min', 'amount_threshold_max']);
       table.index('is_default');
     })
-    
-    // Create approval stage definitions table
-    .createTable('approval_stage_definitions', function(table) {
+  }
+  
+  // Create approval stage definitions table
+  await knex.schema.createTable('approval_stage_definitions', function(table) {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
       table.uuid('workflow_id').notNullable();
       
@@ -168,7 +225,7 @@ exports.up = function(knex) {
       
       // Unique constraint
       table.unique(['workflow_id', 'stage_number']);
-    });
+    })
 };
 
 /**

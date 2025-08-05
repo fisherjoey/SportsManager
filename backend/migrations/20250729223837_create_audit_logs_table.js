@@ -3,7 +3,11 @@
  * @returns { Promise<void> }
  */
 exports.up = function(knex) {
-  return knex.schema.createTable('audit_logs', function(table) {
+  // TEMPORARILY DISABLED - audit_logs table already exists
+  console.log('⚠️  Audit logs migration skipped - table already exists');
+  return Promise.resolve();
+  
+  return knex.schema.createTableIfNotExists('audit_logs', function(table) {
     table.increments('id').primary();
     table.string('event_type', 100).notNullable().index();
     table.uuid('user_id').nullable().index().references('id').inTable('users').onDelete('SET NULL');

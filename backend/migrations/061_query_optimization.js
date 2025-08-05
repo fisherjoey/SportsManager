@@ -31,7 +31,7 @@ exports.up = async function(knex) {
     
     if (!indexNames.includes('idx_game_assignments_compound')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_game_assignments_compound 
+        CREATE INDEX  IF NOT EXISTS idx_game_assignments_compound 
         ON game_assignments(game_id, user_id, status);
       `);
       console.log('✓ Created idx_game_assignments_compound for complex assignment queries');
@@ -40,7 +40,7 @@ exports.up = async function(knex) {
     // Additional compound index for assignment lookups by user and status with date
     if (!indexNames.includes('idx_assignments_user_status_date')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_assignments_user_status_date 
+        CREATE INDEX  IF NOT EXISTS idx_assignments_user_status_date 
         ON game_assignments(user_id, status, created_at DESC);
       `);
       console.log('✓ Created idx_assignments_user_status_date for user assignment history');
@@ -58,7 +58,7 @@ exports.up = async function(knex) {
     
     if (!indexNames.includes('idx_games_compound')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_games_compound 
+        CREATE INDEX  IF NOT EXISTS idx_games_compound 
         ON games(location, game_date, status);
       `);
       console.log('✓ Created idx_games_compound for location-date-status queries');
@@ -67,7 +67,7 @@ exports.up = async function(knex) {
     // Additional compound index for game scheduling queries
     if (!indexNames.includes('idx_games_date_level_status')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_games_date_level_status 
+        CREATE INDEX  IF NOT EXISTS idx_games_date_level_status 
         ON games(game_date, level, status) 
         WHERE status IN ('unassigned', 'assigned');
       `);
@@ -84,7 +84,7 @@ exports.up = async function(knex) {
     
     if (gameColumnNames.includes('location_id') && !indexNames.includes('idx_games_location_date_level')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_games_location_date_level 
+        CREATE INDEX  IF NOT EXISTS idx_games_location_date_level 
         ON games(location_id, game_date, level) 
         WHERE location_id IS NOT NULL;
       `);
@@ -115,7 +115,7 @@ exports.up = async function(knex) {
         userColumnNames.includes('organization_id') && 
         !indexNames.includes('idx_users_compound')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_compound 
+        CREATE INDEX  IF NOT EXISTS idx_users_compound 
         ON users(role, is_available, organization_id);
       `);
       console.log('✓ Created idx_users_compound for role-availability-org queries');
@@ -126,7 +126,7 @@ exports.up = async function(knex) {
         userColumnNames.includes('organization_id') && 
         !indexNames.includes('idx_users_role_org_created')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_role_org_created 
+        CREATE INDEX  IF NOT EXISTS idx_users_role_org_created 
         ON users(role, organization_id, created_at DESC) 
         WHERE role = 'referee';
       `);
@@ -145,7 +145,7 @@ exports.up = async function(knex) {
     
     if (!indexNames.includes('idx_budgets_period_category_status')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_budgets_period_category_status 
+        CREATE INDEX  IF NOT EXISTS idx_budgets_period_category_status 
         ON budgets(budget_period_id, category_id, status);
       `);
       console.log('✓ Created idx_budgets_period_category_status for budget reporting');
@@ -153,7 +153,7 @@ exports.up = async function(knex) {
 
     if (!indexNames.includes('idx_budgets_org_status_owner')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_budgets_org_status_owner 
+        CREATE INDEX  IF NOT EXISTS idx_budgets_org_status_owner 
         ON budgets(organization_id, status, owner_id) 
         WHERE owner_id IS NOT NULL;
       `);
@@ -172,7 +172,7 @@ exports.up = async function(knex) {
     
     if (!indexNames.includes('idx_expense_data_org_date_category')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_expense_data_org_date_category 
+        CREATE INDEX  IF NOT EXISTS idx_expense_data_org_date_category 
         ON expense_data(organization_id, transaction_date DESC, category_id) 
         WHERE category_id IS NOT NULL;
       `);
@@ -181,7 +181,7 @@ exports.up = async function(knex) {
 
     if (!indexNames.includes('idx_expense_data_user_reimbursable_date')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_expense_data_user_reimbursable_date 
+        CREATE INDEX  IF NOT EXISTS idx_expense_data_user_reimbursable_date 
         ON expense_data(user_id, reimbursable, transaction_date DESC) 
         WHERE reimbursable = true;
       `);
@@ -200,7 +200,7 @@ exports.up = async function(knex) {
     
     if (!teamsIndexNames.includes('idx_teams_league_rank_name')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_teams_league_rank_name 
+        CREATE INDEX  IF NOT EXISTS idx_teams_league_rank_name 
         ON teams(league_id, rank, name);
       `);
       console.log('✓ Created idx_teams_league_rank_name for team standings');
@@ -218,7 +218,7 @@ exports.up = async function(knex) {
     
     if (!indexNames.includes('idx_budget_periods_org_status_dates')) {
       await knex.schema.raw(`
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_budget_periods_org_status_dates 
+        CREATE INDEX  IF NOT EXISTS idx_budget_periods_org_status_dates 
         ON budget_periods(organization_id, status, start_date, end_date);
       `);
       console.log('✓ Created idx_budget_periods_org_status_dates for period queries');
@@ -231,19 +231,19 @@ exports.up = async function(knex) {
 exports.down = function(knex) {
   return knex.schema.raw(`
     -- Drop all composite indexes created in up migration
-    -- Note: Using CONCURRENTLY and IF EXISTS to prevent blocking and errors
-    DROP INDEX CONCURRENTLY IF EXISTS idx_budget_periods_org_status_dates;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_teams_league_rank_name;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_expense_data_user_reimbursable_date;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_expense_data_org_date_category;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_budgets_org_status_owner;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_budgets_period_category_status;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_users_role_org_created;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_users_compound;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_games_location_date_level;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_games_date_level_status;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_games_compound;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_assignments_user_status_date;
-    DROP INDEX CONCURRENTLY IF EXISTS idx_game_assignments_compound;
+    -- Note: Using  and IF EXISTS to prevent blocking and errors
+    DROP INDEX  IF EXISTS idx_budget_periods_org_status_dates;
+    DROP INDEX  IF EXISTS idx_teams_league_rank_name;
+    DROP INDEX  IF EXISTS idx_expense_data_user_reimbursable_date;
+    DROP INDEX  IF EXISTS idx_expense_data_org_date_category;
+    DROP INDEX  IF EXISTS idx_budgets_org_status_owner;
+    DROP INDEX  IF EXISTS idx_budgets_period_category_status;
+    DROP INDEX  IF EXISTS idx_users_role_org_created;
+    DROP INDEX  IF EXISTS idx_users_compound;
+    DROP INDEX  IF EXISTS idx_games_location_date_level;
+    DROP INDEX  IF EXISTS idx_games_date_level_status;
+    DROP INDEX  IF EXISTS idx_games_compound;
+    DROP INDEX  IF EXISTS idx_assignments_user_status_date;
+    DROP INDEX  IF EXISTS idx_game_assignments_compound;
   `);
 };
