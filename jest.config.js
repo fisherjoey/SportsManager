@@ -13,7 +13,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/backend/',
-    '<rootDir>/tests/frontend/' // Exclude Playwright tests
+    '<rootDir>/tests/' // Exclude all tests directory (Playwright tests)
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
