@@ -3,6 +3,10 @@
  */
 
 exports.up = function(knex) {
+  // TEMPORARILY DISABLED - Index conflicts  
+  console.log('⚠️  AI performance indexes migration skipped - conflicts with existing indexes');
+  return Promise.resolve();
+  
   return Promise.all([
     // Index for game date and time queries (for conflict detection)
     knex.schema.raw(`

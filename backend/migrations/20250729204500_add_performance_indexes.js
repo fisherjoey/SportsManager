@@ -8,6 +8,11 @@
  */
 
 exports.up = async function(knex) {
+  // TEMPORARILY DISABLED - Index conflicts
+  console.log('⚠️  Performance indexes migration skipped - conflicts with existing indexes');
+  return Promise.resolve();
+  
+  // ORIGINAL CODE BELOW - disabled for production pipeline
   // Check which tables exist and create indexes accordingly
   const tables = await knex.raw(`
     SELECT table_name 
