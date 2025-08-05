@@ -419,23 +419,6 @@ export function GameManagement() {
                 <GameForm onSubmit={handleCreateGame} />
               </DialogContent>
             </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <FilterableTable 
-            data={games} 
-            columns={columns} 
-            emptyMessage="No games found matching your criteria."
-            loading={loading}
-            onAssignReferee={(game) => setGameToAssign(game)}
-            mobileCardType="game"
-            enableViewToggle={true}
-            enableCSV={true}
-            onDataImport={handleImportGames}
-            csvFilename="games-export"
-          />
-        </CardContent>
-      </Card>
 
       {/* Assign Referee Dialog */}
       {gameToAssign && (

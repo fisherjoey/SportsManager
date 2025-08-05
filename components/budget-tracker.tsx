@@ -228,7 +228,7 @@ function BudgetTrackerInner() {
   }
 
   // Safe operation wrapper with TypeScript error handling
-  const safeOperation = async <T>(
+  const safeOperation = async <T extends unknown>(
     operation: () => Promise<T>,
     fallback: T,
     operationName: string
