@@ -6,6 +6,10 @@
  */
 
 exports.up = async function(knex) {
+  // TEMPORARILY DISABLED - Column conflicts with existing schema
+  console.log('⚠️  Expense performance indexes migration skipped - column mismatches');
+  return Promise.resolve();
+  
   console.log('Creating expense system performance indexes...');
 
   // Check which tables exist and create indexes accordingly
