@@ -208,11 +208,11 @@ router.post('/periods',
         .where('organization_id', organizationId)
         .where(function() {
           this.whereBetween('start_date', [value.start_date, value.end_date])
-              .orWhereBetween('end_date', [value.start_date, value.end_date])
-              .orWhere(function() {
-                this.where('start_date', '<=', value.start_date)
-                    .andWhere('end_date', '>=', value.end_date);
-              });
+            .orWhereBetween('end_date', [value.start_date, value.end_date])
+            .orWhere(function() {
+              this.where('start_date', '<=', value.start_date)
+                .andWhere('end_date', '>=', value.end_date);
+            });
         })
         .whereNot('status', 'archived')
         .first();
@@ -419,7 +419,7 @@ router.get('/', authenticateToken, async (req, res) => {
         'bc.code as category_code',
         'bc.category_type',
         'bc.color_code as category_color',
-        db.raw("COALESCE(owner.email, 'Unassigned') as owner_name")
+        db.raw('COALESCE(owner.email, \'Unassigned\') as owner_name')
       );
 
     // Apply filters with validation to prevent SQL injection
@@ -467,10 +467,18 @@ router.get('/', authenticateToken, async (req, res) => {
       .where('b.organization_id', organizationId);
 
     // Apply same validated filters to count query
-    if (period_id) countQuery = countQuery.where('b.budget_period_id', period_id);
-    if (category_id) countQuery = countQuery.where('b.category_id', category_id);
-    if (status) countQuery = countQuery.where('b.status', status);
-    if (owner_id) countQuery = countQuery.where('b.owner_id', owner_id);
+    if (period_id) {
+      countQuery = countQuery.where('b.budget_period_id', period_id);
+    }
+    if (category_id) {
+      countQuery = countQuery.where('b.category_id', category_id);
+    }
+    if (status) {
+      countQuery = countQuery.where('b.status', status);
+    }
+    if (owner_id) {
+      countQuery = countQuery.where('b.owner_id', owner_id);
+    }
     
     const [budgets, [{ total }]] = await Promise.all([
       query.clone().orderBy('bc.sort_order').orderBy('b.name').limit(limit).offset(offset),
@@ -504,10 +512,18 @@ router.get('/', authenticateToken, async (req, res) => {
         .where('b.organization_id', organizationId);
 
       // Apply same validated filters to summary query
-      if (period_id) summaryQuery.where('b.budget_period_id', period_id);
-      if (category_id) summaryQuery.where('b.category_id', category_id);
-      if (status) summaryQuery.where('b.status', status);
-      if (owner_id) summaryQuery.where('b.owner_id', owner_id);
+      if (period_id) {
+        summaryQuery.where('b.budget_period_id', period_id);
+      }
+      if (category_id) {
+        summaryQuery.where('b.category_id', category_id);
+      }
+      if (status) {
+        summaryQuery.where('b.status', status);
+      }
+      if (owner_id) {
+        summaryQuery.where('b.owner_id', owner_id);
+      }
 
       [summary] = await summaryQuery
         .select([
@@ -645,7 +661,7 @@ router.post('/',
           'bp.name as period_name',
           'bc.name as category_name',
           'bc.code as category_code',
-          db.raw("COALESCE(owner.email, 'Unassigned') as owner_name")
+          db.raw('COALESCE(owner.email, \'Unassigned\') as owner_name')
         )
         .first();
 
@@ -692,7 +708,7 @@ router.get('/:id', authenticateToken, checkBudgetAccess('read'), async (req, res
         'bc.code as category_code',
         'bc.category_type',
         'bc.color_code as category_color',
-        db.raw("COALESCE(owner.email, 'Unassigned') as owner_name"),
+        db.raw('COALESCE(owner.email, \'Unassigned\') as owner_name'),
         db.raw('(b.allocated_amount - b.committed_amount - b.actual_spent - b.reserved_amount) as calculated_available')
       )
       .first();

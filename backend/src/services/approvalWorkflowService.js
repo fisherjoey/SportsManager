@@ -622,7 +622,7 @@ class ApprovalWorkflowService {
     const notificationTargets = targetUser ? [targetUser] : requiredApprovers;
     
     console.log(`Sending approval notification for expense ${approval.expense_data_id} to:`, 
-                notificationTargets.map(u => u.email || u.id));
+      notificationTargets.map(u => u.email || u.id));
     
     // TODO: Integrate with email service, Slack, etc.
   }
@@ -727,8 +727,8 @@ class ApprovalWorkflowService {
       .leftJoin('users', 'expense_data.user_id', 'users.id')
       .where('expense_approvals.stage_status', 'pending')
       .where(function() {
-        this.whereRaw("JSON_EXTRACT(expense_approvals.required_approvers, '$[*].id') LIKE ?", [`%"${userId}"%`])
-            .orWhere('expense_approvals.delegated_to', userId);
+        this.whereRaw('JSON_EXTRACT(expense_approvals.required_approvers, \'$[*].id\') LIKE ?', [`%"${userId}"%`])
+          .orWhere('expense_approvals.delegated_to', userId);
       })
       .select([
         'expense_approvals.*',

@@ -105,28 +105,28 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req, re
     };
 
     switch (tournament_type) {
-      case 'round_robin':
-        tournament = generateRoundRobin(teams, options);
-        break;
+    case 'round_robin':
+      tournament = generateRoundRobin(teams, options);
+      break;
       
-      case 'single_elimination':
-        tournament = generateSingleElimination(teams, options);
-        break;
+    case 'single_elimination':
+      tournament = generateSingleElimination(teams, options);
+      break;
       
-      case 'swiss_system':
-        tournament = generateSwissSystem(teams, { ...options, rounds });
-        break;
+    case 'swiss_system':
+      tournament = generateSwissSystem(teams, { ...options, rounds });
+      break;
       
-      case 'group_stage_playoffs':
-        tournament = generateGroupStagePlayoffs(teams, {
-          ...options,
-          groupSize: group_size,
-          advancePerGroup: advance_per_group
-        });
-        break;
+    case 'group_stage_playoffs':
+      tournament = generateGroupStagePlayoffs(teams, {
+        ...options,
+        groupSize: group_size,
+        advancePerGroup: advance_per_group
+      });
+      break;
       
-      default:
-        return res.status(400).json({ error: 'Invalid tournament type' });
+    default:
+      return res.status(400).json({ error: 'Invalid tournament type' });
     }
 
     // Add tournament metadata to games
@@ -312,57 +312,57 @@ router.get('/estimate', (req, res) => {
     let estimate = {};
 
     switch (tournament_type) {
-      case 'round_robin':
-        estimate = {
-          total_games: teams * (teams - 1) / 2,
-          games_per_team: teams - 1,
-          estimated_days: Math.ceil((teams * (teams - 1) / 2) / games_per_day),
-          rounds: teams - 1
-        };
-        break;
+    case 'round_robin':
+      estimate = {
+        total_games: teams * (teams - 1) / 2,
+        games_per_team: teams - 1,
+        estimated_days: Math.ceil((teams * (teams - 1) / 2) / games_per_day),
+        rounds: teams - 1
+      };
+      break;
 
-      case 'single_elimination':
-        const nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(teams)));
-        estimate = {
-          total_games: nextPowerOfTwo - 1,
-          max_games_per_team: Math.log2(nextPowerOfTwo),
-          estimated_days: Math.ceil(Math.log2(nextPowerOfTwo)),
-          rounds: Math.log2(nextPowerOfTwo),
-          byes_needed: nextPowerOfTwo - teams
-        };
-        break;
+    case 'single_elimination':
+      const nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(teams)));
+      estimate = {
+        total_games: nextPowerOfTwo - 1,
+        max_games_per_team: Math.log2(nextPowerOfTwo),
+        estimated_days: Math.ceil(Math.log2(nextPowerOfTwo)),
+        rounds: Math.log2(nextPowerOfTwo),
+        byes_needed: nextPowerOfTwo - teams
+      };
+      break;
 
-      case 'swiss_system':
-        const swissRounds = parseInt(rounds) || Math.ceil(Math.log2(teams)) + 1;
-        estimate = {
-          total_games: (teams * swissRounds) / 2,
-          games_per_team: swissRounds,
-          estimated_days: Math.ceil(swissRounds),
-          rounds: swissRounds
-        };
-        break;
+    case 'swiss_system':
+      const swissRounds = parseInt(rounds) || Math.ceil(Math.log2(teams)) + 1;
+      estimate = {
+        total_games: (teams * swissRounds) / 2,
+        games_per_team: swissRounds,
+        estimated_days: Math.ceil(swissRounds),
+        rounds: swissRounds
+      };
+      break;
 
-      case 'group_stage_playoffs':
-        const groupSz = parseInt(group_size) || 4;
-        const advancePerGrp = parseInt(advance_per_group) || 2;
-        const numGroups = Math.ceil(teams / groupSz);
-        const groupGames = numGroups * (groupSz * (groupSz - 1) / 2);
-        const advancingTeams = numGroups * advancePerGrp;
-        const playoffGames = advancingTeams > 1 ? advancingTeams - 1 : 0;
+    case 'group_stage_playoffs':
+      const groupSz = parseInt(group_size) || 4;
+      const advancePerGrp = parseInt(advance_per_group) || 2;
+      const numGroups = Math.ceil(teams / groupSz);
+      const groupGames = numGroups * (groupSz * (groupSz - 1) / 2);
+      const advancingTeams = numGroups * advancePerGrp;
+      const playoffGames = advancingTeams > 1 ? advancingTeams - 1 : 0;
         
-        estimate = {
-          total_games: groupGames + playoffGames,
-          group_stage_games: groupGames,
-          playoff_games: playoffGames,
-          groups: numGroups,
-          advancing_teams: advancingTeams,
-          estimated_days: Math.ceil((groupGames + playoffGames) / games_per_day) + 1,
-          max_games_per_team: (groupSz - 1) + Math.log2(Math.pow(2, Math.ceil(Math.log2(advancingTeams))))
-        };
-        break;
+      estimate = {
+        total_games: groupGames + playoffGames,
+        group_stage_games: groupGames,
+        playoff_games: playoffGames,
+        groups: numGroups,
+        advancing_teams: advancingTeams,
+        estimated_days: Math.ceil((groupGames + playoffGames) / games_per_day) + 1,
+        max_games_per_team: (groupSz - 1) + Math.log2(Math.pow(2, Math.ceil(Math.log2(advancingTeams))))
+      };
+      break;
 
-      default:
-        return res.status(400).json({ error: 'Invalid tournament type' });
+    default:
+      return res.status(400).json({ error: 'Invalid tournament type' });
     }
 
     res.json({
@@ -382,19 +382,19 @@ router.get('/estimate', (req, res) => {
 // Helper functions
 function getPayRateForLevel(level) {
   switch (level) {
-    case 'Recreational': return 25;
-    case 'Competitive': return 35;
-    case 'Elite': return 50;
-    default: return 25;
+  case 'Recreational': return 25;
+  case 'Competitive': return 35;
+  case 'Elite': return 50;
+  default: return 25;
   }
 }
 
 function getRefereeCountForLevel(level) {
   switch (level) {
-    case 'Recreational': return 2;
-    case 'Competitive': return 2;
-    case 'Elite': return 3;
-    default: return 2;
+  case 'Recreational': return 2;
+  case 'Competitive': return 2;
+  case 'Elite': return 3;
+  default: return 2;
   }
 }
 

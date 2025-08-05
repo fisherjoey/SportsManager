@@ -99,7 +99,7 @@ class EncryptionService {
 
       // Generate or retrieve data key for this table/field combination
       const context = `${tableName}.${fieldName}`;
-      let keyInfo = await this.getOrCreateDataKey(context);
+      const keyInfo = await this.getOrCreateDataKey(context);
       
       // Get the actual encryption key
       const dataKey = await this.getDataKey(keyInfo.keyId);

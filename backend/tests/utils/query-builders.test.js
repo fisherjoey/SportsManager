@@ -442,8 +442,12 @@ describe('QueryBuilder', () => {
       let cloneCallCount = 0;
       mockQuery.clone.mockImplementation(() => {
         cloneCallCount++;
-        if (cloneCallCount === 1) return dataQuery;
-        if (cloneCallCount === 2) return countQuery;
+        if (cloneCallCount === 1) {
+          return dataQuery;
+        }
+        if (cloneCallCount === 2) {
+          return countQuery;
+        }
         return createMockQuery();
       });
       

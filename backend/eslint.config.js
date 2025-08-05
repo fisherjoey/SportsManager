@@ -96,21 +96,7 @@ module.exports = [
         ignoreTemplateLiterals: true
       }],
       
-      // Documentation
-      'require-jsdoc': ['warn', {
-        require: {
-          FunctionDeclaration: true,
-          MethodDefinition: true,
-          ClassDeclaration: true,
-          ArrowFunctionExpression: false,
-          FunctionExpression: false
-        }
-      }],
-      'valid-jsdoc': ['warn', {
-        requireReturn: false,
-        requireParamDescription: false,
-        requireReturnDescription: false
-      }]
+      // Documentation rules removed (deprecated in ESLint 9.x)
     }
   },
   {
@@ -132,7 +118,6 @@ module.exports = [
       // Relax some rules for tests
       'max-len': 'off',
       'no-magic-numbers': 'off',
-      'require-jsdoc': 'off',
       'max-statements': 'off',
       'max-nested-callbacks': 'off',
       'prefer-promise-reject-errors': 'off'
@@ -142,7 +127,6 @@ module.exports = [
     files: ['migrations/**/*.js', 'seeds/**/*.js'],
     rules: {
       // Relax rules for database files
-      'require-jsdoc': 'off',
       'no-console': 'off',
       'max-statements': 'off'
     }

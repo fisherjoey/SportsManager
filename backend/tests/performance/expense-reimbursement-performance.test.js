@@ -69,8 +69,8 @@ describe('Expense Reimbursement Performance Tests', () => {
   });
 
   describe('Large Dataset Performance', () => {
-    let receipts = [];
-    let reimbursements = [];
+    const receipts = [];
+    const reimbursements = [];
 
     beforeAll(async () => {
       // Create large dataset for performance testing
@@ -509,7 +509,7 @@ describe('Expense Reimbursement Performance Tests', () => {
 
     test('should handle database connections efficiently', async () => {
       // Get initial connection count
-      const initialConnections = await db.raw("SELECT count(*) as count FROM pg_stat_activity WHERE state = 'active'")
+      const initialConnections = await db.raw('SELECT count(*) as count FROM pg_stat_activity WHERE state = \'active\'')
         .then(result => result.rows[0].count)
         .catch(() => 0); // Fallback for non-PostgreSQL databases
       
@@ -523,7 +523,7 @@ describe('Expense Reimbursement Performance Tests', () => {
       await Promise.all(requests);
       
       // Check final connection count
-      const finalConnections = await db.raw("SELECT count(*) as count FROM pg_stat_activity WHERE state = 'active'")
+      const finalConnections = await db.raw('SELECT count(*) as count FROM pg_stat_activity WHERE state = \'active\'')
         .then(result => result.rows[0].count)
         .catch(() => 0);
       

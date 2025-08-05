@@ -308,7 +308,7 @@ describe('Security Enhancements', () => {
         .get('/api/health');
 
       expect(response.headers['content-security-policy']).toBeDefined();
-      expect(response.headers['content-security-policy']).toContain("default-src 'self'");
+      expect(response.headers['content-security-policy']).toContain('default-src \'self\'');
     });
   });
 

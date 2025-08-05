@@ -90,7 +90,7 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
   );
 
   // Prepare user data (all referee data is now in the users table)
-  let userData = {
+  const userData = {
     id: user.id,
     email: user.email,
     role: user.role, // Keep for backward compatibility
@@ -206,7 +206,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
     }
 
     // Prepare response user data
-    let responseUserData = {
+    const responseUserData = {
       id: user.id,
       email: user.email,
       role: user.role,
@@ -263,7 +263,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    let userData = {
+    const userData = {
       id: user.id,
       email: user.email,
       role: user.role, // Keep for backward compatibility

@@ -95,14 +95,14 @@ describe('Comprehensive Security Testing', () => {
 
   describe('SQL Injection Protection', () => {
     const sqlInjectionPayloads = [
-      "'; DROP TABLE budgets; --",
-      "' UNION SELECT * FROM users --",
-      "'; UPDATE budgets SET allocated_amount = 999999 WHERE 1=1; --",
-      "1' OR '1'='1",
-      "'; DELETE FROM budget_categories; --",
-      "' OR 1=1 LIMIT 1 OFFSET 0 --",
-      "'; INSERT INTO budgets (name, allocated_amount) VALUES ('hacked', 999999); --",
-      "' UNION ALL SELECT password FROM users --"
+      '\'; DROP TABLE budgets; --',
+      '\' UNION SELECT * FROM users --',
+      '\'; UPDATE budgets SET allocated_amount = 999999 WHERE 1=1; --',
+      '1\' OR \'1\'=\'1',
+      '\'; DELETE FROM budget_categories; --',
+      '\' OR 1=1 LIMIT 1 OFFSET 0 --',
+      '\'; INSERT INTO budgets (name, allocated_amount) VALUES (\'hacked\', 999999); --',
+      '\' UNION ALL SELECT password FROM users --'
     ];
 
     test('Budget endpoints should be protected from SQL injection', async () => {
@@ -134,7 +134,7 @@ describe('Comprehensive Security Testing', () => {
     });
 
     test('Budget search endpoints should sanitize input', async () => {
-      const maliciousSearch = "'; SELECT * FROM users WHERE role='admin'; --";
+      const maliciousSearch = '\'; SELECT * FROM users WHERE role=\'admin\'; --';
       
       const res = await request(app)
         .get('/api/budgets')
@@ -150,7 +150,7 @@ describe('Comprehensive Security Testing', () => {
     });
 
     test('Budget allocation endpoints should prevent SQL injection', async () => {
-      const payload = "'; UPDATE budget_allocations SET allocated_amount = 999999; --";
+      const payload = '\'; UPDATE budget_allocations SET allocated_amount = 999999; --';
       
       const res = await request(app)
         .post(`/api/budgets/${testBudgetId}/allocations`)
@@ -249,7 +249,7 @@ describe('Comprehensive Security Testing', () => {
         'Bearer invalid',
         '', 
         null,
-        'Bearer ' + 'a'.repeat(500) // Extremely long token
+        `Bearer ${  'a'.repeat(500)}` // Extremely long token
       ];
 
       for (const token of invalidTokens) {
@@ -539,7 +539,7 @@ describe('Comprehensive Security Testing', () => {
 
     test('Token should be validated on every request', async () => {
       // Test with tampered token
-      const tamperedToken = adminToken.slice(0, -5) + 'XXXXX';
+      const tamperedToken = `${adminToken.slice(0, -5)  }XXXXX`;
       
       const res = await request(app)
         .get('/api/budgets')

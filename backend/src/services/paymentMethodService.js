@@ -59,7 +59,7 @@ class PaymentMethodService {
     if (filters.maxAmount) {
       query = query.where(function() {
         this.where('spending_limit', '>=', filters.maxAmount)
-            .orWhereNull('spending_limit');
+          .orWhereNull('spending_limit');
       });
     }
 
@@ -303,33 +303,33 @@ class PaymentMethodService {
 
     // Special scoring for different payment method types
     switch (method.type) {
-      case 'person_reimbursement':
-        if (amount < 100) {
-          score += 10;
-          reason += ' - Small amounts typically reimbursed';
-        }
-        break;
+    case 'person_reimbursement':
+      if (amount < 100) {
+        score += 10;
+        reason += ' - Small amounts typically reimbursed';
+      }
+      break;
 
-      case 'credit_card':
-        if (amount >= 50 && amount <= 1000) {
-          score += 15;
-          reason += ' - Ideal range for credit card expenses';
-        }
-        break;
+    case 'credit_card':
+      if (amount >= 50 && amount <= 1000) {
+        score += 15;
+        reason += ' - Ideal range for credit card expenses';
+      }
+      break;
 
-      case 'purchase_order':
-        if (amount >= 200) {
-          score += 10;
-          reason += ' - Large amounts often require PO process';
-        }
-        break;
+    case 'purchase_order':
+      if (amount >= 200) {
+        score += 10;
+        reason += ' - Large amounts often require PO process';
+      }
+      break;
 
-      case 'direct_vendor':
-        if (amount >= 500) {
-          score += 8;
-          reason += ' - Substantial amounts may warrant direct vendor payment';
-        }
-        break;
+    case 'direct_vendor':
+      if (amount >= 500) {
+        score += 8;
+        reason += ' - Substantial amounts may warrant direct vendor payment';
+      }
+      break;
     }
 
     return { score, reason, warning };

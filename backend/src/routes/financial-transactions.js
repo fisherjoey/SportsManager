@@ -115,25 +115,41 @@ router.get('/transactions', authenticateToken, async (req, res) => {
         'bc.name as category_name',
         'bc.color_code as category_color',
         'v.name as vendor_name',
-        db.raw("creator.first_name || ' ' || creator.last_name as created_by_name")
+        db.raw('creator.first_name || \' \' || creator.last_name as created_by_name')
       );
 
     // Apply filters
-    if (transaction_type) query = query.where('ft.transaction_type', transaction_type);
-    if (status) query = query.where('ft.status', status);
-    if (budget_id) query = query.where('ft.budget_id', budget_id);
-    if (vendor_id) query = query.where('ft.vendor_id', vendor_id);
-    if (date_from) query = query.where('ft.transaction_date', '>=', date_from);
-    if (date_to) query = query.where('ft.transaction_date', '<=', date_to);
-    if (min_amount) query = query.where('ft.amount', '>=', min_amount);
-    if (max_amount) query = query.where('ft.amount', '<=', max_amount);
+    if (transaction_type) {
+      query = query.where('ft.transaction_type', transaction_type);
+    }
+    if (status) {
+      query = query.where('ft.status', status);
+    }
+    if (budget_id) {
+      query = query.where('ft.budget_id', budget_id);
+    }
+    if (vendor_id) {
+      query = query.where('ft.vendor_id', vendor_id);
+    }
+    if (date_from) {
+      query = query.where('ft.transaction_date', '>=', date_from);
+    }
+    if (date_to) {
+      query = query.where('ft.transaction_date', '<=', date_to);
+    }
+    if (min_amount) {
+      query = query.where('ft.amount', '>=', min_amount);
+    }
+    if (max_amount) {
+      query = query.where('ft.amount', '<=', max_amount);
+    }
 
     if (search) {
       query = query.where(function() {
         this.where('ft.description', 'ilike', `%${search}%`)
-            .orWhere('ft.transaction_number', 'ilike', `%${search}%`)
-            .orWhere('ft.reference_number', 'ilike', `%${search}%`)
-            .orWhere('v.name', 'ilike', `%${search}%`);
+          .orWhere('ft.transaction_number', 'ilike', `%${search}%`)
+          .orWhere('ft.reference_number', 'ilike', `%${search}%`)
+          .orWhere('v.name', 'ilike', `%${search}%`);
       });
     }
 
@@ -147,12 +163,24 @@ router.get('/transactions', authenticateToken, async (req, res) => {
     const summary = await db('financial_transactions')
       .where('organization_id', organizationId)
       .modify(qb => {
-        if (transaction_type) qb.where('transaction_type', transaction_type);
-        if (status) qb.where('status', status);
-        if (budget_id) qb.where('budget_id', budget_id);
-        if (vendor_id) qb.where('vendor_id', vendor_id);
-        if (date_from) qb.where('transaction_date', '>=', date_from);
-        if (date_to) qb.where('transaction_date', '<=', date_to);
+        if (transaction_type) {
+          qb.where('transaction_type', transaction_type);
+        }
+        if (status) {
+          qb.where('status', status);
+        }
+        if (budget_id) {
+          qb.where('budget_id', budget_id);
+        }
+        if (vendor_id) {
+          qb.where('vendor_id', vendor_id);
+        }
+        if (date_from) {
+          qb.where('transaction_date', '>=', date_from);
+        }
+        if (date_to) {
+          qb.where('transaction_date', '<=', date_to);
+        }
       })
       .select([
         db.raw('COUNT(*) as total_transactions'),
@@ -305,7 +333,7 @@ router.get('/transactions/:id', authenticateToken, async (req, res) => {
         'bc.color_code as category_color',
         'v.name as vendor_name',
         'v.contact_name as vendor_contact',
-        db.raw("creator.first_name || ' ' || creator.last_name as created_by_name"),
+        db.raw('creator.first_name || \' \' || creator.last_name as created_by_name'),
         'ed.vendor_name as expense_vendor',
         'ga.calculated_wage as payroll_amount',
         'debit_acc.account_name as debit_account_name',
@@ -449,8 +477,8 @@ router.get('/vendors', authenticateToken, async (req, res) => {
     if (search) {
       query = query.where(function() {
         this.where('name', 'ilike', `%${search}%`)
-            .orWhere('contact_name', 'ilike', `%${search}%`)
-            .orWhere('email', 'ilike', `%${search}%`);
+          .orWhere('contact_name', 'ilike', `%${search}%`)
+          .orWhere('email', 'ilike', `%${search}%`);
       });
     }
 

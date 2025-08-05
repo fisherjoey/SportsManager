@@ -82,7 +82,9 @@ function requireAnyRole(...roles) {
 
 // New function to check specific permissions (for future expansion)
 function hasRole(user, roleName) {
-  if (!user || !roleName) return false;
+  if (!user || !roleName) {
+    return false;
+  }
   
   // Handle roles array with proper fallback
   let userRoles;

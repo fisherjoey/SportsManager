@@ -227,7 +227,7 @@ router.get('/trends', authenticateToken, requireRole('admin'), (req, res) => {
     // Calculate how many data points to return (5-minute intervals)
     const dataPoints = Math.min(hours * 12, advancedStats.trends.maxTrendSize);
     
-    let trendData = {};
+    const trendData = {};
     
     if (metric && advancedStats.trends[metric]) {
       // Return specific metric
@@ -325,25 +325,25 @@ router.post('/reset', authenticateToken, requireRole('admin'), (req, res) => {
     const resetType = req.body.type || 'all';
     
     switch (resetType) {
-      case 'basic':
-        resetPerformanceStats();
-        break;
-      case 'advanced':
-        resetAdvancedMetrics();
-        break;
-      case 'database':
-        resetQueryPerformanceStats();
-        break;
-      case 'aggregated':
-        resetAllMetrics();
-        break;
-      case 'all':
-      default:
-        resetPerformanceStats();
-        resetAdvancedMetrics();
-        resetQueryPerformanceStats();
-        resetAllMetrics();
-        break;
+    case 'basic':
+      resetPerformanceStats();
+      break;
+    case 'advanced':
+      resetAdvancedMetrics();
+      break;
+    case 'database':
+      resetQueryPerformanceStats();
+      break;
+    case 'aggregated':
+      resetAllMetrics();
+      break;
+    case 'all':
+    default:
+      resetPerformanceStats();
+      resetAdvancedMetrics();
+      resetQueryPerformanceStats();
+      resetAllMetrics();
+      break;
     }
     
     res.json({
@@ -800,11 +800,17 @@ function calculateDatabaseHealthScore(queryStats) {
   
   // Determine grade
   let grade;
-  if (score >= 90) grade = 'A';
-  else if (score >= 80) grade = 'B';
-  else if (score >= 70) grade = 'C';
-  else if (score >= 60) grade = 'D';
-  else grade = 'F';
+  if (score >= 90) {
+    grade = 'A';
+  } else if (score >= 80) {
+    grade = 'B';
+  } else if (score >= 70) {
+    grade = 'C';
+  } else if (score >= 60) {
+    grade = 'D';
+  } else {
+    grade = 'F';
+  }
   
   return { score, grade, factors };
 }

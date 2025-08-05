@@ -59,7 +59,9 @@ class BudgetCalculationService {
         .select('b.*', 'bc.name as category_name')
         .first();
 
-      if (!budget) return;
+      if (!budget) {
+        return;
+      }
 
       await this._processAlerts(budget, budgetId, trx);
     } catch (error) {
@@ -79,7 +81,9 @@ class BudgetCalculationService {
         .select('b.*', 'bc.name as category_name')
         .first();
 
-      if (!budget) return;
+      if (!budget) {
+        return;
+      }
 
       await this._processAlerts(budget, budgetId, db);
     } catch (error) {
@@ -235,8 +239,12 @@ class BudgetCalculationService {
         performance.summary.total_committed += committed;
         performance.summary.total_available += available;
 
-        if (spent > allocated) performance.summary.budgets_over++;
-        if (utilizationRate < 25) performance.summary.budgets_under_utilized++;
+        if (spent > allocated) {
+          performance.summary.budgets_over++;
+        }
+        if (utilizationRate < 25) {
+          performance.summary.budgets_under_utilized++;
+        }
 
         utilizationRates.push(utilizationRate);
 
@@ -448,7 +456,7 @@ class BudgetCalculationService {
         .where('organization_id', organizationId)
         .where('status', 'posted')
         .whereRaw('EXTRACT(MONTH FROM transaction_date) = ?', [targetMonth])
-        .where('transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '3 years'"))
+        .where('transaction_date', '>=', db.raw('CURRENT_DATE - INTERVAL \'3 years\''))
         .select(
           db.raw('EXTRACT(YEAR FROM transaction_date) as year'),
           db.raw('SUM(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as income'),
@@ -474,7 +482,7 @@ class BudgetCalculationService {
       const overallAverages = await db('financial_transactions')
         .where('organization_id', organizationId)
         .where('status', 'posted')
-        .where('transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '3 years'"))
+        .where('transaction_date', '>=', db.raw('CURRENT_DATE - INTERVAL \'3 years\''))
         .select(
           db.raw('AVG(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as avg_income'),
           db.raw('AVG(CASE WHEN transaction_type = \'expense\' THEN amount ELSE 0 END) as avg_expenses'),

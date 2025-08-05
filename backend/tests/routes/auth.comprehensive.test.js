@@ -286,7 +286,7 @@ describe('Authentication Routes - Comprehensive Tests', () => {
         const response = await request(app)
           .post('/api/auth/login')
           .send({
-            email: "test@login.com'; DROP TABLE users; --",
+            email: 'test@login.com\'; DROP TABLE users; --',
             password: testPassword
           });
 
@@ -418,7 +418,7 @@ describe('Authentication Routes - Comprehensive Tests', () => {
       });
 
       it('should handle very long email addresses', async () => {
-        const longEmail = 'a'.repeat(250) + '@test.com';
+        const longEmail = `${'a'.repeat(250)  }@test.com`;
         
         const response = await request(app)
           .post('/api/auth/login')

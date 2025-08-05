@@ -75,8 +75,8 @@ describe('Referee Levels API', () => {
     }).returning('*');
 
     // Get auth tokens (simplified - in real app this would be proper JWT)
-    adminToken = 'admin-token-' + adminUser.id;
-    refereeToken = 'referee-token-' + refereeUser.id;
+    adminToken = `admin-token-${  adminUser.id}`;
+    refereeToken = `referee-token-${  refereeUser.id}`;
   });
 
   afterAll(async () => {

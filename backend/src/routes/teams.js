@@ -102,7 +102,7 @@ router.get('/', async (req, res) => {
           )
           .where(function() {
             this.whereIn('home_team_id', teamIds)
-                .orWhereIn('away_team_id', teamIds);
+              .orWhereIn('away_team_id', teamIds);
           })
           .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
         
@@ -182,7 +182,7 @@ router.get('/:id', async (req, res) => {
           .leftJoin('teams as away_team', 'games.away_team_id', 'away_team.id')
           .where(function() {
             this.where('games.home_team_id', teamId)
-                .orWhere('games.away_team_id', teamId);
+              .orWhere('games.away_team_id', teamId);
           })
           .orderBy('games.game_date', 'desc'); // Uses idx_games_date_location
 
@@ -190,9 +190,14 @@ router.get('/:id', async (req, res) => {
         const now = new Date();
         const stats = games.reduce((acc, game) => {
           acc.total_games++;
-          if (game.team_role === 'home') acc.home_games++;
-          else acc.away_games++;
-          if (new Date(game.game_date) > now) acc.upcoming_games++;
+          if (game.team_role === 'home') {
+            acc.home_games++;
+          } else {
+            acc.away_games++;
+          }
+          if (new Date(game.game_date) > now) {
+            acc.upcoming_games++;
+          }
           return acc;
         }, {
           total_games: 0,
@@ -532,7 +537,7 @@ router.get('/league/:league_id', async (req, res) => {
           )
           .where(function() {
             this.whereIn('home_team_id', teamIds)
-                .orWhereIn('away_team_id', teamIds);
+              .orWhereIn('away_team_id', teamIds);
           })
           .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
         

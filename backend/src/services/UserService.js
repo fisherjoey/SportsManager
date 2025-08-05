@@ -151,9 +151,9 @@ class UserService extends BaseService {
           .join('games', 'game_assignments.game_id', 'games.id')
           .select(
             this.db.raw('COUNT(*) as total_assignments'),
-            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'accepted' THEN 1 END) as accepted_assignments"),
-            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'declined' THEN 1 END) as declined_assignments"),
-            this.db.raw("COUNT(CASE WHEN game_assignments.status = 'completed' THEN 1 END) as completed_assignments"),
+            this.db.raw('COUNT(CASE WHEN game_assignments.status = \'accepted\' THEN 1 END) as accepted_assignments'),
+            this.db.raw('COUNT(CASE WHEN game_assignments.status = \'declined\' THEN 1 END) as declined_assignments'),
+            this.db.raw('COUNT(CASE WHEN game_assignments.status = \'completed\' THEN 1 END) as completed_assignments'),
             this.db.raw('SUM(game_assignments.calculated_wage) as total_earnings')
           )
           .where('game_assignments.user_id', userId)
@@ -271,7 +271,7 @@ class UserService extends BaseService {
         // Hash password if provided, otherwise set a temporary one
         password_hash: refereeData.password 
           ? await bcrypt.hash(refereeData.password, 12)
-          : await bcrypt.hash('temp_password_' + Date.now(), 12)
+          : await bcrypt.hash(`temp_password_${  Date.now()}`, 12)
       };
 
       // Remove plain password from data
@@ -406,17 +406,19 @@ class UserService extends BaseService {
    * @returns {boolean} Whether to display white whistle icon
    */
   shouldDisplayWhiteWhistle(level, isWhiteWhistle) {
-    if (!level) return false;
+    if (!level) {
+      return false;
+    }
 
     switch (level.toLowerCase()) {
-      case 'rookie':
-        return true; // Rookies always display white whistle
-      case 'junior':
-        return Boolean(isWhiteWhistle); // Conditionally based on flag
-      case 'senior':
-        return false; // Seniors never display white whistle
-      default:
-        return false;
+    case 'rookie':
+      return true; // Rookies always display white whistle
+    case 'junior':
+      return Boolean(isWhiteWhistle); // Conditionally based on flag
+    case 'senior':
+      return false; // Seniors never display white whistle
+    default:
+      return false;
     }
   }
 
@@ -447,15 +449,15 @@ class UserService extends BaseService {
       // Determine white whistle status based on level
       let finalWhiteWhistleStatus;
       switch (newLevel) {
-        case 'Rookie':
-          finalWhiteWhistleStatus = true; // Always true for Rookie
-          break;
-        case 'Junior':
-          finalWhiteWhistleStatus = isWhiteWhistle !== null ? isWhiteWhistle : false;
-          break;
-        case 'Senior':
-          finalWhiteWhistleStatus = false; // Always false for Senior
-          break;
+      case 'Rookie':
+        finalWhiteWhistleStatus = true; // Always true for Rookie
+        break;
+      case 'Junior':
+        finalWhiteWhistleStatus = isWhiteWhistle !== null ? isWhiteWhistle : false;
+        break;
+      case 'Senior':
+        finalWhiteWhistleStatus = false; // Always false for Senior
+        break;
       }
 
       // Update user record

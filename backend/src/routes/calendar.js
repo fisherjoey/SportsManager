@@ -76,7 +76,7 @@ DTSTART;TZID=${timezone}:${formatICalDate(startDateTime).replace('Z', '')}
 DTEND;TZID=${timezone}:${formatICalDate(endDateTime).replace('Z', '')}
 SUMMARY:${summary}
 DESCRIPTION:${description}
-LOCATION:${event.locationName || ''}${event.locationAddress ? ', ' + event.locationAddress : ''}
+LOCATION:${event.locationName || ''}${event.locationAddress ? `, ${  event.locationAddress}` : ''}
 STATUS:${event.assignmentStatus === 'accepted' ? 'CONFIRMED' : 'TENTATIVE'}
 CATEGORIES:REFEREE,${event.level.toUpperCase()},${(event.gameType || 'REGULAR').toUpperCase()}
 CLASS:PUBLIC
@@ -210,11 +210,21 @@ router.get('/games/calendar-feed', authenticateToken, async (req, res) => {
       .leftJoin('leagues', 'home_team.league_id', 'leagues.id');
 
     // Apply filters
-    if (level) query = query.where('games.level', level);
-    if (game_type) query = query.where('games.game_type', game_type);
-    if (location_id) query = query.where('games.location_id', location_id);
-    if (league_id) query = query.where('leagues.id', league_id);
-    if (status) query = query.where('games.status', status);
+    if (level) {
+      query = query.where('games.level', level);
+    }
+    if (game_type) {
+      query = query.where('games.game_type', game_type);
+    }
+    if (location_id) {
+      query = query.where('games.location_id', location_id);
+    }
+    if (league_id) {
+      query = query.where('leagues.id', league_id);
+    }
+    if (status) {
+      query = query.where('games.status', status);
+    }
 
     // Apply date filters (default to next 3 months if not specified)
     const defaultStartDate = new Date().toISOString().split('T')[0];
@@ -312,7 +322,7 @@ router.get('/games/calendar-feed', authenticateToken, async (req, res) => {
 
         // Replace game events with assignment events for assigned games
         events = events.filter(event => !assignments.find(a => a.game_id === event.gameId))
-                      .concat(assignmentEvents);
+          .concat(assignmentEvents);
       }
     }
 
@@ -362,7 +372,7 @@ router.post('/sync', authenticateToken, requireRole('admin'), async (req, res) =
       
       if (orgSettings) {
         // Check if calendar sync columns exist
-        const tableInfo = await db.raw("PRAGMA table_info(organization_settings)");
+        const tableInfo = await db.raw('PRAGMA table_info(organization_settings)');
         const hasCalendarFields = tableInfo.some(col => col.name === 'calendar_sync_url');
         
         if (!hasCalendarFields) {
@@ -434,7 +444,7 @@ router.get('/sync/status', authenticateToken, requireRole('admin'), async (req, 
     }
 
     // Check if calendar sync fields exist in the database
-    const tableInfo = await db.raw("PRAGMA table_info(organization_settings)");
+    const tableInfo = await db.raw('PRAGMA table_info(organization_settings)');
     const hasCalendarFields = tableInfo.some(col => col.name === 'calendar_sync_url');
     
     if (!hasCalendarFields) {
@@ -482,7 +492,7 @@ router.delete('/sync', authenticateToken, requireRole('admin'), async (req, res)
     }
 
     // Check if calendar sync fields exist
-    const tableInfo = await db.raw("PRAGMA table_info(organization_settings)");
+    const tableInfo = await db.raw('PRAGMA table_info(organization_settings)');
     const hasCalendarFields = tableInfo.some(col => col.name === 'calendar_sync_url');
     
     if (!hasCalendarFields) {

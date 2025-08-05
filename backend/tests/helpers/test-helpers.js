@@ -364,7 +364,7 @@ const EdgeCases = {
   
   // Special characters that might cause issues
   specialCharacters: [
-    "O'Reilly FC", // Apostrophe
+    'O\'Reilly FC', // Apostrophe
     'Team "Quotes"', // Quotes
     'Team & Co.', // Ampersand
     'Team <Tag>', // HTML-like

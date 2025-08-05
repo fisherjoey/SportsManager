@@ -119,7 +119,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     const { page, limit, status, vendorName, requestedBy, dateFrom, dateTo, 
-            minAmount, maxAmount, isEmergency, priorityLevel, search } = value;
+      minAmount, maxAmount, isEmergency, priorityLevel, search } = value;
     const offset = (page - 1) * limit;
     const organizationId = req.user.organization_id || req.user.id;
 
@@ -168,8 +168,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (search) {
       query = query.where(function() {
         this.where('purchase_orders.po_number', 'ilike', `%${search}%`)
-            .orWhere('purchase_orders.description', 'ilike', `%${search}%`)
-            .orWhere('purchase_orders.vendor_name', 'ilike', `%${search}%`);
+          .orWhere('purchase_orders.description', 'ilike', `%${search}%`)
+          .orWhere('purchase_orders.vendor_name', 'ilike', `%${search}%`);
       });
     }
 
@@ -187,9 +187,9 @@ router.get('/', authenticateToken, async (req, res) => {
       .select([
         'purchase_orders.*',
         'requesters.email as requester_email',
-        db.raw("CONCAT(requesters.first_name, ' ', requesters.last_name) as requester_name"),
+        db.raw('CONCAT(requesters.first_name, \' \', requesters.last_name) as requester_name'),
         'approvers.email as approver_email',
-        db.raw("CONCAT(approvers.first_name, ' ', approvers.last_name) as approver_name")
+        db.raw('CONCAT(approvers.first_name, \' \', approvers.last_name) as approver_name')
       ])
       .orderBy('purchase_orders.created_at', 'desc')
       .limit(limit)
@@ -342,9 +342,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
       .select([
         'purchase_orders.*',
         'requesters.email as requester_email',
-        db.raw("CONCAT(requesters.first_name, ' ', requesters.last_name) as requester_name"),
+        db.raw('CONCAT(requesters.first_name, \' \', requesters.last_name) as requester_name'),
         'approvers.email as approver_email',
-        db.raw("CONCAT(approvers.first_name, ' ', approvers.last_name) as approver_name"),
+        db.raw('CONCAT(approvers.first_name, \' \', approvers.last_name) as approver_name'),
         'budgets.name as budget_name'
       ])
       .first();
@@ -518,29 +518,75 @@ router.put('/:id', authenticateToken, async (req, res) => {
       updated_at: new Date()
     };
 
-    if (value.vendorName !== undefined) updateData.vendor_name = value.vendorName;
-    if (value.vendorAddress !== undefined) updateData.vendor_address = value.vendorAddress;
-    if (value.vendorPhone !== undefined) updateData.vendor_phone = value.vendorPhone;
-    if (value.vendorEmail !== undefined) updateData.vendor_email = value.vendorEmail;
-    if (value.vendorContactPerson !== undefined) updateData.vendor_contact_person = value.vendorContactPerson;
-    if (value.vendorTaxId !== undefined) updateData.vendor_tax_id = value.vendorTaxId;
-    if (value.description !== undefined) updateData.description = value.description;
-    if (value.estimatedAmount !== undefined) updateData.estimated_amount = value.estimatedAmount;
-    if (value.requestedDeliveryDate !== undefined) updateData.requested_delivery_date = value.requestedDeliveryDate;
-    if (value.deliveryAddress !== undefined) updateData.delivery_address = value.deliveryAddress;
-    if (value.lineItems !== undefined) updateData.line_items = JSON.stringify(value.lineItems);
-    if (value.departmentId !== undefined) updateData.department_id = value.departmentId;
-    if (value.costCenter !== undefined) updateData.cost_center = value.costCenter;
-    if (value.projectCode !== undefined) updateData.project_code = value.projectCode;
-    if (value.budgetId !== undefined) updateData.budget_id = value.budgetId;
-    if (value.accountCode !== undefined) updateData.account_code = value.accountCode;
-    if (value.paymentTerms !== undefined) updateData.payment_terms = value.paymentTerms;
-    if (value.specialInstructions !== undefined) updateData.special_instructions = value.specialInstructions;
-    if (value.requiresReceipt !== undefined) updateData.requires_receipt = value.requiresReceipt;
-    if (value.requiresInvoice !== undefined) updateData.requires_invoice = value.requiresInvoice;
-    if (value.isEmergency !== undefined) updateData.is_emergency = value.isEmergency;
-    if (value.priorityLevel !== undefined) updateData.priority_level = value.priorityLevel;
-    if (value.emergencyJustification !== undefined) updateData.emergency_justification = value.emergencyJustification;
+    if (value.vendorName !== undefined) {
+      updateData.vendor_name = value.vendorName;
+    }
+    if (value.vendorAddress !== undefined) {
+      updateData.vendor_address = value.vendorAddress;
+    }
+    if (value.vendorPhone !== undefined) {
+      updateData.vendor_phone = value.vendorPhone;
+    }
+    if (value.vendorEmail !== undefined) {
+      updateData.vendor_email = value.vendorEmail;
+    }
+    if (value.vendorContactPerson !== undefined) {
+      updateData.vendor_contact_person = value.vendorContactPerson;
+    }
+    if (value.vendorTaxId !== undefined) {
+      updateData.vendor_tax_id = value.vendorTaxId;
+    }
+    if (value.description !== undefined) {
+      updateData.description = value.description;
+    }
+    if (value.estimatedAmount !== undefined) {
+      updateData.estimated_amount = value.estimatedAmount;
+    }
+    if (value.requestedDeliveryDate !== undefined) {
+      updateData.requested_delivery_date = value.requestedDeliveryDate;
+    }
+    if (value.deliveryAddress !== undefined) {
+      updateData.delivery_address = value.deliveryAddress;
+    }
+    if (value.lineItems !== undefined) {
+      updateData.line_items = JSON.stringify(value.lineItems);
+    }
+    if (value.departmentId !== undefined) {
+      updateData.department_id = value.departmentId;
+    }
+    if (value.costCenter !== undefined) {
+      updateData.cost_center = value.costCenter;
+    }
+    if (value.projectCode !== undefined) {
+      updateData.project_code = value.projectCode;
+    }
+    if (value.budgetId !== undefined) {
+      updateData.budget_id = value.budgetId;
+    }
+    if (value.accountCode !== undefined) {
+      updateData.account_code = value.accountCode;
+    }
+    if (value.paymentTerms !== undefined) {
+      updateData.payment_terms = value.paymentTerms;
+    }
+    if (value.specialInstructions !== undefined) {
+      updateData.special_instructions = value.specialInstructions;
+    }
+    if (value.requiresReceipt !== undefined) {
+      updateData.requires_receipt = value.requiresReceipt;
+    }
+    if (value.requiresInvoice !== undefined) {
+      updateData.requires_invoice = value.requiresInvoice;
+    }
+    if (value.isEmergency !== undefined) {
+      updateData.is_emergency = value.isEmergency;
+    }
+    if (value.priorityLevel !== undefined) {
+      updateData.priority_level = value.priorityLevel;
+    }
+    if (value.emergencyJustification !== undefined) {
+      updateData.emergency_justification = value.emergencyJustification;
+    }
 
     // Update purchase order
     await db('purchase_orders')
@@ -727,7 +773,7 @@ router.get('/:id/expenses', authenticateToken, async (req, res) => {
         'expense_categories.name as category_name',
         'expense_approvals.status as approval_status',
         'users.email as user_email',
-        db.raw("CONCAT(users.first_name, ' ', users.last_name) as user_name")
+        db.raw('CONCAT(users.first_name, \' \', users.last_name) as user_name')
       ])
       .orderBy('expense_data.transaction_date', 'desc');
 

@@ -362,7 +362,7 @@ describe('ResponseFormatter', () => {
 
       expect(result).toMatchObject({
         success: false,
-        message: "Game with identifier '123' not found",
+        message: 'Game with identifier \'123\' not found',
         code: 'NOT_FOUND',
         timestamp: expect.any(String)
       });
@@ -556,7 +556,7 @@ describe('ResponseFormatter', () => {
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         code: 'NOT_FOUND',
-        message: "User with identifier '123' not found"
+        message: 'User with identifier \'123\' not found'
       }));
     });
   });

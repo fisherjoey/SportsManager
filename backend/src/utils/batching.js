@@ -234,7 +234,9 @@ class BatchProcessor {
         const aLevel = levelPriority[a.level] || 1;
         const bLevel = levelPriority[b.level] || 1;
         
-        if (aLevel !== bLevel) return bLevel - aLevel;
+        if (aLevel !== bLevel) {
+          return bLevel - aLevel;
+        }
         
         // Then by experience
         return (b.experience || 1) - (a.experience || 1);
@@ -262,7 +264,9 @@ class BatchProcessor {
    * @private
    */
   getPostalPrefix(postalCode) {
-    if (!postalCode) return '';
+    if (!postalCode) {
+      return '';
+    }
     return postalCode.replace(/\s/g, '').toUpperCase().substring(0, 3);
   }
 
@@ -283,10 +287,18 @@ class BatchProcessor {
    * @param {Object} config - New configuration options
    */
   updateConfig(config) {
-    if (config.maxGamesPerBatch) this.maxGamesPerBatch = config.maxGamesPerBatch;
-    if (config.maxRefereesPerBatch) this.maxRefereesPerBatch = config.maxRefereesPerBatch;
-    if (config.batchTimeout) this.batchTimeout = config.batchTimeout;
-    if (typeof config.enabled === 'boolean') this.enabled = config.enabled;
+    if (config.maxGamesPerBatch) {
+      this.maxGamesPerBatch = config.maxGamesPerBatch;
+    }
+    if (config.maxRefereesPerBatch) {
+      this.maxRefereesPerBatch = config.maxRefereesPerBatch;
+    }
+    if (config.batchTimeout) {
+      this.batchTimeout = config.batchTimeout;
+    }
+    if (typeof config.enabled === 'boolean') {
+      this.enabled = config.enabled;
+    }
   }
 }
 

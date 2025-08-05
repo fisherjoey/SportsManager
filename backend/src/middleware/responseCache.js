@@ -33,7 +33,7 @@ class ResponseCache {
       .map(key => `${key}=${query[key]}`)
       .join('&');
     
-    return `${user?.id || 'anonymous'}:${path}${queryString ? '?' + queryString : ''}`;
+    return `${user?.id || 'anonymous'}:${path}${queryString ? `?${  queryString}` : ''}`;
   }
 
   /**

@@ -176,7 +176,7 @@ router.get('/spending-limits',
         .where('sl.organization_id', organizationId)
         .select(
           'sl.*',
-          db.raw("COALESCE(u.first_name || ' ' || u.last_name, 'All Users') as user_name"),
+          db.raw('COALESCE(u.first_name || \' \' || u.last_name, \'All Users\') as user_name'),
           'bc.name as category_name',
           'bc.color_code as category_color'
         )
@@ -234,7 +234,7 @@ router.post('/spending-limits',
           .where('id', value.user_id)
           .where(function() {
             this.where('id', organizationId)
-                .orWhere('organization_id', organizationId);
+              .orWhere('organization_id', organizationId);
           })
           .first();
 
@@ -297,14 +297,20 @@ router.get('/requests', authenticateToken, async (req, res) => {
         'ar.*',
         'aw.workflow_name',
         'aw.workflow_type',
-        db.raw("requester.first_name || ' ' || requester.last_name as requester_name"),
+        db.raw('requester.first_name || \' \' || requester.last_name as requester_name'),
         'requester.email as requester_email'
       );
 
     // Apply filters
-    if (status) query = query.where('ar.status', status);
-    if (request_type) query = query.where('ar.request_type', request_type);
-    if (requested_by) query = query.where('ar.requested_by', requested_by);
+    if (status) {
+      query = query.where('ar.status', status);
+    }
+    if (request_type) {
+      query = query.where('ar.request_type', request_type);
+    }
+    if (requested_by) {
+      query = query.where('ar.requested_by', requested_by);
+    }
 
     // Filter for current user's pending approvals
     if (my_approvals === 'true') {
@@ -312,7 +318,7 @@ router.get('/requests', authenticateToken, async (req, res) => {
         // This would need to be expanded based on approval step logic
         // For now, just show requests where user might be an approver
         this.where('ar.status', 'pending')
-            .orWhere('ar.status', 'in_review');
+          .orWhere('ar.status', 'in_review');
       });
     }
 
@@ -372,7 +378,7 @@ router.post('/requests',
       // Find applicable workflow
       const workflow = await db('approval_workflows')
         .where('organization_id', organizationId)
-        .where('workflow_type', value.request_type + '_approval')
+        .where('workflow_type', `${value.request_type  }_approval`)
         .where('is_active', true)
         .orderBy('priority', 'desc')
         .first();
@@ -557,24 +563,24 @@ router.get('/limits/check', authenticateToken, async (req, res) => {
       .where('is_active', true)
       .where(function() {
         this.whereNull('effective_from')
-            .orWhere('effective_from', '<=', db.fn.now());
+          .orWhere('effective_from', '<=', db.fn.now());
       })
       .where(function() {
         this.whereNull('effective_until')
-            .orWhere('effective_until', '>=', db.fn.now());
+          .orWhere('effective_until', '>=', db.fn.now());
       });
 
     // Check user-specific limits
     query = query.where(function() {
       this.where('user_id', checkUserId)
-          .orWhereNull('user_id');
+        .orWhereNull('user_id');
     });
 
     // Check category-specific limits
     if (category_id) {
       query = query.where(function() {
         this.where('budget_category_id', category_id)
-            .orWhereNull('budget_category_id');
+          .orWhereNull('budget_category_id');
       });
     }
 
@@ -585,49 +591,49 @@ router.get('/limits/check', authenticateToken, async (req, res) => {
 
     for (const limit of limits) {
       let periodAmount = 0;
-      let periodStart = new Date();
+      const periodStart = new Date();
 
       // Calculate period start based on limit type
       switch (limit.limit_type) {
-        case 'daily':
-          periodStart.setHours(0, 0, 0, 0);
-          break;
-        case 'weekly':
-          periodStart.setDate(periodStart.getDate() - periodStart.getDay());
-          periodStart.setHours(0, 0, 0, 0);
-          break;
-        case 'monthly':
-          periodStart.setDate(1);
-          periodStart.setHours(0, 0, 0, 0);
-          break;
-        case 'quarterly':
-          const quarterStart = Math.floor(periodStart.getMonth() / 3) * 3;
-          periodStart.setMonth(quarterStart, 1);
-          periodStart.setHours(0, 0, 0, 0);
-          break;
-        case 'yearly':
-          periodStart.setMonth(0, 1);
-          periodStart.setHours(0, 0, 0, 0);
-          break;
-        case 'per_transaction':
-          // Check amount directly against limit
-          if (checkAmount > limit.limit_amount) {
-            violations.push({
-              limit_name: limit.limit_name,
-              limit_amount: limit.limit_amount,
-              current_amount: checkAmount,
-              limit_type: limit.limit_type,
-              requires_approval: limit.requires_approval
-            });
-          } else if (limit.warning_threshold && checkAmount > limit.warning_threshold) {
-            warnings.push({
-              limit_name: limit.limit_name,
-              warning_threshold: limit.warning_threshold,
-              current_amount: checkAmount,
-              limit_type: limit.limit_type
-            });
-          }
-          continue;
+      case 'daily':
+        periodStart.setHours(0, 0, 0, 0);
+        break;
+      case 'weekly':
+        periodStart.setDate(periodStart.getDate() - periodStart.getDay());
+        periodStart.setHours(0, 0, 0, 0);
+        break;
+      case 'monthly':
+        periodStart.setDate(1);
+        periodStart.setHours(0, 0, 0, 0);
+        break;
+      case 'quarterly':
+        const quarterStart = Math.floor(periodStart.getMonth() / 3) * 3;
+        periodStart.setMonth(quarterStart, 1);
+        periodStart.setHours(0, 0, 0, 0);
+        break;
+      case 'yearly':
+        periodStart.setMonth(0, 1);
+        periodStart.setHours(0, 0, 0, 0);
+        break;
+      case 'per_transaction':
+        // Check amount directly against limit
+        if (checkAmount > limit.limit_amount) {
+          violations.push({
+            limit_name: limit.limit_name,
+            limit_amount: limit.limit_amount,
+            current_amount: checkAmount,
+            limit_type: limit.limit_type,
+            requires_approval: limit.requires_approval
+          });
+        } else if (limit.warning_threshold && checkAmount > limit.warning_threshold) {
+          warnings.push({
+            limit_name: limit.limit_name,
+            warning_threshold: limit.warning_threshold,
+            current_amount: checkAmount,
+            limit_type: limit.limit_type
+          });
+        }
+        continue;
       }
 
       // Get spending in period for non-per-transaction limits
@@ -696,27 +702,27 @@ router.get('/limits/check', authenticateToken, async (req, res) => {
 async function handleApprovedRequest(request) {
   try {
     switch (request.request_type) {
-      case 'expense':
-        await db('financial_transactions')
-          .where('id', request.reference_id)
-          .update({ status: 'approved' });
-        break;
+    case 'expense':
+      await db('financial_transactions')
+        .where('id', request.reference_id)
+        .update({ status: 'approved' });
+      break;
       
-      case 'budget_change':
-        await db('budgets')
-          .where('id', request.reference_id)
-          .update({ status: 'approved' });
-        break;
+    case 'budget_change':
+      await db('budgets')
+        .where('id', request.reference_id)
+        .update({ status: 'approved' });
+      break;
       
-      case 'payroll':
-        await db('game_assignments')
-          .where('id', request.reference_id)
-          .update({ payment_status: 'approved' });
-        break;
+    case 'payroll':
+      await db('game_assignments')
+        .where('id', request.reference_id)
+        .update({ payment_status: 'approved' });
+      break;
       
       // Add other request types as needed
-      default:
-        console.log(`Unhandled approval request type: ${request.request_type}`);
+    default:
+      console.log(`Unhandled approval request type: ${request.request_type}`);
     }
   } catch (error) {
     console.error('Error handling approved request:', error);

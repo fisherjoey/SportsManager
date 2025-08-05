@@ -25,7 +25,7 @@ jobs:
         run: npm ci
       
       - name: Lint frontend
-        run: npm run lint || echo "Lint not configured, skipping"
+        run: npm run lint
       
       - name: Type check and build frontend
         run: npm run build
@@ -81,7 +81,7 @@ jobs:
           JWT_SECRET: test_jwt_secret
       
       - name: Run backend tests with coverage
-        run: cd backend && npm test -- --coverage --passWithNoTests
+        run: cd backend && npm test -- --coverage --passWithNoTests --forceExit
         env:
           NODE_ENV: test
           DB_HOST: localhost

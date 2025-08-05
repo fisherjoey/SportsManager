@@ -158,7 +158,9 @@ class AIServices {
    * @private
    */
   async testVisionAPI() {
-    if (!this.visionClient) return false;
+    if (!this.visionClient) {
+      return false;
+    }
     
     try {
       // Create a small test image (1x1 white pixel)
@@ -179,7 +181,9 @@ class AIServices {
    * @private
    */
   async testLLMAPI(provider) {
-    if (!this.openaiClient) return false;
+    if (!this.openaiClient) {
+      return false;
+    }
     
     try {
       const response = await this.openaiClient.chat.completions.create({
@@ -632,7 +636,9 @@ Thank you for shopping with us!`,
    * @private
    */
   cleanString(value) {
-    if (!value || typeof value !== 'string') return null;
+    if (!value || typeof value !== 'string') {
+      return null;
+    }
     const cleaned = value.trim().replace(/\s+/g, ' ');
     return cleaned.length > 0 ? cleaned : null;
   }
@@ -642,7 +648,9 @@ Thank you for shopping with us!`,
    * @private
    */
   cleanAmount(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) {
+      return null;
+    }
     
     const numValue = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
     return isNaN(numValue) ? null : Math.round(numValue * 100) / 100;
@@ -653,11 +661,15 @@ Thank you for shopping with us!`,
    * @private
    */
   cleanDate(value) {
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
     
     try {
       const date = new Date(value);
-      if (isNaN(date.getTime())) return null;
+      if (isNaN(date.getTime())) {
+        return null;
+      }
       return date.toISOString().split('T')[0]; // YYYY-MM-DD format
     } catch (e) {
       return null;
@@ -669,7 +681,9 @@ Thank you for shopping with us!`,
    * @private
    */
   cleanTime(value) {
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
     
     const timeMatch = String(value).match(/(\d{1,2}):(\d{2})/);
     return timeMatch ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}` : null;
@@ -680,7 +694,9 @@ Thank you for shopping with us!`,
    * @private
    */
   cleanLineItems(items) {
-    if (!Array.isArray(items)) return [];
+    if (!Array.isArray(items)) {
+      return [];
+    }
     
     return items
       .filter(item => item && typeof item === 'object')
@@ -932,14 +948,18 @@ Thank you for shopping with us!`,
    * @private
    */
   calculateOverallConfidence(detections) {
-    if (!detections || detections.length <= 1) return 0;
+    if (!detections || detections.length <= 1) {
+      return 0;
+    }
     
     const wordDetections = detections.slice(1);
     const confidences = wordDetections
       .map(d => d.confidence || 0.5)
       .filter(c => c > 0);
       
-    if (confidences.length === 0) return 0.5;
+    if (confidences.length === 0) {
+      return 0.5;
+    }
     
     return confidences.reduce((sum, conf) => sum + conf, 0) / confidences.length;
   }
@@ -1040,7 +1060,9 @@ Categorize now:`;
     let bestScore = 0;
     
     for (const category of categories) {
-      if (!category.keywords) continue;
+      if (!category.keywords) {
+        continue;
+      }
       
       const keywords = Array.isArray(category.keywords) ? category.keywords : JSON.parse(category.keywords || '[]');
       let score = 0;
@@ -1387,22 +1409,32 @@ Generate assignments now:`;
    * @private
    */
   calculateProximityFactor(referee, game) {
-    if (!referee.postal_code || !game.postal_code) return 0.5;
+    if (!referee.postal_code || !game.postal_code) {
+      return 0.5;
+    }
     
     const refCode = referee.postal_code.replace(/\s/g, '').toUpperCase();
     const gameCode = game.postal_code.replace(/\s/g, '').toUpperCase();
     
     // Same postal code = 1.0
-    if (refCode === gameCode) return 1.0;
+    if (refCode === gameCode) {
+      return 1.0;
+    }
     
     // Same first 3 characters (FSA/ZIP prefix) = 0.8
-    if (refCode.substring(0, 3) === gameCode.substring(0, 3)) return 0.8;
+    if (refCode.substring(0, 3) === gameCode.substring(0, 3)) {
+      return 0.8;
+    }
     
     // Same first 2 characters = 0.6
-    if (refCode.substring(0, 2) === gameCode.substring(0, 2)) return 0.6;
+    if (refCode.substring(0, 2) === gameCode.substring(0, 2)) {
+      return 0.6;
+    }
     
     // Same first character = 0.4
-    if (refCode.substring(0, 1) === gameCode.substring(0, 1)) return 0.4;
+    if (refCode.substring(0, 1) === gameCode.substring(0, 1)) {
+      return 0.4;
+    }
     
     return 0.3; // Different regions
   }
@@ -1431,10 +1463,14 @@ Generate assignments now:`;
     const gameLevel = levelMap[game.level] || 2;
     
     // Perfect match = 1.0
-    if (refLevel === gameLevel) return 1.0;
+    if (refLevel === gameLevel) {
+      return 1.0;
+    }
     
     // Higher qualified referee = 0.9
-    if (refLevel > gameLevel) return 0.9;
+    if (refLevel > gameLevel) {
+      return 0.9;
+    }
     
     // Lower qualified referee = penalty
     const difference = gameLevel - refLevel;
@@ -1448,12 +1484,22 @@ Generate assignments now:`;
   generateAssignmentReasoning(referee, game, score) {
     const reasons = [];
     
-    if (score.factors.proximity >= 0.8) reasons.push('close location');
-    if (score.factors.level_match >= 0.9) reasons.push('perfect level match');
-    if (score.factors.experience >= 0.7) reasons.push('experienced referee');
-    if (score.factors.availability === 1.0) reasons.push('confirmed available');
+    if (score.factors.proximity >= 0.8) {
+      reasons.push('close location');
+    }
+    if (score.factors.level_match >= 0.9) {
+      reasons.push('perfect level match');
+    }
+    if (score.factors.experience >= 0.7) {
+      reasons.push('experienced referee');
+    }
+    if (score.factors.availability === 1.0) {
+      reasons.push('confirmed available');
+    }
     
-    if (reasons.length === 0) reasons.push('best available option');
+    if (reasons.length === 0) {
+      reasons.push('best available option');
+    }
     
     return `${referee.level} referee, ${reasons.join(', ')}`;
   }
@@ -1463,7 +1509,9 @@ Generate assignments now:`;
    * @private
    */
   calculateOverallAssignmentConfidence(assignments) {
-    if (!assignments || assignments.length === 0) return 0;
+    if (!assignments || assignments.length === 0) {
+      return 0;
+    }
     
     let totalConfidence = 0;
     let totalAssignments = 0;

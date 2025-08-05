@@ -148,7 +148,9 @@ class ChunkService {
       
       games.forEach(game => {
         const key = `${game.location}-${game.game_date}`;
-        if (!groups[key]) groups[key] = [];
+        if (!groups[key]) {
+          groups[key] = [];
+        }
         groups[key].push(game);
       });
 
@@ -434,8 +436,12 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 
     // Update basic chunk details
     const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (notes !== undefined) updateData.notes = notes;
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
     updateData.updated_at = new Date();
 
     if (Object.keys(updateData).length > 1) { // More than just updated_at

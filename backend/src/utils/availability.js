@@ -113,7 +113,9 @@ function findAvailableReferees(referees, gameTime, gameLocation = null) {
   return referees
     .filter(referee => {
       // Basic availability check
-      if (!referee.isAvailable) return false;
+      if (!referee.isAvailable) {
+        return false;
+      }
       
       // Check for scheduling conflicts
       if (referee.availability && hasSchedulingConflict(referee.availability, gameTime)) {

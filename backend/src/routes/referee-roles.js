@@ -236,4 +236,174 @@ router.delete('/:id',
       .count('* as count')
       .first();
     
-    if (parseInt(assignmentsCount.count) > 0) {\n      throw ErrorFactory.conflict(\n        'Cannot delete role that is currently assigned to users', \n        { assigned_users: assignmentsCount.count }\n      );\n    }\n    \n    // Soft delete by setting is_active to false\n    await db('referee_roles')\n      .where('id', roleId)\n      .update({ \n        is_active: false,\n        updated_at: new Date()\n      });\n    \n    return ResponseFormatter.sendSuccess(res, null, 'Referee role deleted successfully');\n  })\n);\n\n// POST /api/referee-roles/assign - Assign role to referee (admin only)\nrouter.post('/assign',\n  authenticateToken,\n  requireRole('admin'),\n  validateBody(AssignRoleSchema),\n  enhancedAsyncHandler(async (req, res) => {\n    const { user_id, role_name } = req.body;\n    \n    try {\n      const assignment = await userService.assignRefereeRole(\n        user_id, \n        role_name, \n        req.user.id\n      );\n      \n      return ResponseFormatter.sendCreated(\n        res, \n        assignment, \n        `Role '${role_name}' assigned successfully`\n      );\n    } catch (error) {\n      if (error.message.includes('already has role') || \n          error.message.includes('not found') ||\n          error.message.includes('not a referee')) {\n        throw ErrorFactory.conflict(error.message);\n      }\n      throw error;\n    }\n  })\n);\n\n// POST /api/referee-roles/remove - Remove role from referee (admin only)\nrouter.post('/remove',\n  authenticateToken,\n  requireRole('admin'),\n  validateBody(RemoveRoleSchema),\n  enhancedAsyncHandler(async (req, res) => {\n    const { user_id, role_name } = req.body;\n    \n    // Prevent removal of default 'Referee' role\n    if (role_name === 'Referee') {\n      throw ErrorFactory.forbidden('Cannot remove default Referee role');\n    }\n    \n    const success = await userService.removeRefereeRole(user_id, role_name);\n    \n    if (!success) {\n      throw ErrorFactory.notFound('Role assignment not found');\n    }\n    \n    return ResponseFormatter.sendSuccess(\n      res, \n      null, \n      `Role '${role_name}' removed successfully`\n    );\n  })\n);\n\n// GET /api/referee-roles/user/:userId - Get roles for specific user\nrouter.get('/user/:userId',\n  authenticateToken,\n  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),\n  enhancedAsyncHandler(async (req, res) => {\n    const userId = req.params.userId;\n    \n    // Check permissions - users can view their own roles, admins can view any\n    if (req.user.role !== 'admin' && req.user.id !== userId) {\n      throw ErrorFactory.forbidden('Can only view your own roles');\n    }\n    \n    // Verify user exists and is a referee\n    const user = await db('users')\n      .where('id', userId)\n      .first();\n    \n    if (!user) {\n      throw ErrorFactory.notFound('User', userId);\n    }\n    \n    if (user.role !== 'referee') {\n      throw ErrorFactory.forbidden('User is not a referee');\n    }\n    \n    // Get user's roles\n    const userRoles = await db('user_referee_roles')\n      .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')\n      .select(\n        'referee_roles.id',\n        'referee_roles.name',\n        'referee_roles.description',\n        'referee_roles.permissions',\n        'user_referee_roles.assigned_at',\n        'user_referee_roles.assigned_by'\n      )\n      .where('user_referee_roles.user_id', userId)\n      .where('user_referee_roles.is_active', true)\n      .where('referee_roles.is_active', true)\n      .orderBy('referee_roles.name', 'asc');\n    \n    // Parse permissions for each role\n    const enhancedRoles = userRoles.map(role => ({\n      ...role,\n      permissions: typeof role.permissions === 'string' \n        ? JSON.parse(role.permissions) \n        : role.permissions\n    }));\n    \n    return ResponseFormatter.sendSuccess(\n      res, \n      {\n        user: {\n          id: user.id,\n          name: user.name,\n          email: user.email\n        },\n        roles: enhancedRoles\n      }, \n      'User roles retrieved successfully'\n    );\n  })\n);\n\n// GET /api/referee-roles/permissions/summary - Get permissions summary for all roles\nrouter.get('/permissions/summary',\n  authenticateToken,\n  requireRole('admin'),\n  enhancedAsyncHandler(async (req, res) => {\n    const roles = await db('referee_roles')\n      .where('is_active', true)\n      .select('name', 'permissions')\n      .orderBy('name', 'asc');\n    \n    const permissionsSummary = roles.map(role => {\n      const permissions = typeof role.permissions === 'string' \n        ? JSON.parse(role.permissions) \n        : role.permissions;\n      \n      return {\n        role_name: role.name,\n        permissions: Object.keys(permissions).filter(key => permissions[key] === true)\n      };\n    });\n    \n    return ResponseFormatter.sendSuccess(\n      res,\n      permissionsSummary,\n      'Permissions summary retrieved successfully'\n    );\n  })\n);\n\nmodule.exports = router;"}
+    if (parseInt(assignmentsCount.count, 10) > 0) {
+      throw ErrorFactory.conflict(
+        'Cannot delete role that is currently assigned to users', 
+        { assigned_users: assignmentsCount.count }
+      );
+    }
+    
+    // Soft delete by setting is_active to false
+    await db('referee_roles')
+      .where('id', roleId)
+      .update({ 
+        is_active: false,
+        updated_at: new Date()
+      });
+    
+    return ResponseFormatter.sendSuccess(res, null, 'Referee role deleted successfully');
+  })
+);
+
+// POST /api/referee-roles/assign - Assign role to referee (admin only)
+router.post('/assign',
+  authenticateToken,
+  requireRole('admin'),
+  validateBody(AssignRoleSchema),
+  enhancedAsyncHandler(async (req, res) => {
+    const { user_id, role_name } = req.body;
+    
+    try {
+      const assignment = await userService.assignRefereeRole(
+        user_id, 
+        role_name, 
+        req.user.id
+      );
+      
+      return ResponseFormatter.sendCreated(
+        res, 
+        assignment, 
+        `Role '${role_name}' assigned successfully`
+      );
+    } catch (error) {
+      if (error.message.includes('already has role') || 
+          error.message.includes('not found') ||
+          error.message.includes('not a referee')) {
+        throw ErrorFactory.conflict(error.message);
+      }
+      throw error;
+    }
+  })
+);
+
+// POST /api/referee-roles/remove - Remove role from referee (admin only)
+router.post('/remove',
+  authenticateToken,
+  requireRole('admin'),
+  validateBody(RemoveRoleSchema),
+  enhancedAsyncHandler(async (req, res) => {
+    const { user_id, role_name } = req.body;
+    
+    // Prevent removal of default 'Referee' role
+    if (role_name === 'Referee') {
+      throw ErrorFactory.forbidden('Cannot remove default Referee role');
+    }
+    
+    const success = await userService.removeRefereeRole(user_id, role_name);
+    
+    if (!success) {
+      throw ErrorFactory.notFound('Role assignment not found');
+    }
+    
+    return ResponseFormatter.sendSuccess(
+      res, 
+      null, 
+      `Role '${role_name}' removed successfully`
+    );
+  })
+);
+
+// GET /api/referee-roles/user/:userId - Get roles for specific user
+router.get('/user/:userId',
+  authenticateToken,
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  enhancedAsyncHandler(async (req, res) => {
+    const userId = req.params.userId;
+    
+    // Check permissions - users can view their own roles, admins can view any
+    if (req.user.role !== 'admin' && req.user.id !== userId) {
+      throw ErrorFactory.forbidden('Can only view your own roles');
+    }
+    
+    // Verify user exists and is a referee
+    const user = await db('users')
+      .where('id', userId)
+      .first();
+    
+    if (!user) {
+      throw ErrorFactory.notFound('User', userId);
+    }
+    
+    if (user.role !== 'referee') {
+      throw ErrorFactory.forbidden('User is not a referee');
+    }
+    
+    // Get user's roles
+    const userRoles = await db('user_referee_roles')
+      .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
+      .select(
+        'referee_roles.id',
+        'referee_roles.name',
+        'referee_roles.description',
+        'referee_roles.permissions',
+        'user_referee_roles.assigned_at',
+        'user_referee_roles.assigned_by'
+      )
+      .where('user_referee_roles.user_id', userId)
+      .where('user_referee_roles.is_active', true)
+      .where('referee_roles.is_active', true)
+      .orderBy('referee_roles.name', 'asc');
+    
+    // Parse permissions for each role
+    const enhancedRoles = userRoles.map(role => ({
+      ...role,
+      permissions: typeof role.permissions === 'string' 
+        ? JSON.parse(role.permissions) 
+        : role.permissions
+    }));
+    
+    return ResponseFormatter.sendSuccess(
+      res, 
+      {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        },
+        roles: enhancedRoles
+      }, 
+      'User roles retrieved successfully'
+    );
+  })
+);
+
+// GET /api/referee-roles/permissions/summary - Get permissions summary for all roles
+router.get('/permissions/summary',
+  authenticateToken,
+  requireRole('admin'),
+  enhancedAsyncHandler(async (req, res) => {
+    const roles = await db('referee_roles')
+      .where('is_active', true)
+      .select('name', 'permissions')
+      .orderBy('name', 'asc');
+    
+    const permissionsSummary = roles.map(role => {
+      const permissions = typeof role.permissions === 'string' 
+        ? JSON.parse(role.permissions) 
+        : role.permissions;
+      
+      return {
+        role_name: role.name,
+        permissions: Object.keys(permissions).filter(key => permissions[key] === true)
+      };
+    });
+    
+    return ResponseFormatter.sendSuccess(
+      res,
+      permissionsSummary,
+      'Permissions summary retrieved successfully'
+    );
+  })
+);
+
+module.exports = router;

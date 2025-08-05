@@ -198,16 +198,22 @@ class AlgorithmicAssignmentService {
 
   static isRefereeAvailable(referee, game, rule) {
     // Check basic availability
-    if (!referee.is_available) return false;
+    if (!referee.is_available) {
+      return false;
+    }
     
     // Check distance
-    if ((referee.distance_to_venue || 0) > rule.max_distance) return false;
+    if ((referee.distance_to_venue || 0) > rule.max_distance) {
+      return false;
+    }
     
     // Check level requirements
     const levelMap = { 'Rookie': 1, 'Junior': 2, 'Senior': 3 };
     const refLevel = levelMap[referee.referee_level] || 1;
     const minLevel = levelMap[rule.min_referee_level] || 1;
-    if (refLevel < minLevel) return false;
+    if (refLevel < minLevel) {
+      return false;
+    }
 
     return true;
   }
@@ -303,7 +309,9 @@ class LLMAssignmentService {
 
 // Utility functions
 function calculateNextRun(schedule) {
-  if (schedule.type !== 'recurring') return null;
+  if (schedule.type !== 'recurring') {
+    return null;
+  }
 
   const now = new Date();
   const [hours, minutes] = schedule.time.split(':').map(Number);

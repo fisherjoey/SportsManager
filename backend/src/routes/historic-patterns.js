@@ -26,7 +26,7 @@ class HistoricPatternService {
       .join('games', 'game_assignments.game_id', 'games.id')
       .join('users', 'game_assignments.user_id', 'users.id')
       .where('game_assignments.status', 'completed')
-      .where('games.game_date', '>=', db.raw("NOW() - INTERVAL '6 months'"))
+      .where('games.game_date', '>=', db.raw('NOW() - INTERVAL \'6 months\''))
       .select(
         'game_assignments.user_id as referee_id',
         'users.name as referee_name',
@@ -96,15 +96,19 @@ class HistoricPatternService {
   static categorizeTimeSlot(gameTime) {
     const hour = parseInt(gameTime.split(':')[0]);
     
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
+    if (hour < 12) {
+      return 'Morning';
+    }
+    if (hour < 17) {
+      return 'Afternoon';
+    }
     return 'Evening';
   }
 
   static async updatePatternsInDatabase(patterns) {
     // Clear existing patterns older than a week
     await db('assignment_patterns')
-      .where('updated_at', '<', db.raw("NOW() - INTERVAL '7 days'"))
+      .where('updated_at', '<', db.raw('NOW() - INTERVAL \'7 days\''))
       .del();
 
     for (const pattern of patterns) {

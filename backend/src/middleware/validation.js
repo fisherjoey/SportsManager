@@ -353,7 +353,9 @@ const autoValidate = (routePrefix) => {
  */
 const sanitizeInput = (req, res, next) => {
   const sanitizeObject = (obj) => {
-    if (typeof obj !== 'object' || obj === null) return obj;
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
     
     const sanitized = {};
     for (const [key, value] of Object.entries(obj)) {

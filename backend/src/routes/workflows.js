@@ -192,37 +192,37 @@ class WorkflowExecutionService {
     }
 
     switch (step.assignee_type) {
-      case 'user':
-        return step.assignee_id;
+    case 'user':
+      return step.assignee_id;
       
-      case 'manager':
-        // Find manager of the employee
-        if (context.employee_id) {
-          const managerQuery = `
+    case 'manager':
+      // Find manager of the employee
+      if (context.employee_id) {
+        const managerQuery = `
             SELECT m.user_id FROM employees e 
             JOIN employees m ON e.manager_id = m.id 
             WHERE e.id = $1
           `;
-          const result = await client.query(managerQuery, [context.employee_id]);
-          return result.rows.length > 0 ? result.rows[0].user_id : null;
-        }
-        break;
+        const result = await client.query(managerQuery, [context.employee_id]);
+        return result.rows.length > 0 ? result.rows[0].user_id : null;
+      }
+      break;
       
-      case 'department':
-        // Find department manager
-        const deptQuery = `
+    case 'department':
+      // Find department manager
+      const deptQuery = `
           SELECT manager_id FROM departments WHERE id = $1
         `;
-        const result = await client.query(deptQuery, [step.assignee_id]);
-        return result.rows.length > 0 ? result.rows[0].manager_id : null;
+      const result = await client.query(deptQuery, [step.assignee_id]);
+      return result.rows.length > 0 ? result.rows[0].manager_id : null;
       
-      case 'role':
-        // Find first user with specific role (simplified)
-        const roleQuery = `
+    case 'role':
+      // Find first user with specific role (simplified)
+      const roleQuery = `
           SELECT id FROM users WHERE role = $1 AND active = true LIMIT 1
         `;
-        const roleResult = await client.query(roleQuery, [step.assignee_id]);
-        return roleResult.rows.length > 0 ? roleResult.rows[0].id : null;
+      const roleResult = await client.query(roleQuery, [step.assignee_id]);
+      return roleResult.rows.length > 0 ? roleResult.rows[0].id : null;
     }
 
     return null;
@@ -489,7 +489,7 @@ router.get('/instances', authenticateToken, async (req, res) => {
     }
 
     if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+      query += ` WHERE ${  conditions.join(' AND ')}`;
     }
 
     query += `

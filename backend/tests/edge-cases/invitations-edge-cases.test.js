@@ -91,7 +91,7 @@ describe('Invitations Edge Cases and Error Scenarios', () => {
       mockDbQuery.returning.mockResolvedValue([{
         id: 'inv-123',
         email: 'special@test.com',
-        first_name: "O'Connor-Smith",
+        first_name: 'O\'Connor-Smith',
         last_name: 'José María',
         role: 'referee'
       }]);
@@ -101,7 +101,7 @@ describe('Invitations Edge Cases and Error Scenarios', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: 'special@test.com',
-          first_name: "O'Connor-Smith",
+          first_name: 'O\'Connor-Smith',
           last_name: 'José María',
           role: 'referee'
         });
@@ -273,9 +273,9 @@ describe('Invitations Edge Cases and Error Scenarios', () => {
 
     it('should handle SQL injection attempts in token', async () => {
       const sqlInjectionTokens = [
-        "'; DROP TABLE invitations; --",
-        "' OR '1'='1",
-        "1' UNION SELECT * FROM users --"
+        '\'; DROP TABLE invitations; --',
+        '\' OR \'1\'=\'1',
+        '1\' UNION SELECT * FROM users --'
       ];
 
       for (const token of sqlInjectionTokens) {

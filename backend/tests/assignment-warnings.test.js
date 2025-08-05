@@ -87,7 +87,7 @@ describe('Assignment Warnings API', () => {
       status: 'unassigned'
     }).returning('*');
 
-    adminToken = 'admin-token-' + adminUser.id;
+    adminToken = `admin-token-${  adminUser.id}`;
   });
 
   afterAll(async () => {

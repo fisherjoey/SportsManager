@@ -233,7 +233,7 @@ describe('Role-Based Access Control Integration', () => {
   describe('Role transition scenarios', () => {
     it('should handle role upgrades correctly', async () => {
       // Start with basic referee
-      let response = await request(app)
+      const response = await request(app)
         .get('/api/games')
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(200);

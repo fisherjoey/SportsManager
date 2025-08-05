@@ -71,11 +71,15 @@ class AIAssignmentService {
       // Transform AI results to suggestions format
       for (const assignment of allAssignments) {
         const game = games.find(g => g.id === assignment.gameId);
-        if (!game) continue;
+        if (!game) {
+          continue;
+        }
 
         for (const refereeAssignment of assignment.assignedReferees) {
           const referee = referees.find(r => r.id === refereeAssignment.refereeId);
-          if (!referee) continue;
+          if (!referee) {
+            continue;
+          }
 
           // Check for conflicts using existing conflict detection
           const conflictCheck = await this.checkRefereeConflicts(game, referee);
@@ -240,7 +244,7 @@ class AIAssignmentService {
 
   static async checkRefereeConflicts(game, referee) {
     const warnings = [];
-    let hasConflict = false;
+    const hasConflict = false;
 
     try {
       // Check for back-to-back games (less than 45 minutes between games)
@@ -349,7 +353,9 @@ class AIAssignmentService {
 
   static async calculateProximityScore(game, referee) {
     // Enhanced proximity calculation with better distance estimation
-    if (!referee.postal_code || !game.postal_code) return 0.5;
+    if (!referee.postal_code || !game.postal_code) {
+      return 0.5;
+    }
     
     // More sophisticated postal code distance calculation
     const refereePostal = referee.postal_code.replace(/\s/g, '').toUpperCase();
@@ -360,18 +366,28 @@ class AIAssignmentService {
     const gameFSA = gamePostal.substring(0, 3);
     
     // Same FSA/ZIP prefix = very close (0-15km typically)
-    if (refereeFSA === gameFSA) return 0.95;
+    if (refereeFSA === gameFSA) {
+      return 0.95;
+    }
     
     // Calculate character differences for approximate distance
     let differences = 0;
     for (let i = 0; i < Math.min(refereeFSA.length, gameFSA.length); i++) {
-      if (refereeFSA[i] !== gameFSA[i]) differences++;
+      if (refereeFSA[i] !== gameFSA[i]) {
+        differences++;
+      }
     }
     
     // Score based on character differences (more differences = farther distance)
-    if (differences === 1) return 0.8; // Adjacent areas (~15-30km)
-    if (differences === 2) return 0.6; // Nearby areas (~30-50km)
-    if (differences === 3) return 0.4; // Distant areas (~50-100km)
+    if (differences === 1) {
+      return 0.8;
+    } // Adjacent areas (~15-30km)
+    if (differences === 2) {
+      return 0.6;
+    } // Nearby areas (~30-50km)
+    if (differences === 3) {
+      return 0.4;
+    } // Distant areas (~50-100km)
     
     return 0.3; // Very distant or unknown
   }
@@ -414,9 +430,15 @@ class AIAssignmentService {
     const refereeScore = levelMapping[referee.level] || 0.5;
     
     // Adjust based on game level requirements
-    if (game.level === 'Recreational' && refereeScore >= 0.3) return Math.min(1.0, refereeScore + 0.2);
-    if (game.level === 'Competitive' && refereeScore >= 0.6) return refereeScore;
-    if (game.level === 'Elite' && refereeScore >= 0.9) return refereeScore;
+    if (game.level === 'Recreational' && refereeScore >= 0.3) {
+      return Math.min(1.0, refereeScore + 0.2);
+    }
+    if (game.level === 'Competitive' && refereeScore >= 0.6) {
+      return refereeScore;
+    }
+    if (game.level === 'Elite' && refereeScore >= 0.9) {
+      return refereeScore;
+    }
     
     return refereeScore * 0.8; // Penalty for level mismatch
   }
@@ -425,9 +447,11 @@ class AIAssignmentService {
     // Enhanced performance calculation with workload balancing and historical patterns
     const assignments = await db('game_assignments')
       .where('user_id', referee.id)
-      .where('created_at', '>=', db.raw("NOW() - INTERVAL '6 months'"));
+      .where('created_at', '>=', db.raw('NOW() - INTERVAL \'6 months\''));
 
-    if (assignments.length === 0) return 0.6; // Neutral score for new referees
+    if (assignments.length === 0) {
+      return 0.6;
+    } // Neutral score for new referees
 
     // Calculate completion and decline rates
     const completed = assignments.filter(a => a.status === 'completed').length;
@@ -443,7 +467,7 @@ class AIAssignmentService {
     const recentAssignments = await db('game_assignments')
       .join('games', 'game_assignments.game_id', 'games.id')
       .where('game_assignments.user_id', referee.id)
-      .where('games.game_date', '>=', db.raw("NOW() - INTERVAL '30 days'"))
+      .where('games.game_date', '>=', db.raw('NOW() - INTERVAL \'30 days\''))
       .whereIn('game_assignments.status', ['pending', 'accepted', 'completed']);
 
     // Workload balancing factor (prefer less loaded referees)
@@ -469,7 +493,7 @@ class AIAssignmentService {
         .where('game_assignments.user_id', referee.id)
         .where('games.location', game.location)
         .where('game_assignments.status', 'completed')
-        .where('games.game_date', '>=', db.raw("NOW() - INTERVAL '1 year'"));
+        .where('games.game_date', '>=', db.raw('NOW() - INTERVAL \'1 year\''));
 
       // Check for successful assignments with similar teams
       const teamHistory = await db('game_assignments')
@@ -480,7 +504,7 @@ class AIAssignmentService {
             .orWhere('games.away_team_id', game.away_team_id);
         })
         .where('game_assignments.status', 'completed')
-        .where('games.game_date', '>=', db.raw("NOW() - INTERVAL '1 year'"));
+        .where('games.game_date', '>=', db.raw('NOW() - INTERVAL \'1 year\''));
 
       // Check for successful assignments on same day of week and time
       const gameDate = new Date(game.game_date);
@@ -493,19 +517,31 @@ class AIAssignmentService {
         .whereRaw('EXTRACT(DOW FROM games.game_date) = ?', [dayOfWeek])
         .whereRaw('EXTRACT(HOUR FROM games.game_time) BETWEEN ? AND ?', [gameHour - 1, gameHour + 1])
         .where('game_assignments.status', 'completed')
-        .where('games.game_date', '>=', db.raw("NOW() - INTERVAL '6 months'"));
+        .where('games.game_date', '>=', db.raw('NOW() - INTERVAL \'6 months\''));
 
       // Calculate bonus based on historical success patterns
       let bonus = 0;
       
-      if (venueHistory.length >= 3) bonus += 0.3; // Strong venue familiarity
-      else if (venueHistory.length >= 1) bonus += 0.1; // Some venue experience
+      if (venueHistory.length >= 3) {
+        bonus += 0.3;
+      } // Strong venue familiarity
+      else if (venueHistory.length >= 1) {
+        bonus += 0.1;
+      } // Some venue experience
       
-      if (teamHistory.length >= 2) bonus += 0.2; // Team familiarity
-      else if (teamHistory.length >= 1) bonus += 0.1;
+      if (teamHistory.length >= 2) {
+        bonus += 0.2;
+      } // Team familiarity
+      else if (teamHistory.length >= 1) {
+        bonus += 0.1;
+      }
       
-      if (timePatternHistory.length >= 3) bonus += 0.2; // Good time slot fit
-      else if (timePatternHistory.length >= 1) bonus += 0.1;
+      if (timePatternHistory.length >= 3) {
+        bonus += 0.2;
+      } // Good time slot fit
+      else if (timePatternHistory.length >= 1) {
+        bonus += 0.1;
+      }
 
       return Math.min(1, bonus); // Cap at 1.0
     } catch (error) {
@@ -517,14 +553,28 @@ class AIAssignmentService {
   static generateReasoning(proximity, availability, experience, performance) {
     const reasons = [];
     
-    if (proximity >= 0.8) reasons.push('lives close to venue');
-    if (availability >= 0.9) reasons.push('explicitly available during time slot');
-    if (experience >= 0.8) reasons.push('high experience level for this game type');
-    if (performance >= 0.8) reasons.push('excellent past performance and reliability');
+    if (proximity >= 0.8) {
+      reasons.push('lives close to venue');
+    }
+    if (availability >= 0.9) {
+      reasons.push('explicitly available during time slot');
+    }
+    if (experience >= 0.8) {
+      reasons.push('high experience level for this game type');
+    }
+    if (performance >= 0.8) {
+      reasons.push('excellent past performance and reliability');
+    }
     
-    if (proximity < 0.5) reasons.push('significant travel distance required');
-    if (availability < 0.5) reasons.push('potential availability conflict');
-    if (experience < 0.5) reasons.push('may need experience development for this level');
+    if (proximity < 0.5) {
+      reasons.push('significant travel distance required');
+    }
+    if (availability < 0.5) {
+      reasons.push('potential availability conflict');
+    }
+    if (experience < 0.5) {
+      reasons.push('may need experience development for this level');
+    }
     
     return reasons.length > 0 
       ? reasons.join(', ').replace(/^./, str => str.toUpperCase())
@@ -535,32 +585,54 @@ class AIAssignmentService {
     const reasons = [];
     
     // Proximity factors
-    if (proximity >= 0.9) reasons.push('very close to venue');
-    else if (proximity >= 0.8) reasons.push('close to venue');
-    else if (proximity < 0.4) reasons.push('significant travel distance');
+    if (proximity >= 0.9) {
+      reasons.push('very close to venue');
+    } else if (proximity >= 0.8) {
+      reasons.push('close to venue');
+    } else if (proximity < 0.4) {
+      reasons.push('significant travel distance');
+    }
     
     // Availability factors
-    if (availability >= 0.9) reasons.push('explicitly available during time slot');
-    else if (availability >= 0.7) reasons.push('generally available');
-    else if (availability < 0.5) reasons.push('potential availability conflict');
+    if (availability >= 0.9) {
+      reasons.push('explicitly available during time slot');
+    } else if (availability >= 0.7) {
+      reasons.push('generally available');
+    } else if (availability < 0.5) {
+      reasons.push('potential availability conflict');
+    }
     
     // Experience factors
-    if (experience >= 0.9) reasons.push('excellent experience match for game level');
-    else if (experience >= 0.7) reasons.push('good experience level');
-    else if (experience < 0.5) reasons.push('may need development for this level');
+    if (experience >= 0.9) {
+      reasons.push('excellent experience match for game level');
+    } else if (experience >= 0.7) {
+      reasons.push('good experience level');
+    } else if (experience < 0.5) {
+      reasons.push('may need development for this level');
+    }
     
     // Performance factors
-    if (performance >= 0.8) reasons.push('excellent reliability and past performance');
-    else if (performance >= 0.6) reasons.push('good track record');
-    else if (performance < 0.4) reasons.push('limited recent activity or mixed performance');
+    if (performance >= 0.8) {
+      reasons.push('excellent reliability and past performance');
+    } else if (performance >= 0.6) {
+      reasons.push('good track record');
+    } else if (performance < 0.4) {
+      reasons.push('limited recent activity or mixed performance');
+    }
     
     // Historical pattern bonuses
-    if (historicalBonus >= 0.5) reasons.push('strong historical success pattern at this venue/time');
-    else if (historicalBonus >= 0.3) reasons.push('previous successful assignments in similar games');
-    else if (historicalBonus >= 0.1) reasons.push('some relevant experience with venue or teams');
+    if (historicalBonus >= 0.5) {
+      reasons.push('strong historical success pattern at this venue/time');
+    } else if (historicalBonus >= 0.3) {
+      reasons.push('previous successful assignments in similar games');
+    } else if (historicalBonus >= 0.1) {
+      reasons.push('some relevant experience with venue or teams');
+    }
 
     // Workload considerations
-    if (performance < 0.6) reasons.push('balanced workload distribution considered');
+    if (performance < 0.6) {
+      reasons.push('balanced workload distribution considered');
+    }
 
     return reasons.length > 0 
       ? reasons.join(', ').replace(/^./, str => str.toUpperCase())
@@ -626,7 +698,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
     // Clear any expired suggestions for these games
     await db('ai_suggestions')
       .whereIn('game_id', game_ids)
-      .where('created_at', '<', db.raw("NOW() - INTERVAL '1 hour'"))
+      .where('created_at', '<', db.raw('NOW() - INTERVAL \'1 hour\''))
       .update({ status: 'expired' });
 
     // Get available referees for all games
@@ -733,7 +805,7 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
         'away_team.name as away_team_name',
         'users.name as referee_name'
       )
-      .where('ai_suggestions.created_at', '>=', db.raw("NOW() - INTERVAL '24 hours'"))
+      .where('ai_suggestions.created_at', '>=', db.raw('NOW() - INTERVAL \'24 hours\''))
       .orderBy('ai_suggestions.confidence_score', 'desc');
 
     if (status !== 'all') {
@@ -800,7 +872,7 @@ router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req, r
     const suggestion = await db('ai_suggestions')
       .where('id', id)
       .where('status', 'pending')
-      .where('created_at', '>=', db.raw("NOW() - INTERVAL '1 hour'"))
+      .where('created_at', '>=', db.raw('NOW() - INTERVAL \'1 hour\''))
       .first();
 
     if (!suggestion) {

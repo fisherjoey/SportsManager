@@ -232,33 +232,33 @@ class ErrorFactory {
     // Handle specific database error types
     if (error.code) {
       switch (error.code) {
-        case '23505': // Unique violation
-          message = 'Duplicate entry detected';
-          statusCode = 409;
-          return new ConflictError(message, { constraint: error.constraint });
+      case '23505': // Unique violation
+        message = 'Duplicate entry detected';
+        statusCode = 409;
+        return new ConflictError(message, { constraint: error.constraint });
         
-        case '23503': // Foreign key violation
-          message = 'Referenced record not found';
-          statusCode = 400;
-          return new ValidationError(message, { constraint: error.constraint });
+      case '23503': // Foreign key violation
+        message = 'Referenced record not found';
+        statusCode = 400;
+        return new ValidationError(message, { constraint: error.constraint });
         
-        case '23502': // Not null violation
-          message = 'Required field missing';
-          statusCode = 400;
-          return new ValidationError(message, { column: error.column });
+      case '23502': // Not null violation
+        message = 'Required field missing';
+        statusCode = 400;
+        return new ValidationError(message, { column: error.column });
         
-        case '23514': // Check constraint violation
-          message = 'Data validation failed';
-          statusCode = 400;
-          return new ValidationError(message, { constraint: error.constraint });
+      case '23514': // Check constraint violation
+        message = 'Data validation failed';
+        statusCode = 400;
+        return new ValidationError(message, { constraint: error.constraint });
         
-        case 'ECONNREFUSED':
-        case 'ENOTFOUND':
-          message = 'Database connection failed';
-          return new DatabaseError(message, error, operation);
+      case 'ECONNREFUSED':
+      case 'ENOTFOUND':
+        message = 'Database connection failed';
+        return new DatabaseError(message, error, operation);
         
-        default:
-          return new DatabaseError(message, error, operation);
+      default:
+        return new DatabaseError(message, error, operation);
       }
     }
 

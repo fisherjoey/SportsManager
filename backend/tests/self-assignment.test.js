@@ -80,7 +80,7 @@ describe('Self-Assignment API', () => {
       status: 'unassigned'
     }).returning('*');
 
-    refereeToken = 'referee-token-' + refereeUser.id;
+    refereeToken = `referee-token-${  refereeUser.id}`;
   });
 
   afterAll(async () => {

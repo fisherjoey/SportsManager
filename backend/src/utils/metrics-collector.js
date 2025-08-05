@@ -124,7 +124,9 @@ class MetricsCollector {
     try {
       // Collect from all registered collectors
       for (const [name, collectorInfo] of this.collectors.entries()) {
-        if (!collectorInfo.enabled) continue;
+        if (!collectorInfo.enabled) {
+          continue;
+        }
         
         try {
           const startTime = process.hrtime.bigint();
@@ -307,9 +309,15 @@ class MetricsCollector {
     }
     
     // Determine final status
-    if (score >= 90 && status === 'excellent') return 'excellent';
-    if (score >= 75) return status === 'critical' ? 'critical' : 'good';
-    if (score >= 50) return 'warning';
+    if (score >= 90 && status === 'excellent') {
+      return 'excellent';
+    }
+    if (score >= 75) {
+      return status === 'critical' ? 'critical' : 'good';
+    }
+    if (score >= 50) {
+      return 'warning';
+    }
     return 'critical';
   }
 
@@ -670,7 +678,9 @@ class MetricsCollector {
    * Check if trend is increasing
    */
   isTrendIncreasing(values) {
-    if (values.length < 3) return false;
+    if (values.length < 3) {
+      return false;
+    }
     
     let increasingCount = 0;
     for (let i = 1; i < values.length; i++) {
@@ -686,7 +696,9 @@ class MetricsCollector {
    * Check if trend is decreasing
    */
   isTrendDecreasing(values) {
-    if (values.length < 3) return false;
+    if (values.length < 3) {
+      return false;
+    }
     
     let decreasingCount = 0;
     for (let i = 1; i < values.length; i++) {
@@ -702,7 +714,9 @@ class MetricsCollector {
    * Convert Map to plain object for JSON serialization
    */
   convertMapToObject(map) {
-    if (!map || typeof map.entries !== 'function') return {};
+    if (!map || typeof map.entries !== 'function') {
+      return {};
+    }
     return Object.fromEntries(Array.from(map.entries()));
   }
 

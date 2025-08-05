@@ -84,7 +84,9 @@ async function getTargetRecipients(targetAudience) {
 
 // Helper function to send communication to recipients
 async function sendToRecipients(communicationId, recipients) {
-  if (recipients.length === 0) return;
+  if (recipients.length === 0) {
+    return;
+  }
   
   const client = await pool.connect();
   try {

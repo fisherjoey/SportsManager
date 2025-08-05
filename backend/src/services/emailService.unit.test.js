@@ -180,8 +180,12 @@ describe('EmailService Unit Tests', () => {
 
     afterEach(() => {
       // Restore console methods after each test
-      if (console.log.mockRestore) console.log.mockRestore();
-      if (console.error.mockRestore) console.error.mockRestore();
+      if (console.log.mockRestore) {
+        console.log.mockRestore();
+      }
+      if (console.error.mockRestore) {
+        console.error.mockRestore();
+      }
     });
 
     it('should log success', async () => {

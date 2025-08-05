@@ -362,15 +362,25 @@ router.get('/receipts', authenticateToken, async (req, res) => {
       .leftJoin('expense_categories', 'expense_data.category_id', 'expense_categories.id')
       .modify(queryBuilder => {
         // Apply all filters to count query
-        if (category) queryBuilder.where('expense_data.category_id', category);
-        if (dateFrom) queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
-        if (dateTo) queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
-        if (minAmount) queryBuilder.where('expense_data.total_amount', '>=', minAmount);
-        if (maxAmount) queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        if (category) {
+          queryBuilder.where('expense_data.category_id', category);
+        }
+        if (dateFrom) {
+          queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
+        }
+        if (dateTo) {
+          queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+        }
+        if (minAmount) {
+          queryBuilder.where('expense_data.total_amount', '>=', minAmount);
+        }
+        if (maxAmount) {
+          queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        }
         if (search) {
           queryBuilder.where(function() {
             this.where('expense_receipts.original_filename', 'ilike', `%${search}%`)
-                .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
+              .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
           });
         }
       })
@@ -384,15 +394,25 @@ router.get('/receipts', authenticateToken, async (req, res) => {
       .leftJoin('expense_approvals', 'expense_data.id', 'expense_approvals.expense_data_id')
       .modify(queryBuilder => {
         // Apply all filters
-        if (category) queryBuilder.where('expense_data.category_id', category);
-        if (dateFrom) queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
-        if (dateTo) queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
-        if (minAmount) queryBuilder.where('expense_data.total_amount', '>=', minAmount);
-        if (maxAmount) queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        if (category) {
+          queryBuilder.where('expense_data.category_id', category);
+        }
+        if (dateFrom) {
+          queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
+        }
+        if (dateTo) {
+          queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+        }
+        if (minAmount) {
+          queryBuilder.where('expense_data.total_amount', '>=', minAmount);
+        }
+        if (maxAmount) {
+          queryBuilder.where('expense_data.total_amount', '<=', maxAmount);
+        }
         if (search) {
           queryBuilder.where(function() {
             this.where('expense_receipts.original_filename', 'ilike', `%${search}%`)
-                .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
+              .orWhere('expense_data.vendor_name', 'ilike', `%${search}%`);
           });
         }
       })
@@ -718,7 +738,7 @@ router.post('/:id/approve',
       const pendingApproval = await db('expense_approvals')
         .where('expense_data_id', expenseId)
         .where('stage_status', 'pending')
-        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .whereRaw('JSON_EXTRACT(required_approvers, \'$[*].id\') LIKE ?', [`%"${req.user.id}"%`])
         .orWhere('delegated_to', req.user.id)
         .first();
 
@@ -789,7 +809,7 @@ router.post('/:id/reject',
       const pendingApproval = await db('expense_approvals')
         .where('expense_data_id', expenseId)
         .where('stage_status', 'pending')
-        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .whereRaw('JSON_EXTRACT(required_approvers, \'$[*].id\') LIKE ?', [`%"${req.user.id}"%`])
         .orWhere('delegated_to', req.user.id)
         .first();
 
@@ -878,7 +898,7 @@ router.post('/:id/delegate',
       const pendingApproval = await db('expense_approvals')
         .where('expense_data_id', expenseId)
         .where('stage_status', 'pending')
-        .whereRaw("JSON_EXTRACT(required_approvers, '$[*].id') LIKE ?", [`%"${req.user.id}"%`])
+        .whereRaw('JSON_EXTRACT(required_approvers, \'$[*].id\') LIKE ?', [`%"${req.user.id}"%`])
         .first();
 
       if (!pendingApproval) {
@@ -1047,32 +1067,32 @@ router.get('/reports',
       let groupByField, selectFields;
       
       switch (groupBy) {
-        case 'category':
-          groupByField = 'expense_categories.name';
-          selectFields = [
-            'expense_categories.name as group_name',
-            'expense_categories.color_code as color'
-          ];
-          break;
-        case 'user':
-          groupByField = 'users.id';
-          selectFields = [
-            db.raw("CONCAT(users.first_name, ' ', users.last_name) as group_name"),
-            db.raw("'#6B7280' as color")
-          ];
-          break;
-        case 'month':
-          groupByField = db.raw("DATE_TRUNC('month', expense_data.transaction_date)");
-          selectFields = [
-            db.raw("TO_CHAR(DATE_TRUNC('month', expense_data.transaction_date), 'YYYY-MM') as group_name"),
-            db.raw("'#3B82F6' as color")
-          ];
-          break;
-        default:
-          return res.status(400).json({
-            error: 'Invalid groupBy parameter',
-            valid: ['category', 'user', 'month']
-          });
+      case 'category':
+        groupByField = 'expense_categories.name';
+        selectFields = [
+          'expense_categories.name as group_name',
+          'expense_categories.color_code as color'
+        ];
+        break;
+      case 'user':
+        groupByField = 'users.id';
+        selectFields = [
+          db.raw('CONCAT(users.first_name, \' \', users.last_name) as group_name'),
+          db.raw('\'#6B7280\' as color')
+        ];
+        break;
+      case 'month':
+        groupByField = db.raw('DATE_TRUNC(\'month\', expense_data.transaction_date)');
+        selectFields = [
+          db.raw('TO_CHAR(DATE_TRUNC(\'month\', expense_data.transaction_date), \'YYYY-MM\') as group_name'),
+          db.raw('\'#3B82F6\' as color')
+        ];
+        break;
+      default:
+        return res.status(400).json({
+          error: 'Invalid groupBy parameter',
+          valid: ['category', 'user', 'month']
+        });
       }
 
       const results = await query
@@ -1089,8 +1109,12 @@ router.get('/reports',
         .join('expense_receipts', 'expense_data.receipt_id', 'expense_receipts.id')
         .where('expense_data.organization_id', organizationId)
         .modify(queryBuilder => {
-          if (dateFrom) queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
-          if (dateTo) queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+          if (dateFrom) {
+            queryBuilder.where('expense_data.transaction_date', '>=', dateFrom);
+          }
+          if (dateTo) {
+            queryBuilder.where('expense_data.transaction_date', '<=', dateTo);
+          }
         })
         .select([
           db.raw('COUNT(*) as total_receipts'),
@@ -1370,10 +1394,18 @@ router.get('/reimbursements', authenticateToken, async (req, res) => {
 
     // Get total count for pagination
     const totalQuery = db('expense_reimbursements');
-    if (status) totalQuery.where('status', status);
-    if (userId) totalQuery.where('reimbursement_user_id', userId);
-    if (payPeriod) totalQuery.where('pay_period', payPeriod);
-    if (req.user.role !== 'admin') totalQuery.where('organization_id', req.user.id);
+    if (status) {
+      totalQuery.where('status', status);
+    }
+    if (userId) {
+      totalQuery.where('reimbursement_user_id', userId);
+    }
+    if (payPeriod) {
+      totalQuery.where('pay_period', payPeriod);
+    }
+    if (req.user.role !== 'admin') {
+      totalQuery.where('organization_id', req.user.id);
+    }
     
     const totalCount = await totalQuery.count('* as count').first();
 
@@ -1510,8 +1542,12 @@ router.get('/users/:userId/earnings', authenticateToken, async (req, res) => {
 
     // Get total count
     const totalQuery = db('user_earnings').where('user_id', userId);
-    if (payPeriod) totalQuery.where('pay_period', payPeriod);
-    if (earningType) totalQuery.where('earning_type', earningType);
+    if (payPeriod) {
+      totalQuery.where('pay_period', payPeriod);
+    }
+    if (earningType) {
+      totalQuery.where('earning_type', earningType);
+    }
     
     const totalCount = await totalQuery.count('* as count').first();
 
@@ -1685,7 +1721,7 @@ router.post('/receipts/:id/select-payment-method', authenticateToken, async (req
     }
 
     // Check if expense data already exists
-    let expenseData = await db('expense_data')
+    const expenseData = await db('expense_data')
       .where('receipt_id', receiptId)
       .first();
 
@@ -1876,7 +1912,7 @@ router.get('/:id/approval-history', authenticateToken, async (req, res) => {
       .where('id', expenseId)
       .where(function() {
         this.where('user_id', req.user.id)
-            .orWhere('organization_id', req.user.organization_id || req.user.id);
+          .orWhere('organization_id', req.user.organization_id || req.user.id);
       })
       .first();
 
@@ -1895,8 +1931,8 @@ router.get('/:id/approval-history', authenticateToken, async (req, res) => {
         number: approval.stage_number,
         totalStages: approval.total_stages,
         name: approval.stage_number === 1 ? 'Manager Approval' : 
-              approval.stage_number === 2 ? 'Finance Review' : 
-              approval.stage_number === 3 ? 'Executive Approval' : 
+          approval.stage_number === 2 ? 'Finance Review' : 
+            approval.stage_number === 3 ? 'Executive Approval' : 
               `Stage ${approval.stage_number}`,
         status: approval.stage_status,
         startedAt: approval.stage_started_at,

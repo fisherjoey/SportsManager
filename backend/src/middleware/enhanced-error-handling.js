@@ -112,17 +112,17 @@ class ErrorLogger {
 
     // Log based on level
     switch (logLevel) {
-      case 'error':
-        console.error('ERROR:', JSON.stringify(logEntry, null, 2));
-        break;
-      case 'warn':
-        console.warn('WARNING:', JSON.stringify(logEntry, null, 2));
-        break;
-      case 'info':
-        console.info('INFO:', JSON.stringify(logEntry, null, 2));
-        break;
-      default:
-        console.log('LOG:', JSON.stringify(logEntry, null, 2));
+    case 'error':
+      console.error('ERROR:', JSON.stringify(logEntry, null, 2));
+      break;
+    case 'warn':
+      console.warn('WARNING:', JSON.stringify(logEntry, null, 2));
+      break;
+    case 'info':
+      console.info('INFO:', JSON.stringify(logEntry, null, 2));
+      break;
+    default:
+      console.log('LOG:', JSON.stringify(logEntry, null, 2));
     }
 
     // In production, you might want to send to external logging service
@@ -141,8 +141,12 @@ class ErrorLogger {
 
     const statusCode = error.statusCode || 500;
     
-    if (statusCode >= 500) return 'error';
-    if (statusCode >= 400) return 'warn';
+    if (statusCode >= 500) {
+      return 'error';
+    }
+    if (statusCode >= 400) {
+      return 'warn';
+    }
     return 'info';
   }
 

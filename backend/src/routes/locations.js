@@ -181,27 +181,69 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 
     const updateData = {};
     
-    if (name !== undefined) updateData.name = name;
-    if (address !== undefined) updateData.address = address;
-    if (city !== undefined) updateData.city = city;
-    if (province !== undefined) updateData.province = province;
-    if (postal_code !== undefined) updateData.postal_code = postal_code;
-    if (country !== undefined) updateData.country = country;
-    if (latitude !== undefined) updateData.latitude = latitude ? parseFloat(latitude) : null;
-    if (longitude !== undefined) updateData.longitude = longitude ? parseFloat(longitude) : null;
-    if (capacity !== undefined) updateData.capacity = capacity ? parseInt(capacity) : null;
-    if (contact_name !== undefined) updateData.contact_name = contact_name;
-    if (contact_phone !== undefined) updateData.contact_phone = contact_phone;
-    if (contact_email !== undefined) updateData.contact_email = contact_email;
-    if (rental_rate !== undefined) updateData.rental_rate = rental_rate ? parseFloat(rental_rate) : null;
-    if (parking_spaces !== undefined) updateData.parking_spaces = parking_spaces ? parseInt(parking_spaces) : null;
-    if (facilities !== undefined) updateData.facilities = JSON.stringify(facilities);
-    if (accessibility_features !== undefined) updateData.accessibility_features = JSON.stringify(accessibility_features);
-    if (notes !== undefined) updateData.notes = notes;
-    if (is_active !== undefined) updateData.is_active = is_active;
-    if (hourly_rate !== undefined) updateData.hourly_rate = hourly_rate ? parseFloat(hourly_rate) : null;
-    if (game_rate !== undefined) updateData.game_rate = game_rate ? parseFloat(game_rate) : null;
-    if (cost_notes !== undefined) updateData.cost_notes = cost_notes;
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    if (address !== undefined) {
+      updateData.address = address;
+    }
+    if (city !== undefined) {
+      updateData.city = city;
+    }
+    if (province !== undefined) {
+      updateData.province = province;
+    }
+    if (postal_code !== undefined) {
+      updateData.postal_code = postal_code;
+    }
+    if (country !== undefined) {
+      updateData.country = country;
+    }
+    if (latitude !== undefined) {
+      updateData.latitude = latitude ? parseFloat(latitude) : null;
+    }
+    if (longitude !== undefined) {
+      updateData.longitude = longitude ? parseFloat(longitude) : null;
+    }
+    if (capacity !== undefined) {
+      updateData.capacity = capacity ? parseInt(capacity) : null;
+    }
+    if (contact_name !== undefined) {
+      updateData.contact_name = contact_name;
+    }
+    if (contact_phone !== undefined) {
+      updateData.contact_phone = contact_phone;
+    }
+    if (contact_email !== undefined) {
+      updateData.contact_email = contact_email;
+    }
+    if (rental_rate !== undefined) {
+      updateData.rental_rate = rental_rate ? parseFloat(rental_rate) : null;
+    }
+    if (parking_spaces !== undefined) {
+      updateData.parking_spaces = parking_spaces ? parseInt(parking_spaces) : null;
+    }
+    if (facilities !== undefined) {
+      updateData.facilities = JSON.stringify(facilities);
+    }
+    if (accessibility_features !== undefined) {
+      updateData.accessibility_features = JSON.stringify(accessibility_features);
+    }
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+    if (is_active !== undefined) {
+      updateData.is_active = is_active;
+    }
+    if (hourly_rate !== undefined) {
+      updateData.hourly_rate = hourly_rate ? parseFloat(hourly_rate) : null;
+    }
+    if (game_rate !== undefined) {
+      updateData.game_rate = game_rate ? parseFloat(game_rate) : null;
+    }
+    if (cost_notes !== undefined) {
+      updateData.cost_notes = cost_notes;
+    }
 
     const [location] = await knex('locations')
       .where('id', req.params.id)
@@ -269,9 +311,15 @@ router.get('/distances', authenticateToken, async (req, res) => {
       : maxDistanceMeters ? parseFloat(maxDistanceMeters) : null;
 
     const filters = {};
-    if (maxDriveTimeMinutes) filters.maxDriveTimeMinutes = parseInt(maxDriveTimeMinutes);
-    if (maxDistanceMetersValue) filters.maxDistanceMeters = maxDistanceMetersValue;
-    if (city) filters.city = city;
+    if (maxDriveTimeMinutes) {
+      filters.maxDriveTimeMinutes = parseInt(maxDriveTimeMinutes);
+    }
+    if (maxDistanceMetersValue) {
+      filters.maxDistanceMeters = maxDistanceMetersValue;
+    }
+    if (city) {
+      filters.city = city;
+    }
 
     let distances = await distanceService.getUserDistances(req.user.userId, filters);
     

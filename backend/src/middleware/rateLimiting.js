@@ -21,7 +21,7 @@ const authLimiter = rateLimit({
   skipFailedRequests: false,
   // Custom key generator to include user info if available
   keyGenerator: (req) => {
-    return req.ip + ':' + (req.body?.email || 'anonymous');
+    return `${req.ip  }:${  req.body?.email || 'anonymous'}`;
   }
 });
 
@@ -36,7 +36,7 @@ const passwordResetLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + ':' + (req.body?.email || 'anonymous');
+    return `${req.ip  }:${  req.body?.email || 'anonymous'}`;
   }
 });
 

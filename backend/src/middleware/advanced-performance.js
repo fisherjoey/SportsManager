@@ -184,9 +184,15 @@ class AdvancedPerformanceMetrics {
     endpointMetrics.minTime = Math.min(endpointMetrics.minTime, responseTime);
     endpointMetrics.maxTime = Math.max(endpointMetrics.maxTime, responseTime);
     
-    if (error) endpointMetrics.errorCount++;
-    if (responseTime > 1000) endpointMetrics.slowCount++;
-    if (responseTime > 5000) endpointMetrics.verySlowCount++;
+    if (error) {
+      endpointMetrics.errorCount++;
+    }
+    if (responseTime > 1000) {
+      endpointMetrics.slowCount++;
+    }
+    if (responseTime > 5000) {
+      endpointMetrics.verySlowCount++;
+    }
     
     // Track status codes for endpoint
     const currentStatusCount = endpointMetrics.statusCodes.get(statusCode) || 0;
@@ -272,9 +278,15 @@ class AdvancedPerformanceMetrics {
     tableMetrics.count++;
     tableMetrics.totalTime += duration;
     tableMetrics.averageTime = tableMetrics.totalTime / tableMetrics.count;
-    if (error) tableMetrics.errorCount++;
-    if (duration > 500) tableMetrics.slowCount++;
-    if (duration > 2000) tableMetrics.verySlowCount++;
+    if (error) {
+      tableMetrics.errorCount++;
+    }
+    if (duration > 500) {
+      tableMetrics.slowCount++;
+    }
+    if (duration > 2000) {
+      tableMetrics.verySlowCount++;
+    }
     
     // Update per-operation metrics
     if (!this.metrics.database.queries.byOperation.has(operation)) {
@@ -766,7 +778,9 @@ function advancedPerformanceMonitor(options = {}) {
     let ended = false;
     
     res.end = function(...args) {
-      if (ended) return;
+      if (ended) {
+        return;
+      }
       ended = true;
       
       const endTime = process.hrtime.bigint();
@@ -867,13 +881,21 @@ function parseSqlQuery(sql) {
   
   // Extract operation
   let operation = 'unknown';
-  if (cleanSql.startsWith('select')) operation = 'select';
-  else if (cleanSql.startsWith('insert')) operation = 'insert';
-  else if (cleanSql.startsWith('update')) operation = 'update';
-  else if (cleanSql.startsWith('delete')) operation = 'delete';
-  else if (cleanSql.startsWith('create')) operation = 'create';
-  else if (cleanSql.startsWith('drop')) operation = 'drop';
-  else if (cleanSql.startsWith('alter')) operation = 'alter';
+  if (cleanSql.startsWith('select')) {
+    operation = 'select';
+  } else if (cleanSql.startsWith('insert')) {
+    operation = 'insert';
+  } else if (cleanSql.startsWith('update')) {
+    operation = 'update';
+  } else if (cleanSql.startsWith('delete')) {
+    operation = 'delete';
+  } else if (cleanSql.startsWith('create')) {
+    operation = 'create';
+  } else if (cleanSql.startsWith('drop')) {
+    operation = 'drop';
+  } else if (cleanSql.startsWith('alter')) {
+    operation = 'alter';
+  }
   
   // Extract table name (simplified)
   let table = 'unknown';

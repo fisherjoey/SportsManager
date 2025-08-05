@@ -227,7 +227,7 @@ router.post('/:token/complete', async (req, res) => {
         role: invitation.role
       }).returning('*');
 
-      let userData = {
+      const userData = {
         id: user.id,
         email: user.email,
         role: user.role

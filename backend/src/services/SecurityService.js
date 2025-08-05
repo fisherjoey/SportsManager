@@ -606,12 +606,16 @@ class SecurityService {
   async checkPermission(userId, resource, action) {
     // Get user roles
     const user = await knex('users').where({ id: userId }).first();
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
 
     const userRoles = user.roles || [user.role];
     
     // Admin always has access
-    if (userRoles.includes('admin')) return true;
+    if (userRoles.includes('admin')) {
+      return true;
+    }
 
     // Check role-based permissions
     const rolePermissions = await knex('role_permissions')
@@ -623,7 +627,9 @@ class SecurityService {
       .where('permissions.is_active', true)
       .first();
 
-    if (rolePermissions) return true;
+    if (rolePermissions) {
+      return true;
+    }
 
     // Check user-specific permissions
     const userPermission = await knex('user_permissions')

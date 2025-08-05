@@ -69,8 +69,12 @@ router.get('/budget-variance', authenticateToken, async (req, res) => {
       );
 
     // Apply filters
-    if (period_id) budgetQuery = budgetQuery.where('b.budget_period_id', period_id);
-    if (category_id) budgetQuery = budgetQuery.where('b.category_id', category_id);
+    if (period_id) {
+      budgetQuery = budgetQuery.where('b.budget_period_id', period_id);
+    }
+    if (category_id) {
+      budgetQuery = budgetQuery.where('b.category_id', category_id);
+    }
 
     const budgets = await budgetQuery.orderBy('bc.sort_order').orderBy('b.name');
 
@@ -119,7 +123,9 @@ router.get('/budget-variance', authenticateToken, async (req, res) => {
       .join('budget_categories as bc', 'b.category_id', 'bc.id')
       .where('b.organization_id', organizationId)
       .modify(qb => {
-        if (period_id) qb.where('b.budget_period_id', period_id);
+        if (period_id) {
+          qb.where('b.budget_period_id', period_id);
+        }
       })
       .groupBy('bc.id', 'bc.name', 'bc.category_type', 'bc.color_code')
       .select(
@@ -181,21 +187,21 @@ router.get('/cash-flow', authenticateToken, async (req, res) => {
     let groupByFormat;
     let dateFormat;
     switch (grouping) {
-      case 'daily':
-        groupByFormat = 'YYYY-MM-DD';
-        dateFormat = 'transaction_date';
-        break;
-      case 'weekly':
-        groupByFormat = 'YYYY-"W"WW';
-        dateFormat = db.raw("DATE_TRUNC('week', transaction_date)");
-        break;
-      case 'quarterly':
-        groupByFormat = 'YYYY-"Q"Q';
-        dateFormat = db.raw("DATE_TRUNC('quarter', transaction_date)");
-        break;
-      default: // monthly
-        groupByFormat = 'YYYY-MM';
-        dateFormat = db.raw("DATE_TRUNC('month', transaction_date)");
+    case 'daily':
+      groupByFormat = 'YYYY-MM-DD';
+      dateFormat = 'transaction_date';
+      break;
+    case 'weekly':
+      groupByFormat = 'YYYY-"W"WW';
+      dateFormat = db.raw('DATE_TRUNC(\'week\', transaction_date)');
+      break;
+    case 'quarterly':
+      groupByFormat = 'YYYY-"Q"Q';
+      dateFormat = db.raw('DATE_TRUNC(\'quarter\', transaction_date)');
+      break;
+    default: // monthly
+      groupByFormat = 'YYYY-MM';
+      dateFormat = db.raw('DATE_TRUNC(\'month\', transaction_date)');
     }
 
     const cashFlowData = await db('financial_transactions')
@@ -203,7 +209,7 @@ router.get('/cash-flow', authenticateToken, async (req, res) => {
       .where('status', 'posted')
       .whereBetween('transaction_date', [startDate, endDate])
       .select(
-        dateFormat + ' as period',
+        `${dateFormat  } as period`,
         db.raw('SUM(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as inflow'),
         db.raw('SUM(CASE WHEN transaction_type IN (\'expense\', \'payroll\') THEN amount ELSE 0 END) as outflow'),
         db.raw('COUNT(*) as transaction_count')
@@ -330,8 +336,12 @@ router.get('/expense-analysis', authenticateToken, async (req, res) => {
       .where('ft.status', 'posted')
       .whereBetween('ft.transaction_date', [startDate, endDate]);
 
-    if (category_id) expenseQuery = expenseQuery.where('b.category_id', category_id);
-    if (vendor_id) expenseQuery = expenseQuery.where('ft.vendor_id', vendor_id);
+    if (category_id) {
+      expenseQuery = expenseQuery.where('b.category_id', category_id);
+    }
+    if (vendor_id) {
+      expenseQuery = expenseQuery.where('ft.vendor_id', vendor_id);
+    }
 
     // Expense by category
     const expensesByCategory = await expenseQuery.clone()
@@ -363,7 +373,7 @@ router.get('/expense-analysis', authenticateToken, async (req, res) => {
     // Monthly expense trend
     const monthlyTrend = await expenseQuery.clone()
       .select(
-        db.raw("TO_CHAR(ft.transaction_date, 'YYYY-MM') as month"),
+        db.raw('TO_CHAR(ft.transaction_date, \'YYYY-MM\') as month'),
         db.raw('SUM(ft.amount) as total_amount'),
         db.raw('COUNT(ft.id) as transaction_count')
       )
@@ -407,8 +417,12 @@ router.get('/expense-analysis', authenticateToken, async (req, res) => {
         .where('ft.status', 'posted')
         .whereBetween('ft.transaction_date', [prevStartDate, prevEndDate])
         .modify(qb => {
-          if (category_id) qb.where('b.category_id', category_id);
-          if (vendor_id) qb.where('ft.vendor_id', vendor_id);
+          if (category_id) {
+            qb.where('b.category_id', category_id);
+          }
+          if (vendor_id) {
+            qb.where('ft.vendor_id', vendor_id);
+          }
         })
         .select(
           db.raw('SUM(ft.amount) as total_expenses'),
@@ -483,7 +497,9 @@ router.get('/payroll-summary', authenticateToken, async (req, res) => {
       .where('g.organization_id', organizationId)
       .whereBetween('g.date', [startDate, endDate]);
 
-    if (referee_id) payrollQuery = payrollQuery.where('ga.user_id', referee_id);
+    if (referee_id) {
+      payrollQuery = payrollQuery.where('ga.user_id', referee_id);
+    }
     if (payment_status !== 'all') {
       payrollQuery = payrollQuery.where('ga.payment_status', payment_status);
     }
@@ -493,7 +509,7 @@ router.get('/payroll-summary', authenticateToken, async (req, res) => {
       .groupBy('ref.id', 'ref.first_name', 'ref.last_name', 'ref.email')
       .select(
         'ref.id as referee_id',
-        db.raw("ref.first_name || ' ' || ref.last_name as referee_name"),
+        db.raw('ref.first_name || \' \' || ref.last_name as referee_name'),
         'ref.email as referee_email',
         db.raw('COUNT(ga.id) as games_officiated'),
         db.raw('SUM(ga.calculated_wage) as total_wages'),
@@ -507,7 +523,7 @@ router.get('/payroll-summary', authenticateToken, async (req, res) => {
     // Monthly payroll trend
     const monthlyPayroll = await payrollQuery.clone()
       .select(
-        db.raw("TO_CHAR(g.date, 'YYYY-MM') as month"),
+        db.raw('TO_CHAR(g.date, \'YYYY-MM\') as month'),
         db.raw('COUNT(ga.id) as total_assignments'),
         db.raw('SUM(ga.calculated_wage) as total_wages'),
         db.raw('COUNT(DISTINCT ga.user_id) as active_referees')

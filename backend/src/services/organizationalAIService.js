@@ -172,11 +172,17 @@ class OrganizationalAIService {
       riskScore = Math.max(0, Math.min(100, riskScore + 50));
 
       let riskLevel;
-      if (riskScore >= 80) riskLevel = 'Very High';
-      else if (riskScore >= 65) riskLevel = 'High';
-      else if (riskScore >= 45) riskLevel = 'Medium';
-      else if (riskScore >= 25) riskLevel = 'Low';
-      else riskLevel = 'Very Low';
+      if (riskScore >= 80) {
+        riskLevel = 'Very High';
+      } else if (riskScore >= 65) {
+        riskLevel = 'High';
+      } else if (riskScore >= 45) {
+        riskLevel = 'Medium';
+      } else if (riskScore >= 25) {
+        riskLevel = 'Low';
+      } else {
+        riskLevel = 'Very Low';
+      }
 
       return {
         employeeId,
@@ -242,7 +248,7 @@ class OrganizationalAIService {
           analysis.insights.push({
             type: 'engagement_concern',
             title: 'Low Engagement Alert',
-            content: 'Document takes an average of ' + Math.round(avgDaysToAccess) + ' days to be accessed after creation'
+            content: `Document takes an average of ${  Math.round(avgDaysToAccess)  } days to be accessed after creation`
           });
         }
       }
@@ -534,33 +540,33 @@ class OrganizationalAIService {
     const insights = [];
 
     switch (category) {
-      case 'policy':
-        if (docData.requires_acknowledgment && parseInt(docData.acknowledgment_count) < parseInt(docData.unique_users) * 0.8) {
-          insights.push({
-            type: 'policy_compliance',
-            title: 'Policy Acknowledgment Concern',
-            content: 'Low acknowledgment rate may indicate compliance risk'
-          });
-        }
-        break;
-      
-      case 'manual':
-        if (parseInt(docData.access_count) < 10) {
-          insights.push({
-            type: 'utilization',
-            title: 'Low Utilization',
-            content: 'Manual may need better promotion or may be outdated'
-          });
-        }
-        break;
-      
-      case 'form':
+    case 'policy':
+      if (docData.requires_acknowledgment && parseInt(docData.acknowledgment_count) < parseInt(docData.unique_users) * 0.8) {
         insights.push({
-          type: 'process_efficiency',
-          title: 'Form Usage Analysis',
-          content: 'Consider digitizing frequently accessed forms for better efficiency'
+          type: 'policy_compliance',
+          title: 'Policy Acknowledgment Concern',
+          content: 'Low acknowledgment rate may indicate compliance risk'
         });
-        break;
+      }
+      break;
+      
+    case 'manual':
+      if (parseInt(docData.access_count) < 10) {
+        insights.push({
+          type: 'utilization',
+          title: 'Low Utilization',
+          content: 'Manual may need better promotion or may be outdated'
+        });
+      }
+      break;
+      
+    case 'form':
+      insights.push({
+        type: 'process_efficiency',
+        title: 'Form Usage Analysis',
+        content: 'Consider digitizing frequently accessed forms for better efficiency'
+      });
+      break;
     }
 
     return insights;

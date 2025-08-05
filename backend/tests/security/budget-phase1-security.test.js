@@ -64,7 +64,7 @@ describe('Budget System Phase 1 Security Tests', () => {
 
   describe('SQL Injection Prevention', () => {
     test('should prevent SQL injection in budget listing period_id filter', async () => {
-      const maliciousInput = "'; DROP TABLE budgets; --";
+      const maliciousInput = '\'; DROP TABLE budgets; --';
       
       const response = await request(app)
         .get(`/api/budgets?period_id=${encodeURIComponent(maliciousInput)}`)
@@ -79,7 +79,7 @@ describe('Budget System Phase 1 Security Tests', () => {
     });
 
     test('should prevent SQL injection in budget listing category_id filter', async () => {
-      const maliciousInput = "1' UNION SELECT * FROM users --";
+      const maliciousInput = '1\' UNION SELECT * FROM users --';
       
       const response = await request(app)
         .get(`/api/budgets?category_id=${encodeURIComponent(maliciousInput)}`)
@@ -90,7 +90,7 @@ describe('Budget System Phase 1 Security Tests', () => {
     });
 
     test('should prevent SQL injection in budget listing status filter', async () => {
-      const maliciousInput = "active'; DROP TABLE users; --";
+      const maliciousInput = 'active\'; DROP TABLE users; --';
       
       const response = await request(app)
         .get(`/api/budgets?status=${encodeURIComponent(maliciousInput)}`)
@@ -101,7 +101,7 @@ describe('Budget System Phase 1 Security Tests', () => {
     });
 
     test('should prevent SQL injection in budget detail endpoint', async () => {
-      const maliciousInput = "1'; DROP TABLE budgets; --";
+      const maliciousInput = '1\'; DROP TABLE budgets; --';
       
       const response = await request(app)
         .get(`/api/budgets/${maliciousInput}`)

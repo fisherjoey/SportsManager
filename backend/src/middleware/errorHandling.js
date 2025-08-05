@@ -158,25 +158,25 @@ function sanitizeError(error, req) {
   
   // Specific error message customization
   switch (error.type) {
-    case ERROR_TYPES.AUTHENTICATION_ERROR:
-      errorResponse.error = 'Authentication required';
-      break;
-    case ERROR_TYPES.AUTHORIZATION_ERROR:
-      errorResponse.error = 'Insufficient permissions';
-      break;
-    case ERROR_TYPES.NOT_FOUND_ERROR:
-      // Keep the original message for not found errors
-      break;
-    case ERROR_TYPES.RATE_LIMIT_ERROR:
-      errorResponse.error = 'Too many requests, please try again later';
-      break;
-    case ERROR_TYPES.DATABASE_ERROR:
-      errorResponse.error = 'Database operation failed';
-      break;
-    default:
-      if (!error.isOperational) {
-        errorResponse.error = 'Internal server error';
-      }
+  case ERROR_TYPES.AUTHENTICATION_ERROR:
+    errorResponse.error = 'Authentication required';
+    break;
+  case ERROR_TYPES.AUTHORIZATION_ERROR:
+    errorResponse.error = 'Insufficient permissions';
+    break;
+  case ERROR_TYPES.NOT_FOUND_ERROR:
+    // Keep the original message for not found errors
+    break;
+  case ERROR_TYPES.RATE_LIMIT_ERROR:
+    errorResponse.error = 'Too many requests, please try again later';
+    break;
+  case ERROR_TYPES.DATABASE_ERROR:
+    errorResponse.error = 'Database operation failed';
+    break;
+  default:
+    if (!error.isOperational) {
+      errorResponse.error = 'Internal server error';
+    }
   }
   
   return errorResponse;
@@ -211,17 +211,17 @@ async function logError(error, req, res) {
   
   // Use different console methods based on severity
   switch (severity) {
-    case ERROR_SEVERITY.CRITICAL:
-      console.error('🚨 CRITICAL ERROR:', logData);
-      break;
-    case ERROR_SEVERITY.HIGH:
-      console.error('❗ HIGH SEVERITY ERROR:', logData);
-      break;
-    case ERROR_SEVERITY.MEDIUM:
-      console.warn('⚠️  MEDIUM SEVERITY ERROR:', logData);
-      break;
-    default:
-      console.log('ℹ️  LOW SEVERITY ERROR:', logData);
+  case ERROR_SEVERITY.CRITICAL:
+    console.error('🚨 CRITICAL ERROR:', logData);
+    break;
+  case ERROR_SEVERITY.HIGH:
+    console.error('❗ HIGH SEVERITY ERROR:', logData);
+    break;
+  case ERROR_SEVERITY.MEDIUM:
+    console.warn('⚠️  MEDIUM SEVERITY ERROR:', logData);
+    break;
+  default:
+    console.log('ℹ️  LOW SEVERITY ERROR:', logData);
   }
   
   // Create audit log entry
@@ -255,14 +255,14 @@ async function logError(error, req, res) {
  */
 function getAuditEventType(error) {
   switch (error.type) {
-    case ERROR_TYPES.AUTHENTICATION_ERROR:
-      return AUDIT_EVENTS.AUTH_LOGIN_FAILURE;
-    case ERROR_TYPES.AUTHORIZATION_ERROR:
-      return AUDIT_EVENTS.SECURITY_UNAUTHORIZED_ACCESS;
-    case ERROR_TYPES.RATE_LIMIT_ERROR:
-      return AUDIT_EVENTS.SECURITY_RATE_LIMIT_EXCEEDED;
-    default:
-      return AUDIT_EVENTS.SECURITY_SUSPICIOUS_ACTIVITY;
+  case ERROR_TYPES.AUTHENTICATION_ERROR:
+    return AUDIT_EVENTS.AUTH_LOGIN_FAILURE;
+  case ERROR_TYPES.AUTHORIZATION_ERROR:
+    return AUDIT_EVENTS.SECURITY_UNAUTHORIZED_ACCESS;
+  case ERROR_TYPES.RATE_LIMIT_ERROR:
+    return AUDIT_EVENTS.SECURITY_RATE_LIMIT_EXCEEDED;
+  default:
+    return AUDIT_EVENTS.SECURITY_SUSPICIOUS_ACTIVITY;
   }
 }
 
@@ -292,32 +292,32 @@ function sanitizeBodyForLogging(body) {
 function handleDatabaseError(error) {
   // PostgreSQL specific error codes
   switch (error.code) {
-    case '23505': // Unique constraint violation
-      return new ValidationError('Duplicate entry found', {
-        field: error.detail || 'unknown',
-        constraint: error.constraint || 'unique_constraint'
-      });
-    case '23503': // Foreign key constraint violation
-      return new ValidationError('Referenced record not found', {
-        field: error.detail || 'unknown',
-        constraint: error.constraint || 'foreign_key_constraint'
-      });
-    case '23502': // Not null constraint violation
-      return new ValidationError('Required field missing', {
-        field: error.column || 'unknown',
-        constraint: 'not_null_constraint'
-      });
-    case '23514': // Check constraint violation
-      return new ValidationError('Invalid field value', {
-        field: error.detail || 'unknown',
-        constraint: error.constraint || 'check_constraint'
-      });
-    case '42P01': // Undefined table
-      return new DatabaseError('Database table not found');
-    case '42703': // Undefined column
-      return new DatabaseError('Database column not found');
-    default:
-      return new DatabaseError('Database operation failed', error);
+  case '23505': // Unique constraint violation
+    return new ValidationError('Duplicate entry found', {
+      field: error.detail || 'unknown',
+      constraint: error.constraint || 'unique_constraint'
+    });
+  case '23503': // Foreign key constraint violation
+    return new ValidationError('Referenced record not found', {
+      field: error.detail || 'unknown',
+      constraint: error.constraint || 'foreign_key_constraint'
+    });
+  case '23502': // Not null constraint violation
+    return new ValidationError('Required field missing', {
+      field: error.column || 'unknown',
+      constraint: 'not_null_constraint'
+    });
+  case '23514': // Check constraint violation
+    return new ValidationError('Invalid field value', {
+      field: error.detail || 'unknown',
+      constraint: error.constraint || 'check_constraint'
+    });
+  case '42P01': // Undefined table
+    return new DatabaseError('Database table not found');
+  case '42703': // Undefined column
+    return new DatabaseError('Database column not found');
+  default:
+    return new DatabaseError('Database operation failed', error);
   }
 }
 

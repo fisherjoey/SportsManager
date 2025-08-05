@@ -77,9 +77,15 @@ router.get('/', authenticateToken, validateQuery(FilterSchemas.assignments), enh
   
   // Build filters object - support both camelCase and snake_case for backward compatibility
   const filters = {};
-  if (game_id || gameId) filters.game_id = game_id || gameId;
-  if (referee_id || refereeId || user_id) filters.user_id = referee_id || refereeId || user_id;
-  if (status) filters.status = status;
+  if (game_id || gameId) {
+    filters.game_id = game_id || gameId;
+  }
+  if (referee_id || refereeId || user_id) {
+    filters.user_id = referee_id || refereeId || user_id;
+  }
+  if (status) {
+    filters.status = status;
+  }
   
   // Get assignments using AssignmentService
   const result = await assignmentService.getAssignmentsWithDetails(

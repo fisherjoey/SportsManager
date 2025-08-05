@@ -58,7 +58,7 @@ function sanitizePromptInput(input, options = {}) {
 
   // Truncate to max length
   if (sanitized.length > maxLength) {
-    sanitized = sanitized.substring(0, maxLength) + '...';
+    sanitized = `${sanitized.substring(0, maxLength)  }...`;
   }
 
   return sanitized;

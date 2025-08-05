@@ -115,7 +115,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     const { page, limit, cardType, isActive, isSharedCard, primaryHolderId, 
-            isEmergencyCard, isBlocked, search } = value;
+      isEmergencyCard, isBlocked, search } = value;
     const offset = (page - 1) * limit;
     const organizationId = req.user.organization_id || req.user.id;
 
@@ -151,8 +151,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (search) {
       query = query.where(function() {
         this.where('company_credit_cards.card_name', 'ilike', `%${search}%`)
-            .orWhere('company_credit_cards.last_four_digits', 'ilike', `%${search}%`)
-            .orWhere('company_credit_cards.cardholder_name', 'ilike', `%${search}%`);
+          .orWhere('company_credit_cards.last_four_digits', 'ilike', `%${search}%`)
+          .orWhere('company_credit_cards.cardholder_name', 'ilike', `%${search}%`);
       });
     }
 
@@ -160,8 +160,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
       query = query.where(function() {
         this.where('company_credit_cards.primary_holder_id', req.user.id)
-            .orWhere('company_credit_cards.is_shared_card', true)
-            .orWhereRaw(`
+          .orWhere('company_credit_cards.is_shared_card', true)
+          .orWhereRaw(`
               JSON_CONTAINS(company_credit_cards.authorized_users, ?)
             `, [JSON.stringify(req.user.id)]);
       });
@@ -176,7 +176,7 @@ router.get('/', authenticateToken, async (req, res) => {
       .select([
         'company_credit_cards.*',
         'primary_holders.email as primary_holder_email',
-        db.raw("CONCAT(primary_holders.first_name, ' ', primary_holders.last_name) as primary_holder_name")
+        db.raw('CONCAT(primary_holders.first_name, \' \', primary_holders.last_name) as primary_holder_name')
       ])
       .orderBy('company_credit_cards.card_name')
       .limit(limit)
@@ -371,7 +371,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       .select([
         'company_credit_cards.*',
         'primary_holders.email as primary_holder_email',
-        db.raw("CONCAT(primary_holders.first_name, ' ', primary_holders.last_name) as primary_holder_name"),
+        db.raw('CONCAT(primary_holders.first_name, \' \', primary_holders.last_name) as primary_holder_name'),
         'created_by_user.email as created_by_email'
       ])
       .first();
@@ -544,15 +544,33 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
       updated_at: new Date()
     };
 
-    if (value.cardName !== undefined) updateData.card_name = value.cardName;
-    if (value.cardType !== undefined) updateData.card_type = value.cardType;
-    if (value.lastFourDigits !== undefined) updateData.last_four_digits = value.lastFourDigits;
-    if (value.cardNetwork !== undefined) updateData.card_network = value.cardNetwork;
-    if (value.issuingBank !== undefined) updateData.issuing_bank = value.issuingBank;
-    if (value.primaryHolderId !== undefined) updateData.primary_holder_id = value.primaryHolderId;
-    if (value.cardholderName !== undefined) updateData.cardholder_name = value.cardholderName;
-    if (value.authorizedUsers !== undefined) updateData.authorized_users = JSON.stringify(value.authorizedUsers);
-    if (value.isSharedCard !== undefined) updateData.is_shared_card = value.isSharedCard;
+    if (value.cardName !== undefined) {
+      updateData.card_name = value.cardName;
+    }
+    if (value.cardType !== undefined) {
+      updateData.card_type = value.cardType;
+    }
+    if (value.lastFourDigits !== undefined) {
+      updateData.last_four_digits = value.lastFourDigits;
+    }
+    if (value.cardNetwork !== undefined) {
+      updateData.card_network = value.cardNetwork;
+    }
+    if (value.issuingBank !== undefined) {
+      updateData.issuing_bank = value.issuingBank;
+    }
+    if (value.primaryHolderId !== undefined) {
+      updateData.primary_holder_id = value.primaryHolderId;
+    }
+    if (value.cardholderName !== undefined) {
+      updateData.cardholder_name = value.cardholderName;
+    }
+    if (value.authorizedUsers !== undefined) {
+      updateData.authorized_users = JSON.stringify(value.authorizedUsers);
+    }
+    if (value.isSharedCard !== undefined) {
+      updateData.is_shared_card = value.isSharedCard;
+    }
     if (value.isActive !== undefined) {
       updateData.is_active = value.isActive;
       if (value.isActive && !existingCard.activated_at) {
@@ -561,29 +579,75 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
         updateData.deactivated_at = new Date();
       }
     }
-    if (value.expirationDate !== undefined) updateData.expiration_date = value.expirationDate;
-    if (value.creditLimit !== undefined) updateData.credit_limit = value.creditLimit;
-    if (value.availableCredit !== undefined) updateData.available_credit = value.availableCredit;
-    if (value.currentBalance !== undefined) updateData.current_balance = value.currentBalance;
-    if (value.monthlyLimit !== undefined) updateData.monthly_limit = value.monthlyLimit;
-    if (value.transactionLimit !== undefined) updateData.transaction_limit = value.transactionLimit;
-    if (value.categoryLimits !== undefined) updateData.category_limits = value.categoryLimits ? JSON.stringify(value.categoryLimits) : null;
-    if (value.merchantRestrictions !== undefined) updateData.merchant_restrictions = value.merchantRestrictions ? JSON.stringify(value.merchantRestrictions) : null;
-    if (value.requiresReceipt !== undefined) updateData.requires_receipt = value.requiresReceipt;
-    if (value.requiresPreApproval !== undefined) updateData.requires_pre_approval = value.requiresPreApproval;
-    if (value.statementClosingDate !== undefined) updateData.statement_closing_date = value.statementClosingDate;
-    if (value.paymentDueDate !== undefined) updateData.payment_due_date = value.paymentDueDate;
-    if (value.statementFrequency !== undefined) updateData.statement_frequency = value.statementFrequency;
-    if (value.autoReconciliationRules !== undefined) updateData.auto_reconciliation_rules = value.autoReconciliationRules ? JSON.stringify(value.autoReconciliationRules) : null;
-    if (value.externalCardId !== undefined) updateData.external_card_id = value.externalCardId;
-    if (value.integrationConfig !== undefined) updateData.integration_config = value.integrationConfig ? JSON.stringify(value.integrationConfig) : null;
-    if (value.accountingCode !== undefined) updateData.accounting_code = value.accountingCode;
-    if (value.costCenter !== undefined) updateData.cost_center = value.costCenter;
-    if (value.notificationSettings !== undefined) updateData.notification_settings = value.notificationSettings ? JSON.stringify(value.notificationSettings) : null;
-    if (value.alertThreshold !== undefined) updateData.alert_threshold = value.alertThreshold;
-    if (value.fraudMonitoring !== undefined) updateData.fraud_monitoring = value.fraudMonitoring;
-    if (value.spendingAlerts !== undefined) updateData.spending_alerts = value.spendingAlerts ? JSON.stringify(value.spendingAlerts) : null;
-    if (value.isEmergencyCard !== undefined) updateData.is_emergency_card = value.isEmergencyCard;
+    if (value.expirationDate !== undefined) {
+      updateData.expiration_date = value.expirationDate;
+    }
+    if (value.creditLimit !== undefined) {
+      updateData.credit_limit = value.creditLimit;
+    }
+    if (value.availableCredit !== undefined) {
+      updateData.available_credit = value.availableCredit;
+    }
+    if (value.currentBalance !== undefined) {
+      updateData.current_balance = value.currentBalance;
+    }
+    if (value.monthlyLimit !== undefined) {
+      updateData.monthly_limit = value.monthlyLimit;
+    }
+    if (value.transactionLimit !== undefined) {
+      updateData.transaction_limit = value.transactionLimit;
+    }
+    if (value.categoryLimits !== undefined) {
+      updateData.category_limits = value.categoryLimits ? JSON.stringify(value.categoryLimits) : null;
+    }
+    if (value.merchantRestrictions !== undefined) {
+      updateData.merchant_restrictions = value.merchantRestrictions ? JSON.stringify(value.merchantRestrictions) : null;
+    }
+    if (value.requiresReceipt !== undefined) {
+      updateData.requires_receipt = value.requiresReceipt;
+    }
+    if (value.requiresPreApproval !== undefined) {
+      updateData.requires_pre_approval = value.requiresPreApproval;
+    }
+    if (value.statementClosingDate !== undefined) {
+      updateData.statement_closing_date = value.statementClosingDate;
+    }
+    if (value.paymentDueDate !== undefined) {
+      updateData.payment_due_date = value.paymentDueDate;
+    }
+    if (value.statementFrequency !== undefined) {
+      updateData.statement_frequency = value.statementFrequency;
+    }
+    if (value.autoReconciliationRules !== undefined) {
+      updateData.auto_reconciliation_rules = value.autoReconciliationRules ? JSON.stringify(value.autoReconciliationRules) : null;
+    }
+    if (value.externalCardId !== undefined) {
+      updateData.external_card_id = value.externalCardId;
+    }
+    if (value.integrationConfig !== undefined) {
+      updateData.integration_config = value.integrationConfig ? JSON.stringify(value.integrationConfig) : null;
+    }
+    if (value.accountingCode !== undefined) {
+      updateData.accounting_code = value.accountingCode;
+    }
+    if (value.costCenter !== undefined) {
+      updateData.cost_center = value.costCenter;
+    }
+    if (value.notificationSettings !== undefined) {
+      updateData.notification_settings = value.notificationSettings ? JSON.stringify(value.notificationSettings) : null;
+    }
+    if (value.alertThreshold !== undefined) {
+      updateData.alert_threshold = value.alertThreshold;
+    }
+    if (value.fraudMonitoring !== undefined) {
+      updateData.fraud_monitoring = value.fraudMonitoring;
+    }
+    if (value.spendingAlerts !== undefined) {
+      updateData.spending_alerts = value.spendingAlerts ? JSON.stringify(value.spendingAlerts) : null;
+    }
+    if (value.isEmergencyCard !== undefined) {
+      updateData.is_emergency_card = value.isEmergencyCard;
+    }
 
     // Update credit card
     await db('company_credit_cards')
@@ -707,7 +771,7 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
         'expense_receipts.original_filename',
         'expense_categories.name as category_name',
         'users.email as user_email',
-        db.raw("CONCAT(users.first_name, ' ', users.last_name) as user_name")
+        db.raw('CONCAT(users.first_name, \' \', users.last_name) as user_name')
       ])
       .orderBy('expense_data.transaction_date', 'desc')
       .limit(limit)

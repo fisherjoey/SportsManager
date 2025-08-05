@@ -3,16 +3,12 @@ const cors = require('cors');
 require('dotenv').config();
 
 // Import security middleware
-const { createSecurityMiddleware, getCorsConfig, enforceHTTPS, securityMonitoring, requestSizeLimit, validateEnvironment } = require('./middleware/security');
-const { sanitizeAll } = require('./middleware/sanitization');
-const { auditMiddleware } = require('./middleware/auditTrail');
+const { getCorsConfig, requestSizeLimit, validateEnvironment } = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
-const { apiLimiter } = require('./middleware/rateLimiting');
 
 // Import performance monitoring middleware
 const { performanceMonitor } = require('./middleware/performanceMonitor');
 const { advancedPerformanceMonitor, setupAlertHandlers } = require('./middleware/advanced-performance');
-const { wrapDatabaseConnection } = require('./utils/query-performance');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');

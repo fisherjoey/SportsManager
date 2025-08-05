@@ -27,11 +27,11 @@ class AIConfig {
 
       // Assignment constraints
       constraints: {
-        maxDistance: parseInt(process.env.AI_MAX_DISTANCE) || 50, // km
+        maxDistance: parseInt(process.env.AI_MAX_DISTANCE, 10) || 50, // km
         minConfidence: parseFloat(process.env.AI_MIN_CONFIDENCE) || 0.3,
-        maxGamesPerDay: parseInt(process.env.AI_MAX_GAMES_PER_DAY) || 4,
-        maxGamesPerWeek: parseInt(process.env.AI_MAX_GAMES_PER_WEEK) || 15,
-        minRestBetweenGames: parseInt(process.env.AI_MIN_REST_MINUTES) || 45, // minutes
+        maxGamesPerDay: parseInt(process.env.AI_MAX_GAMES_PER_DAY, 10) || 4,
+        maxGamesPerWeek: parseInt(process.env.AI_MAX_GAMES_PER_WEEK, 10) || 15,
+        minRestBetweenGames: parseInt(process.env.AI_MIN_REST_MINUTES, 10) || 45, // minutes
         avoidBackToBack: process.env.AI_AVOID_BACK_TO_BACK !== 'false',
         prioritizeExperience: process.env.AI_PRIORITIZE_EXPERIENCE !== 'false'
       },
@@ -43,37 +43,37 @@ class AIConfig {
           openai: process.env.OPENAI_MODEL || 'gpt-4o-mini',
           deepseek: process.env.DEEPSEEK_MODEL || 'deepseek-chat'
         },
-        timeout: parseInt(process.env.AI_TIMEOUT) || 60000, // ms
-        maxRetries: parseInt(process.env.AI_MAX_RETRIES) || 3,
+        timeout: parseInt(process.env.AI_TIMEOUT, 10) || 60000, // ms
+        maxRetries: parseInt(process.env.AI_MAX_RETRIES, 10) || 3,
         temperature: parseFloat(process.env.AI_TEMPERATURE) || 0.1,
-        maxTokens: parseInt(process.env.AI_MAX_TOKENS) || 4000
+        maxTokens: parseInt(process.env.AI_MAX_TOKENS, 10) || 4000
       },
 
       // Caching settings
       caching: {
         enabled: process.env.AI_CACHE_ENABLED !== 'false',
-        maxSize: parseInt(process.env.AI_CACHE_MAX_SIZE) || 100,
-        ttl: parseInt(process.env.AI_CACHE_TTL) || 3600, // seconds
-        memoryLimit: parseInt(process.env.AI_CACHE_MEMORY_MB) || 50 // MB
+        maxSize: parseInt(process.env.AI_CACHE_MAX_SIZE, 10) || 100,
+        ttl: parseInt(process.env.AI_CACHE_TTL, 10) || 3600, // seconds
+        memoryLimit: parseInt(process.env.AI_CACHE_MEMORY_MB, 10) || 50 // MB
       },
 
       // Batching settings
       batching: {
         enabled: process.env.AI_BATCHING_ENABLED !== 'false',
-        maxGamesPerBatch: parseInt(process.env.AI_MAX_GAMES_PER_BATCH) || 10,
-        maxRefereesPerBatch: parseInt(process.env.AI_MAX_REFEREES_PER_BATCH) || 50,
-        batchTimeout: parseInt(process.env.AI_BATCH_TIMEOUT) || 30000 // ms
+        maxGamesPerBatch: parseInt(process.env.AI_MAX_GAMES_PER_BATCH, 10) || 10,
+        maxRefereesPerBatch: parseInt(process.env.AI_MAX_REFEREES_PER_BATCH, 10) || 50,
+        batchTimeout: parseInt(process.env.AI_BATCH_TIMEOUT, 10) || 30000 // ms
       },
 
       // Performance monitoring
       monitoring: {
         enabled: process.env.AI_MONITORING_ENABLED !== 'false',
-        logSlowRequests: parseInt(process.env.AI_LOG_SLOW_REQUESTS_MS) || 5000,
+        logSlowRequests: parseInt(process.env.AI_LOG_SLOW_REQUESTS_MS, 10) || 5000,
         trackMetrics: process.env.AI_TRACK_METRICS !== 'false',
         alertThresholds: {
           errorRate: parseFloat(process.env.AI_ALERT_ERROR_RATE) || 0.1, // 10%
-          avgLatency: parseInt(process.env.AI_ALERT_AVG_LATENCY_MS) || 10000, // 10s
-          p95Latency: parseInt(process.env.AI_ALERT_P95_LATENCY_MS) || 20000 // 20s
+          avgLatency: parseInt(process.env.AI_ALERT_AVG_LATENCY_MS, 10) || 10000, // 10s
+          p95Latency: parseInt(process.env.AI_ALERT_P95_LATENCY_MS, 10) || 20000 // 20s
         }
       }
     };

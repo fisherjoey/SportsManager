@@ -64,7 +64,9 @@ class Logger {
    * @param {Object} context - Additional context
    */
   logWarning(message, context = {}) {
-    if (this.currentLevel < 1) return;
+    if (this.currentLevel < 1) {
+      return;
+    }
     
     const logEntry = this.createLogEntry('warn', message, context);
     this.writeLog(logEntry);
@@ -76,7 +78,9 @@ class Logger {
    * @param {Object} context - Additional context
    */
   logInfo(message, context = {}) {
-    if (this.currentLevel < 2) return;
+    if (this.currentLevel < 2) {
+      return;
+    }
     
     const logEntry = this.createLogEntry('info', message, context);
     this.writeLog(logEntry);
@@ -88,7 +92,9 @@ class Logger {
    * @param {Object} context - Additional context
    */
   logDebug(message, context = {}) {
-    if (this.currentLevel < 3) return;
+    if (this.currentLevel < 3) {
+      return;
+    }
     
     const logEntry = this.createLogEntry('debug', message, context);
     this.writeLog(logEntry);
@@ -185,7 +191,7 @@ class Logger {
     // Write to file (errors and warnings always logged to file)
     if (logEntry.level === 'error' || logEntry.level === 'warn' || this.currentLevel >= 2) {
       const logFile = path.join(this.logDir, `app-${new Date().toISOString().split('T')[0]}.log`);
-      fs.appendFileSync(logFile, logString + '\n');
+      fs.appendFileSync(logFile, `${logString  }\n`);
     }
   }
 
@@ -204,17 +210,17 @@ class Logger {
         totalCalls: this.metrics.aiServiceCalls,
         totalErrors: this.metrics.aiServiceErrors,
         errorRate: this.metrics.aiServiceCalls > 0 
-          ? (this.metrics.aiServiceErrors / this.metrics.aiServiceCalls * 100).toFixed(2) + '%'
+          ? `${(this.metrics.aiServiceErrors / this.metrics.aiServiceCalls * 100).toFixed(2)  }%`
           : '0%',
-        averageLatency: Math.round(avgLatency) + 'ms',
-        latencyP95: this.calculatePercentile(this.metrics.aiServiceLatency, 95) + 'ms'
+        averageLatency: `${Math.round(avgLatency)  }ms`,
+        latencyP95: `${this.calculatePercentile(this.metrics.aiServiceLatency, 95)  }ms`
       },
       assignments: {
         totalRequests: this.metrics.assignmentRequests,
         successful: this.metrics.assignmentSuccess,
         failed: this.metrics.assignmentFailures,
         successRate: this.metrics.assignmentRequests > 0
-          ? (this.metrics.assignmentSuccess / this.metrics.assignmentRequests * 100).toFixed(2) + '%'
+          ? `${(this.metrics.assignmentSuccess / this.metrics.assignmentRequests * 100).toFixed(2)  }%`
           : '0%'
       }
     };
@@ -225,7 +231,9 @@ class Logger {
    * @private
    */
   calculatePercentile(arr, percentile) {
-    if (arr.length === 0) return 0;
+    if (arr.length === 0) {
+      return 0;
+    }
     
     const sorted = [...arr].sort((a, b) => a - b);
     const index = Math.ceil((percentile / 100) * sorted.length) - 1;

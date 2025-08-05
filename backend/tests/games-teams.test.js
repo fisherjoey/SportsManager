@@ -460,7 +460,7 @@ describe('Games with Team References', () => {
         .count('games.id as game_count')
         .leftJoin('games', function() {
           this.on('teams.id', '=', 'games.home_team_id')
-              .orOn('teams.id', '=', 'games.away_team_id');
+            .orOn('teams.id', '=', 'games.away_team_id');
         })
         .groupBy('teams.id', 'teams.name')
         .orderBy('teams.name');

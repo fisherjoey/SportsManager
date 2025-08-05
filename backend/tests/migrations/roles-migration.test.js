@@ -33,7 +33,7 @@ describe('Roles Migration Tests', () => {
         WHERE table_name = 'users' AND column_name = 'roles'
       `);
 
-      expect(columnInfo.rows[0].column_default).toBe("'{}'::text[]");
+      expect(columnInfo.rows[0].column_default).toBe('\'{}\'::text[]');
     });
   });
 
@@ -52,7 +52,7 @@ describe('Roles Migration Tests', () => {
         .where('role', 'admin')
         .where('id', adminUser[0].id)
         .update({ 
-          roles: db.raw("ARRAY['admin']::text[]")
+          roles: db.raw('ARRAY[\'admin\']::text[]')
         });
 
       // Verify the migration worked
@@ -78,7 +78,7 @@ describe('Roles Migration Tests', () => {
         .where('role', 'referee')
         .where('id', refereeUser[0].id)
         .update({ 
-          roles: db.raw("ARRAY['referee']::text[]")
+          roles: db.raw('ARRAY[\'referee\']::text[]')
         });
 
       // Verify the migration worked
@@ -154,7 +154,7 @@ describe('Roles Migration Tests', () => {
       await db('users')
         .where('id', testUserId)
         .update({
-          roles: db.raw("array_append(roles, 'evaluator')")
+          roles: db.raw('array_append(roles, \'evaluator\')')
         });
 
       const updatedUser = await db('users')
@@ -178,7 +178,7 @@ describe('Roles Migration Tests', () => {
       await db('users')
         .where('id', testUserId)
         .update({
-          roles: db.raw("array_remove(roles, 'evaluator')")
+          roles: db.raw('array_remove(roles, \'evaluator\')')
         });
 
       const updatedUser = await db('users')

@@ -130,104 +130,104 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHa
 
   const games = await query;
     
-    // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
-    const gameIds = games.map(game => game.id);
-    const teamIds = [...new Set([
-      ...games.map(game => game.home_team_id).filter(Boolean),
-      ...games.map(game => game.away_team_id).filter(Boolean)
-    ])];
+  // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
+  const gameIds = games.map(game => game.id);
+  const teamIds = [...new Set([
+    ...games.map(game => game.home_team_id).filter(Boolean),
+    ...games.map(game => game.away_team_id).filter(Boolean)
+  ])];
     
-    // Fetch all assignments in one query
-    const allAssignments = gameIds.length > 0 ? await db('game_assignments')
-      .join('users', 'game_assignments.user_id', 'users.id')
-      .join('positions', 'game_assignments.position_id', 'positions.id')
-      .select(
-        'game_assignments.game_id',
-        'users.name as referee_name', 
-        'positions.name as position_name', 
-        'game_assignments.status'
-      )
-      .whereIn('game_assignments.game_id', gameIds) : [];
+  // Fetch all assignments in one query
+  const allAssignments = gameIds.length > 0 ? await db('game_assignments')
+    .join('users', 'game_assignments.user_id', 'users.id')
+    .join('positions', 'game_assignments.position_id', 'positions.id')
+    .select(
+      'game_assignments.game_id',
+      'users.name as referee_name', 
+      'positions.name as position_name', 
+      'game_assignments.status'
+    )
+    .whereIn('game_assignments.game_id', gameIds) : [];
     
-    // Fetch all teams with league info in one query
-    const allTeams = teamIds.length > 0 ? await db('teams')
-      .join('leagues', 'teams.league_id', 'leagues.id')
-      .select(
-        'teams.id',
-        'teams.name',
-        'teams.rank',
-        'leagues.organization',
-        'leagues.age_group',
-        'leagues.gender'
-      )
-      .whereIn('teams.id', teamIds) : [];
+  // Fetch all teams with league info in one query
+  const allTeams = teamIds.length > 0 ? await db('teams')
+    .join('leagues', 'teams.league_id', 'leagues.id')
+    .select(
+      'teams.id',
+      'teams.name',
+      'teams.rank',
+      'leagues.organization',
+      'leagues.age_group',
+      'leagues.gender'
+    )
+    .whereIn('teams.id', teamIds) : [];
     
-    // Create lookup maps for O(1) access
-    const assignmentsByGameId = {};
-    allAssignments.forEach(assignment => {
-      if (!assignmentsByGameId[assignment.game_id]) {
-        assignmentsByGameId[assignment.game_id] = [];
-      }
-      assignmentsByGameId[assignment.game_id].push({
-        referee_name: assignment.referee_name,
-        position_name: assignment.position_name,
-        status: assignment.status
-      });
+  // Create lookup maps for O(1) access
+  const assignmentsByGameId = {};
+  allAssignments.forEach(assignment => {
+    if (!assignmentsByGameId[assignment.game_id]) {
+      assignmentsByGameId[assignment.game_id] = [];
+    }
+    assignmentsByGameId[assignment.game_id].push({
+      referee_name: assignment.referee_name,
+      position_name: assignment.position_name,
+      status: assignment.status
     });
+  });
     
-    const teamsById = {};
-    allTeams.forEach(team => {
-      teamsById[team.id] = {
-        organization: team.organization,
-        ageGroup: team.age_group,
-        gender: team.gender,
-        rank: team.rank,
-        name: team.name
-      };
-    });
-    
-    // Transform games using lookup maps (no async operations needed)
-    const transformedGames = games.map(game => {
-      const homeTeam = teamsById[game.home_team_id] || {};
-      const awayTeam = teamsById[game.away_team_id] || {};
-      const assignments = assignmentsByGameId[game.id] || [];
-      
-      return {
-        id: game.id,
-        homeTeam,
-        awayTeam,
-        date: game.game_date,
-        time: game.game_time,
-        location: game.location,
-        postalCode: game.postal_code,
-        level: game.level,
-        gameType: game.game_type,
-        division: game.division,
-        season: game.season,
-        payRate: game.pay_rate,
-        status: game.status,
-        refsNeeded: game.refs_needed,
-        wageMultiplier: game.wage_multiplier,
-        wageMultiplierReason: game.wage_multiplier_reason,
-        assignments,
-        notes: '', // placeholder
-        createdAt: game.created_at,
-        updatedAt: game.updated_at
-      };
-    });
-
-    const result = {
-      data: transformedGames,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit)
-      }
+  const teamsById = {};
+  allTeams.forEach(team => {
+    teamsById[team.id] = {
+      organization: team.organization,
+      ageGroup: team.age_group,
+      gender: team.gender,
+      rank: team.rank,
+      name: team.name
     };
+  });
     
-    // Cache the result for 5 minutes
-    queryCache.set(cacheKey, result, 5 * 60 * 1000);
+  // Transform games using lookup maps (no async operations needed)
+  const transformedGames = games.map(game => {
+    const homeTeam = teamsById[game.home_team_id] || {};
+    const awayTeam = teamsById[game.away_team_id] || {};
+    const assignments = assignmentsByGameId[game.id] || [];
+      
+    return {
+      id: game.id,
+      homeTeam,
+      awayTeam,
+      date: game.game_date,
+      time: game.game_time,
+      location: game.location,
+      postalCode: game.postal_code,
+      level: game.level,
+      gameType: game.game_type,
+      division: game.division,
+      season: game.season,
+      payRate: game.pay_rate,
+      status: game.status,
+      refsNeeded: game.refs_needed,
+      wageMultiplier: game.wage_multiplier,
+      wageMultiplierReason: game.wage_multiplier_reason,
+      assignments,
+      notes: '', // placeholder
+      createdAt: game.created_at,
+      updatedAt: game.updated_at
+    };
+  });
+
+  const result = {
+    data: transformedGames,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit)
+    }
+  };
     
-    res.json(result);
+  // Cache the result for 5 minutes
+  queryCache.set(cacheKey, result, 5 * 60 * 1000);
+    
+  res.json(result);
 }));
 
 // GET /api/games/:id - Get specific game
@@ -293,72 +293,72 @@ router.get('/:id', authenticateToken, validateIdParam, enhancedAsyncHandler(asyn
 router.post('/', authenticateToken, requireRole('admin'), validateBody(gameSchema), enhancedAsyncHandler(async (req, res) => {
   const value = req.body;
 
-    // Check for venue scheduling conflicts
-    const conflictCheck = await checkGameSchedulingConflicts({
-      location: value.location,
-      game_date: value.date,
-      game_time: value.time
-    });
+  // Check for venue scheduling conflicts
+  const conflictCheck = await checkGameSchedulingConflicts({
+    location: value.location,
+    game_date: value.date,
+    game_time: value.time
+  });
 
-    // Transform frontend data to database format
-    const dbData = {
-      home_team: JSON.stringify(value.homeTeam),
-      away_team: JSON.stringify(value.awayTeam),
-      game_date: value.date,
-      game_time: value.time,
-      location: value.location,
-      postal_code: value.postalCode,
-      level: value.level,
-      game_type: value.gameType,
-      division: value.division,
-      season: value.season,
-      pay_rate: value.payRate,
-      refs_needed: value.refsNeeded,
-      wage_multiplier: value.wageMultiplier,
-      wage_multiplier_reason: value.wageMultiplierReason
-    };
+  // Transform frontend data to database format
+  const dbData = {
+    home_team: JSON.stringify(value.homeTeam),
+    away_team: JSON.stringify(value.awayTeam),
+    game_date: value.date,
+    game_time: value.time,
+    location: value.location,
+    postal_code: value.postalCode,
+    level: value.level,
+    game_type: value.gameType,
+    division: value.division,
+    season: value.season,
+    pay_rate: value.payRate,
+    refs_needed: value.refsNeeded,
+    wage_multiplier: value.wageMultiplier,
+    wage_multiplier_reason: value.wageMultiplierReason
+  };
 
-    const [game] = await db('games').insert(dbData).returning('*');
+  const [game] = await db('games').insert(dbData).returning('*');
     
-    // Invalidate related caches
-    CacheInvalidation.invalidateGames(queryCache);
+  // Invalidate related caches
+  CacheInvalidation.invalidateGames(queryCache);
     
-    // Transform response back to frontend format
-    const transformedGame = {
-      id: game.id,
-      homeTeam: JSON.parse(game.home_team),
-      awayTeam: JSON.parse(game.away_team),
-      date: game.game_date,
-      time: game.game_time,
-      location: game.location,
-      postalCode: game.postal_code,
-      level: game.level,
-      gameType: game.game_type,
-      division: game.division,
-      season: game.season,
-      payRate: game.pay_rate,
-      status: game.status,
-      refsNeeded: game.refs_needed,
-      wageMultiplier: game.wage_multiplier,
-      wageMultiplierReason: game.wage_multiplier_reason,
-      assignments: [],
-      notes: '',
-      createdAt: game.created_at,
-      updatedAt: game.updated_at
-    };
+  // Transform response back to frontend format
+  const transformedGame = {
+    id: game.id,
+    homeTeam: JSON.parse(game.home_team),
+    awayTeam: JSON.parse(game.away_team),
+    date: game.game_date,
+    time: game.game_time,
+    location: game.location,
+    postalCode: game.postal_code,
+    level: game.level,
+    gameType: game.game_type,
+    division: game.division,
+    season: game.season,
+    payRate: game.pay_rate,
+    status: game.status,
+    refsNeeded: game.refs_needed,
+    wageMultiplier: game.wage_multiplier,
+    wageMultiplierReason: game.wage_multiplier_reason,
+    assignments: [],
+    notes: '',
+    createdAt: game.created_at,
+    updatedAt: game.updated_at
+  };
     
-    const response = {
-      success: true,
-      data: transformedGame
-    };
+  const response = {
+    success: true,
+    data: transformedGame
+  };
 
-    // Include venue conflict warnings if any
-    if (conflictCheck.hasConflicts) {
-      response.warnings = [`Venue conflict detected: ${conflictCheck.errors.join('; ')}`];
-      response.conflicts = conflictCheck.conflicts;
-    }
+  // Include venue conflict warnings if any
+  if (conflictCheck.hasConflicts) {
+    response.warnings = [`Venue conflict detected: ${conflictCheck.errors.join('; ')}`];
+    response.conflicts = conflictCheck.conflicts;
+  }
     
-    return ResponseFormatter.sendCreated(res, transformedGame, 'Game created successfully', `/api/games/${game.id}`);
+  return ResponseFormatter.sendCreated(res, transformedGame, 'Game created successfully', `/api/games/${game.id}`);
 }));
 
 // PUT /api/games/:id - Update game

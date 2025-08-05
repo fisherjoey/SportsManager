@@ -59,34 +59,34 @@ class QueryBuilder {
 
       // Handle different filter types
       switch (key) {
-        case 'date_from':
-          modifiedQuery = modifiedQuery.where(column, '>=', value);
-          break;
+      case 'date_from':
+        modifiedQuery = modifiedQuery.where(column, '>=', value);
+        break;
         
-        case 'date_to':
-          modifiedQuery = modifiedQuery.where(column, '<=', value);
-          break;
+      case 'date_to':
+        modifiedQuery = modifiedQuery.where(column, '<=', value);
+        break;
         
-        case 'search':
-          // Generic search that can be customized per use case
-          if (typeof value === 'string' && value.trim()) {
-            modifiedQuery = modifiedQuery.where(function() {
-              // This is a basic implementation - should be customized per table
-              this.where(column, 'ilike', `%${value.trim()}%`);
-            });
-          }
-          break;
+      case 'search':
+        // Generic search that can be customized per use case
+        if (typeof value === 'string' && value.trim()) {
+          modifiedQuery = modifiedQuery.where(function() {
+            // This is a basic implementation - should be customized per table
+            this.where(column, 'ilike', `%${value.trim()}%`);
+          });
+        }
+        break;
         
-        case 'is_available':
-        case 'white_whistle':
-          // Boolean filters
-          modifiedQuery = modifiedQuery.where(column, value === 'true' || value === true);
-          break;
+      case 'is_available':
+      case 'white_whistle':
+        // Boolean filters
+        modifiedQuery = modifiedQuery.where(column, value === 'true' || value === true);
+        break;
         
-        default:
-          // Exact match for other filters
-          modifiedQuery = modifiedQuery.where(column, value);
-          break;
+      default:
+        // Exact match for other filters
+        modifiedQuery = modifiedQuery.where(column, value);
+        break;
       }
     });
 

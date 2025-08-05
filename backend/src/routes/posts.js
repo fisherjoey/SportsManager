@@ -76,8 +76,8 @@ router.get('/', async (req, res) => {
     if (search) {
       query = query.where(function() {
         this.where('posts.title', 'ilike', `%${search}%`)
-            .orWhere('posts.content', 'ilike', `%${search}%`)
-            .orWhere('posts.excerpt', 'ilike', `%${search}%`);
+          .orWhere('posts.content', 'ilike', `%${search}%`)
+          .orWhere('posts.excerpt', 'ilike', `%${search}%`);
       });
     }
 

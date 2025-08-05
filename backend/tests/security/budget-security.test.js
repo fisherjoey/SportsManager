@@ -82,10 +82,10 @@ describe('Budget Security Tests', () => {
   describe('SQL Injection Prevention', () => {
     test('GET /api/budgets/periods - should reject SQL injection in status parameter', async () => {
       const sqlInjectionAttempts = [
-        "'; DROP TABLE budget_periods; --",
-        "' OR '1'='1",
-        "' UNION SELECT * FROM users --",
-        "invalid'; INSERT INTO users (email) VALUES ('hacked'); --"
+        '\'; DROP TABLE budget_periods; --',
+        '\' OR \'1\'=\'1',
+        '\' UNION SELECT * FROM users --',
+        'invalid\'; INSERT INTO users (email) VALUES (\'hacked\'); --'
       ];
 
       for (const maliciousStatus of sqlInjectionAttempts) {
@@ -100,9 +100,9 @@ describe('Budget Security Tests', () => {
 
     test('GET /api/budgets/categories - should reject SQL injection in type parameter', async () => {
       const sqlInjectionAttempts = [
-        "equipment'; DROP TABLE budget_categories; --",
-        "' OR '1'='1",
-        "revenue' UNION SELECT password FROM users --"
+        'equipment\'; DROP TABLE budget_categories; --',
+        '\' OR \'1\'=\'1',
+        'revenue\' UNION SELECT password FROM users --'
       ];
 
       for (const maliciousType of sqlInjectionAttempts) {
@@ -117,10 +117,10 @@ describe('Budget Security Tests', () => {
 
     test('GET /api/budgets/categories - should reject SQL injection in parent_id parameter', async () => {
       const sqlInjectionAttempts = [
-        "'; DROP TABLE budget_categories; --",
-        "' OR '1'='1",
-        "invalid-uuid-format",
-        "12345678-1234-1234-1234-123456789012'; SELECT * FROM users; --"
+        '\'; DROP TABLE budget_categories; --',
+        '\' OR \'1\'=\'1',
+        'invalid-uuid-format',
+        '12345678-1234-1234-1234-123456789012\'; SELECT * FROM users; --'
       ];
 
       for (const maliciousParentId of sqlInjectionAttempts) {
@@ -135,10 +135,10 @@ describe('Budget Security Tests', () => {
 
     test('GET /api/budgets - should reject SQL injection in filter parameters', async () => {
       const maliciousFilters = [
-        { period_id: "'; DROP TABLE budgets; --" },
-        { category_id: "' OR '1'='1" },
-        { owner_id: "invalid-uuid'; DELETE FROM users; --" },
-        { status: "active'; UPDATE budgets SET allocated_amount=0; --" }
+        { period_id: '\'; DROP TABLE budgets; --' },
+        { category_id: '\' OR \'1\'=\'1' },
+        { owner_id: 'invalid-uuid\'; DELETE FROM users; --' },
+        { status: 'active\'; UPDATE budgets SET allocated_amount=0; --' }
       ];
 
       for (const filter of maliciousFilters) {
@@ -157,10 +157,10 @@ describe('Budget Security Tests', () => {
 
     test('GET /api/budgets/:id - should reject SQL injection in budget ID', async () => {
       const maliciousIds = [
-        "'; DROP TABLE budgets; --",
-        "' OR '1'='1",
-        "invalid-uuid-format",
-        "../../../etc/passwd"
+        '\'; DROP TABLE budgets; --',
+        '\' OR \'1\'=\'1',
+        'invalid-uuid-format',
+        '../../../etc/passwd'
       ];
 
       for (const maliciousId of maliciousIds) {

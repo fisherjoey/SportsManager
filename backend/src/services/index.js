@@ -42,68 +42,68 @@ class ServiceFactory {
     let service;
 
     switch (serviceName.toLowerCase()) {
-      case 'user':
-      case 'userservice':
-        service = new UserService(this.db);
-        break;
+    case 'user':
+    case 'userservice':
+      service = new UserService(this.db);
+      break;
 
-      case 'assignment':
-      case 'assignmentservice':
-        service = new AssignmentService(this.db);
-        break;
+    case 'assignment':
+    case 'assignmentservice':
+      service = new AssignmentService(this.db);
+      break;
 
-      case 'gamestate':
-      case 'gamestateservice':
-        service = new GameStateService(this.db);
-        break;
+    case 'gamestate':
+    case 'gamestateservice':
+      service = new GameStateService(this.db);
+      break;
 
       // Generic base service for any table
-      case 'base':
-      case 'baseservice':
-        if (!options.tableName) {
-          throw new Error('BaseService requires tableName in options');
-        }
-        service = new BaseService(options.tableName, this.db, options);
-        break;
+    case 'base':
+    case 'baseservice':
+      if (!options.tableName) {
+        throw new Error('BaseService requires tableName in options');
+      }
+      service = new BaseService(options.tableName, this.db, options);
+      break;
 
       // Create service for specific tables
-      case 'games':
-        service = new BaseService('games', this.db, {
-          defaultOrderBy: 'game_date',
-          defaultOrderDirection: 'asc'
-        });
-        break;
+    case 'games':
+      service = new BaseService('games', this.db, {
+        defaultOrderBy: 'game_date',
+        defaultOrderDirection: 'asc'
+      });
+      break;
 
-      case 'teams':
-        service = new BaseService('teams', this.db, {
-          defaultOrderBy: 'name',
-          defaultOrderDirection: 'asc'
-        });
-        break;
+    case 'teams':
+      service = new BaseService('teams', this.db, {
+        defaultOrderBy: 'name',
+        defaultOrderDirection: 'asc'
+      });
+      break;
 
-      case 'leagues':
-        service = new BaseService('leagues', this.db, {
-          defaultOrderBy: 'organization',
-          defaultOrderDirection: 'asc'
-        });
-        break;
+    case 'leagues':
+      service = new BaseService('leagues', this.db, {
+        defaultOrderBy: 'organization',
+        defaultOrderDirection: 'asc'
+      });
+      break;
 
-      case 'positions':
-        service = new BaseService('positions', this.db, {
-          defaultOrderBy: 'name',
-          defaultOrderDirection: 'asc'
-        });
-        break;
+    case 'positions':
+      service = new BaseService('positions', this.db, {
+        defaultOrderBy: 'name',
+        defaultOrderDirection: 'asc'
+      });
+      break;
 
-      case 'referee_levels':
-        service = new BaseService('referee_levels', this.db, {
-          defaultOrderBy: 'name',
-          defaultOrderDirection: 'asc'
-        });
-        break;
+    case 'referee_levels':
+      service = new BaseService('referee_levels', this.db, {
+        defaultOrderBy: 'name',
+        defaultOrderDirection: 'asc'
+      });
+      break;
 
-      default:
-        throw new Error(`Unknown service: ${serviceName}`);
+    default:
+      throw new Error(`Unknown service: ${serviceName}`);
     }
 
     // Store in registry for reuse

@@ -54,9 +54,15 @@ const riskAssessmentSchema = Joi.object({
 // Helper function to calculate risk level from scores
 function calculateRiskLevel(probabilityScore, impactScore) {
   const riskScore = probabilityScore * impactScore;
-  if (riskScore <= 5) return 'low';
-  if (riskScore <= 12) return 'medium';
-  if (riskScore <= 20) return 'high';
+  if (riskScore <= 5) {
+    return 'low';
+  }
+  if (riskScore <= 12) {
+    return 'medium';
+  }
+  if (riskScore <= 20) {
+    return 'high';
+  }
   return 'critical';
 }
 

@@ -29,28 +29,28 @@ class FinancialAIService {
       let influencingFactors = [];
 
       switch (forecastType) {
-        case 'monthly_spend':
-          ({ forecastData, confidenceScore, influencingFactors } = 
+      case 'monthly_spend':
+        ({ forecastData, confidenceScore, influencingFactors } = 
             await this.forecastMonthlySpending(budget, historicalData));
-          break;
+        break;
         
-        case 'seasonal_pattern':
-          ({ forecastData, confidenceScore, influencingFactors } = 
+      case 'seasonal_pattern':
+        ({ forecastData, confidenceScore, influencingFactors } = 
             await this.analyzeSeasonalPatterns(budget, historicalData));
-          break;
+        break;
         
-        case 'year_end_projection':
-          ({ forecastData, confidenceScore, influencingFactors } = 
+      case 'year_end_projection':
+        ({ forecastData, confidenceScore, influencingFactors } = 
             await this.projectYearEndSpending(budget, historicalData));
-          break;
+        break;
         
-        case 'variance_prediction':
-          ({ forecastData, confidenceScore, influencingFactors } = 
+      case 'variance_prediction':
+        ({ forecastData, confidenceScore, influencingFactors } = 
             await this.predictVariance(budget, historicalData));
-          break;
+        break;
         
-        default:
-          throw new Error(`Unsupported forecast type: ${forecastType}`);
+      default:
+        throw new Error(`Unsupported forecast type: ${forecastType}`);
       }
 
       // Store forecast in database
@@ -215,7 +215,7 @@ class FinancialAIService {
       .where('ft.status', 'posted')
       .where('ft.transaction_date', '>=', startDate)
       .select(
-        db.raw("DATE_TRUNC('month', ft.transaction_date) as month"),
+        db.raw('DATE_TRUNC(\'month\', ft.transaction_date) as month'),
         db.raw('SUM(ft.amount) as total_amount'),
         db.raw('COUNT(ft.id) as transaction_count')
       )
@@ -472,7 +472,7 @@ class FinancialAIService {
       .join('budget_categories as bc', 'b.category_id', 'bc.id')
       .where('ft.organization_id', organizationId)
       .where('ft.status', 'posted')
-      .where('ft.transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '30 days'"))
+      .where('ft.transaction_date', '>=', db.raw('CURRENT_DATE - INTERVAL \'30 days\''))
       .select('ft.*', 'bc.name as category_name', 'bc.category_type')
       .orderBy('ft.amount', 'desc');
 
@@ -508,9 +508,9 @@ class FinancialAIService {
     const cashFlow = await db('financial_transactions')
       .where('organization_id', organizationId)
       .where('status', 'posted')
-      .where('transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '90 days'"))
+      .where('transaction_date', '>=', db.raw('CURRENT_DATE - INTERVAL \'90 days\''))
       .select(
-        db.raw("DATE_TRUNC('month', transaction_date) as month"),
+        db.raw('DATE_TRUNC(\'month\', transaction_date) as month'),
         db.raw('SUM(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as revenue'),
         db.raw('SUM(CASE WHEN transaction_type IN (\'expense\', \'payroll\') THEN amount ELSE 0 END) as expenses')
       )
@@ -551,13 +551,13 @@ class FinancialAIService {
     const duplicates = await db('financial_transactions as ft1')
       .join('financial_transactions as ft2', function() {
         this.on('ft1.amount', 'ft2.amount')
-            .andOn('ft1.vendor_id', 'ft2.vendor_id')
-            .andOn('ft1.transaction_date', 'ft2.transaction_date')
-            .andOn('ft1.id', '<', 'ft2.id');
+          .andOn('ft1.vendor_id', 'ft2.vendor_id')
+          .andOn('ft1.transaction_date', 'ft2.transaction_date')
+          .andOn('ft1.id', '<', 'ft2.id');
       })
       .where('ft1.organization_id', organizationId)
       .where('ft1.status', 'posted')
-      .where('ft1.transaction_date', '>=', db.raw("CURRENT_DATE - INTERVAL '30 days'"))
+      .where('ft1.transaction_date', '>=', db.raw('CURRENT_DATE - INTERVAL \'30 days\''))
       .select('ft1.*', 'ft2.id as duplicate_id')
       .limit(10);
 

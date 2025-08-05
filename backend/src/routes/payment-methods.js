@@ -75,8 +75,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (search) {
       query = query.where(function() {
         this.where('name', 'ilike', `%${search}%`)
-            .orWhere('description', 'ilike', `%${search}%`)
-            .orWhere('accounting_code', 'ilike', `%${search}%`);
+          .orWhere('description', 'ilike', `%${search}%`)
+          .orWhere('accounting_code', 'ilike', `%${search}%`);
       });
     }
 
@@ -85,12 +85,12 @@ router.get('/', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
       query = query.where(function() {
         this.whereNull('user_restrictions')
-            .orWhereRaw(`
+          .orWhereRaw(`
               user_restrictions IS NULL OR 
               JSON_EXTRACT(user_restrictions, '$.allowedUsers') IS NULL OR
               JSON_CONTAINS(JSON_EXTRACT(user_restrictions, '$.allowedUsers'), ?)
             `, [JSON.stringify(req.user.id)])
-            .orWhereRaw(`
+          .orWhereRaw(`
               JSON_EXTRACT(user_restrictions, '$.allowedRoles') IS NULL OR
               JSON_CONTAINS(JSON_EXTRACT(user_restrictions, '$.allowedRoles'), ?)
             `, [JSON.stringify(req.user.role)]);
@@ -382,22 +382,54 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
       updated_at: new Date()
     };
 
-    if (value.name !== undefined) updateData.name = value.name;
-    if (value.type !== undefined) updateData.type = value.type;
-    if (value.description !== undefined) updateData.description = value.description;
-    if (value.isActive !== undefined) updateData.is_active = value.isActive;
-    if (value.requiresApproval !== undefined) updateData.requires_approval = value.requiresApproval;
-    if (value.requiresPurchaseOrder !== undefined) updateData.requires_purchase_order = value.requiresPurchaseOrder;
-    if (value.autoApprovalLimit !== undefined) updateData.auto_approval_limit = value.autoApprovalLimit;
-    if (value.approvalWorkflow !== undefined) updateData.approval_workflow = value.approvalWorkflow ? JSON.stringify(value.approvalWorkflow) : null;
-    if (value.requiredFields !== undefined) updateData.required_fields = JSON.stringify(value.requiredFields);
-    if (value.integrationConfig !== undefined) updateData.integration_config = value.integrationConfig ? JSON.stringify(value.integrationConfig) : null;
-    if (value.accountingCode !== undefined) updateData.accounting_code = value.accountingCode;
-    if (value.costCenter !== undefined) updateData.cost_center = value.costCenter;
-    if (value.allowedCategories !== undefined) updateData.allowed_categories = JSON.stringify(value.allowedCategories);
-    if (value.userRestrictions !== undefined) updateData.user_restrictions = value.userRestrictions ? JSON.stringify(value.userRestrictions) : null;
-    if (value.spendingLimit !== undefined) updateData.spending_limit = value.spendingLimit;
-    if (value.spendingPeriod !== undefined) updateData.spending_period = value.spendingPeriod;
+    if (value.name !== undefined) {
+      updateData.name = value.name;
+    }
+    if (value.type !== undefined) {
+      updateData.type = value.type;
+    }
+    if (value.description !== undefined) {
+      updateData.description = value.description;
+    }
+    if (value.isActive !== undefined) {
+      updateData.is_active = value.isActive;
+    }
+    if (value.requiresApproval !== undefined) {
+      updateData.requires_approval = value.requiresApproval;
+    }
+    if (value.requiresPurchaseOrder !== undefined) {
+      updateData.requires_purchase_order = value.requiresPurchaseOrder;
+    }
+    if (value.autoApprovalLimit !== undefined) {
+      updateData.auto_approval_limit = value.autoApprovalLimit;
+    }
+    if (value.approvalWorkflow !== undefined) {
+      updateData.approval_workflow = value.approvalWorkflow ? JSON.stringify(value.approvalWorkflow) : null;
+    }
+    if (value.requiredFields !== undefined) {
+      updateData.required_fields = JSON.stringify(value.requiredFields);
+    }
+    if (value.integrationConfig !== undefined) {
+      updateData.integration_config = value.integrationConfig ? JSON.stringify(value.integrationConfig) : null;
+    }
+    if (value.accountingCode !== undefined) {
+      updateData.accounting_code = value.accountingCode;
+    }
+    if (value.costCenter !== undefined) {
+      updateData.cost_center = value.costCenter;
+    }
+    if (value.allowedCategories !== undefined) {
+      updateData.allowed_categories = JSON.stringify(value.allowedCategories);
+    }
+    if (value.userRestrictions !== undefined) {
+      updateData.user_restrictions = value.userRestrictions ? JSON.stringify(value.userRestrictions) : null;
+    }
+    if (value.spendingLimit !== undefined) {
+      updateData.spending_limit = value.spendingLimit;
+    }
+    if (value.spendingPeriod !== undefined) {
+      updateData.spending_period = value.spendingPeriod;
+    }
 
     // Update payment method
     await db('payment_methods')

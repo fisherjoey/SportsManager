@@ -312,52 +312,52 @@ async function main() {
   
   try {
     switch (command) {
-      case 'report':
-        await manager.printSystemReport();
-        break;
+    case 'report':
+      await manager.printSystemReport();
+      break;
         
-      case 'init-users':
-        await manager.initializeUserLocationData();
-        break;
+    case 'init-users':
+      await manager.initializeUserLocationData();
+      break;
         
-      case 'init-distances':
-        await manager.initializeAllDistanceCalculations();
-        break;
+    case 'init-distances':
+      await manager.initializeAllDistanceCalculations();
+      break;
         
-      case 'retry-failed':
-        const maxRetries = parseInt(process.argv[3]) || 50;
-        await manager.retryFailedCalculations(maxRetries);
-        break;
+    case 'retry-failed':
+      const maxRetries = parseInt(process.argv[3]) || 50;
+      await manager.retryFailedCalculations(maxRetries);
+      break;
         
-      case 'update-coords':
-        await manager.updateMissingCoordinates();
-        break;
+    case 'update-coords':
+      await manager.updateMissingCoordinates();
+      break;
         
-      case 'full-init':
-        console.log('🚀 Running full system initialization...');
-        await manager.initializeUserLocationData();
-        await manager.delay(5000);
-        await manager.updateMissingCoordinates();
-        await manager.delay(5000);
-        await manager.initializeAllDistanceCalculations();
-        break;
+    case 'full-init':
+      console.log('🚀 Running full system initialization...');
+      await manager.initializeUserLocationData();
+      await manager.delay(5000);
+      await manager.updateMissingCoordinates();
+      await manager.delay(5000);
+      await manager.initializeAllDistanceCalculations();
+      break;
         
-      default:
-        console.log('Location Data Manager');
-        console.log('Usage: node location-data-manager.js <command>');
-        console.log('');
-        console.log('Commands:');
-        console.log('  report         - Show system status report');
-        console.log('  init-users     - Initialize location data for users');
-        console.log('  init-distances - Initialize all distance calculations');
-        console.log('  retry-failed   - Retry failed distance calculations');
-        console.log('  update-coords  - Update missing coordinates');
-        console.log('  full-init      - Run complete system initialization');
-        console.log('');
-        console.log('Environment variables:');
-        console.log('  AUTO_CONFIRM=true     - Skip confirmation prompts');
-        console.log('  FORCE_INITIALIZE=true - Force initialization without prompts');
-        break;
+    default:
+      console.log('Location Data Manager');
+      console.log('Usage: node location-data-manager.js <command>');
+      console.log('');
+      console.log('Commands:');
+      console.log('  report         - Show system status report');
+      console.log('  init-users     - Initialize location data for users');
+      console.log('  init-distances - Initialize all distance calculations');
+      console.log('  retry-failed   - Retry failed distance calculations');
+      console.log('  update-coords  - Update missing coordinates');
+      console.log('  full-init      - Run complete system initialization');
+      console.log('');
+      console.log('Environment variables:');
+      console.log('  AUTO_CONFIRM=true     - Skip confirmation prompts');
+      console.log('  FORCE_INITIALIZE=true - Force initialization without prompts');
+      break;
     }
   } catch (error) {
     console.error('❌ Command failed:', error);

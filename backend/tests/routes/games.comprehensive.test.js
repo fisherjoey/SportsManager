@@ -341,7 +341,7 @@ describe('Games Management API - Comprehensive Tests', () => {
         mockDb.first.mockResolvedValue({ count: 0 });
 
         const response = await request(app)
-          .get('/api/games?search=' + encodeURIComponent('Team André vs Björk'))
+          .get(`/api/games?search=${  encodeURIComponent('Team André vs Björk')}`)
           .set('Authorization', `Bearer ${adminToken}`);
 
         expect(response.status).toBe(200);
@@ -429,7 +429,7 @@ describe('Games Management API - Comprehensive Tests', () => {
 
     describe('Security Tests', () => {
       it('should prevent SQL injection in ID parameter', async () => {
-        const maliciousId = "'; DROP TABLE games; --";
+        const maliciousId = '\'; DROP TABLE games; --';
         
         const response = await request(app)
           .get(`/api/games/${encodeURIComponent(maliciousId)}`)

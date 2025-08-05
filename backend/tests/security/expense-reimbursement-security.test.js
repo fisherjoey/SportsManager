@@ -206,7 +206,7 @@ describe('Expense Reimbursement Security Tests', () => {
 
   describe('Input Validation and Sanitization', () => {
     test('should reject SQL injection attempts in userId', async () => {
-      const maliciousUserId = "'; DROP TABLE users; --";
+      const maliciousUserId = '\'; DROP TABLE users; --';
       
       const response = await request(app)
         .post(`/api/expenses/receipts/${testReceipt.id}/assign-reimbursement`)

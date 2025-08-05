@@ -13,21 +13,21 @@ const securityConfig = {
   development: {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        fontSrc: ["'self'", "https:", "data:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
-        mediaSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        childSrc: ["'self'"],
-        workerSrc: ["'self'"],
-        frameSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        frameAncestors: ["'none'"],
-        manifestSrc: ["'self'"]
+        defaultSrc: ['\'self\''],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
+        fontSrc: ['\'self\'', 'https:', 'data:'],
+        connectSrc: ['\'self\'', 'ws:', 'wss:'],
+        mediaSrc: ['\'self\''],
+        objectSrc: ['\'none\''],
+        childSrc: ['\'self\''],
+        workerSrc: ['\'self\''],
+        frameSrc: ['\'none\''],
+        baseUri: ['\'self\''],
+        formAction: ['\'self\''],
+        frameAncestors: ['\'none\''],
+        manifestSrc: ['\'self\'']
       }
     },
     hsts: false, // Disable HSTS in development
@@ -39,21 +39,21 @@ const securityConfig = {
   production: {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"], // May need unsafe-inline for some CSS frameworks
-        imgSrc: ["'self'", "data:", "https:"],
-        fontSrc: ["'self'", "https:"],
-        connectSrc: ["'self'", "https:"],
-        mediaSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        childSrc: ["'self'"],
-        workerSrc: ["'self'"],
-        frameSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        frameAncestors: ["'none'"],
-        manifestSrc: ["'self'"],
+        defaultSrc: ['\'self\''],
+        scriptSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''], // May need unsafe-inline for some CSS frameworks
+        imgSrc: ['\'self\'', 'data:', 'https:'],
+        fontSrc: ['\'self\'', 'https:'],
+        connectSrc: ['\'self\'', 'https:'],
+        mediaSrc: ['\'self\''],
+        objectSrc: ['\'none\''],
+        childSrc: ['\'self\''],
+        workerSrc: ['\'self\''],
+        frameSrc: ['\'none\''],
+        baseUri: ['\'self\''],
+        formAction: ['\'self\''],
+        frameAncestors: ['\'none\''],
+        manifestSrc: ['\'self\''],
         upgradeInsecureRequests: []
       }
     },
@@ -96,7 +96,9 @@ function getCorsConfig() {
   return {
     origin: function (origin, callback) {
       // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
       
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
@@ -349,7 +351,9 @@ function requestSizeLimit(maxSize = '10mb') {
  * Parse size string to bytes
  */
 function parseSize(size) {
-  if (typeof size === 'number') return size;
+  if (typeof size === 'number') {
+    return size;
+  }
   
   const units = {
     'b': 1,
@@ -359,7 +363,9 @@ function parseSize(size) {
   };
   
   const match = size.toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
-  if (!match) return 0;
+  if (!match) {
+    return 0;
+  }
   
   const value = parseFloat(match[1]);
   const unit = match[2] || 'b';
@@ -371,13 +377,15 @@ function parseSize(size) {
  * Format bytes to human readable string
  */
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {
+    return '0 B';
+  }
   
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))  } ${  sizes[i]}`;
 }
 
 /**
@@ -420,7 +428,7 @@ function validateEnvironment() {
   };
 
   let hasAnyAI = false;
-  let warnings = [];
+  const warnings = [];
 
   // Check if at least one AI service is configured
   if (process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY) {

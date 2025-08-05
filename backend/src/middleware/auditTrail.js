@@ -341,21 +341,39 @@ function determineEventType(req, res) {
   
   // Resource-based events
   if (path.includes('/games')) {
-    if (method === 'POST') return AUDIT_EVENTS.GAME_CREATE;
-    if (method === 'PUT' || method === 'PATCH') return AUDIT_EVENTS.GAME_UPDATE;
-    if (method === 'DELETE') return AUDIT_EVENTS.GAME_DELETE;
+    if (method === 'POST') {
+      return AUDIT_EVENTS.GAME_CREATE;
+    }
+    if (method === 'PUT' || method === 'PATCH') {
+      return AUDIT_EVENTS.GAME_UPDATE;
+    }
+    if (method === 'DELETE') {
+      return AUDIT_EVENTS.GAME_DELETE;
+    }
   }
   
   if (path.includes('/assignments')) {
-    if (method === 'POST') return AUDIT_EVENTS.ASSIGNMENT_CREATE;
-    if (method === 'PUT' || method === 'PATCH') return AUDIT_EVENTS.ASSIGNMENT_UPDATE;
-    if (method === 'DELETE') return AUDIT_EVENTS.ASSIGNMENT_DELETE;
+    if (method === 'POST') {
+      return AUDIT_EVENTS.ASSIGNMENT_CREATE;
+    }
+    if (method === 'PUT' || method === 'PATCH') {
+      return AUDIT_EVENTS.ASSIGNMENT_UPDATE;
+    }
+    if (method === 'DELETE') {
+      return AUDIT_EVENTS.ASSIGNMENT_DELETE;
+    }
   }
   
   if (path.includes('/users') || path.includes('/referees')) {
-    if (method === 'POST') return AUDIT_EVENTS.USER_CREATE;
-    if (method === 'PUT' || method === 'PATCH') return AUDIT_EVENTS.USER_UPDATE;
-    if (method === 'DELETE') return AUDIT_EVENTS.USER_DELETE;
+    if (method === 'POST') {
+      return AUDIT_EVENTS.USER_CREATE;
+    }
+    if (method === 'PUT' || method === 'PATCH') {
+      return AUDIT_EVENTS.USER_UPDATE;
+    }
+    if (method === 'DELETE') {
+      return AUDIT_EVENTS.USER_DELETE;
+    }
   }
   
   // Default event types
@@ -418,26 +436,54 @@ async function queryAuditLogs({
       .select('*')
       .orderBy('created_at', 'desc');
     
-    if (user_id) query = query.where('user_id', user_id);
-    if (event_type) query = query.where('event_type', event_type);
-    if (severity) query = query.where('severity', severity);
-    if (success !== null) query = query.where('success', success);
-    if (resource_type) query = query.where('resource_type', resource_type);
-    if (date_from) query = query.where('created_at', '>=', date_from);
-    if (date_to) query = query.where('created_at', '<=', date_to);
+    if (user_id) {
+      query = query.where('user_id', user_id);
+    }
+    if (event_type) {
+      query = query.where('event_type', event_type);
+    }
+    if (severity) {
+      query = query.where('severity', severity);
+    }
+    if (success !== null) {
+      query = query.where('success', success);
+    }
+    if (resource_type) {
+      query = query.where('resource_type', resource_type);
+    }
+    if (date_from) {
+      query = query.where('created_at', '>=', date_from);
+    }
+    if (date_to) {
+      query = query.where('created_at', '<=', date_to);
+    }
     
     const offset = (page - 1) * limit;
     const logs = await query.limit(limit).offset(offset);
     
     // Get total count for pagination
     const countQuery = db('audit_logs').count('* as total');
-    if (user_id) countQuery.where('user_id', user_id);
-    if (event_type) countQuery.where('event_type', event_type);
-    if (severity) countQuery.where('severity', severity);
-    if (success !== null) countQuery.where('success', success);
-    if (resource_type) countQuery.where('resource_type', resource_type);
-    if (date_from) countQuery.where('created_at', '>=', date_from);
-    if (date_to) countQuery.where('created_at', '<=', date_to);
+    if (user_id) {
+      countQuery.where('user_id', user_id);
+    }
+    if (event_type) {
+      countQuery.where('event_type', event_type);
+    }
+    if (severity) {
+      countQuery.where('severity', severity);
+    }
+    if (success !== null) {
+      countQuery.where('success', success);
+    }
+    if (resource_type) {
+      countQuery.where('resource_type', resource_type);
+    }
+    if (date_from) {
+      countQuery.where('created_at', '>=', date_from);
+    }
+    if (date_to) {
+      countQuery.where('created_at', '<=', date_to);
+    }
     
     const [{ total }] = await countQuery;
     

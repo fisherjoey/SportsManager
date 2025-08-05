@@ -386,7 +386,7 @@ describe('Availability API', () => {
       // Mock no overlapping windows for both
       mockTrx.where.mockReturnValue(mockTrx);
       mockTrx.returning.mockResolvedValueOnce([{ id: 'new-1', ...windows[0] }])
-                      .mockResolvedValueOnce([{ id: 'new-2', ...windows[1] }]);
+        .mockResolvedValueOnce([{ id: 'new-2', ...windows[1] }]);
       
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback(mockTrx);
@@ -423,7 +423,7 @@ describe('Availability API', () => {
       
       // First window overlaps, second doesn't
       mockTrx.where.mockReturnValueOnce(Promise.resolve([mockAvailability[0]]))
-                   .mockReturnValueOnce(Promise.resolve([]));
+        .mockReturnValueOnce(Promise.resolve([]));
       mockTrx.returning.mockResolvedValue([{ id: 'new-2', ...windows[1] }]);
       
       mockDb.transaction.mockImplementation(async (callback) => {

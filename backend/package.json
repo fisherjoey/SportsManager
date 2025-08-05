@@ -9,6 +9,7 @@
     "migrate": "knex migrate:latest",
     "seed": "knex seed:run",
     "test": "jest",
+    "test:unit": "SKIP_DB_TESTS=true jest --testPathIgnorePatterns=\"/tests/database/\" --testPathIgnorePatterns=\"/tests/integration/\"",
     "test:coverage": "c8 jest --coverage",
     "test:watch": "jest --watch",
     "test:invitations": "node tests/invitations-test-suite.js",

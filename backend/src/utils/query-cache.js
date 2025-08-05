@@ -147,7 +147,9 @@ class QueryCache {
    * @private
    */
   _evictOldest() {
-    if (this.cache.size === 0) return;
+    if (this.cache.size === 0) {
+      return;
+    }
 
     let oldestKey = null;
     let oldestTime = Date.now();

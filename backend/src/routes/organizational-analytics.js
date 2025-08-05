@@ -19,7 +19,9 @@ const analyticsRequestSchema = Joi.object({
 
 // Helper function to build department filter
 function buildDepartmentFilter(departments, alias = '') {
-  if (!departments || departments.length === 0) return { condition: '', params: [] };
+  if (!departments || departments.length === 0) {
+    return { condition: '', params: [] };
+  }
   
   const prefix = alias ? `${alias}.` : '';
   return {
@@ -75,8 +77,12 @@ router.get('/employees/performance', authenticateToken, requireAnyRole('admin', 
     `;
     
     const params = [start_date, end_date];
-    if (departments) params.push(departments);
-    if (positions) params.push(positions);
+    if (departments) {
+      params.push(departments);
+    }
+    if (positions) {
+      params.push(positions);
+    }
     
     const ratingsResult = await pool.query(ratingsQuery, params);
     
@@ -148,7 +154,9 @@ router.get('/employees/retention', authenticateToken, requireAnyRole('admin', 'h
     `;
     
     const turnoverParams = [start_date, end_date];
-    if (departments) turnoverParams.push(departments);
+    if (departments) {
+      turnoverParams.push(departments);
+    }
     
     const turnoverResult = await pool.query(turnoverQuery, turnoverParams);
     
@@ -245,7 +253,9 @@ router.get('/employees/training', authenticateToken, requireAnyRole('admin', 'hr
     `;
     
     const trainingStatsParams = [start_date, end_date];
-    if (departments) trainingStatsParams.push(departments);
+    if (departments) {
+      trainingStatsParams.push(departments);
+    }
     
     const trainingStatsResult = await pool.query(trainingStatsQuery, trainingStatsParams);
     
@@ -618,7 +628,9 @@ router.get('/costs/per-employee', authenticateToken, requireAnyRole('admin', 'hr
     `;
     
     const costParams = [start_date, end_date];
-    if (departments) costParams.push(departments);
+    if (departments) {
+      costParams.push(departments);
+    }
     
     const costPerEmployeeResult = await pool.query(costPerEmployeeQuery, costParams);
     

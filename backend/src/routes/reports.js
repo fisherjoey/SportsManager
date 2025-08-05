@@ -68,9 +68,9 @@ router.get('/referee-performance', authenticateToken, async (req, res) => {
         'users.is_available',
         'users.wage_per_game',
         db.raw('COUNT(CASE WHEN game_assignments.id IS NOT NULL THEN 1 END) as total_assignments'),
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['accepted']) + ' as accepted_assignments',
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['declined']) + ' as declined_assignments',
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['completed']) + ' as completed_assignments',
+        `${db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['accepted'])  } as accepted_assignments`,
+        `${db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['declined'])  } as declined_assignments`,
+        `${db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['completed'])  } as completed_assignments`,
         db.raw('COALESCE(SUM(game_assignments.calculated_wage), 0) as total_earnings'),
         db.raw('COALESCE(AVG(game_assignments.calculated_wage), 0) as average_wage'),
         db.raw('COUNT(DISTINCT games.game_date) as unique_game_days')
@@ -271,8 +271,8 @@ router.get('/assignment-patterns', authenticateToken, async (req, res) => {
       JOIN users r2 ON ga2.user_id = r2.id
       JOIN games g ON ga1.game_id = g.id
       WHERE 1=1
-      ${start_date ? "AND g.game_date >= '" + start_date + "'" : ''}
-      ${end_date ? "AND g.game_date <= '" + end_date + "'" : ''}
+      ${start_date ? `AND g.game_date >= '${  start_date  }'` : ''}
+      ${end_date ? `AND g.game_date <= '${  end_date  }'` : ''}
       GROUP BY r1.id, r1.name, r2.id, r2.name
       HAVING COUNT(*) > 2
       ORDER BY games_together DESC
@@ -620,7 +620,7 @@ router.get('/availability-gaps', authenticateToken, async (req, res) => {
       .leftJoin('leagues', 'home_team.league_id', 'leagues.id')
       .leftJoin('game_assignments', function() {
         this.on('games.id', '=', 'game_assignments.game_id')
-            .andOn(db.raw('game_assignments.status IN (?, ?)', ['pending', 'accepted']));
+          .andOn(db.raw('game_assignments.status IN (?, ?)', ['pending', 'accepted']));
       })
       .where('games.status', 'assigned')
       .whereRaw('(SELECT COUNT(*) FROM game_assignments ga WHERE ga.game_id = games.id AND ga.status IN (?, ?)) < games.refs_needed', ['pending', 'accepted']);

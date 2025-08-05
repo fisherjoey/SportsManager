@@ -229,14 +229,23 @@ class QueryPerformanceAnalyzer {
     
     // Extract operation
     let operation = 'unknown';
-    if (cleanSql.startsWith('select')) operation = 'select';
-    else if (cleanSql.startsWith('insert')) operation = 'insert';
-    else if (cleanSql.startsWith('update')) operation = 'update';
-    else if (cleanSql.startsWith('delete')) operation = 'delete';
-    else if (cleanSql.startsWith('create')) operation = 'create';
-    else if (cleanSql.startsWith('drop')) operation = 'drop';
-    else if (cleanSql.startsWith('alter')) operation = 'alter';
-    else if (cleanSql.includes('join')) operation = 'join';
+    if (cleanSql.startsWith('select')) {
+      operation = 'select';
+    } else if (cleanSql.startsWith('insert')) {
+      operation = 'insert';
+    } else if (cleanSql.startsWith('update')) {
+      operation = 'update';
+    } else if (cleanSql.startsWith('delete')) {
+      operation = 'delete';
+    } else if (cleanSql.startsWith('create')) {
+      operation = 'create';
+    } else if (cleanSql.startsWith('drop')) {
+      operation = 'drop';
+    } else if (cleanSql.startsWith('alter')) {
+      operation = 'alter';
+    } else if (cleanSql.includes('join')) {
+      operation = 'join';
+    }
     
     // Extract table names
     const tables = this.extractTableNames(sql);
@@ -244,11 +253,21 @@ class QueryPerformanceAnalyzer {
     
     // Detect query patterns
     const patterns = [];
-    if (cleanSql.includes('where')) patterns.push('filtered');
-    if (cleanSql.includes('order by')) patterns.push('sorted');
-    if (cleanSql.includes('group by')) patterns.push('grouped');
-    if (cleanSql.includes('limit')) patterns.push('limited');
-    if (cleanSql.includes('join')) patterns.push('joined');
+    if (cleanSql.includes('where')) {
+      patterns.push('filtered');
+    }
+    if (cleanSql.includes('order by')) {
+      patterns.push('sorted');
+    }
+    if (cleanSql.includes('group by')) {
+      patterns.push('grouped');
+    }
+    if (cleanSql.includes('limit')) {
+      patterns.push('limited');
+    }
+    if (cleanSql.includes('join')) {
+      patterns.push('joined');
+    }
     if (cleanSql.includes('subquery') || cleanSql.includes('select') && cleanSql.match(/select/g).length > 1) {
       patterns.push('complex');
     }
@@ -292,10 +311,18 @@ class QueryPerformanceAnalyzer {
     let complexity = 1;
     
     // Base complexity on patterns
-    if (patterns.includes('joined')) complexity += 2;
-    if (patterns.includes('complex')) complexity += 3;
-    if (patterns.includes('grouped')) complexity += 1;
-    if (patterns.includes('sorted')) complexity += 1;
+    if (patterns.includes('joined')) {
+      complexity += 2;
+    }
+    if (patterns.includes('complex')) {
+      complexity += 3;
+    }
+    if (patterns.includes('grouped')) {
+      complexity += 1;
+    }
+    if (patterns.includes('sorted')) {
+      complexity += 1;
+    }
     
     // Count subqueries
     const subqueryCount = (sql.match(/select/gi) || []).length - 1;
@@ -382,14 +409,24 @@ class QueryPerformanceAnalyzer {
     }, 0);
     
     const total = readOps + writeOps;
-    if (total === 0) return 'unknown';
+    if (total === 0) {
+      return 'unknown';
+    }
     
     const readRatio = readOps / total;
     
-    if (readRatio > 0.9) return 'read_heavy';
-    if (readRatio < 0.1) return 'write_heavy';
-    if (readRatio > 0.7) return 'read_mostly';
-    if (readRatio < 0.3) return 'write_mostly';
+    if (readRatio > 0.9) {
+      return 'read_heavy';
+    }
+    if (readRatio < 0.1) {
+      return 'write_heavy';
+    }
+    if (readRatio > 0.7) {
+      return 'read_mostly';
+    }
+    if (readRatio < 0.3) {
+      return 'write_mostly';
+    }
     return 'balanced';
   }
 
@@ -487,10 +524,18 @@ class QueryPerformanceAnalyzer {
    * Classify query performance
    */
   classifyPerformance(duration) {
-    if (duration > this.config.verySlowQueryThreshold) return 'very_slow';
-    if (duration > this.config.slowQueryThreshold) return 'slow';
-    if (duration > 100) return 'moderate';
-    if (duration > 50) return 'good';
+    if (duration > this.config.verySlowQueryThreshold) {
+      return 'very_slow';
+    }
+    if (duration > this.config.slowQueryThreshold) {
+      return 'slow';
+    }
+    if (duration > 100) {
+      return 'moderate';
+    }
+    if (duration > 50) {
+      return 'good';
+    }
     return 'excellent';
   }
 
@@ -498,7 +543,9 @@ class QueryPerformanceAnalyzer {
    * Start connection pool monitoring
    */
   startConnectionPoolMonitoring() {
-    if (!this.config.connectionPoolMonitoring) return;
+    if (!this.config.connectionPoolMonitoring) {
+      return;
+    }
     
     const monitorPool = () => {
       // This would integrate with your actual database connection pool
@@ -773,7 +820,9 @@ const queryAnalyzer = new QueryPerformanceAnalyzer();
 function wrapDatabaseConnection(db, options = {}) {
   const { enablePerformanceTracking = true, trackConnectionPool = true } = options;
   
-  if (!enablePerformanceTracking) return db;
+  if (!enablePerformanceTracking) {
+    return db;
+  }
   
   // Track connection pool events if supported
   if (trackConnectionPool && db.pool) {

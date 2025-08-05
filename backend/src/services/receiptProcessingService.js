@@ -105,7 +105,7 @@ class ReceiptProcessingService {
     }
 
     const startTime = Date.now();
-    let results = {
+    const results = {
       receiptId,
       ocrResults: null,
       extractedData: null,
@@ -581,7 +581,9 @@ class ReceiptProcessingService {
    * @private
    */
   async saveProcessingResults(receipt, results) {
-    if (!results.extractedData) return;
+    if (!results.extractedData) {
+      return;
+    }
 
     const expenseData = {
       receipt_id: receipt.id,
@@ -624,7 +626,9 @@ class ReceiptProcessingService {
       const user = await db('users').where('id', receipt.user_id).first();
       const extractedData = results.extractedData;
 
-      if (!extractedData) return;
+      if (!extractedData) {
+        return;
+      }
 
       const emailData = {
         to: process.env.ACCOUNTING_EMAIL,
@@ -645,7 +649,7 @@ class ReceiptProcessingService {
    */
   generateAccountingEmailHTML(user, receipt, extractedData, results) {
     const confidenceColor = extractedData.confidence >= 0.8 ? '#10B981' : 
-                           extractedData.confidence >= 0.6 ? '#F59E0B' : '#EF4444';
+      extractedData.confidence >= 0.6 ? '#F59E0B' : '#EF4444';
 
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -701,8 +705,12 @@ class ReceiptProcessingService {
    * @private
    */
   getFileType(mimeType) {
-    if (mimeType.startsWith('image/')) return 'image';
-    if (mimeType === 'application/pdf') return 'pdf';
+    if (mimeType.startsWith('image/')) {
+      return 'image';
+    }
+    if (mimeType === 'application/pdf') {
+      return 'pdf';
+    }
     return 'other';
   }
 
@@ -730,7 +738,9 @@ class ReceiptProcessingService {
       .where('receipt_id', receipt.id)
       .first();
       
-    if (!expenseData) return true;
+    if (!expenseData) {
+      return true;
+    }
     
     return expenseData.requires_manual_review ||
            expenseData.extraction_confidence < 0.7 ||

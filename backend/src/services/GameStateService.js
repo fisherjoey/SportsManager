@@ -202,9 +202,15 @@ class GameStateService {
       const errors = [];
       const warnings = [];
 
-      if (!game) errors.push('Game not found');
-      if (!user) errors.push('Referee not found or not active');
-      if (!position) errors.push('Position not found');
+      if (!game) {
+        errors.push('Game not found');
+      }
+      if (!user) {
+        errors.push('Referee not found or not active');
+      }
+      if (!position) {
+        errors.push('Position not found');
+      }
 
       if (errors.length > 0) {
         return {
@@ -539,7 +545,9 @@ class GameStateService {
    */
   _calculateTravelTime(location1, location2) {
     // Simple heuristic - in a real implementation, this would use a mapping service
-    if (location1 === location2) return 0;
+    if (location1 === location2) {
+      return 0;
+    }
     return 30; // Default 30 minutes travel time between different locations
   }
 

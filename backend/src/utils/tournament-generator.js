@@ -23,7 +23,7 @@ function generateRoundRobin(teams, options = {}) {
 
   const games = [];
   const rounds = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   let gameCounter = 0;
 
   // Generate all possible matchups
@@ -124,7 +124,7 @@ function generateSingleElimination(teams, options = {}) {
   const rounds = [];
   let currentRound = 1;
   let currentTeams = [...seededTeams];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   let gameCounter = 0;
 
   while (currentTeams.length > 1) {
@@ -227,7 +227,7 @@ function generateSwissSystem(teams, options = {}) {
 
   const games = [];
   const rounds = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
 
   // Initialize team records
   const teamRecords = teams.map(team => ({
@@ -240,7 +240,9 @@ function generateSwissSystem(teams, options = {}) {
   for (let round = 1; round <= totalRounds; round++) {
     // Sort teams by record (wins desc, then by tiebreakers)
     teamRecords.sort((a, b) => {
-      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.wins !== a.wins) {
+        return b.wins - a.wins;
+      }
       // Add more tiebreaker logic here if needed
       return (a.rank || 1) - (b.rank || 1);
     });
@@ -250,7 +252,9 @@ function generateSwissSystem(teams, options = {}) {
 
     // Pair teams with similar records
     for (let i = 0; i < teamRecords.length; i++) {
-      if (pairedTeams.has(teamRecords[i].id)) continue;
+      if (pairedTeams.has(teamRecords[i].id)) {
+        continue;
+      }
 
       const team1 = teamRecords[i];
       let team2 = null;
@@ -258,8 +262,12 @@ function generateSwissSystem(teams, options = {}) {
       // Find best opponent for team1
       for (let j = i + 1; j < teamRecords.length; j++) {
         const candidate = teamRecords[j];
-        if (pairedTeams.has(candidate.id)) continue;
-        if (team1.opponents.includes(candidate.id)) continue;
+        if (pairedTeams.has(candidate.id)) {
+          continue;
+        }
+        if (team1.opponents.includes(candidate.id)) {
+          continue;
+        }
 
         team2 = candidate;
         break;
@@ -352,7 +360,7 @@ function generateGroupStagePlayoffs(teams, options = {}) {
 
   const games = [];
   const rounds = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
 
   // Divide teams into groups
   const numGroups = Math.ceil(teams.length / groupSize);
@@ -371,7 +379,9 @@ function generateGroupStagePlayoffs(teams, options = {}) {
 
   // Generate group stage games (round robin within each group)
   for (const group of groups) {
-    if (group.teams.length < 2) continue;
+    if (group.teams.length < 2) {
+      continue;
+    }
 
     // Generate round robin for this group
     for (let i = 0; i < group.teams.length; i++) {
@@ -492,12 +502,12 @@ function getRoundName(round, totalRounds) {
   const roundsFromEnd = totalRounds - round + 1;
   
   switch (roundsFromEnd) {
-    case 1: return 'Final';
-    case 2: return 'Semi-Final';
-    case 3: return 'Quarter-Final';
-    case 4: return 'Round of 16';
-    case 5: return 'Round of 32';
-    default: return `Round ${round}`;
+  case 1: return 'Final';
+  case 2: return 'Semi-Final';
+  case 3: return 'Quarter-Final';
+  case 4: return 'Round of 16';
+  case 5: return 'Round of 32';
+  default: return `Round ${round}`;
   }
 }
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 import BudgetTracker from '@/components/budget-tracker'
@@ -12,33 +12,33 @@ import BudgetTracker from '@/components/budget-tracker'
  */
 
 // Mock the toast system
-vi.mock('@/components/ui/use-toast', () => ({
-  toast: vi.fn()
+jest.mock('@/components/ui/use-toast', () => ({
+  toast: jest.fn()
 }))
 
 // Mock the API client
-vi.mock('@/lib/api', () => ({
+jest.mock('@/lib/api', () => ({
   apiClient: {
-    getBudgetPeriods: vi.fn(),
-    getBudgetCategories: vi.fn(),
-    getBudgets: vi.fn(),
-    createBudget: vi.fn(),
-    updateBudget: vi.fn(),
-    deleteBudget: vi.fn()
+    getBudgetPeriods: jest.fn(),
+    getBudgetCategories: jest.fn(),
+    getBudgets: jest.fn(),
+    createBudget: jest.fn(),
+    updateBudget: jest.fn(),
+    deleteBudget: jest.fn()
   }
 }))
 
 // Mock ResizeObserver for charts
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn()
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn()
 }))
 
 // Mock window.confirm
 Object.defineProperty(window, 'confirm', {
   writable: true,
-  value: vi.fn()
+  value: jest.fn()
 })
 
 const mockBudgetPeriods = [
@@ -113,27 +113,27 @@ const mockBudgets = [
 describe('BudgetTracker Component', () => {
   beforeEach(() => {
     // Reset all mocks before each test
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     
     // Set up default successful API responses
-    vi.mocked(apiClient.getBudgetPeriods).mockResolvedValue({
+    jest.mocked(apiClient.getBudgetPeriods).mockResolvedValue({
       periods: mockBudgetPeriods,
       pagination: { total: 2, page: 1, limit: 10 }
     })
     
-    vi.mocked(apiClient.getBudgetCategories).mockResolvedValue({
+    jest.mocked(apiClient.getBudgetCategories).mockResolvedValue({
       categories: mockBudgetCategories,
       pagination: { total: 2, page: 1, limit: 10 }
     })
     
-    vi.mocked(apiClient.getBudgets).mockResolvedValue({
+    jest.mocked(apiClient.getBudgets).mockResolvedValue({
       budgets: mockBudgets,
       pagination: { total: 2, page: 1, limit: 10 }
     })
   })
 
   afterEach(() => {
-    vi.resetAllMocks()
+    jest.resetAllMocks()
   })
 
   describe('Initial Rendering and Data Loading', () => {
@@ -163,7 +163,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('displays error when initial data loading fails', async () => {
-      vi.mocked(apiClient.getBudgetPeriods).mockRejectedValue(new Error('Network error'))
+      jest.mocked(apiClient.getBudgetPeriods).mockRejectedValue(new Error('Network error'))
       
       render(<BudgetTracker />)
       
@@ -178,7 +178,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('displays specific error message for 401 unauthorized', async () => {
-      vi.mocked(apiClient.getBudgetPeriods).mockRejectedValue(new Error('unauthorized'))
+      jest.mocked(apiClient.getBudgetPeriods).mockRejectedValue(new Error('unauthorized'))
       
       render(<BudgetTracker />)
       
@@ -232,7 +232,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('creates budget successfully with valid data', async () => {
-      vi.mocked(apiClient.createBudget).mockResolvedValue({ success: true })
+      jest.mocked(apiClient.createBudget).mockResolvedValue({ success: true })
       
       render(<BudgetTracker />)
       
@@ -279,7 +279,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('handles budget creation failure with specific error messages', async () => {
-      vi.mocked(apiClient.createBudget).mockRejectedValue(new Error('duplicate budget name'))
+      jest.mocked(apiClient.createBudget).mockRejectedValue(new Error('duplicate budget name'))
       
       render(<BudgetTracker />)
       
@@ -351,7 +351,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('updates budget successfully', async () => {
-      vi.mocked(apiClient.updateBudget).mockResolvedValue({ success: true })
+      jest.mocked(apiClient.updateBudget).mockResolvedValue({ success: true })
       
       render(<BudgetTracker />)
       
@@ -390,7 +390,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('handles update failure with specific error message', async () => {
-      vi.mocked(apiClient.updateBudget).mockRejectedValue(new Error('404 budget not found'))
+      jest.mocked(apiClient.updateBudget).mockRejectedValue(new Error('404 budget not found'))
       
       render(<BudgetTracker />)
       
@@ -417,7 +417,7 @@ describe('BudgetTracker Component', () => {
 
   describe('Budget Deletion', () => {
     it('shows confirmation dialog before deleting', async () => {
-      vi.mocked(window.confirm).mockReturnValue(false)
+      jest.mocked(window.confirm).mockReturnValue(false)
       
       render(<BudgetTracker />)
       
@@ -439,8 +439,8 @@ describe('BudgetTracker Component', () => {
     })
 
     it('deletes budget successfully when confirmed', async () => {
-      vi.mocked(window.confirm).mockReturnValue(true)
-      vi.mocked(apiClient.deleteBudget).mockResolvedValue({ success: true })
+      jest.mocked(window.confirm).mockReturnValue(true)
+      jest.mocked(apiClient.deleteBudget).mockResolvedValue({ success: true })
       
       render(<BudgetTracker />)
       
@@ -466,8 +466,8 @@ describe('BudgetTracker Component', () => {
     })
 
     it('handles deletion failure with error message', async () => {
-      vi.mocked(window.confirm).mockReturnValue(true)
-      vi.mocked(apiClient.deleteBudget).mockRejectedValue(new Error('network error'))
+      jest.mocked(window.confirm).mockReturnValue(true)
+      jest.mocked(apiClient.deleteBudget).mockRejectedValue(new Error('network error'))
       
       render(<BudgetTracker />)
       
@@ -512,7 +512,7 @@ describe('BudgetTracker Component', () => {
   describe('Loading States', () => {
     it('shows loading state during initial data fetch', async () => {
       // Make API calls take time
-      vi.mocked(apiClient.getBudgetPeriods).mockImplementation(
+      jest.mocked(apiClient.getBudgetPeriods).mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve({ periods: mockBudgetPeriods }), 100))
       )
       
@@ -526,7 +526,7 @@ describe('BudgetTracker Component', () => {
     })
 
     it('shows loading state during budget operations', async () => {
-      vi.mocked(apiClient.createBudget).mockImplementation(
+      jest.mocked(apiClient.createBudget).mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 100))
       )
       
@@ -555,7 +555,7 @@ describe('BudgetTracker Component', () => {
   describe('Error Boundary', () => {
     it('catches and displays errors gracefully', async () => {
       // Mock console.error to avoid noise in test output
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
       
       // Create a component that will throw an error
       const ThrowError = () => {
@@ -602,9 +602,9 @@ describe('BudgetTracker Component', () => {
   describe('No Debug Information', () => {
     it('does not expose sensitive debug information in production', async () => {
       // Mock console methods to capture any debug output
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
-      const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation(() => {})
+      const consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
       
       render(<BudgetTracker />)
       

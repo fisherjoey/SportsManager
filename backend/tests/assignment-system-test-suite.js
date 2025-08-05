@@ -87,7 +87,7 @@ async function runAllTests() {
   }
 
   // Summary Report
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
   console.log('📊 TEST SUITE SUMMARY');
   console.log('═'.repeat(80));
 
@@ -99,7 +99,7 @@ async function runAllTests() {
     }
   });
 
-  console.log('\n' + '─'.repeat(40));
+  console.log(`\n${  '─'.repeat(40)}`);
   console.log(`📈 Total: ${testSuites.length} suites`);
   console.log(`✅ Passed: ${totalPassed}`);
   console.log(`❌ Failed: ${totalFailed}`);

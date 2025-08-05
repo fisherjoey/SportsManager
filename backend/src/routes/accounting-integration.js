@@ -361,15 +361,21 @@ router.get('/journal-entries', authenticateToken, async (req, res) => {
       .where('je.organization_id', organizationId)
       .select(
         'je.*',
-        db.raw("creator.first_name || ' ' || creator.last_name as created_by_name"),
-        db.raw("COALESCE(approver.first_name || ' ' || approver.last_name, 'Not approved') as approved_by_name"),
+        db.raw('creator.first_name || \' \' || creator.last_name as created_by_name'),
+        db.raw('COALESCE(approver.first_name || \' \' || approver.last_name, \'Not approved\') as approved_by_name'),
         'ft.transaction_number'
       );
 
     // Apply filters
-    if (status) query = query.where('je.status', status);
-    if (date_from) query = query.where('je.entry_date', '>=', date_from);
-    if (date_to) query = query.where('je.entry_date', '<=', date_to);
+    if (status) {
+      query = query.where('je.status', status);
+    }
+    if (date_from) {
+      query = query.where('je.entry_date', '>=', date_from);
+    }
+    if (date_to) {
+      query = query.where('je.entry_date', '<=', date_to);
+    }
 
     const offset = (page - 1) * limit;
     const [entries, [{ total }]] = await Promise.all([
@@ -516,7 +522,7 @@ router.post('/journal-entries',
         .where('je.id', journalEntry.id)
         .select(
           'je.*',
-          db.raw("creator.first_name || ' ' || creator.last_name as created_by_name")
+          db.raw('creator.first_name || \' \' || creator.last_name as created_by_name')
         )
         .first();
 
@@ -613,8 +619,12 @@ router.get('/sync-logs',
           'ai.provider_name'
         );
 
-      if (integration_id) query = query.where('asl.integration_id', integration_id);
-      if (status) query = query.where('asl.status', status);
+      if (integration_id) {
+        query = query.where('asl.integration_id', integration_id);
+      }
+      if (status) {
+        query = query.where('asl.status', status);
+      }
 
       const offset = (page - 1) * limit;
       const [logs, [{ total }]] = await Promise.all([
@@ -646,35 +656,35 @@ async function testIntegrationConnection(integration) {
   try {
     // Simulate connection test based on provider
     switch (integration.provider) {
-      case 'quickbooks_online':
-        // TODO: Implement QuickBooks Online connection test
-        return {
-          success: true,
-          message: 'Successfully connected to QuickBooks Online',
-          details: { company_name: 'Test Company', last_sync: new Date() }
-        };
+    case 'quickbooks_online':
+      // TODO: Implement QuickBooks Online connection test
+      return {
+        success: true,
+        message: 'Successfully connected to QuickBooks Online',
+        details: { company_name: 'Test Company', last_sync: new Date() }
+      };
       
-      case 'xero':
-        // TODO: Implement Xero connection test
-        return {
-          success: true,
-          message: 'Successfully connected to Xero',
-          details: { organization_name: 'Test Organization', last_sync: new Date() }
-        };
+    case 'xero':
+      // TODO: Implement Xero connection test
+      return {
+        success: true,
+        message: 'Successfully connected to Xero',
+        details: { organization_name: 'Test Organization', last_sync: new Date() }
+      };
       
-      case 'manual':
-        return {
-          success: true,
-          message: 'Manual integration configured',
-          details: { mode: 'manual', requires_manual_sync: true }
-        };
+    case 'manual':
+      return {
+        success: true,
+        message: 'Manual integration configured',
+        details: { mode: 'manual', requires_manual_sync: true }
+      };
       
-      default:
-        return {
-          success: false,
-          message: 'Integration provider not yet implemented',
-          error: `Provider ${integration.provider} is not yet supported`
-        };
+    default:
+      return {
+        success: false,
+        message: 'Integration provider not yet implemented',
+        error: `Provider ${integration.provider} is not yet supported`
+      };
     }
   } catch (error) {
     return {

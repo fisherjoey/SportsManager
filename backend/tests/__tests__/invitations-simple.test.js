@@ -106,10 +106,10 @@ describe('Invitations System - Basic Tests', () => {
 
     test('should handle special characters safely', () => {
       const testNames = [
-        "O'Connor",
-        "José María",
-        "李小明",
-        "Smith-Jones"
+        'O\'Connor',
+        'José María',
+        '李小明',
+        'Smith-Jones'
       ];
 
       testNames.forEach(name => {
@@ -239,8 +239,12 @@ describe('Invitations System - Basic Tests', () => {
       };
 
       function getInvitationState(invitation) {
-        if (invitation.used) return states.USED;
-        if (new Date(invitation.expires_at) < new Date()) return states.EXPIRED;
+        if (invitation.used) {
+          return states.USED;
+        }
+        if (new Date(invitation.expires_at) < new Date()) {
+          return states.EXPIRED;
+        }
         return states.PENDING;
       }
 
