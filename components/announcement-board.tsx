@@ -53,8 +53,11 @@ export function AnnouncementBoard() {
   const [activeTab, setActiveTab] = useState('all')
 
   useEffect(() => {
-    fetchContent()
-  }, [])
+    // Only fetch content if user is authenticated
+    if (user) {
+      fetchContent()
+    }
+  }, [user])
 
   const fetchContent = async () => {
     try {

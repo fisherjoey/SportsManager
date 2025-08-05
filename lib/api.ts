@@ -51,6 +51,15 @@ class ApiClient {
     }
   }
 
+  initializeToken() {
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('auth_token')
+      if (storedToken) {
+        this.token = storedToken
+      }
+    }
+  }
+
   removeToken() {
     this.token = null
     if (typeof window !== 'undefined') {
@@ -66,6 +75,11 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Ensure token is initialized from localStorage if not already set
+    if (!this.token && typeof window !== 'undefined') {
+      this.initializeToken()
+    }
+
     const url = `${this.baseURL}${endpoint}`
     const method = options.method || 'GET'
     const headers: HeadersInit = {
