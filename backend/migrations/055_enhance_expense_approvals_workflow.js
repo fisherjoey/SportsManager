@@ -75,8 +75,8 @@ exports.up = function(knex) {
       table.index('requires_additional_review');
     })
     
-    // Create approval workflows table for templates
-    .createTable('approval_workflows', function(table) {
+    // Create approval workflows table for templates (if it doesn't exist)
+    .createTableIfNotExists('approval_workflows', function(table) {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
       table.uuid('organization_id').notNullable();
       
