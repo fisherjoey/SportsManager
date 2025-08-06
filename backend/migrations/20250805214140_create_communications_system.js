@@ -3,6 +3,10 @@
  * @returns { Promise<void> }
  */
 exports.up = function(knex) {
+  // TEMPORARILY DISABLED - Table already exists
+  console.log('⚠️  Communications system migration skipped - tables already exist');
+  return Promise.resolve();
+  
   return knex.schema
     .createTable('internal_communications', table => {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
