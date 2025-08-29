@@ -8,16 +8,7 @@ describe('League Routes', () => {
   let adminToken;
 
   beforeAll(async () => {
-    // Create admin user for tests
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    adminUser = await knex('users').insert({
-      email: 'admin@test.com',
-      password_hash: hashedPassword,
-      role: 'admin',
-      name: 'Test Admin'
-    }).returning('*')[0];
-
-    // Login to get token
+    // Login with existing admin user from test setup
     const loginResponse = await request(app)
       .post('/api/auth/login')
       .send({
@@ -26,6 +17,10 @@ describe('League Routes', () => {
       });
 
     adminToken = loginResponse.body.token;
+    
+    // Get admin user info
+    const users = await knex('users').where({ email: 'admin@test.com' }).first();
+    adminUser = users;
   });
 
   describe('GET /api/leagues', () => {
@@ -38,7 +33,9 @@ describe('League Routes', () => {
           gender: 'Boys',
           division: 'Division 1',
           season: 'Winter 2025',
-          level: 'Recreational'
+          level: 'Recreational',
+          name: 'Calgary U11 Boys Division 1',
+          status: 'active'
         },
         {
           organization: 'Calgary',
@@ -46,7 +43,9 @@ describe('League Routes', () => {
           gender: 'Boys',
           division: 'Division 2',
           season: 'Winter 2025',
-          level: 'Competitive'
+          level: 'Competitive',
+          name: 'Calgary U13 Boys Division 2',
+          status: 'active'
         },
         {
           organization: 'Okotoks',
@@ -54,7 +53,9 @@ describe('League Routes', () => {
           gender: 'Girls',
           division: 'Division 1',
           season: 'Winter 2025',
-          level: 'Recreational'
+          level: 'Recreational',
+          name: 'Okotoks U11 Girls Division 1',
+          status: 'active'
         }
       ]);
     });

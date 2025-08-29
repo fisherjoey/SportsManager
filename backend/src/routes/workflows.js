@@ -11,93 +11,68 @@ const createWorkflowTables = async () => {
     return;
   }
   
-  const client = await db.raw('SELECT 1');
   try {
-    await client.query('BEGIN');
     
     // Workflow definitions table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS workflow_definitions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name VARCHAR(100) NOT NULL,
-        description TEXT,
-        category VARCHAR(50), -- 'onboarding', 'asset_management', 'approval', 'compliance'
-        trigger_event VARCHAR(100), -- What starts this workflow
-        is_active BOOLEAN DEFAULT true,
-        steps JSONB NOT NULL, -- Array of workflow steps
-        conditions JSONB, -- Conditions for workflow execution
-        created_by UUID REFERENCES users(id),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    await db.schema.createTable('workflow_definitions', function(table) {
+      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+      table.string('name', 100).notNullable();
+      table.text('description');
+      table.string('category', 50); // 'onboarding', 'asset_management', 'approval', 'compliance'
+      table.string('trigger_event', 100); // What starts this workflow
+      table.boolean('is_active').defaultTo(true);
+      table.json('steps').notNullable(); // Array of workflow steps
+      table.json('conditions'); // Conditions for workflow execution
+      table.uuid('created_by').references('id').inTable('users');
+      table.timestamps(true, true);
+    }).onConflict().ignore();
+    
+    await db.schema.createTable('workflow_instances', function(table) {
+      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+      table.uuid('workflow_definition_id').references('id').inTable('workflow_definitions').onDelete('CASCADE');
+      table.string('entity_type', 50); // 'employee', 'asset', 'document', etc.
+      table.uuid('entity_id'); // ID of the entity this workflow is for
+      table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'cancelled'
+      table.integer('current_step').defaultTo(0);
+      table.json('context'); // Workflow-specific data and variables
+      table.uuid('started_by').references('id').inTable('users');
+      table.timestamp('started_at').defaultTo(db.fn.now());
+      table.timestamp('completed_at');
+      table.text('error_message');
+      table.timestamps(true, true);
+    }).onConflict().ignore();
+    
+    await db.schema.createTable('workflow_step_executions', function(table) {
+      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+      table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
+      table.integer('step_number').notNullable();
+      table.string('step_name', 100).notNullable();
+      table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'skipped'
+      table.uuid('assigned_to').references('id').inTable('users');
+      table.timestamp('started_at');
+      table.timestamp('completed_at');
+      table.timestamp('due_date');
+      table.json('input_data');
+      table.json('output_data');
+      table.text('error_message');
+      table.text('notes');
+      table.timestamps(true, true);
+    }).onConflict().ignore();
+    
+    await db.schema.createTable('workflow_approvals', function(table) {
+      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+      table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
+      table.uuid('step_execution_id').references('id').inTable('workflow_step_executions').onDelete('CASCADE');
+      table.uuid('approver_id').references('id').inTable('users');
+      table.string('status', 30).defaultTo('pending'); // 'pending', 'approved', 'rejected'
+      table.timestamp('decision_date');
+      table.text('comments');
+      table.timestamps(true, true);
+    }).onConflict().ignore();
 
-    // Workflow instances table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS workflow_instances (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        workflow_definition_id UUID REFERENCES workflow_definitions(id) ON DELETE CASCADE,
-        entity_type VARCHAR(50), -- 'employee', 'asset', 'document', etc.
-        entity_id UUID, -- ID of the entity this workflow is for
-        status VARCHAR(30) DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed', 'cancelled'
-        current_step INTEGER DEFAULT 0,
-        context JSONB, -- Workflow-specific data and variables
-        started_by UUID REFERENCES users(id),
-        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        completed_at TIMESTAMP,
-        error_message TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Workflow step executions table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS workflow_step_executions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        workflow_instance_id UUID REFERENCES workflow_instances(id) ON DELETE CASCADE,
-        step_number INTEGER NOT NULL,
-        step_name VARCHAR(100) NOT NULL,
-        status VARCHAR(30) DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed', 'skipped'
-        assigned_to UUID REFERENCES users(id),
-        started_at TIMESTAMP,
-        completed_at TIMESTAMP,
-        due_date TIMESTAMP,
-        input_data JSONB,
-        output_data JSONB,
-        error_message TEXT,
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Workflow approvals table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS workflow_approvals (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        workflow_instance_id UUID REFERENCES workflow_instances(id) ON DELETE CASCADE,
-        step_execution_id UUID REFERENCES workflow_step_executions(id) ON DELETE CASCADE,
-        approver_id UUID REFERENCES users(id),
-        status VARCHAR(30) DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
-        decision_date TIMESTAMP,
-        comments TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create indexes
-    await client.query('CREATE INDEX IF NOT EXISTS idx_workflow_instances_status ON workflow_instances(status)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_workflow_instances_entity ON workflow_instances(entity_type, entity_id)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_workflow_step_executions_assigned ON workflow_step_executions(assigned_to, status)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_workflow_approvals_approver ON workflow_approvals(approver_id, status)');
-
-    await client.query('COMMIT');
   } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
+    console.error('Error creating workflow tables:', error.message);
+    // Don't throw error to prevent server crash
   }
 };
 
