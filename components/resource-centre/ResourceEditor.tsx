@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
-  Save, Eye, X, Upload, AlertCircle
+  Save, Eye, X, Upload, AlertCircle, FileEdit
 } from 'lucide-react'
 
 interface ResourceEditorProps {
   onSave: (data: any) => Promise<void>
+  onSaveDraft?: (data: any) => Promise<{ id: number }>
   onFileUpload?: (file: File) => Promise<{ file_url: string; file_name: string }>
   initialData?: {
     id?: number
@@ -28,6 +29,7 @@ interface ResourceEditorProps {
 
 export function ResourceEditor({ 
   onSave, 
+  onSaveDraft,
   onFileUpload, 
   initialData, 
   mode = 'create' 
@@ -42,6 +44,10 @@ export function ResourceEditor({
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [editorKey, setEditorKey] = useState(0)
+  const [draftId, setDraftId] = useState<number | null>(initialData?.id || null)
+  const [isDraftSaving, setIsDraftSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const editorRef = useRef<any>(null)
   const { theme, resolvedTheme } = useTheme()
@@ -57,6 +63,44 @@ export function ResourceEditor({
       setEditorKey(prev => prev + 1)
     }
   }, [resolvedTheme, mounted])
+
+  // Track unsaved changes
+  useEffect(() => {
+    setHasUnsavedChanges(true)
+  }, [title, description, category, type, content])
+
+  // Auto-save as draft every 30 seconds if there are unsaved changes
+  useEffect(() => {
+    if (!hasUnsavedChanges || !onSaveDraft) return
+
+    const autoSaveInterval = setInterval(() => {
+      if (hasUnsavedChanges && (title.trim() || content.trim())) {
+        handleSaveDraft(true) // true indicates auto-save
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(autoSaveInterval)
+  }, [hasUnsavedChanges, title, content, onSaveDraft])
+
+  // Save draft before page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && (title.trim() || content.trim())) {
+        // Attempt to save draft
+        if (onSaveDraft) {
+          handleSaveDraft(true)
+        }
+        
+        // Show browser warning
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges, title, content, onSaveDraft])
 
   const generateSlug = (title: string): string => {
     return title
@@ -101,17 +145,70 @@ export function ResourceEditor({
       const htmlContent = editorRef.current?.getContent() || content
       
       await onSave({
+        id: draftId,
         title,
         description,
         category,
         type,
         content: htmlContent,
-        slug: generateSlug(title)
+        slug: generateSlug(title),
+        status: 'published'
       })
+      
+      setHasUnsavedChanges(false)
+      setLastSaved(new Date())
     } catch (err) {
       setError('Error saving resource. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSaveDraft = async (isAutoSave = false) => {
+    if (!onSaveDraft) return
+    
+    // Don't auto-save if there's no content
+    if (isAutoSave && !title.trim() && !content.trim()) return
+
+    setError(null)
+    if (!isAutoSave) {
+      setIsDraftSaving(true)
+    }
+
+    try {
+      const htmlContent = editorRef.current?.getContent() || content
+      
+      const result = await onSaveDraft({
+        id: draftId,
+        title: title || 'Untitled Draft',
+        description,
+        category: category || 'General',
+        type: type || 'document',
+        content: htmlContent,
+        slug: title ? generateSlug(title) : `draft-${Date.now()}`,
+        status: 'draft'
+      })
+      
+      if (result?.id && !draftId) {
+        setDraftId(result.id)
+      }
+      
+      setHasUnsavedChanges(false)
+      setLastSaved(new Date())
+      
+      if (!isAutoSave) {
+        // Show success message for manual saves
+        setError('Draft saved successfully!')
+        setTimeout(() => setError(null), 3000)
+      }
+    } catch (err) {
+      if (!isAutoSave) {
+        setError('Error saving draft. Please try again.')
+      }
+    } finally {
+      if (!isAutoSave) {
+        setIsDraftSaving(false)
+      }
     }
   }
 
@@ -215,9 +312,24 @@ export function ResourceEditor({
   return (
     <Card className="w-full max-w-4xl mx-auto" data-testid="resource-editor">
       <CardHeader>
-        <CardTitle>
-          {mode === 'edit' ? 'Edit Resource' : 'Create New Resource'}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>
+            {mode === 'edit' ? 'Edit Resource' : 'Create New Resource'}
+          </CardTitle>
+          
+          {/* Auto-save status */}
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            {lastSaved && (
+              <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+            )}
+            {hasUnsavedChanges && !isDraftSaving && (
+              <span className="text-orange-500">Unsaved changes</span>
+            )}
+            {isDraftSaving && (
+              <span className="text-blue-500">Saving draft...</span>
+            )}
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -332,9 +444,7 @@ export function ResourceEditor({
               value={content}
               onEditorChange={(content) => setContent(content)}
               onInit={(evt, editor) => {
-                if (editorRef.current) {
-                  editorRef.current = editor
-                }
+                editorRef.current = editor
               }}
               init={{
                 height: 500,
@@ -389,8 +499,20 @@ export function ResourceEditor({
             disabled={isLoading}
           >
             <Save className="h-4 w-4" />
-            {isLoading ? 'Saving...' : (mode === 'edit' ? 'Update Resource' : 'Save Resource')}
+            {isLoading ? 'Publishing...' : (mode === 'edit' ? 'Update & Publish' : 'Publish Resource')}
           </Button>
+
+          {onSaveDraft && (
+            <Button 
+              variant="secondary"
+              className="flex items-center gap-2"
+              onClick={() => handleSaveDraft(false)}
+              disabled={isDraftSaving}
+            >
+              <FileEdit className="h-4 w-4" />
+              {isDraftSaving ? 'Saving Draft...' : 'Save as Draft'}
+            </Button>
+          )}
           
           <Button 
             variant="outline" 
@@ -406,13 +528,21 @@ export function ResourceEditor({
             variant="ghost"
             className="flex items-center gap-2"
             onClick={() => {
-              setTitle('')
-              setDescription('')
-              setCategory('')
-              setType('')
-              setContent('')
-              setError(null)
-              setValidationErrors([])
+              const confirmed = hasUnsavedChanges 
+                ? window.confirm('You have unsaved changes. Are you sure you want to cancel?')
+                : true
+                
+              if (confirmed) {
+                setTitle('')
+                setDescription('')
+                setCategory('')
+                setType('')
+                setContent('')
+                setError(null)
+                setValidationErrors([])
+                setHasUnsavedChanges(false)
+                setDraftId(null)
+              }
             }}
           >
             <X className="h-4 w-4" />

@@ -35,7 +35,7 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { WorkflowManagement } from '@/components/workflow-management'
 import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
-import { ResourceCentre } from '@/components/resource-centre'
+import { ResourceCentre, ResourceRenderer } from '@/components/resource-centre'
 import { ResourceAdmin } from '@/components/resource-admin'
 
 
@@ -44,16 +44,16 @@ export function AdminDashboard() {
   const [activeView, setActiveView] = useState('dashboard')
   const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
 
-  // Initialize from URL on mount and handle browser navigation
+  // Initialize from URL on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    const viewFromUrl = urlParams.get('view')
-    if (viewFromUrl && viewFromUrl !== activeView) {
+    const viewFromUrl = urlParams.get('view') || 'dashboard'
+    if (viewFromUrl !== activeView) {
       setActiveView(viewFromUrl)
     }
-  }, [activeView])
+  }, []) // Remove activeView dependency to prevent infinite loop
 
-  // Handle browser back/forward navigation
+  // Handle browser back/forward navigation AND URL changes
   useEffect(() => {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search)
@@ -61,9 +61,35 @@ export function AdminDashboard() {
       setActiveView(viewFromUrl)
     }
 
+    // Listen for navigation events (Next.js Link clicks)
+    const handleRouteChange = () => {
+      // Small delay to let the URL update first
+      setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const viewFromUrl = urlParams.get('view') || 'dashboard'
+        if (viewFromUrl !== activeView) {
+          setActiveView(viewFromUrl)
+        }
+      }, 10)
+    }
+
+    // Listen to click events on links
+    const handleLinkClick = (event: Event) => {
+      const target = event.target as HTMLElement
+      const link = target.closest('a')
+      if (link && link.href.includes('view=')) {
+        handleRouteChange()
+      }
+    }
+
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+    document.addEventListener('click', handleLinkClick)
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      document.removeEventListener('click', handleLinkClick)
+    }
+  }, [activeView])
 
   // Update URL when activeView changes
   const handleViewChange = (view: string, options?: { dateFilter?: string }) => {
@@ -163,6 +189,10 @@ export function AdminDashboard() {
       return 'Organization Settings'
       
     default:
+      // Handle resources/[slug] pattern
+      if (activeView.startsWith('resources/')) {
+        return 'Resource'
+      }
       return 'Dashboard'
     }
   }
@@ -198,7 +228,7 @@ export function AdminDashboard() {
     case 'posts':
       return <PostsManagement />
     case 'resources':
-      return <ResourceCentre />
+      return <ResourceCentre onNavigate={handleViewChange} />
     case 'resource-admin':
       return <ResourceAdmin />
       
@@ -249,6 +279,11 @@ export function AdminDashboard() {
       return <OrganizationSettings />
       
     default:
+      // Handle resources/[slug] pattern
+      if (activeView.startsWith('resources/')) {
+        const slug = activeView.replace('resources/', '')
+        return <ResourceRenderer slug={slug} onNavigate={handleViewChange} />
+      }
       return <DashboardOverview />
     }
   }

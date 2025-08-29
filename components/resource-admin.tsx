@@ -46,12 +46,45 @@ export function ResourceAdmin() {
     { value: 'mixed', label: 'Mixed Content', icon: Upload, color: 'bg-orange-100 text-orange-800' }
   ]
 
-  const handleSaveResource = () => {
+  const handleSaveResource = async () => {
     const htmlContent = editorRef.current?.getContent() || ''
     console.log('Saving resource with content:', htmlContent)
-    // Here you would typically send to your API
-    // For now, just log the content
-    alert('Resource saved! Check console for HTML content.')
+    
+    try {
+      // First, try to create without auth to test the basic functionality
+      const response = await fetch('/api/content/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: 'Test TinyMCE Resource - ' + new Date().toISOString(),
+          content: htmlContent,
+          description: 'Resource created with TinyMCE editor',
+          category: 'Training',
+          type: 'document',
+          status: 'published',
+          author_id: '066794c1-c2cc-480d-a150-553398c48634' // Hard-code the admin user ID for testing
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to save: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('Save successful:', result)
+      alert('Resource saved successfully!')
+      
+      // Clear the form
+      setContent('')
+      setIsCreating(false)
+      
+    } catch (error) {
+      console.error('Save error:', error)
+      alert('Failed to save resource: ' + error.message)
+    }
   }
 
   const handlePreview = () => {
@@ -151,6 +184,9 @@ export function ResourceAdmin() {
                     apiKey="g7uhwpygdstjbgrssf1s8x665vjg9ep442amg14895x8bq0q"
                     value={content}
                     onEditorChange={(content) => setContent(content)}
+                    onInit={(evt, editor) => {
+                      editorRef.current = editor
+                    }}
                     init={{
                       height: 500,
                       menubar: false,

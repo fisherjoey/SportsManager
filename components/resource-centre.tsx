@@ -7,7 +7,7 @@ import {
   ArrowLeft, Calendar, Download, ExternalLink, 
   FileText, Users, Trophy, BookOpen, 
   GraduationCap, ClipboardList, Library,
-  UserCheck, Settings, Plus, Edit
+  UserCheck, Settings, Plus, Edit, Trash2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,13 +17,14 @@ import { ResourceEditor } from '@/components/resource-centre/ResourceEditor'
 
 interface ResourceRendererProps {
   slug: string
+  onNavigate?: (view: string) => void
 }
 
 interface ResourceCentreProps {
-  // No longer need props since we're handling loading internally
+  onNavigate?: (view: string) => void
 }
 
-export function ResourceCentre() {
+export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
   const [contentItems, setContentItems] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -45,15 +46,16 @@ export function ResourceCentre() {
           // Group items by category
           const categoryMap = {}
           data.items?.forEach(item => {
-            if (!categoryMap[item.category]) {
-              categoryMap[item.category] = {
-                title: item.category,
-                description: getCategoryDescription(item.category),
-                icon: getCategoryIcon(item.category),
+            const categoryName = item.category?.name || item.category_name || 'Uncategorized'
+            if (!categoryMap[categoryName]) {
+              categoryMap[categoryName] = {
+                title: categoryName,
+                description: getCategoryDescription(categoryName),
+                icon: getCategoryIcon(categoryName),
                 items: []
               }
             }
-            categoryMap[item.category].items.push({
+            categoryMap[categoryName].items.push({
               name: item.title,
               slug: item.slug,
               description: item.description,
@@ -116,10 +118,86 @@ export function ResourceCentre() {
     }
   ]
 
-  const handleContentSaved = () => {
-    setShowEditor(false)
-    // Reload content
-    window.location.reload()
+  const handleContentSaved = async (data: any) => {
+    console.log('handleContentSaved called with data:', data)
+    try {
+      console.log('Making request to /api/content/items')
+      const method = data.id ? 'PUT' : 'POST'
+      const url = data.id ? `/api/content/items/${data.id}` : '/api/content/items'
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+        },
+        body: JSON.stringify({
+          title: data.title,
+          content: data.content,
+          description: data.description,
+          category: data.category,
+          type: data.type || 'document',
+          status: data.status || 'published'
+        })
+      })
+
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+        throw new Error(`Failed to save content: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('Save successful:', result)
+
+      setShowEditor(false)
+      // Reload content
+      window.location.reload()
+    } catch (error) {
+      console.error('Error saving content:', error)
+      alert('Failed to save content. Please try again.')
+    }
+  }
+
+  const handleDraftSaved = async (data: any) => {
+    console.log('handleDraftSaved called with data:', data)
+    try {
+      const method = data.id ? 'PUT' : 'POST'
+      const url = data.id ? `/api/content/items/${data.id}` : '/api/content/items'
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+        },
+        body: JSON.stringify({
+          title: data.title,
+          content: data.content,
+          description: data.description,
+          category: data.category,
+          type: data.type || 'document',
+          status: 'draft'
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Draft save error:', errorText)
+        throw new Error(`Failed to save draft: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('Draft save successful:', result)
+      
+      return { id: result.id }
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      throw error
+    }
   }
 
   if (showEditor) {
@@ -137,6 +215,7 @@ export function ResourceCentre() {
         </div>
         <ResourceEditor 
           onSave={handleContentSaved}
+          onSaveDraft={handleDraftSaved}
           onFileUpload={async (file) => {
             // TODO: Implement file upload
             return { file_url: '/uploads/' + file.name, file_name: file.name }
@@ -233,10 +312,10 @@ export function ResourceCentre() {
                   {category.items.map((item) => {
                     const ItemIcon = item.icon
                     return (
-                      <Link
+                      <button
                         key={item.slug}
-                        href={`/resources/${item.slug}`}
-                        className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                        onClick={() => onNavigate?.(`resources/${item.slug}`)}
+                        className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group text-left"
                       >
                         <div className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 dark:group-hover:bg-blue-900 dark:group-hover:text-blue-400 rounded transition-colors">
                           <ItemIcon className="h-4 w-4" />
@@ -250,7 +329,7 @@ export function ResourceCentre() {
                           </p>
                         </div>
                         <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex-shrink-0 mt-0.5" />
-                      </Link>
+                      </button>
                     )
                   })}
                 </div>
@@ -275,9 +354,10 @@ export function ResourceCentre() {
   )
 }
 
-export function ResourceRenderer({ slug }: ResourceRendererProps) {
+export function ResourceRenderer({ slug, onNavigate }: ResourceRendererProps) {
   const [resource, setResource] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const loadResource = async () => {
@@ -302,6 +382,36 @@ export function ResourceRenderer({ slug }: ResourceRendererProps) {
     loadResource()
   }, [slug])
 
+  const handleDelete = async () => {
+    if (!resource?.id) return
+    
+    const confirmed = window.confirm(`Are you sure you want to delete "${resource.title}"? This action will hide the resource from the Resource Centre.`)
+    if (!confirmed) return
+    
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/content/items/${resource.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+        }
+      })
+      
+      if (response.ok) {
+        alert('Resource deleted successfully')
+        onNavigate?.('resources')
+      } else {
+        const errorText = await response.text()
+        alert(`Failed to delete resource: ${errorText}`)
+      }
+    } catch (error) {
+      console.error('Error deleting resource:', error)
+      alert('Failed to delete resource. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto py-6 px-4">
@@ -320,16 +430,16 @@ export function ResourceRenderer({ slug }: ResourceRendererProps) {
     <div className="container mx-auto py-6 px-4">
       {/* Breadcrumb */}
       <div className="mb-6">
-        <Link 
-          href="/resources" 
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+        <button 
+          onClick={() => onNavigate?.('resources')}
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Resource Centre
-        </Link>
+        </button>
         
         <div className="flex items-center gap-2 mb-2">
-          <Badge variant="secondary">{resource.category}</Badge>
+          <Badge variant="secondary">{resource.category?.name || resource.category_name || 'Uncategorized'}</Badge>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             Last updated: {new Date(resource.updated_at).toLocaleDateString()}
           </span>
@@ -384,6 +494,20 @@ export function ResourceRenderer({ slug }: ResourceRendererProps) {
           <Calendar className="h-4 w-4" />
           Subscribe to Updates
         </Button>
+        
+        {/* Admin Actions - TODO: Show only for admins */}
+        <div className="ml-auto flex gap-2">
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </div>
       </div>
 
       {/* Footer */}
