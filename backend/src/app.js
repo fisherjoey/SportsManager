@@ -43,6 +43,10 @@ const financialTransactionRoutes = require('./routes/financial-transactions');
 const financialApprovalRoutes = require('./routes/financial-approvals');
 const accountingIntegrationRoutes = require('./routes/accounting-integration');
 const financialReportRoutes = require('./routes/financial-reports');
+const financialDashboardRoutes = require('./routes/financial-dashboard');
+const receiptsRoutes = require('./routes/receipts');
+const budgetTrackerRoutes = require('./routes/budget-tracker');
+const gameFeesRoutes = require('./routes/game-fees');
 const performanceRoutes = require('./routes/performance');
 
 // Import organizational management routes
@@ -142,6 +146,10 @@ app.use('/api/financial', financialTransactionRoutes);
 app.use('/api/approvals', financialApprovalRoutes);
 app.use('/api/accounting', accountingIntegrationRoutes);
 app.use('/api/financial-reports', financialReportRoutes);
+app.use('/api/financial-dashboard', financialDashboardRoutes);
+app.use('/api/receipts', receiptsRoutes);
+app.use('/api/budget-tracker', budgetTrackerRoutes);
+app.use('/api/game-fees', gameFeesRoutes);
 
 // Organizational management routes
 app.use('/api/employees', employeeRoutes);

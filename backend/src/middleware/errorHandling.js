@@ -159,7 +159,12 @@ function sanitizeError(error, req) {
   // Specific error message customization
   switch (error.type) {
   case ERROR_TYPES.AUTHENTICATION_ERROR:
-    errorResponse.error = 'Authentication required';
+    // Keep the original message for authentication errors (e.g., "Invalid credentials")
+    // Only override with generic message if it's not a specific error
+    if (error.message === 'Authentication required' || !error.message) {
+      errorResponse.error = 'Authentication required';
+    }
+    // Otherwise keep the specific error message (like "Invalid credentials")
     break;
   case ERROR_TYPES.AUTHORIZATION_ERROR:
     errorResponse.error = 'Insufficient permissions';

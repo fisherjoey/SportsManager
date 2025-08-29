@@ -116,8 +116,7 @@ exports.seed = async function(knex) {
       pay_rate: 45.00,
       status: 'unassigned',
       refs_needed: 2,
-      wage_multiplier: 1.0,
-      game_type: 'Community'
+      wage_multiplier: 1.0
     },
     {
       home_team_id: team2.id,
@@ -131,8 +130,7 @@ exports.seed = async function(knex) {
       pay_rate: 65.00,
       status: 'unassigned',
       refs_needed: 3,
-      wage_multiplier: 1.2,
-      game_type: 'Club'
+      wage_multiplier: 1.2
     }
   ]);
 };

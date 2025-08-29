@@ -23,6 +23,7 @@ import {
   LineChart,
   Line,
   PieChart as RechartsPieChart,
+  Pie,
   Cell,
   XAxis, 
   YAxis, 
@@ -44,7 +45,7 @@ import { apiClient } from '@/lib/api'
 
 import { ReceiptUpload } from './receipt-upload'
 import { ExpenseList } from './expense-list'
-import { BudgetTracker } from './budget-tracker'
+import { BudgetTracker } from './budget-tracker-simple'
 
 interface FinancialMetrics {
   totalExpenses: number
@@ -77,20 +78,48 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
     try {
       setLoading(true)
       
-      // Use the API client to get financial reports
-      const response = await apiClient.getFinancialReports({ period: dateRange })
+      // Use fetch to get our new financial dashboard data
+      const token = localStorage.getItem('auth_token')
+      const periodDays = dateRange === 'current-month' ? '30' : '90'
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/financial-dashboard?period=${periodDays}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const dashboardData = await response.json()
       
       // Transform the response to match the expected FinancialMetrics interface
       const data: FinancialMetrics = {
-        totalExpenses: response.totalExpenses || 0,
-        totalBudget: response.totalBudget || 0,
-        pendingApprovals: response.pendingApprovals || 0,
-        monthlySpend: response.monthlySpend || 0,
-        budgetUtilization: response.budgetUtilization || 0,
-        expensesByCategory: response.expensesByCategory || [],
-        monthlyTrends: response.monthlyTrends || [],
-        topExpenses: response.topExpenses || [],
-        recentReceipts: response.recentReceipts || []
+        totalExpenses: dashboardData.summary?.totalExpenses || 0,
+        totalBudget: dashboardData.budgetUtilization?.totalAllocated || 0,
+        pendingApprovals: dashboardData.pendingApprovals?.total || 0,
+        monthlySpend: dashboardData.summary?.totalExpenses || 0,
+        budgetUtilization: dashboardData.budgetUtilization?.overallUtilization || 0,
+        expensesByCategory: dashboardData.expenseCategories?.map((cat: any) => ({
+          category: cat.name,
+          amount: cat.total_amount,
+          color: '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
+        })) || [],
+        monthlyTrends: dashboardData.revenueTrends?.map((trend: any) => ({
+          month: new Date(trend.date).toLocaleDateString('en-US', { month: 'short' }),
+          expenses: trend.expenses + trend.wages,
+          budget: trend.revenue
+        })) || [],
+        topExpenses: dashboardData.recentTransactions?.filter((t: any) => t.type === 'expense').slice(0, 10).map((transaction: any) => ({
+          id: transaction.id,
+          description: transaction.description,
+          amount: transaction.amount,
+          category: transaction.category,
+          date: transaction.date
+        })) || [],
+        recentReceipts: [] // Not available in our new API yet
       }
       
       setMetrics(data)
@@ -102,7 +131,7 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
       
       // Handle authentication errors
       if (err?.message?.includes('401') || err?.status === 401) {
-        apiClient.removeToken()
+        localStorage.removeItem('auth_token')
         window.location.href = '/login'
         return
       }
