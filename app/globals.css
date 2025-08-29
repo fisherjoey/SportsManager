@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    /* SyncedSport Light Mode Palette - Based on Teal Brand Icon */
-    --background: 0 0% 100%; /* Pure white */
-    --foreground: 210 11% 15%; /* Dark gray */
+    /* SyncedSport Light Mode - Soft Blue-White Theme */
+    --background: 214 41% 98%; /* Soft blue-white background (249, 251, 254) */
+    --foreground: 215 25% 19%; /* Cool dark blue-gray (30, 41, 59) */
     
     /* Roboto Font Size Variables */
     --font-size-xs: 0.75rem;    /* 12px - Table data */
@@ -16,22 +16,22 @@
     --font-size-base: 1rem;     /* 16px - Body text */
     --font-size-lg: 1.125rem;   /* 18px - Headings */
     --font-size-xl: 1.25rem;    /* 20px - Large headings */
-    --card: 0 0% 100%; /* Pure white */
-    --card-foreground: 210 11% 15%; /* Dark gray */
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 11% 15%;
+    --card: 210 33% 99%; /* Lighter blue-white for cards (251, 252, 254) */
+    --card-foreground: 215 25% 19%; /* Cool dark blue-gray */
+    --popover: 210 33% 99%;
+    --popover-foreground: 215 25% 19%;
     --primary: 173 80% 40%; /* Brand Teal - matches icon */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 96%; /* Light gray */
-    --secondary-foreground: 210 11% 15%;
-    --muted: 210 20% 96%; /* Light gray */
-    --muted-foreground: 215 16% 46%; /* Medium gray */
-    --accent: 173 80% 90%; /* Light teal */
+    --secondary: 213 27% 96%; /* Light blue-gray (243, 247, 252) */
+    --secondary-foreground: 215 25% 19%;
+    --muted: 213 27% 96%; /* Light blue-gray */
+    --muted-foreground: 215 19% 35%; /* Cool medium blue-gray (71, 85, 105) */
+    --accent: 173 80% 92%; /* Light teal with blue tint */
     --accent-foreground: 173 80% 25%; /* Dark teal */
     --destructive: 0 72% 51%; /* Red */
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%; /* Light border */
-    --input: 214 32% 91%; /* Light border */
+    --border: 214 25% 90%; /* Soft blue border (219, 228, 239) */
+    --input: 210 40% 97%; /* Very light blue for inputs */
     --ring: 173 80% 40%; /* Brand Teal */
     --chart-1: 173 80% 40%; /* Brand Teal */
     --chart-2: 142 71% 45%; /* Success Green */
@@ -45,13 +45,13 @@
     --info: 199 89% 48%; /* Info Blue */
     --info-foreground: 0 0% 100%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 210 11% 15%;
+    --sidebar-background: 210 40% 97%;
+    --sidebar-foreground: 215 25% 19%;
     --sidebar-primary: 173 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 210 11% 15%;
-    --sidebar-border: 214 32% 91%;
+    --sidebar-accent: 213 27% 94%;
+    --sidebar-accent-foreground: 215 25% 19%;
+    --sidebar-border: 214 25% 90%;
     --sidebar-ring: 173 80% 40%;
   }
 
