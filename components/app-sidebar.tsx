@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle } from 'lucide-react'
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import { NotificationsBell } from '@/components/notifications-bell'
@@ -108,6 +108,16 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: 'Posts',
       url: 'posts',
       icon: FileText
+    },
+    {
+      title: 'Resource Centre',
+      url: 'resources',
+      icon: BookOpen
+    },
+    {
+      title: 'Manage Resources',
+      url: 'resource-admin',
+      icon: Settings
     }
   ]
 
@@ -232,6 +242,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: 'Calendar',
       url: 'calendar',
       icon: Calendar
+    },
+    {
+      title: 'Resource Centre',
+      url: 'resources',
+      icon: BookOpen
     }
   ]
 

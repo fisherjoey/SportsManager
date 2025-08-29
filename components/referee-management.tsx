@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Calendar, Clock, Users, Whistle } from 'lucide-react'
+import { UserPlus, Calendar, Clock, Users, Zap } from 'lucide-react'
+const Whistle = Zap // Using Zap icon as whistle substitute
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

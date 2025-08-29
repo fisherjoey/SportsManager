@@ -10,8 +10,9 @@ import {
   Eye,
   MessageSquare,
   Shield,
-  Whistle
+  Zap
 } from 'lucide-react'
+const Whistle = Zap // Using Zap icon as whistle substitute
 
 import { 
   BaseEntityCard,

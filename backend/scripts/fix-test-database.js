@@ -57,16 +57,22 @@ async function fixTestDatabase() {
       table.string('role').defaultTo('referee');
       table.json('roles').defaultTo('[]');
       table.string('phone');
+      table.string('location');  // Added for auth route compatibility
       table.string('address');
       table.string('city');
       table.string('postal_code');
-      table.decimal('max_distance', 10, 2);
+      table.decimal('max_distance', 10, 2).defaultTo(25);
+      table.decimal('wage_per_game', 10, 2);  // Added for auth route compatibility
+      table.uuid('referee_level_id');  // Added for auth route compatibility
       table.integer('years_experience');
+      table.integer('games_refereed_season').defaultTo(0);  // Added for auth route compatibility
+      table.decimal('evaluation_score', 4, 2);  // Added for auth route compatibility
       table.string('level');
       table.boolean('is_available').defaultTo(true);
       table.boolean('is_white_whistle').defaultTo(false);
       table.json('certifications');
       table.json('availability_preferences');
+      table.text('notes');  // Added for auth route compatibility
       table.timestamps(true, true);
       
       table.index('email');
