@@ -248,12 +248,12 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
       {/* Header with Admin Controls */}
       <div className="mb-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <BookOpen className="h-6 w-6 text-primary" />
+          <h1 className="text-3xl font-bold text-foreground">
             CBOA Resource Centre
           </h1>
         </div>
-        <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        <p className="text-muted-foreground max-w-2xl mx-auto">
           Calgary Basketball Officials Association - Resources and Information for Active Members
         </p>
         
@@ -280,7 +280,7 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
       {/* Loading State */}
       {loading && (
         <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600 dark:text-gray-400">Loading resources...</div>
+          <div className="text-lg text-muted-foreground">Loading resources...</div>
         </div>
       )}
 
@@ -293,14 +293,14 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
             <Card key={category.title} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
                     <IconComponent className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-foreground">
                       {category.title}
                     </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       {category.description}
                     </p>
                   </div>
@@ -315,20 +315,20 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
                       <button
                         key={item.slug}
                         onClick={() => onNavigate?.(`resources/${item.slug}`)}
-                        className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group text-left"
+                        className="w-full flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors group text-left"
                       >
-                        <div className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 dark:group-hover:bg-blue-900 dark:group-hover:text-blue-400 rounded transition-colors">
+                        <div className="p-1.5 bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary rounded transition-colors">
                           <ItemIcon className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
                             {item.name}
                           </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {item.description}
                           </p>
                         </div>
-                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex-shrink-0 mt-0.5" />
+                        <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
                       </button>
                     )
                   })}
@@ -341,12 +341,12 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
       )}
 
       {/* Simple Footer */}
-      <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+      <div className="mt-8 p-4 bg-primary/10 rounded-lg border border-primary/20">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <UserCheck className="h-4 w-4 text-primary" />
           <Badge variant="secondary" className="text-xs">Members Only</Badge>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+        <p className="text-sm text-muted-foreground text-center">
           <strong>Note:</strong> This site and its contents are exclusively for the use of active CBOA members.
         </p>
       </div>
@@ -432,7 +432,7 @@ export function ResourceRenderer({ slug, onNavigate }: ResourceRendererProps) {
       <div className="mb-6">
         <button 
           onClick={() => onNavigate?.('resources')}
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4 cursor-pointer"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Resource Centre
@@ -440,7 +440,7 @@ export function ResourceRenderer({ slug, onNavigate }: ResourceRendererProps) {
         
         <div className="flex items-center gap-2 mb-2">
           <Badge variant="secondary">{resource.category?.name || resource.category_name || 'Uncategorized'}</Badge>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-muted-foreground">
             Last updated: {new Date(resource.updated_at).toLocaleDateString()}
           </span>
           {resource.status === 'draft' && (
@@ -448,10 +448,10 @@ export function ResourceRenderer({ slug, onNavigate }: ResourceRendererProps) {
           )}
         </div>
         
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
           {resource.title}
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-muted-foreground">
           {resource.description}
         </p>
       </div>
@@ -511,8 +511,8 @@ export function ResourceRenderer({ slug, onNavigate }: ResourceRendererProps) {
       </div>
 
       {/* Footer */}
-      <footer className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+      <footer className="mt-8 pt-4 border-t border-border">
+        <p className="text-sm text-muted-foreground text-center">
           <strong>Note:</strong> This content is exclusively for the use of active CBOA members.
         </p>
       </footer>

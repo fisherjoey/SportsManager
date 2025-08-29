@@ -80,7 +80,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-32 border border-border dark:border-gray-700"></div>)
+      days.push(<div key={`empty-${i}`} className="h-32 border border-border"></div>)
     }
 
     // Days of the month
@@ -98,20 +98,20 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
       days.push(
         <div 
           key={day} 
-          className={`h-32 border border-border dark:border-gray-700 p-2 ${
-            isToday ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700' : ''
-          } ${dailySummary?.needsAttention ? 'border-l-4 border-l-red-400 dark:border-l-red-600' : ''} ${
-            dailySummary && onDateClick ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''
+          className={`h-32 border border-border p-2 ${
+            isToday ? 'bg-primary/10 border-primary' : ''
+          } ${dailySummary?.needsAttention ? 'border-l-4 border-l-destructive' : ''} ${
+            dailySummary && onDateClick ? 'cursor-pointer hover:bg-accent transition-colors' : ''
           }`}
           onClick={handleDayClick}
         >
-          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}`}>{day}</div>
+          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>{day}</div>
           {dailySummary ? (
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium text-foreground">{dailySummary.totalGames} games</span>
                 {dailySummary.needsAttention && (
-                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                  <AlertTriangle className="h-3 w-3 text-destructive" />
                 )}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -119,17 +119,17 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
               </div>
               <div className="flex space-x-1">
                 {dailySummary.assigned > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400">
+                  <Badge variant="secondary" className="text-xs px-1 py-0">
                     {dailySummary.assigned}✓
                   </Badge>
                 )}
                 {dailySummary.unassigned > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-destructive/20 text-destructive-foreground">
                     {dailySummary.unassigned}!
                   </Badge>
                 )}
                 {dailySummary.upForGrabs > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400">
+                  <Badge variant="outline" className="text-xs px-1 py-0">
                     {dailySummary.upForGrabs}?
                   </Badge>
                 )}
@@ -169,7 +169,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         title="Game Calendar"
         description={isAdmin ? 'Overview of all scheduled games and assignments' : 'Your game assignments and available opportunities'}
       >
-        <Badge variant="outline" className="text-blue-600 border-blue-600">
+        <Badge variant="outline" className="text-primary border-primary">
           <Sparkles className="h-3 w-3 mr-1" />
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
         </Badge>
@@ -187,7 +187,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-blue-600" />
+            <CalendarIcon className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -207,7 +207,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -228,7 +228,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Available</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -249,7 +249,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Unassigned</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -272,7 +272,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <CalendarIcon className="h-5 w-5 mr-2 text-purple-600" />
+            <CalendarIcon className="h-5 w-5 mr-2 text-primary" />
             Interactive Calendar
           </CardTitle>
           <CardDescription>
@@ -280,11 +280,11 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-0 border border-border dark:border-gray-700">
+          <div className="grid grid-cols-7 gap-0 border border-border">
             {dayNames.map((day) => (
               <div
                 key={day}
-                className="h-12 border-b border-border dark:border-gray-700 bg-muted/50 dark:bg-gray-900/50 flex items-center justify-center font-medium text-sm text-foreground"
+                className="h-12 border-b border-border bg-muted flex items-center justify-center font-medium text-sm text-foreground"
               >
                 {day}
               </div>
@@ -296,23 +296,23 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
             <div className="text-sm font-medium text-foreground">Legend:</div>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400">3✓</Badge>
+                <Badge variant="secondary" className="text-xs px-1 py-0">3✓</Badge>
                 <span>Assigned games</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400">2?</Badge>
+                <Badge variant="outline" className="text-xs px-1 py-0">2?</Badge>
                 <span>Up for grabs</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400">1!</Badge>
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-destructive/20 text-destructive-foreground">1!</Badge>
                 <span>Unassigned</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-1 h-4 bg-red-400"></div>
+                <div className="w-1 h-4 bg-destructive"></div>
                 <span>Needs attention</span>
               </div>
               {onDateClick && (
-                <div className="flex items-center space-x-2 text-blue-600">
+                <div className="flex items-center space-x-2 text-primary">
                   <Clock className="h-3 w-3" />
                   <span>Click days with games to view details</span>
                 </div>

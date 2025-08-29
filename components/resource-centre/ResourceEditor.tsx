@@ -318,15 +318,15 @@ export function ResourceEditor({
           </CardTitle>
           
           {/* Auto-save status */}
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {lastSaved && (
               <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
             )}
             {hasUnsavedChanges && !isDraftSaving && (
-              <span className="text-orange-500">Unsaved changes</span>
+              <span className="text-warning">Unsaved changes</span>
             )}
             {isDraftSaving && (
-              <span className="text-blue-500">Saving draft...</span>
+              <span className="text-primary">Saving draft...</span>
             )}
           </div>
         </div>
@@ -335,14 +335,14 @@ export function ResourceEditor({
       <CardContent className="space-y-4">
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle className="h-5 w-5 text-destructive" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
+                <h3 className="text-sm font-medium text-destructive">
                   Please fix the following errors:
                 </h3>
-                <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                <ul className="mt-2 text-sm text-destructive list-disc list-inside">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
@@ -354,11 +354,11 @@ export function ResourceEditor({
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle className="h-5 w-5 text-destructive" />
               <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             </div>
           </div>
@@ -382,7 +382,7 @@ export function ResourceEditor({
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select Category</option>
               <option value="General Information">General Information</option>
@@ -400,7 +400,7 @@ export function ResourceEditor({
               placeholder="URL Slug"
               value={generateSlug(title)}
               readOnly
-              className="bg-gray-50"
+              className="bg-muted"
             />
           </div>
 
@@ -410,7 +410,7 @@ export function ResourceEditor({
               id="type"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Content Type</option>
               <option value="document">Document</option>
@@ -477,15 +477,15 @@ export function ResourceEditor({
         <div className="space-y-2">
           <label className="text-sm font-medium">Attachments</label>
           <div 
-            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors"
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
-            <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-gray-600 dark:text-gray-400">
+            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-muted-foreground">
               Drop files here or click to upload
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Supports: PDF, DOC, MP4, MOV, JPG, PNG (Max 10MB each)
             </p>
           </div>

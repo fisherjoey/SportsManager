@@ -336,10 +336,10 @@ export function ResourceManager({}: ResourceManagerProps) {
       {/* Header */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-foreground">
             Resource Management
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-muted-foreground">
             Create and manage CBOA resources with rich media support
           </p>
         </div>
@@ -354,11 +354,11 @@ export function ResourceManager({}: ResourceManagerProps) {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+        <div className="mb-6 bg-destructive/10 border border-destructive/20 rounded-md p-4">
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-red-400" />
+            <AlertCircle className="h-5 w-5 text-destructive" />
             <div className="ml-3">
-              <p className="text-sm text-red-800">{error}</p>
+              <p className="text-sm text-destructive">{error}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -378,7 +378,7 @@ export function ResourceManager({}: ResourceManagerProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Search resources..."
                 value={searchQuery}
@@ -391,7 +391,7 @@ export function ResourceManager({}: ResourceManagerProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               aria-label="Filter by category"
             >
               <option value="">All Categories</option>
@@ -406,7 +406,7 @@ export function ResourceManager({}: ResourceManagerProps) {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">All Status</option>
               <option value="draft">Draft</option>
@@ -430,10 +430,10 @@ export function ResourceManager({}: ResourceManagerProps) {
 
       {/* Bulk Actions */}
       {selectedItems.length > 0 && (
-        <Card className="mb-4 border-blue-200 bg-blue-50">
+        <Card className="mb-4 border-primary/20 bg-primary/10">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
-              <span className="text-blue-800">
+              <span className="text-primary">
                 {selectedItems.length} selected
               </span>
               <div className="flex gap-2">
@@ -503,10 +503,10 @@ export function ResourceManager({}: ResourceManagerProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white">
+                      <h3 className="font-medium text-foreground">
                         {resource.title}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {resource.description}
                       </p>
                       <div className="flex gap-2 mt-2">
@@ -554,7 +554,7 @@ export function ResourceManager({}: ResourceManagerProps) {
       {/* Empty State */}
       {!loading && resources.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             No resources found. Create your first resource to get started.
           </p>
         </div>
@@ -563,7 +563,7 @@ export function ResourceManager({}: ResourceManagerProps) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-foreground">
             Page {page} of {totalPages}
           </div>
           <div className="flex gap-2">
