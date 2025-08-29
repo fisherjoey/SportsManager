@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
@@ -65,7 +65,8 @@ router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (re
 }));
 
 // POST /api/referees - Create new referee
-router.post('/', authenticateToken, requireRole('admin'), validateBody(UserSchemas.create), enhancedAsyncHandler(async (req, res) => {
+// Requires: referees:create or referees:manage permission
+router.post('/', authenticateToken, requireAnyPermission(['referees:create', 'referees:manage']), validateBody(UserSchemas.create), enhancedAsyncHandler(async (req, res) => {
   // Ensure role is set to referee
   const value = { ...req.body, role: 'referee' };
   
@@ -173,10 +174,11 @@ router.get('/available/:gameId',
   })
 );
 
-// PATCH /api/referees/:id/level - Update referee level (admin only)
+// PATCH /api/referees/:id/level - Update referee level
+// Requires: referees:manage permission
 router.patch('/:id/level',
   authenticateToken,
-  requireRole('admin'),
+  requirePermission('referees:manage'),
   validateParams(IdParamSchema),
   validateBody(UserSchemas.levelUpdate),
   enhancedAsyncHandler(async (req, res) => {
@@ -204,10 +206,11 @@ router.patch('/:id/level',
   })
 );
 
-// PATCH /api/referees/:id/roles - Manage referee roles (admin only)
+// PATCH /api/referees/:id/roles - Manage referee roles
+// Requires: referees:manage permission
 router.patch('/:id/roles',
   authenticateToken,
-  requireRole('admin'),
+  requirePermission('referees:manage'),
   validateParams(IdParamSchema),
   validateBody(Joi.object({
     action: Joi.string().valid('assign', 'remove').required(),
@@ -293,7 +296,8 @@ router.get('/:id/white-whistle-status',
 );
 
 // DELETE /api/referees/:id - Delete referee
-router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+// Requires: referees:delete permission
+router.delete('/:id', authenticateToken, requirePermission('referees:delete'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const refereeId = req.params.id;
   
   // Verify referee exists before deletion
@@ -312,10 +316,11 @@ router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(Id
   return ResponseFormatter.sendSuccess(res, null, 'Referee deleted successfully');
 }));
 
-// GET /api/referees/levels/summary - Get summary of referee levels (admin only)
+// GET /api/referees/levels/summary - Get summary of referee levels
+// Requires: referees:read or referees:manage permission
 router.get('/levels/summary',
   authenticateToken,
-  requireRole('admin'),
+  requireAnyPermission(['referees:read', 'referees:manage']),
   enhancedAsyncHandler(async (req, res) => {
     // Get referee level distribution
     const levelDistribution = await db('users')

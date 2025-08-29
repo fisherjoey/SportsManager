@@ -52,7 +52,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     }
   }
 
-  // Sports Management Section
+  // Sports Management Section - Core Operations
   const sportsManagementItems = [
     {
       title: 'Dashboard',
@@ -60,29 +60,14 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: Home
     },
     {
-      title: 'Game Management',
-      url: 'games',
-      icon: GamepadIcon
-    },
-    {
-      title: 'Assigning',  
-      url: 'assigning',
-      icon: ClipboardList
-    },
-    {
-      title: 'AI Assignments',
-      url: 'ai-assignments', 
-      icon: Bot
-    },
-    {
-      title: 'Referees',
-      url: 'referees',
-      icon: Users
-    },
-    {
       title: 'Calendar',
       url: 'calendar',
       icon: Calendar
+    },
+    {
+      title: 'Game Management',
+      url: 'games',
+      icon: GamepadIcon
     },
     {
       title: 'Teams & Locations',
@@ -108,6 +93,25 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: 'Resource Centre',
       url: 'resources',
       icon: BookOpen
+    }
+  ]
+
+  // Assignor Management Section - For users with assignor role
+  const assignorItems = [
+    {
+      title: 'Assignment Board',
+      url: 'assigning',
+      icon: ClipboardList
+    },
+    {
+      title: 'AI Assignments',
+      url: 'ai-assignments', 
+      icon: Bot
+    },
+    {
+      title: 'Referee Management',
+      url: 'referees',
+      icon: Users
     }
   ]
 
@@ -252,6 +256,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
 
   const allAdminItems = user?.role === 'admin' ? [
     { section: 'Sports Management', items: sportsManagementItems },
+    { section: 'Assignor Management', items: assignorItems },
     { section: 'Financial Management', items: financialItems },
     { section: 'Organization', items: organizationItems },
     { section: 'Analytics', items: analyticsItems },

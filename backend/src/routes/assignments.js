@@ -22,7 +22,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 const { checkAssignmentConflicts } = require('../services/conflictDetectionService');
@@ -253,9 +253,10 @@ router.post('/', validateBody(AssignmentSchemas.create), enhancedAsyncHandler(as
 }));
 
 // POST /api/assignments/bulk-update - Bulk update assignment statuses
+// Requires: assignments:update or assignments:manage permission
 router.post('/bulk-update', 
   authenticateToken, 
-  requireRole('admin'), 
+  requireAnyPermission(['assignments:update', 'assignments:manage']), 
   validateBody(Joi.object({
     updates: Joi.array().items(Joi.object({
       assignment_id: Joi.string().uuid().required(),
@@ -287,9 +288,10 @@ router.post('/bulk-update',
 );
 
 // DELETE /api/assignments/bulk-remove - Bulk remove assignments
+// Requires: assignments:delete or assignments:manage permission
 router.delete('/bulk-remove', 
   authenticateToken, 
-  requireRole('admin'), 
+  requireAnyPermission(['assignments:delete', 'assignments:manage']), 
   validateBody(Joi.object({
     assignment_ids: Joi.array().items(Joi.string().uuid()).min(1).max(100).required()
   })),

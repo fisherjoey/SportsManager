@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
@@ -16,7 +16,8 @@ const userService = new UserService(db);
  * GET /api/users
  * Get all users (for admin dropdown selections)
  */
-router.get('/', authenticateToken, requireRole('admin'), validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
+// Requires: users:read permission
+router.get('/', authenticateToken, requirePermission('users:read'), validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
   const { role, page = 1, limit = 50 } = req.query;
   
   let users;

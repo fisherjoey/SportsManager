@@ -22,7 +22,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { validateQuery, validateIdParam } = require('../middleware/sanitization');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery: validateQuerySchema } = require('../middleware/validation');
@@ -290,7 +290,8 @@ router.get('/:id', authenticateToken, validateIdParam, enhancedAsyncHandler(asyn
 }));
 
 // POST /api/games - Create new game
-router.post('/', authenticateToken, requireRole('admin'), validateBody(gameSchema), enhancedAsyncHandler(async (req, res) => {
+// Requires: games:create permission
+router.post('/', authenticateToken, requirePermission('games:create'), validateBody(gameSchema), enhancedAsyncHandler(async (req, res) => {
   const value = req.body;
 
   // Check for venue scheduling conflicts
@@ -362,7 +363,8 @@ router.post('/', authenticateToken, requireRole('admin'), validateBody(gameSchem
 }));
 
 // PUT /api/games/:id - Update game
-router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), validateBody(gameUpdateSchema), enhancedAsyncHandler(async (req, res) => {
+// Requires: games:update or games:manage permission
+router.put('/:id', authenticateToken, requireAnyPermission(['games:update', 'games:manage']), validateParams(IdParamSchema), validateBody(gameUpdateSchema), enhancedAsyncHandler(async (req, res) => {
   try {
     const value = req.body;
 
@@ -413,7 +415,8 @@ router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdPar
 }));
 
 // PATCH /api/games/:id/status - Update game status
-router.patch('/:id/status', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: games:update or games:manage permission
+router.patch('/:id/status', authenticateToken, requireAnyPermission(['games:update', 'games:manage']), async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['assigned', 'unassigned', 'up-for-grabs', 'completed', 'cancelled'];
@@ -442,7 +445,8 @@ router.patch('/:id/status', authenticateToken, requireRole('admin'), async (req,
 });
 
 // DELETE /api/games/:id - Delete game
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: games:delete permission
+router.delete('/:id', authenticateToken, requirePermission('games:delete'), async (req, res) => {
   try {
     const deletedCount = await db('games').where('id', req.params.id).del();
     
@@ -461,7 +465,8 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 });
 
 // POST /api/games/bulk-import - Bulk import games
-router.post('/bulk-import', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: games:create and games:manage permissions
+router.post('/bulk-import', authenticateToken, requireAnyPermission(['games:create', 'games:manage']), async (req, res) => {
   try {
     const { games } = req.body;
     
