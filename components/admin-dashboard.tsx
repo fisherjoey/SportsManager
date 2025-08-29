@@ -37,6 +37,7 @@ import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentre, ResourceRenderer } from '@/components/resource-centre'
 import { ResourceAdmin } from '@/components/resource-admin'
+import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
 
 
 export function AdminDashboard() {
@@ -181,6 +182,8 @@ export function AdminDashboard() {
       return 'Security & Audit'
     case 'admin-settings':
       return 'System Settings'
+    case 'admin-roles':
+      return 'Role Management'
       
       // Account
     case 'profile':
@@ -271,6 +274,8 @@ export function AdminDashboard() {
       return <SecurityAudit />
     case 'admin-settings':
       return <SystemSettings />
+    case 'admin-roles':
+      return <RoleManagementDashboard />
       
       // Account
     case 'profile':
