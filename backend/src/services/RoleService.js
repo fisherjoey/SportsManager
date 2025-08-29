@@ -253,7 +253,7 @@ class RoleService extends BaseService {
         .orderBy('roles.name');
 
       if (!includeInactive) {
-        query = query.where('roles.active', true);
+        query = query.where('roles.is_active', true);
       }
 
       const roles = await query;

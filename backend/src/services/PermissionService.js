@@ -86,8 +86,8 @@ class PermissionService extends BaseService {
         .join('roles', 'role_permissions.role_id', 'roles.id')
         .join('user_roles', 'roles.id', 'user_roles.role_id')
         .where('user_roles.user_id', userId)
-        .where('roles.active', true)
-        .where('permissions.active', true)
+        .where('roles.is_active', true)
+        .where('permissions.is_active', true)
         .select('permissions.*')
         .distinct()
         .orderBy('permissions.category', 'asc')
@@ -398,8 +398,8 @@ class PermissionService extends BaseService {
         .join('roles', 'role_permissions.role_id', 'roles.id')
         .join('user_roles', 'roles.id', 'user_roles.role_id')
         .where('user_roles.user_id', userId)
-        .where('roles.active', true)
-        .where('permissions.active', true)
+        .where('roles.is_active', true)
+        .where('permissions.is_active', true)
         .select(
           'permissions.*',
           'roles.name as role_name',

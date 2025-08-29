@@ -184,7 +184,7 @@ router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req
     const rolesWithPermission = await permissionService.db('roles')
       .join('role_permissions', 'roles.id', 'role_permissions.role_id')
       .where('role_permissions.permission_id', permissionId)
-      .where('roles.active', true)
+      .where('roles.is_active', true)
       .select('roles.id', 'roles.name', 'roles.description')
       .orderBy('roles.name');
 
