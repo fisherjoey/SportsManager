@@ -50,6 +50,16 @@ const nextConfig = {
     ];
   },
 
+  // API Proxy to backend server
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+    ];
+  },
+
   // Redirects
   async redirects() {
     return [

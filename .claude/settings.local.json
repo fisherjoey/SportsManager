@@ -34,7 +34,9 @@
       "Bash(tasklist:*)",
       "Bash(NODE_ENV=test node src/server.js)",
       "Bash(DISABLE_REDIS=true node src/server.js)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
