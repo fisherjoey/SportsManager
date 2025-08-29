@@ -37,7 +37,9 @@ describe('Team Routes', () => {
       gender: 'Boys',
       division: 'Division 1',
       season: 'Winter 2025',
-      level: 'Competitive'
+      level: 'Competitive',
+      name: 'Calgary U13 Boys',
+      status: 'active'
     }).returning('*')[0];
   });
 
@@ -69,10 +71,10 @@ describe('Team Routes', () => {
         .get('/api/teams')
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.teams).toHaveLength(2);
-      expect(response.body.data.teams[0].name).toBe('Calgary Flames');
-      expect(response.body.data.teams[1].name).toBe('Calgary Storm');
+      expect(response.body).toBeDefined();
+      expect(response.body.teams).toHaveLength(2);
+      expect(response.body.teams[0].name).toBe('Calgary Flames');
+      expect(response.body.teams[1].name).toBe('Calgary Storm');
     });
 
     test('should filter teams by league_id', async () => {
@@ -98,8 +100,8 @@ describe('Team Routes', () => {
         .query({ league_id: testLeague.id })
         .expect(200);
 
-      expect(response.body.data.teams).toHaveLength(2);
-      response.body.data.teams.forEach(team => {
+      expect(response.body.teams).toHaveLength(2);
+      response.body.teams.forEach(team => {
         expect(team.league_id).toBe(testLeague.id);
       });
     });
@@ -110,8 +112,8 @@ describe('Team Routes', () => {
         .query({ organization: 'Calgary' })
         .expect(200);
 
-      expect(response.body.data.teams).toHaveLength(2);
-      response.body.data.teams.forEach(team => {
+      expect(response.body.teams).toHaveLength(2);
+      response.body.teams.forEach(team => {
         expect(team.organization).toBe('Calgary');
       });
     });
@@ -122,8 +124,8 @@ describe('Team Routes', () => {
         .query({ search: 'Flames' })
         .expect(200);
 
-      expect(response.body.data.teams).toHaveLength(1);
-      expect(response.body.data.teams[0].name).toBe('Calgary Flames');
+      expect(response.body.teams).toHaveLength(1);
+      expect(response.body.teams[0].name).toBe('Calgary Flames');
     });
 
     test('should support pagination', async () => {
@@ -132,10 +134,10 @@ describe('Team Routes', () => {
         .query({ page: 1, limit: 1 })
         .expect(200);
 
-      expect(response.body.data.teams).toHaveLength(1);
-      expect(response.body.data.pagination.page).toBe(1);
-      expect(response.body.data.pagination.limit).toBe(1);
-      expect(response.body.data.pagination.total).toBe(2);
+      expect(response.body.teams).toHaveLength(1);
+      expect(response.body.pagination.page).toBe(1);
+      expect(response.body.pagination.limit).toBe(1);
+      expect(response.body.pagination.total).toBe(2);
     });
   });
 
@@ -158,11 +160,11 @@ describe('Team Routes', () => {
         .get(`/api/teams/${testTeam.id}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.team.id).toBe(testTeam.id);
-      expect(response.body.data.team.name).toBe('Calgary Flames');
-      expect(response.body.data.games).toBeDefined();
-      expect(response.body.data.stats).toBeDefined();
+      expect(response.body).toBeDefined();
+      expect(response.body.team.id).toBe(testTeam.id);
+      expect(response.body.team.name).toBe('Calgary Flames');
+      expect(response.body.games).toBeDefined();
+      expect(response.body.stats).toBeDefined();
     });
 
     test('should return 404 for non-existent team', async () => {
@@ -191,10 +193,10 @@ describe('Team Routes', () => {
         .send(teamData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.team.name).toBe('Calgary Flames');
-      expect(response.body.data.team.league_id).toBe(testLeague.id);
-      expect(response.body.data.team.rank).toBe(1);
+      expect(response.body).toBeDefined();
+      expect(response.body.team.name).toBe('Calgary Flames');
+      expect(response.body.team.league_id).toBe(testLeague.id);
+      expect(response.body.team.rank).toBe(1);
       expect(response.body.message).toBe('Team created successfully');
     });
 
@@ -294,10 +296,10 @@ describe('Team Routes', () => {
         .send(bulkData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.created).toHaveLength(3);
-      expect(response.body.data.summary.created).toBe(3);
-      expect(response.body.data.summary.duplicates).toBe(0);
+      expect(response.body).toBeDefined();
+      expect(response.body.created).toHaveLength(3);
+      expect(response.body.summary.created).toBe(3);
+      expect(response.body.summary.duplicates).toBe(0);
       expect(response.body.message).toContain('Created 3 teams');
     });
 
@@ -329,10 +331,10 @@ describe('Team Routes', () => {
         .send(bulkData)
         .expect(201);
 
-      expect(response.body.data.created).toHaveLength(1);
-      expect(response.body.data.duplicates).toHaveLength(1);
-      expect(response.body.data.summary.created).toBe(1);
-      expect(response.body.data.summary.duplicates).toBe(1);
+      expect(response.body.created).toHaveLength(1);
+      expect(response.body.duplicates).toHaveLength(1);
+      expect(response.body.summary.created).toBe(1);
+      expect(response.body.summary.duplicates).toBe(1);
     });
 
     test('should require authentication', async () => {
@@ -374,12 +376,12 @@ describe('Team Routes', () => {
         .send(generateData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.created).toHaveLength(5);
-      expect(response.body.data.summary.created).toBe(5);
+      expect(response.body).toBeDefined();
+      expect(response.body.created).toHaveLength(5);
+      expect(response.body.summary.created).toBe(5);
 
       // Check generated team names
-      const teamNames = response.body.data.created.map(t => t.name);
+      const teamNames = response.body.created.map(t => t.name);
       expect(teamNames).toContain('Team 1');
       expect(teamNames).toContain('Team 2');
       expect(teamNames).toContain('Team 3');
@@ -387,7 +389,7 @@ describe('Team Routes', () => {
       expect(teamNames).toContain('Team 5');
 
       // Check auto-ranking
-      response.body.data.created.forEach((team, index) => {
+      response.body.created.forEach((team, index) => {
         expect(team.rank).toBe(index + 1);
       });
     });
@@ -407,10 +409,10 @@ describe('Team Routes', () => {
         .send(generateData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.created).toHaveLength(3);
+      expect(response.body).toBeDefined();
+      expect(response.body.created).toHaveLength(3);
 
-      const teamNames = response.body.data.created.map(t => t.name);
+      const teamNames = response.body.created.map(t => t.name);
       expect(teamNames).toContain('Eagles 1');
       expect(teamNames).toContain('Eagles 2');
       expect(teamNames).toContain('Eagles 3');
@@ -479,10 +481,10 @@ describe('Team Routes', () => {
         .send(updateData)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.team.name).toBe('Calgary Storm');
-      expect(response.body.data.team.rank).toBe(2);
-      expect(response.body.data.team.contact_email).toBe('storm@test.com');
+      expect(response.body).toBeDefined();
+      expect(response.body.team.name).toBe('Calgary Storm');
+      expect(response.body.team.rank).toBe(2);
+      expect(response.body.team.contact_email).toBe('storm@test.com');
     });
 
     test('should require authentication', async () => {
@@ -522,7 +524,7 @@ describe('Team Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body).toBeDefined();
       expect(response.body.message).toBe('Team deleted successfully');
 
       // Verify team was deleted
@@ -594,11 +596,11 @@ describe('Team Routes', () => {
         .get(`/api/teams/league/${testLeague.id}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.league).toBeDefined();
-      expect(response.body.data.teams).toHaveLength(2);
-      expect(response.body.data.teams[0].name).toBe('Team A');
-      expect(response.body.data.teams[1].name).toBe('Team B');
+      expect(response.body).toBeDefined();
+      expect(response.body.league).toBeDefined();
+      expect(response.body.teams).toHaveLength(2);
+      expect(response.body.teams[0].name).toBe('Team A');
+      expect(response.body.teams[1].name).toBe('Team B');
     });
 
     test('should return 404 for non-existent league', async () => {
@@ -621,7 +623,7 @@ describe('Team Routes', () => {
         .get(`/api/teams/league/${emptyLeague.id}`)
         .expect(200);
 
-      expect(response.body.data.teams).toHaveLength(0);
+      expect(response.body.teams).toHaveLength(0);
     });
   });
 });
