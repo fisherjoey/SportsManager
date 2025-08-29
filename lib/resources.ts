@@ -1,7 +1,3 @@
-import fs from 'fs'
-import path from 'path'
-import matter from 'gray-matter'
-
 export interface ResourceItem {
   id: string
   title: string
@@ -16,88 +12,51 @@ export interface ResourceItem {
   slug: string
 }
 
-const resourcesDirectory = path.join(process.cwd(), 'content', 'resources')
-
-export function getAllResources(): ResourceItem[] {
+export async function getAllResources(): Promise<ResourceItem[]> {
   try {
-    // Check if directory exists
-    if (!fs.existsSync(resourcesDirectory)) {
-      return []
+    const response = await fetch('/api/resources')
+    if (!response.ok) {
+      throw new Error('Failed to fetch resources')
     }
-
-    const fileNames = fs.readdirSync(resourcesDirectory)
-    const resources: ResourceItem[] = fileNames
-      .filter(name => name.endsWith('.md'))
-      .map((name) => {
-        const id = name.replace(/\.md$/, '')
-        const fullPath = path.join(resourcesDirectory, name)
-        const fileContents = fs.readFileSync(fullPath, 'utf8')
-        const { data, content } = matter(fileContents)
-
-        return {
-          id,
-          slug: id,
-          content,
-          title: data.title || 'Untitled',
-          description: data.description || '',
-          type: data.type || 'document',
-          category: data.category || 'General',
-          url: data.url,
-          downloadUrl: data.downloadUrl,
-          lastUpdated: data.lastUpdated || new Date().toISOString().split('T')[0],
-          isNew: data.isNew || false,
-        } as ResourceItem
-      })
-
-    return resources.sort((a, b) => {
-      // Sort by date descending (newest first)
-      return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
-    })
+    return await response.json()
   } catch (error) {
-    console.error('Error reading resources:', error)
+    console.error('Error fetching resources:', error)
     return []
   }
 }
 
-export function getResourceBySlug(slug: string): ResourceItem | null {
+export async function getResourceBySlug(slug: string): Promise<ResourceItem | null> {
   try {
-    const fullPath = path.join(resourcesDirectory, `${slug}.md`)
-    
-    if (!fs.existsSync(fullPath)) {
-      return null
+    const response = await fetch(`/api/resources/${slug}`)
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('Failed to fetch resource')
     }
-
-    const fileContents = fs.readFileSync(fullPath, 'utf8')
-    const { data, content } = matter(fileContents)
-
-    return {
-      id: slug,
-      slug,
-      content,
-      title: data.title || 'Untitled',
-      description: data.description || '',
-      type: data.type || 'document',
-      category: data.category || 'General',
-      url: data.url,
-      downloadUrl: data.downloadUrl,
-      lastUpdated: data.lastUpdated || new Date().toISOString().split('T')[0],
-      isNew: data.isNew || false,
-    } as ResourceItem
+    return await response.json()
   } catch (error) {
-    console.error('Error reading resource:', error)
+    console.error('Error fetching resource:', error)
     return null
   }
 }
 
-export function getResourceCategories(): string[] {
-  const resources = getAllResources()
-  const categories = [...new Set(resources.map(r => r.category))]
-  return ['All Resources', ...categories.sort()]
+export async function getResourceCategories(): Promise<string[]> {
+  try {
+    const response = await fetch('/api/resources/categories')
+    if (!response.ok) {
+      throw new Error('Failed to fetch categories')
+    }
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    return ['All Resources']
+  }
 }
 
 // Helper function to search resources
-export function searchResources(query: string, category?: string): ResourceItem[] {
-  const resources = getAllResources()
+export async function searchResources(query: string, category?: string): Promise<ResourceItem[]> {
+  const resources = await getAllResources()
   
   return resources.filter(resource => {
     const matchesSearch = !query || 

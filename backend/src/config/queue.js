@@ -44,7 +44,7 @@ class MockQueue {
 
 // Factory function to create appropriate queue based on environment
 function createQueue(name, options = {}) {
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env.NODE_ENV === 'test' || process.env.DISABLE_REDIS === 'true') {
     return new MockQueue(name);
   }
   

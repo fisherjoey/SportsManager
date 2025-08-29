@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm search:*)",
+      "Bash(npx storybook@latest init:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm start)",
+      "Bash(node:*)",
+      "Bash(npx knex migrate:up:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx knex migrate:status:*)",
+      "Bash(npx knex raw:*)",
+      "Bash(npx knex migrate:*)",
+      "Bash(npm test:*)",
+      "Bash(psql:*)",
+      "Bash(npm run test:unit:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(set NODE_ENV=test)",
+      "Bash(copy setup.js setup-original.js)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npx knex seed:run:*)",
+      "Bash(NODE_ENV=test npm test -- __tests__/content/content-items.test.js --verbose)",
+      "Bash(NODE_ENV=test npm test -- __tests__/content/content-items.test.js --verbose --testTimeout=10000)",
+      "Bash(npm run migrate:latest:*)",
+      "Bash(npm run:*)",
+      "Bash(tasklist:*)",
+      "Bash(NODE_ENV=test node src/server.js)",
+      "Bash(DISABLE_REDIS=true node src/server.js)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

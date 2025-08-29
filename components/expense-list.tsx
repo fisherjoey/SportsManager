@@ -530,7 +530,7 @@ export function ExpenseList() {
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     <SelectItem value="meals">Meals & Entertainment</SelectItem>
                     <SelectItem value="travel">Travel</SelectItem>
                     <SelectItem value="office">Office Supplies</SelectItem>
@@ -548,7 +548,7 @@ export function ExpenseList() {
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="submitted">Submitted</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
@@ -565,7 +565,7 @@ export function ExpenseList() {
                     <SelectValue placeholder="All time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All time</SelectItem>
+                    <SelectItem value="all">All time</SelectItem>
                     <SelectItem value="today">Today</SelectItem>
                     <SelectItem value="week">Last 7 days</SelectItem>
                     <SelectItem value="month">This month</SelectItem>

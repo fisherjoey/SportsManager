@@ -604,7 +604,7 @@ export function EmployeeManagement() {
                   <SelectValue placeholder="All departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All departments</SelectItem>
+                  <SelectItem value="all">All departments</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -621,7 +621,7 @@ export function EmployeeManagement() {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="on_leave">On Leave</SelectItem>
@@ -639,7 +639,7 @@ export function EmployeeManagement() {
                   <SelectValue placeholder="All positions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All positions</SelectItem>
+                  <SelectItem value="all">All positions</SelectItem>
                   {positions.map((position) => (
                     <SelectItem key={position.id} value={position.id}>
                       {position.title}

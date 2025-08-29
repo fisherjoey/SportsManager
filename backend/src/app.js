@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// Import monitoring (must be initialized early)
+const { Sentry, ProductionMonitor } = require('./utils/monitor');
+
 // Import security middleware
 const { getCorsConfig, requestSizeLimit, validateEnvironment } = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
@@ -57,6 +60,7 @@ const complianceRoutes = require('./routes/compliance');
 const communicationRoutes = require('./routes/communications');
 const organizationalAnalyticsRoutes = require('./routes/organizational-analytics');
 const workflowRoutes = require('./routes/workflows');
+const contentRoutes = require('./routes/content');
 
 const app = express();
 
@@ -65,6 +69,11 @@ validateEnvironment();
 
 // Setup performance alert handlers
 setupAlertHandlers();
+
+// Add Sentry request handler (must be first middleware)
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.requestHandler());
+}
 
 // Security middleware stack
 // app.use(enforceHTTPS); // TEMPORARILY DISABLED
@@ -159,6 +168,7 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/analytics/organizational', organizationalAnalyticsRoutes);
 app.use('/api/workflows', workflowRoutes);
+app.use('/api/content', contentRoutes);
 
 // Performance monitoring routes (admin only)
 app.use('/api/performance', performanceRoutes);
@@ -169,6 +179,12 @@ app.use('/api/health', healthRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
+
+// Add Sentry error handler before custom error handler
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
+
 app.use(errorHandler);
 
 module.exports = app;

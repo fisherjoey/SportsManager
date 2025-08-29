@@ -14,6 +14,7 @@ import { ProfileSettings } from '@/components/profile-settings'
 import { AvailabilityCalendar } from '@/components/availability-calendar'
 import { ExpenseFormIntegrated } from '@/components/expense-form-integrated'
 import { ExpenseListEnhanced } from '@/components/expense-list-enhanced'
+import { ResourceCentre } from '@/components/resource-centre'
 
 export function RefereeDashboard() {
   const [activeView, setActiveView] = useState('dashboard')
@@ -69,6 +70,8 @@ export function RefereeDashboard() {
       return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange('expenses')} />
     case 'calendar':
       return <CalendarView />
+    case 'resources':
+      return <ResourceCentre />
     case 'profile':
       return <ProfileSettings />
     default:

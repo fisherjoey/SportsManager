@@ -35,6 +35,8 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { WorkflowManagement } from '@/components/workflow-management'
 import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
+import { ResourceCentre } from '@/components/resource-centre'
+import { ResourceAdmin } from '@/components/resource-admin'
 
 
 export function AdminDashboard() {
@@ -109,6 +111,10 @@ export function AdminDashboard() {
       return 'Communications'
     case 'posts':
       return 'Posts'
+    case 'resources':
+      return 'Resource Centre'
+    case 'resource-admin':
+      return 'Manage Resources'
       
       // Financial Management
     case 'financial-dashboard':
@@ -191,6 +197,10 @@ export function AdminDashboard() {
       return <CommunicationsManagement />
     case 'posts':
       return <PostsManagement />
+    case 'resources':
+      return <ResourceCentre />
+    case 'resource-admin':
+      return <ResourceAdmin />
       
       // Financial Management
     case 'financial-dashboard':

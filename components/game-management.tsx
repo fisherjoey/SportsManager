@@ -836,7 +836,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
                 ))
               ) : (
                 !loading && (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="all" disabled>
                     No available referees for this time slot
                   </SelectItem>
                 )

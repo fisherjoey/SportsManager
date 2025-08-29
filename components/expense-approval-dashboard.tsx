@@ -218,8 +218,8 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
 
   const filteredExpenses = expenses.filter(expense => {
     return (
-      (!filters.payment_method || expense.payment_method_type === filters.payment_method) &&
-      (!filters.urgency || expense.urgency_level === filters.urgency) &&
+      (!filters.payment_method || filters.payment_method === 'all' || expense.payment_method_type === filters.payment_method) &&
+      (!filters.urgency || filters.urgency === 'all' || expense.urgency_level === filters.urgency) &&
       (!filters.amount_min || expense.amount >= parseFloat(filters.amount_min)) &&
       (!filters.amount_max || expense.amount <= parseFloat(filters.amount_max)) &&
       (!filters.search || 
@@ -295,7 +295,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                 <SelectValue placeholder="Payment Method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Methods</SelectItem>
+                <SelectItem value="all">All Methods</SelectItem>
                 <SelectItem value="person_reimbursement">Person Reimbursement</SelectItem>
                 <SelectItem value="purchase_order">Purchase Order</SelectItem>
                 <SelectItem value="credit_card">Credit Card</SelectItem>
@@ -308,7 +308,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                 <SelectValue placeholder="Urgency" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Urgency</SelectItem>
+                <SelectItem value="all">All Urgency</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="high">High</SelectItem>

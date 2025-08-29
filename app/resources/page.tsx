@@ -1,11 +1,7 @@
 import { ResourceCentre } from '@/components/resource-centre'
-import { getAllResources, getResourceCategories } from '@/lib/resources'
 
 export default function ResourcesPage() {
-  const resources = getAllResources()
-  const categories = getResourceCategories()
-  
-  return <ResourceCentre resources={resources} categories={categories} />
+  return <ResourceCentre />
 }
 
 export const metadata = {

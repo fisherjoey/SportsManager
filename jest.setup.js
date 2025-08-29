@@ -90,3 +90,56 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError
 })
+
+// Mock browser APIs not available in JSDOM
+global.window.confirm = jest.fn(() => true)
+global.window.alert = jest.fn()
+global.window.open = jest.fn(() => ({
+  document: {
+    write: jest.fn(),
+    close: jest.fn()
+  }
+}))
+
+// Mock URL.createObjectURL for file downloads
+global.URL.createObjectURL = jest.fn(() => 'mock-url')
+global.URL.revokeObjectURL = jest.fn()
+
+// Mock File API
+global.File = class extends global.Blob {
+  constructor(bits, name, options = {}) {
+    super(bits, options)
+    this.name = name
+    this.lastModified = Date.now()
+  }
+}
+
+// Mock FormData
+global.FormData = class {
+  constructor() {
+    this._data = new Map()
+  }
+  
+  append(key, value) {
+    this._data.set(key, value)
+  }
+  
+  get(key) {
+    return this._data.get(key)
+  }
+}
+
+// Add Node.js polyfills for backend tests
+global.TextEncoder = class {
+  encode(input) {
+    return Buffer.from(input, 'utf8')
+  }
+}
+
+global.TextDecoder = class {
+  decode(input) {
+    return Buffer.from(input).toString('utf8')
+  }
+}
+
+// Note: Removed Knex mocking to allow real database integration tests in specific test files

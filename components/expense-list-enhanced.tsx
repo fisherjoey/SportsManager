@@ -640,7 +640,7 @@ export function ExpenseListEnhanced({
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="submitted">Submitted</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
@@ -658,7 +658,7 @@ export function ExpenseListEnhanced({
                     <SelectValue placeholder="All methods" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All methods</SelectItem>
+                    <SelectItem value="all">All methods</SelectItem>
                     <SelectItem value="person_reimbursement">Personal Reimbursement</SelectItem>
                     <SelectItem value="credit_card">Credit Card</SelectItem>
                     <SelectItem value="purchase_order">Purchase Order</SelectItem>
@@ -674,7 +674,7 @@ export function ExpenseListEnhanced({
                     <SelectValue placeholder="All urgencies" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All urgencies</SelectItem>
+                    <SelectItem value="all">All urgencies</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="high">High</SelectItem>
@@ -690,7 +690,7 @@ export function ExpenseListEnhanced({
                     <SelectValue placeholder="All time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All time</SelectItem>
+                    <SelectItem value="all">All time</SelectItem>
                     <SelectItem value="today">Today</SelectItem>
                     <SelectItem value="week">Last 7 days</SelectItem>
                     <SelectItem value="month">This month</SelectItem>

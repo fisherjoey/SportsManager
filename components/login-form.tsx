@@ -41,7 +41,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -85,17 +85,20 @@ export function LoginForm() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <p className="text-sm font-medium mb-2">Demo Accounts:</p>
             <div className="text-xs space-y-1">
               <p>
-                <strong>Admin:</strong> admin@cmba.ca
+                <strong>CMBA Admin:</strong> admin@cmba.ca
               </p>
               <p>
-                <strong>Referee:</strong> james.smith@referee.ca
+                <strong>System Admin:</strong> admin@refassign.com
               </p>
               <p>
-                <strong>Password:</strong> password123
+                <strong>Test Referee:</strong> referee@test.com
+              </p>
+              <p>
+                <strong>Password:</strong> password
               </p>
             </div>
           </div>

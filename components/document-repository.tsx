@@ -719,7 +719,7 @@ export function DocumentRepository() {
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {DOCUMENT_CATEGORIES.map(category => (
                     <SelectItem key={category} value={category} className="capitalize">
                       {category.replace('_', ' ')}
@@ -736,7 +736,7 @@ export function DocumentRepository() {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   {DOCUMENT_STATUS_OPTIONS.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -753,7 +753,7 @@ export function DocumentRepository() {
                   <SelectValue placeholder="All documents" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All documents</SelectItem>
+                  <SelectItem value="all">All documents</SelectItem>
                   <SelectItem value="true">Requires Acknowledgment</SelectItem>
                   <SelectItem value="false">No Acknowledgment Required</SelectItem>
                 </SelectContent>

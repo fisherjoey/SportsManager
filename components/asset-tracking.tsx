@@ -761,7 +761,7 @@ export function AssetTracking() {
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {ASSET_CATEGORIES.map(category => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
@@ -778,7 +778,7 @@ export function AssetTracking() {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="assigned">Assigned</SelectItem>
                   <SelectItem value="maintenance">Maintenance</SelectItem>
@@ -795,7 +795,7 @@ export function AssetTracking() {
                   <SelectValue placeholder="All conditions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All conditions</SelectItem>
+                  <SelectItem value="all">All conditions</SelectItem>
                   <SelectItem value="excellent">Excellent</SelectItem>
                   <SelectItem value="good">Good</SelectItem>
                   <SelectItem value="fair">Fair</SelectItem>
@@ -811,7 +811,7 @@ export function AssetTracking() {
                   <SelectValue placeholder="All locations" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All locations</SelectItem>
+                  <SelectItem value="all">All locations</SelectItem>
                   <SelectItem value="office">Office</SelectItem>
                   <SelectItem value="warehouse">Warehouse</SelectItem>
                   <SelectItem value="field">Field</SelectItem>

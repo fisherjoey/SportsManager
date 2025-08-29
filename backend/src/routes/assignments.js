@@ -35,6 +35,7 @@ const AssignmentService = require('../services/AssignmentService');
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { ErrorFactory, NotFoundError, ConflictError, ValidationError } = require('../utils/errors');
 const { AssignmentSchemas, IdParamSchema, FilterSchemas } = require('../utils/validation-schemas');
+const { ProductionMonitor } = require('../utils/monitor');
 
 // Initialize AssignmentService
 const assignmentService = new AssignmentService(db);
@@ -229,6 +230,15 @@ router.post('/', validateBody(AssignmentSchemas.create), enhancedAsyncHandler(as
     meta.warnings = result.warnings;
   }
   
+  // Track critical path
+  ProductionMonitor.logCriticalPath('assignment.created', {
+    assignmentId: result.assignment.id,
+    gameId: result.assignment.game_id,
+    refereeId: result.assignment.user_id,
+    wage: result.assignment.wage,
+    userId: req.user.id
+  });
+  
   const response = ResponseFormatter.created(
     responseData,
     'Assignment created successfully',
@@ -327,6 +337,19 @@ router.patch('/:id/status',
         throw ErrorFactory.notFound('Assignment', req.params.id);
       }
       throw new Error(error.error);
+    }
+    
+    // Track critical status changes
+    if (status === 'accepted') {
+      ProductionMonitor.logCriticalPath('assignment.accepted', {
+        assignmentId: req.params.id,
+        userId: req.user.id
+      });
+    } else if (status === 'declined') {
+      ProductionMonitor.logCriticalPath('assignment.declined', {
+        assignmentId: req.params.id,
+        userId: req.user.id
+      });
     }
 
     return ResponseFormatter.sendSuccess(res, 

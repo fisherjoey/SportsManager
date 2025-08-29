@@ -10,6 +10,7 @@ const { sanitizeAll } = require('../middleware/sanitization');
 const { asyncHandler, AuthenticationError, ValidationError } = require('../middleware/errorHandling');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 const LocationDataService = require('../services/LocationDataService');
+const { ProductionMonitor } = require('../utils/monitor');
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -59,6 +60,14 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
       success: false,
       error_message: 'Invalid credentials - user not found'
     });
+    
+    // Track critical path
+    ProductionMonitor.logCriticalPath('auth.failure', {
+      reason: 'user_not_found',
+      email: email,
+      ip: req.headers['x-forwarded-for'] || req.ip
+    });
+    
     throw new AuthenticationError('Invalid credentials');
   }
 
@@ -74,6 +83,14 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
       success: false,
       error_message: 'Invalid credentials - wrong password'
     });
+    
+    // Track critical path
+    ProductionMonitor.logCriticalPath('auth.failure', {
+      reason: 'invalid_password',
+      userId: user.id,
+      ip: req.headers['x-forwarded-for'] || req.ip
+    });
+    
     throw new AuthenticationError('Invalid credentials');
   }
 
@@ -119,6 +136,13 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     ip_address: req.headers['x-forwarded-for'] || req.ip,
     user_agent: req.headers['user-agent'],
     success: true
+  });
+  
+  // Track critical path
+  ProductionMonitor.logCriticalPath('auth.login', {
+    userId: user.id,
+    role: user.role,
+    ip: req.headers['x-forwarded-for'] || req.ip
   });
 
   res.json({
@@ -240,6 +264,22 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
       success: true,
       additional_data: { role: role }
     });
+    
+    // Track critical path
+    ProductionMonitor.logCriticalPath('auth.register', {
+      userId: user.id,
+      role: role,
+      ip: req.headers['x-forwarded-for'] || req.ip
+    });
+    
+    // Track referee registration specifically
+    if (role === 'referee') {
+      ProductionMonitor.logCriticalPath('referee.registered', {
+        userId: user.id,
+        postalCode: postal_code,
+        maxDistance: max_distance
+      });
+    }
 
     res.status(201).json({
       token,
