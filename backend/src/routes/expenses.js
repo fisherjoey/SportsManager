@@ -10,15 +10,10 @@ const receiptProcessingService = require('../services/receiptProcessingService')
 const approvalWorkflowService = require('../services/approvalWorkflowService');
 const paymentMethodService = require('../services/paymentMethodService');
 const { referenceCache, clearUserCache } = require('../middleware/responseCache');
-const Queue = require('bull');
+const { createQueue } = require('../config/queue');
 
 // Create processing queue for background jobs
-const receiptQueue = new Queue('receipt processing', {
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD
-  },
+const receiptQueue = createQueue('receipt processing', {
   defaultJobOptions: {
     removeOnComplete: 100,
     removeOnFail: 50,

@@ -1,4 +1,4 @@
-const Queue = require('bull');
+const { createQueue } = require('../config/queue');
 const receiptProcessingService = require('./receiptProcessingService');
 
 class QueueProcessor {
@@ -8,17 +8,13 @@ class QueueProcessor {
   }
 
   initializeQueues() {
-    const redisConfig = {
-      redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379,
-        password: process.env.REDIS_PASSWORD,
-        maxRetriesPerRequest: 3,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxLoadingTimeout: 0,
-        lazyConnect: true
-      },
+    // Skip queue initialization in test environment
+    if (process.env.NODE_ENV === 'test') {
+      console.log('Skipping queue initialization in test environment');
+      return;
+    }
+
+    const queueConfig = {
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,
@@ -31,7 +27,7 @@ class QueueProcessor {
     };
 
     // Receipt processing queue
-    const receiptQueue = new Queue('receipt processing', redisConfig);
+    const receiptQueue = createQueue('receipt processing', queueConfig);
     
     // Process receipt jobs
     receiptQueue.process('process-receipt', 5, async (job) => {

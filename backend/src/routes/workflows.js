@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
+const db = require('../config/database');
 const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
 const Joi = require('joi');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
-// First, let's create the workflow tables via migration
+// Skip table creation in test environment - tables should exist from migrations
 const createWorkflowTables = async () => {
-  const client = await pool.connect();
+  if (process.env.NODE_ENV === 'test') {
+    console.log('Skipping workflow table creation in test environment');
+    return;
+  }
+  
+  const client = await db.raw('SELECT 1');
   try {
     await client.query('BEGIN');
     
