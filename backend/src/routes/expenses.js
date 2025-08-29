@@ -4,7 +4,7 @@ const Joi = require('joi');
 const crypto = require('crypto');
 const fs = require('fs-extra');
 const db = require('../config/database');
-const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { receiptUploader, fileUploadSecurity, handleUploadErrors, virusScan } = require('../middleware/fileUpload');
 const receiptProcessingService = require('../services/receiptProcessingService');
 const approvalWorkflowService = require('../services/approvalWorkflowService');
@@ -325,8 +325,9 @@ router.post('/receipts/upload',
 /**
  * GET /api/expenses/receipts
  * List receipts with filtering and pagination - OPTIMIZED VERSION
+ * Requires: expenses:read permission
  */
-router.get('/receipts', authenticateToken, async (req, res) => {
+router.get('/receipts', authenticateToken, requirePermission('expenses:read'), async (req, res) => {
   try {
     console.log('GET /receipts - User:', req.user.id);
     

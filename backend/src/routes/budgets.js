@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const db = require('../config/database');
-const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { auditMiddleware } = require('../middleware/auditTrail');
 
 // Enhanced authorization middleware for budget-specific permissions
@@ -143,8 +143,9 @@ const budgetAllocationSchema = Joi.object({
 /**
  * GET /api/budgets/periods
  * List budget periods
+ * Requires: finance:read permission
  */
-router.get('/periods', authenticateToken, async (req, res) => {
+router.get('/periods', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     const { status, page = 1, limit = 20 } = req.query;
@@ -186,10 +187,11 @@ router.get('/periods', authenticateToken, async (req, res) => {
 /**
  * POST /api/budgets/periods
  * Create a new budget period
+ * Requires: finance:manage permission
  */
 router.post('/periods', 
   authenticateToken, 
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -249,8 +251,9 @@ router.post('/periods',
 /**
  * GET /api/budgets/categories
  * List budget categories with hierarchy
+ * Requires: finance:read permission
  */
-router.get('/categories', authenticateToken, async (req, res) => {
+router.get('/categories', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     const { type, parent_id, include_inactive = false } = req.query;
@@ -322,10 +325,11 @@ router.get('/categories', authenticateToken, async (req, res) => {
 /**
  * POST /api/budgets/categories
  * Create a new budget category
+ * Requires: finance:manage permission
  */
 router.post('/categories',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -390,8 +394,9 @@ router.post('/categories',
 /**
  * GET /api/budgets
  * List budgets with filtering and aggregation
+ * Requires: finance:read permission
  */
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     const { 
@@ -555,10 +560,11 @@ router.get('/', authenticateToken, async (req, res) => {
 /**
  * POST /api/budgets
  * Create a new budget
+ * Requires: finance:manage permission
  */
 router.post('/',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -679,8 +685,9 @@ router.post('/',
 /**
  * GET /api/budgets/:id
  * Get detailed budget information
+ * Requires: finance:read permission (with budget access check)
  */
-router.get('/:id', authenticateToken, checkBudgetAccess('read'), async (req, res) => {
+router.get('/:id', authenticateToken, requirePermission('finance:read'), checkBudgetAccess('read'), async (req, res) => {
   try {
     const budgetId = req.params.id;
     
@@ -751,9 +758,11 @@ router.get('/:id', authenticateToken, checkBudgetAccess('read'), async (req, res
 /**
  * PUT /api/budgets/:id
  * Update budget
+ * Requires: finance:manage permission (with budget access check)
  */
 router.put('/:id',
   authenticateToken,
+  requirePermission('finance:manage'),
   checkBudgetAccess('update'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
@@ -834,9 +843,11 @@ router.put('/:id',
 /**
  * POST /api/budgets/:id/allocations
  * Create or update budget allocation
+ * Requires: finance:manage permission (with budget access check)
  */
 router.post('/:id/allocations',
   authenticateToken,
+  requirePermission('finance:manage'),
   checkBudgetAccess('update'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
@@ -905,10 +916,11 @@ router.post('/:id/allocations',
 /**
  * DELETE /api/budgets/periods/:id
  * Delete budget period with cascade handling
+ * Requires: finance:delete permission
  */
 router.delete('/periods/:id',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:delete'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -990,10 +1002,11 @@ router.delete('/periods/:id',
 /**
  * DELETE /api/budgets/categories/:id
  * Delete budget category with cascade handling
+ * Requires: finance:delete permission
  */
 router.delete('/categories/:id',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:delete'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -1061,9 +1074,11 @@ router.delete('/categories/:id',
 /**
  * DELETE /api/budgets/:id
  * Delete budget with cascade handling
+ * Requires: finance:delete permission (with budget access check)
  */
 router.delete('/:id',
   authenticateToken,
+  requirePermission('finance:delete'),
   checkBudgetAccess('delete'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {

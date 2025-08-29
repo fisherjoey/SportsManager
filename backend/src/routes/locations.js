@@ -1,12 +1,13 @@
 const express = require('express');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const knex = require('../config/database');
 const DistanceCalculationService = require('../services/DistanceCalculationService');
 
 const router = express.Router();
 
 // Get all active locations
-router.get('/', authenticateToken, async (req, res) => {
+// Requires: locations:read permission
+router.get('/', authenticateToken, requirePermission('locations:read'), async (req, res) => {
   try {
     const { search, city, limit = 50 } = req.query;
     
@@ -36,7 +37,8 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get location by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+// Requires: locations:read permission
+router.get('/:id', authenticateToken, requirePermission('locations:read'), async (req, res) => {
   try {
     const location = await knex('locations')
       .where('id', req.params.id)
@@ -54,8 +56,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create new location (admin only)
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+// Create new location
+// Requires: locations:create or system:manage permission
+router.post('/', authenticateToken, requireAnyPermission(['locations:create', 'system:manage']), async (req, res) => {
   try {
     const {
       name,
@@ -152,8 +155,9 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   }
 });
 
-// Update location (admin only)
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+// Update location
+// Requires: locations:update or system:manage permission
+router.put('/:id', authenticateToken, requireAnyPermission(['locations:update', 'system:manage']), async (req, res) => {
   try {
     const {
       name,
@@ -261,8 +265,9 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
   }
 });
 
-// Deactivate location (admin only) - soft delete
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+// Deactivate location - soft delete
+// Requires: locations:delete or system:manage permission
+router.delete('/:id', authenticateToken, requireAnyPermission(['locations:delete', 'system:manage']), async (req, res) => {
   try {
     // Check if location is used in any games
     const gamesCount = await knex('games')

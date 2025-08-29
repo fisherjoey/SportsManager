@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken, requireAnyRole } = require('../middleware/auth');
+const { authenticateToken, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandling');
 
 /**
  * GET /api/financial-dashboard
  * Get comprehensive financial dashboard data
+ * Requires: finance:read permission
  */
-router.get('/', authenticateToken, requireAnyRole(['admin', 'finance']), asyncHandler(async (req, res) => {
+router.get('/', authenticateToken, requirePermission('finance:read'), asyncHandler(async (req, res) => {
   const { startDate, endDate, period = '30' } = req.query;
   
   // Calculate date range
@@ -558,8 +559,9 @@ async function getPendingApprovals() {
 /**
  * GET /api/financial-dashboard/referee-payments
  * Get detailed referee payment information
+ * Requires: finance:read permission
  */
-router.get('/referee-payments', authenticateToken, requireAnyRole(['admin', 'finance']), asyncHandler(async (req, res) => {
+router.get('/referee-payments', authenticateToken, requirePermission('finance:read'), asyncHandler(async (req, res) => {
   const { startDate, endDate, refereeId, status = 'all' } = req.query;
   
   let query = db('game_assignments as ga')

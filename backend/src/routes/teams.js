@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
 const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 
@@ -36,8 +36,9 @@ const bulkGenerateSchema = Joi.object({
   auto_rank: Joi.boolean().default(true)
 });
 
-// GET /api/teams - Get all teams with optional filtering
-router.get('/', async (req, res) => {
+// GET /api/teams - Get all teams with optional filtering  
+// Requires: teams:read permission
+router.get('/', authenticateToken, requirePermission('teams:read'), async (req, res) => {
   try {
     const filters = {
       league_id: req.query.league_id,

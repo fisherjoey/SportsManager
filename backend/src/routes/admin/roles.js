@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
-const { authenticateToken, requirePermission, requireRole } = require('../../middleware/auth');
+const { authenticateToken, requirePermission, requireRole, requireAnyPermission } = require('../../middleware/auth');
 const RoleService = require('../../services/RoleService');
 
 // Initialize services
@@ -50,7 +50,8 @@ const assignUserRoleSchema = Joi.object({
 });
 
 // GET /api/admin/roles - Get all roles with metadata
-router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: roles:read or system:admin permission
+router.get('/', authenticateToken, requireAnyPermission(['roles:read', 'system:admin']), async (req, res) => {
   try {
     const { include_inactive } = req.query;
     const roles = await roleService.getRolesWithMetadata({
@@ -72,7 +73,8 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/admin/roles/:roleId - Get specific role with permissions
-router.get('/:roleId', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: roles:read or system:admin permission
+router.get('/:roleId', authenticateToken, requireAnyPermission(['roles:read', 'system:admin']), async (req, res) => {
   try {
     const { roleId } = req.params;
     const role = await roleService.getRoleWithPermissions(roleId);
@@ -99,7 +101,8 @@ router.get('/:roleId', authenticateToken, requireRole('admin'), async (req, res)
 });
 
 // POST /api/admin/roles - Create new role
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: roles:create or system:admin permission
+router.post('/', authenticateToken, requireAnyPermission(['roles:create', 'system:admin']), async (req, res) => {
   try {
     const { error, value } = createRoleSchema.validate(req.body);
     if (error) {
@@ -134,7 +137,8 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // PUT /api/admin/roles/:roleId - Update role
-router.put('/:roleId', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: roles:update or system:admin permission
+router.put('/:roleId', authenticateToken, requireAnyPermission(['roles:update', 'system:admin']), async (req, res) => {
   try {
     const { roleId } = req.params;
     const { error, value } = updateRoleSchema.validate(req.body);
@@ -170,7 +174,8 @@ router.put('/:roleId', authenticateToken, requireRole('admin'), async (req, res)
 });
 
 // DELETE /api/admin/roles/:roleId - Delete role
-router.delete('/:roleId', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: roles:delete or system:admin permission
+router.delete('/:roleId', authenticateToken, requireAnyPermission(['roles:delete', 'system:admin']), async (req, res) => {
   try {
     const { roleId } = req.params;
     const { force } = req.query;

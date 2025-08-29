@@ -136,7 +136,8 @@ router.get('/', authenticateToken, validateQuery(FilterSchemas.assignments), enh
 }));
 
 // GET /api/assignments/:id - Get specific assignment
-router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+// Requires: assignments:read permission
+router.get('/:id', authenticateToken, requirePermission('assignments:read'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   // First check if assignment exists using base service method
   const assignment = await assignmentService.findById(req.params.id);
   
@@ -197,7 +198,8 @@ router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (re
 }));
 
 // POST /api/assignments - Create new assignment
-router.post('/', validateBody(AssignmentSchemas.create), enhancedAsyncHandler(async (req, res) => {
+// Requires: assignments:create permission
+router.post('/', authenticateToken, requirePermission('assignments:create'), validateBody(AssignmentSchemas.create), enhancedAsyncHandler(async (req, res) => {
   const assignmentData = {
     ...req.body,
     assigned_by: req.body.assigned_by || req.user?.id // Add assigned_by from authenticated user if not provided
@@ -319,7 +321,10 @@ router.delete('/bulk-remove',
 );
 
 // PATCH /api/assignments/:id/status - Update assignment status
+// Requires: assignments:update permission
 router.patch('/:id/status', 
+  authenticateToken,
+  requirePermission('assignments:update'),
   validateParams(IdParamSchema),
   validateBody(Joi.object({
     status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required()
@@ -362,7 +367,8 @@ router.patch('/:id/status',
 );
 
 // DELETE /api/assignments/:id - Remove assignment
-router.delete('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+// Requires: assignments:delete permission
+router.delete('/:id', authenticateToken, requirePermission('assignments:delete'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   // Use AssignmentService for single assignment removal
   const results = await assignmentService.bulkRemoveAssignments([req.params.id]);
 
@@ -374,8 +380,10 @@ router.delete('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async 
 }));
 
 // POST /api/assignments/bulk - Bulk assign referees to a game
+// Requires: assignments:create permission
 router.post('/bulk', 
   authenticateToken,
+  requirePermission('assignments:create'),
   validateBody(Joi.object({
     game_id: Joi.string().uuid().required(),
     assignments: Joi.array().items(Joi.object({
@@ -451,8 +459,10 @@ router.post('/bulk',
 );
 
 // POST /api/assignments/check-conflicts - Check for conflicts before assignment
+// Requires: assignments:read permission
 router.post('/check-conflicts', 
   authenticateToken, 
+  requirePermission('assignments:read'),
   validateBody(AssignmentSchemas.create),
   enhancedAsyncHandler(async (req, res) => {
     const conflictAnalysis = await checkAssignmentConflicts(req.body);
@@ -469,8 +479,10 @@ router.post('/check-conflicts',
 );
 
 // GET /api/assignments/available-referees/:game_id - Get available referees for a specific game
+// Requires: assignments:read permission
 router.get('/available-referees/:game_id', 
   authenticateToken,
+  requirePermission('assignments:read'),
   validateParams(IdParamSchema.keys({ game_id: Joi.string().uuid().required() })),
   enhancedAsyncHandler(async (req, res) => {
     // Use AssignmentService to get available referees with comprehensive analysis

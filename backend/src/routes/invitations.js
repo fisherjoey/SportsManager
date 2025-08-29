@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
 const crypto = require('crypto');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 
 const inviteSchema = Joi.object({
@@ -23,8 +23,9 @@ const completeInvitationSchema = Joi.object({
   max_distance: Joi.number().integer().min(1).max(200).default(25)
 });
 
-// POST /api/invitations - Create invitation (admin only)
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+// POST /api/invitations - Create invitation
+// Requires: users:create or users:invite permission
+router.post('/', authenticateToken, requireAnyPermission(['users:create', 'users:invite']), async (req, res) => {
   try {
     console.log('Creating invitation - request body:', req.body);
     console.log('User making request:', req.user);

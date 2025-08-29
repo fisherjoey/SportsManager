@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const db = require('../config/database');
-const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { auditMiddleware } = require('../middleware/auditTrail');
 
 // Validation schemas
@@ -105,9 +105,10 @@ router.get('/workflows',
  * POST /api/approvals/workflows
  * Create a new approval workflow
  */
+// Requires: finance:manage permission
 router.post('/workflows',
   authenticateToken,
-  requireRole('admin'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -204,9 +205,10 @@ router.get('/spending-limits',
  * POST /api/approvals/spending-limits
  * Create a new spending limit
  */
+// Requires: finance:manage permission
 router.post('/spending-limits',
   authenticateToken,
-  requireRole('admin'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {

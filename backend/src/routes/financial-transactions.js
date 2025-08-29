@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const db = require('../config/database');
-const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { auditMiddleware } = require('../middleware/auditTrail');
 
 // Validation schemas
@@ -86,8 +86,9 @@ async function generateTransactionNumber(organizationId, transactionType) {
 /**
  * GET /api/financial/transactions
  * List financial transactions with filtering
+ * Requires: finance:read permission
  */
-router.get('/transactions', authenticateToken, async (req, res) => {
+router.get('/transactions', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const { error, value } = querySchema.validate(req.query);
     if (error) {
@@ -210,10 +211,11 @@ router.get('/transactions', authenticateToken, async (req, res) => {
 /**
  * POST /api/financial/transactions
  * Create a new financial transaction
+ * Requires: finance:manage permission
  */
 router.post('/transactions',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -309,8 +311,9 @@ router.post('/transactions',
 /**
  * GET /api/financial/transactions/:id
  * Get detailed transaction information
+ * Requires: finance:read permission
  */
-router.get('/transactions/:id', authenticateToken, async (req, res) => {
+router.get('/transactions/:id', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const transactionId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;
@@ -363,10 +366,11 @@ router.get('/transactions/:id', authenticateToken, async (req, res) => {
 /**
  * PUT /api/financial/transactions/:id/status
  * Update transaction status
+ * Requires: finance:approve permission
  */
 router.put('/transactions/:id/status',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:approve'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -460,8 +464,9 @@ router.put('/transactions/:id/status',
 /**
  * GET /api/financial/vendors
  * List vendors
+ * Requires: finance:read permission
  */
-router.get('/vendors', authenticateToken, async (req, res) => {
+router.get('/vendors', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     const { active = true, search, page = 1, limit = 20 } = req.query;
@@ -506,10 +511,11 @@ router.get('/vendors', authenticateToken, async (req, res) => {
 /**
  * POST /api/financial/vendors
  * Create a new vendor
+ * Requires: finance:manage permission
  */
 router.post('/vendors',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requirePermission('finance:manage'),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -557,8 +563,9 @@ router.post('/vendors',
 /**
  * GET /api/financial/dashboard
  * Get financial dashboard data
+ * Requires: finance:read permission
  */
-router.get('/dashboard', authenticateToken, async (req, res) => {
+router.get('/dashboard', authenticateToken, requirePermission('finance:read'), async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.id;
     const { period = '30' } = req.query; // Days to look back

@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
-const { authenticateToken, requireRole } = require('../../middleware/auth');
+const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../../middleware/auth');
 const PermissionService = require('../../services/PermissionService');
 
 // Initialize services
@@ -30,7 +30,8 @@ const userPermissionsSchema = Joi.object({
 });
 
 // GET /api/admin/permissions - Get all permissions with optional filtering
-router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: permissions:read or system:admin permission
+router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
   try {
     const { active_only = 'true', use_cache = 'true' } = req.query;
     
@@ -64,7 +65,8 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/admin/permissions/categories - Get unique permission categories
-router.get('/categories', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: permissions:read or system:admin permission
+router.get('/categories', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
   try {
     const { active_only = 'true' } = req.query;
     
@@ -94,7 +96,8 @@ router.get('/categories', authenticateToken, requireRole('admin'), async (req, r
 });
 
 // GET /api/admin/permissions/category/:category - Get permissions for specific category
-router.get('/category/:category', authenticateToken, requireRole('admin'), async (req, res) => {
+// Requires: permissions:read or system:admin permission
+router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
   try {
     const { category } = req.params;
     const { active_only = 'true' } = req.query;
