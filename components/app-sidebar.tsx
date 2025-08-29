@@ -285,8 +285,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         <div className="px-6 pb-4 group-data-[collapsible=icon]:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="capitalize">{user?.email}</span>
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
+              <span>{user?.name?.split(' ')[0] || 'User'}</span>
             </div>
             <NotificationsBell />
           </div>

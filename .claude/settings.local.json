@@ -39,7 +39,8 @@
       "Bash(git rm:*)",
       "Bash(set DISABLE_REDIS=true)",
       "Bash(set PORT=3000)",
-      "Bash(npx nodemon:*)"
+      "Bash(npx nodemon:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
