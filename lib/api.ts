@@ -3028,6 +3028,55 @@ class ApiClient {
       })
     })
   }
+
+  // Permission Management API Methods
+  async getUserPermissions(userId?: string) {
+    const endpoint = userId ? `/admin/permissions/users/${userId}` : '/auth/refresh-permissions';
+    return this.request<{
+      success: boolean;
+      permissions: Permission[];
+    }>(endpoint)
+  }
+
+  async refreshUserPermissions() {
+    return this.request<{
+      success: boolean;
+      permissions: Permission[];
+    }>('/auth/refresh-permissions', {
+      method: 'POST'
+    })
+  }
+
+  async getAllPermissions() {
+    return this.request<{
+      success: boolean;
+      data: { permissions: Permission[] };
+    }>('/admin/permissions')
+  }
+
+  async getPermissionsByCategory(category: string) {
+    return this.request<{
+      success: boolean;
+      data: { permissions: Permission[] };
+    }>(`/admin/permissions/category/${category}`)
+  }
+
+  async getPermissionCategories() {
+    return this.request<{
+      success: boolean;
+      data: { categories: string[] };
+    }>('/admin/permissions/categories')
+  }
+
+  async bulkCheckPermissions(permissions: string[]) {
+    return this.request<{
+      success: boolean;
+      data: { [key: string]: boolean };
+    }>('/admin/permissions/users/bulk-check', {
+      method: 'POST',
+      body: JSON.stringify({ permissions })
+    })
+  }
 }
 
 // Types (updated to match backend schema)
@@ -3114,6 +3163,7 @@ export interface User {
   email: string;
   role: 'admin' | 'referee'; // Keep for backward compatibility
   roles: string[]; // New array-based roles system
+  permissions?: Permission[]; // User permissions from RBAC system
   referee_id?: string; // Add referee_id for referees
   phone?: string;
   certificationLevel?: string;
@@ -3121,6 +3171,16 @@ export interface User {
   isAvailable?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 

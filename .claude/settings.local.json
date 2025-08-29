@@ -36,7 +36,9 @@
       "Bash(DISABLE_REDIS=true node src/server.js)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(set DISABLE_REDIS=true)",
+      "Bash(set PORT=3000)"
     ],
     "deny": [],
     "ask": []

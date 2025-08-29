@@ -11,9 +11,9 @@
 'use client'
 
 import type React from 'react'
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
-import { apiClient, type User } from '@/lib/api'
+import { apiClient, type User, type Permission } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 
 /**
@@ -22,20 +22,30 @@ import { useToast } from '@/components/ui/use-toast'
  * @typedef {Object} AuthContextType
  * @property {User | null} user - Current authenticated user object or null if not authenticated
  * @property {boolean} isAuthenticated - Boolean indicating if user is currently authenticated
+ * @property {Permission[]} permissions - Array of user permissions from RBAC system
  * @property {Function} login - Function to authenticate user with email and password
  * @property {Function} logout - Function to logout user and clear authentication state
  * @property {Function} updateProfile - Function to update user profile information
  * @property {Function} hasRole - Function to check if user has a specific role
  * @property {Function} hasAnyRole - Function to check if user has any of the specified roles
+ * @property {Function} hasPermission - Function to check if user has a specific permission
+ * @property {Function} hasAnyPermission - Function to check if user has any of the specified permissions
+ * @property {Function} hasAllPermissions - Function to check if user has all of the specified permissions
+ * @property {Function} refreshPermissions - Function to refresh user permissions from server
  */
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
+  permissions: Permission[]
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   updateProfile: (updates: Partial<User>) => Promise<void>
   hasRole: (role: string) => boolean
   hasAnyRole: (...roles: string[]) => boolean
+  hasPermission: (permission: string) => boolean
+  hasAnyPermission: (permissions: string[]) => boolean
+  hasAllPermissions: (permissions: string[]) => boolean
+  refreshPermissions: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -62,10 +72,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [permissions, setPermissions] = useState<Permission[]>([])
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  // Helper function to fetch and set user permissions
+  const fetchUserPermissions = useCallback(async (userId: string): Promise<Permission[]> => {
+    try {
+      const response = await apiClient.refreshUserPermissions()
+      if (response.success && response.permissions) {
+        setPermissions(response.permissions)
+        return response.permissions
+      }
+      return []
+    } catch (error) {
+      console.warn('Failed to fetch user permissions:', error)
+      return []
+    }
   }, [])
 
   useEffect(() => {
@@ -75,21 +101,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('auth_token')
     if (storedToken) {
       apiClient.setToken(storedToken)
-      // Verify token by fetching user profile
+      // Verify token by fetching user profile and permissions
       apiClient.getProfile()
-        .then(response => {
+        .then(async (response) => {
           if (response.user) {
             setUser(response.user)
             setIsAuthenticated(true)
+            // Fetch user permissions
+            await fetchUserPermissions(response.user.id)
           }
         })
         .catch(() => {
           // Token invalid, clear storage
           localStorage.removeItem('auth_token')
           apiClient.removeToken()
+          setUser(null)
+          setIsAuthenticated(false)
+          setPermissions([])
         })
     }
-  }, [isClient])
+  }, [isClient, fetchUserPermissions])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -99,6 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiClient.setToken(response.token)
         setUser(response.user)
         setIsAuthenticated(true)
+        
+        // Fetch user permissions after successful login
+        await fetchUserPermissions(response.user.id)
         
         return true
       }
@@ -118,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     apiClient.removeToken()
     setUser(null)
     setIsAuthenticated(false)
+    setPermissions([])
   }
 
   const updateProfile = async (updates: Partial<User>) => {
@@ -166,8 +201,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return roles.some(role => userRoles.includes(role))
   }
 
+  // Permission checking methods with memoization
+  const hasPermission = useCallback((permission: string): boolean => {
+    if (!user || !isAuthenticated) return false
+    
+    // Admin always has access to everything
+    const userRoles = user.roles || [user.role]
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    // Check if user has the specific permission
+    return permissions.some(p => p.name === permission && p.active)
+  }, [user, isAuthenticated, permissions])
+
+  const hasAnyPermission = useCallback((permissionList: string[]): boolean => {
+    if (!user || !isAuthenticated) return false
+    
+    // Admin always has access to everything
+    const userRoles = user.roles || [user.role]
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    // Check if user has any of the specified permissions
+    return permissionList.some(permission => 
+      permissions.some(p => p.name === permission && p.active)
+    )
+  }, [user, isAuthenticated, permissions])
+
+  const hasAllPermissions = useCallback((permissionList: string[]): boolean => {
+    if (!user || !isAuthenticated) return false
+    
+    // Admin always has access to everything
+    const userRoles = user.roles || [user.role]
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    // Check if user has all of the specified permissions
+    return permissionList.every(permission =>
+      permissions.some(p => p.name === permission && p.active)
+    )
+  }, [user, isAuthenticated, permissions])
+
+  const refreshPermissions = useCallback(async (): Promise<void> => {
+    if (!user) return
+    await fetchUserPermissions(user.id)
+  }, [user, fetchUserPermissions])
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, updateProfile, hasRole, hasAnyRole }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      permissions,
+      login, 
+      logout, 
+      updateProfile, 
+      hasRole, 
+      hasAnyRole,
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      refreshPermissions
+    }}>
       {children}
     </AuthContext.Provider>
   )

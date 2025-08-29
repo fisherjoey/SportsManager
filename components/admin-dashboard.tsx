@@ -17,7 +17,6 @@ import { RefereeManagement } from '@/components/referee-management'
 import { CalendarView } from '@/components/calendar-view'
 import { ProfileSettings } from '@/components/profile-settings'
 import OrganizationSettings from '@/components/organization-settings'
-import { PostsManagement } from '@/components/posts-management'
 import { CommunicationsManagement } from '@/components/communications-management'
 import { AIAssignmentsEnterprise } from '@/components/ai-assignments-enterprise'
 import { FinancialDashboard } from '@/components/financial-dashboard'
@@ -36,7 +35,6 @@ import { WorkflowManagement } from '@/components/workflow-management'
 import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentre, ResourceRenderer } from '@/components/resource-centre'
-import { ResourceAdmin } from '@/components/resource-admin'
 import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
 
 
@@ -136,12 +134,8 @@ export function AdminDashboard() {
       return 'Calendar'
     case 'communications':
       return 'Communications'
-    case 'posts':
-      return 'Posts'
     case 'resources':
       return 'Resource Centre'
-    case 'resource-admin':
-      return 'Manage Resources'
       
       // Financial Management
     case 'financial-dashboard':
@@ -228,12 +222,8 @@ export function AdminDashboard() {
       />
     case 'communications':
       return <CommunicationsManagement />
-    case 'posts':
-      return <PostsManagement />
     case 'resources':
       return <ResourceCentre onNavigate={handleViewChange} />
-    case 'resource-admin':
-      return <ResourceAdmin />
       
       // Financial Management
     case 'financial-dashboard':
