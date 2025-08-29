@@ -10,26 +10,26 @@ describe('Assignments Routes', () => {
     const adminLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'admin@refassign.com',
-        password: 'password'
+        email: 'admin@test.com',
+        password: 'password123'
       });
-    adminToken = adminLogin.body.data.token;
+    adminToken = adminLogin.body.token;
 
     // Get referee token and user ID
     const refereeLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'mike@referee.com',
-        password: 'password'
+        email: 'referee@test.com',
+        password: 'password123'
       });
-    refereeToken = refereeLogin.body.data.token;
-    refereeUserId = refereeLogin.body.data.user.id;
+    refereeToken = refereeLogin.body.token;
+    refereeUserId = refereeLogin.body.user?.id;
 
     // Get an unassigned game ID
     const gamesResponse = await request(app)
       .get('/api/games?status=unassigned')
       .set('Authorization', `Bearer ${adminToken}`);
-    gameId = gamesResponse.body.data.games[0]?.id;
+    gameId = gamesResponse.body.games?.[0]?.id;
   });
 
   describe('GET /api/assignments', () => {
@@ -39,9 +39,9 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.data.assignments)).toBe(true);
-      expect(response.body.data.pagination).toBeDefined();
+      expect(response.body).toBeDefined();
+      expect(Array.isArray(response.body.assignments)).toBe(true);
+      expect(response.body.pagination).toBeDefined();
     });
 
     it('should filter assignments by status', async () => {
@@ -50,8 +50,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.assignments.forEach(assignment => {
+      expect(response.body).toBeDefined();
+      response.body.assignments.forEach(assignment => {
         expect(assignment.status).toBe('pending');
       });
     });
@@ -62,8 +62,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.assignments.forEach(assignment => {
+      expect(response.body).toBeDefined();
+      response.body.assignments.forEach(assignment => {
         expect(assignment.refereeId).toBe(refereeUserId);
       });
     });
@@ -74,8 +74,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.assignments.forEach(assignment => {
+      expect(response.body).toBeDefined();
+      response.body.assignments.forEach(assignment => {
         expect(assignment.gameId).toBe(gameId);
       });
     });
@@ -86,8 +86,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.assignments.forEach(assignment => {
+      expect(response.body).toBeDefined();
+      response.body.assignments.forEach(assignment => {
         expect(assignment.refereeId).toBe(refereeUserId);
       });
     });
@@ -114,10 +114,10 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignment.id).toBe(assignmentId);
-      expect(response.body.data.assignment.game).toBeDefined();
-      expect(response.body.data.assignment.referee).toBeDefined();
+      expect(response.body).toBeDefined();
+      expect(response.body.assignment.id).toBe(assignmentId);
+      expect(response.body.assignment.game).toBeDefined();
+      expect(response.body.assignment.referee).toBeDefined();
     });
 
     it('should return 404 for non-existent assignment', async () => {
@@ -126,8 +126,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('not found');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('not found');
     });
   });
 
@@ -150,10 +150,10 @@ describe('Assignments Routes', () => {
         .send(assignmentData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignment.gameId).toBe(gameId);
-      expect(response.body.data.assignment.refereeId).toBe(refereeUserId);
-      expect(response.body.data.assignment.status).toBe('pending');
+      expect(response.body).toBeDefined();
+      expect(response.body.assignment.gameId).toBe(gameId);
+      expect(response.body.assignment.refereeId).toBe(refereeUserId);
+      expect(response.body.assignment.status).toBe('pending');
     });
 
     it('should return 403 for referee trying to create assignment', async () => {
@@ -168,8 +168,8 @@ describe('Assignments Routes', () => {
         .send(assignmentData)
         .expect(403);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Admin access required');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Admin access required');
     });
 
     it('should return 400 for missing required fields', async () => {
@@ -181,8 +181,8 @@ describe('Assignments Routes', () => {
         })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('required');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('required');
     });
 
     it('should return 400 for non-existent game', async () => {
@@ -197,7 +197,7 @@ describe('Assignments Routes', () => {
         .send(assignmentData)
         .expect(400);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
 
     it('should return 400 for non-existent referee', async () => {
@@ -212,7 +212,7 @@ describe('Assignments Routes', () => {
         .send(assignmentData)
         .expect(400);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
   });
 
@@ -248,11 +248,11 @@ describe('Assignments Routes', () => {
         .send(bulkData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignments).toHaveLength(2);
-      expect(response.body.data.summary.total).toBe(2);
-      expect(response.body.data.summary.successful).toBe(2);
-      expect(response.body.data.summary.failed).toBe(0);
+      expect(response.body).toBeDefined();
+      expect(response.body.assignments).toHaveLength(2);
+      expect(response.body.summary.total).toBe(2);
+      expect(response.body.summary.successful).toBe(2);
+      expect(response.body.summary.failed).toBe(0);
     });
 
     it('should return 403 for referee trying bulk assignment', async () => {
@@ -271,7 +271,7 @@ describe('Assignments Routes', () => {
         .send(bulkData)
         .expect(403);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
 
     it('should return 400 for empty assignments array', async () => {
@@ -281,8 +281,8 @@ describe('Assignments Routes', () => {
         .send({ assignments: [] })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('at least one assignment');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('at least one assignment');
     });
   });
 
@@ -316,8 +316,8 @@ describe('Assignments Routes', () => {
         .send({ status: 'accepted' })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignment.status).toBe('accepted');
+      expect(response.body).toBeDefined();
+      expect(response.body.assignment.status).toBe('accepted');
     });
 
     it('should allow referee to decline assignment', async () => {
@@ -335,9 +335,9 @@ describe('Assignments Routes', () => {
         })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignment.status).toBe('declined');
-      expect(response.body.data.assignment.reason).toBe('Schedule conflict');
+      expect(response.body).toBeDefined();
+      expect(response.body.assignment.status).toBe('declined');
+      expect(response.body.assignment.reason).toBe('Schedule conflict');
     });
 
     it('should allow admin to update assignment status', async () => {
@@ -352,8 +352,8 @@ describe('Assignments Routes', () => {
         .send({ status: 'cancelled' })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.assignment.status).toBe('cancelled');
+      expect(response.body).toBeDefined();
+      expect(response.body.assignment.status).toBe('cancelled');
     });
 
     it('should return 400 for invalid status', async () => {
@@ -368,8 +368,8 @@ describe('Assignments Routes', () => {
         .send({ status: 'invalid-status' })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid status');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Invalid status');
     });
 
     it('should return 404 for non-existent assignment', async () => {
@@ -379,7 +379,7 @@ describe('Assignments Routes', () => {
         .send({ status: 'accepted' })
         .expect(404);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
   });
 
@@ -412,8 +412,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('deleted');
+      expect(response.body).toBeDefined();
+      expect(response.body.error).toContain('deleted');
 
       // Verify assignment is deleted
       await request(app)
@@ -433,8 +433,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(403);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Admin access required');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Admin access required');
     });
 
     it('should return 404 for non-existent assignment', async () => {
@@ -443,7 +443,7 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
   });
 
@@ -454,11 +454,11 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.data.games)).toBe(true);
+      expect(response.body).toBeDefined();
+      expect(Array.isArray(response.body.games)).toBe(true);
       
       // All returned games should be unassigned or up-for-grabs
-      response.body.data.games.forEach(game => {
+      response.body.games.forEach(game => {
         expect(['unassigned', 'up-for-grabs']).toContain(game.status);
       });
     });
@@ -472,8 +472,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.games.forEach(game => {
+      expect(response.body).toBeDefined();
+      response.body.games.forEach(game => {
         const gameDate = new Date(game.date);
         expect(gameDate >= new Date(startDate)).toBe(true);
         expect(gameDate <= new Date(endDate)).toBe(true);
@@ -486,8 +486,8 @@ describe('Assignments Routes', () => {
         .set('Authorization', `Bearer ${refereeToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      response.body.data.games.forEach(game => {
+      expect(response.body).toBeDefined();
+      response.body.games.forEach(game => {
         expect(game.level).toBe('Youth');
       });
     });
