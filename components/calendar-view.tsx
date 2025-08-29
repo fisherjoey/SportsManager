@@ -80,7 +80,7 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-32 border border-gray-200"></div>)
+      days.push(<div key={`empty-${i}`} className="h-32 border border-border dark:border-gray-700"></div>)
     }
 
     // Days of the month
@@ -98,45 +98,45 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
       days.push(
         <div 
           key={day} 
-          className={`h-32 border border-gray-200 p-2 ${
-            isToday ? 'bg-blue-50 border-blue-300' : ''
-          } ${dailySummary?.needsAttention ? 'border-l-4 border-l-red-400' : ''} ${
-            dailySummary && onDateClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''
+          className={`h-32 border border-border dark:border-gray-700 p-2 ${
+            isToday ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700' : ''
+          } ${dailySummary?.needsAttention ? 'border-l-4 border-l-red-400 dark:border-l-red-600' : ''} ${
+            dailySummary && onDateClick ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''
           }`}
           onClick={handleDayClick}
         >
-          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600' : ''}`}>{day}</div>
+          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}`}>{day}</div>
           {dailySummary ? (
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-700">{dailySummary.totalGames} games</span>
+                <span className="font-medium text-foreground">{dailySummary.totalGames} games</span>
                 {dailySummary.needsAttention && (
                   <AlertTriangle className="h-3 w-3 text-red-500" />
                 )}
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-muted-foreground">
                 {dailySummary.startTime} - {dailySummary.endTime}
               </div>
               <div className="flex space-x-1">
                 {dailySummary.assigned > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 text-green-700">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400">
                     {dailySummary.assigned}✓
                   </Badge>
                 )}
                 {dailySummary.unassigned > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 text-red-700">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400">
                     {dailySummary.unassigned}!
                   </Badge>
                 )}
                 {dailySummary.upForGrabs > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 text-orange-700">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400">
                     {dailySummary.upForGrabs}?
                   </Badge>
                 )}
               </div>
             </div>
           ) : (
-            <div className="text-xs text-gray-400">No games</div>
+            <div className="text-xs text-muted-foreground">No games</div>
           )}
         </div>,
       )
@@ -280,11 +280,11 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-0 border border-gray-200">
+          <div className="grid grid-cols-7 gap-0 border border-border dark:border-gray-700">
             {dayNames.map((day) => (
               <div
                 key={day}
-                className="h-12 border-b border-gray-200 bg-gray-50 flex items-center justify-center font-medium text-sm"
+                className="h-12 border-b border-border dark:border-gray-700 bg-muted/50 dark:bg-gray-900/50 flex items-center justify-center font-medium text-sm text-foreground"
               >
                 {day}
               </div>
@@ -293,18 +293,18 @@ export function CalendarView({ onDateClick }: CalendarViewProps) {
           </div>
 
           <div className="mt-4 space-y-2">
-            <div className="text-sm font-medium text-gray-700">Legend:</div>
+            <div className="text-sm font-medium text-foreground">Legend:</div>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 text-green-700">3✓</Badge>
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400">3✓</Badge>
                 <span>Assigned games</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 text-orange-700">2?</Badge>
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400">2?</Badge>
                 <span>Up for grabs</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 text-red-700">1!</Badge>
+                <Badge variant="secondary" className="text-xs px-1 py-0 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400">1!</Badge>
                 <span>Unassigned</span>
               </div>
               <div className="flex items-center space-x-2">
