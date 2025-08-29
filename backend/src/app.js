@@ -62,6 +62,10 @@ const organizationalAnalyticsRoutes = require('./routes/organizational-analytics
 const workflowRoutes = require('./routes/workflows');
 const contentRoutes = require('./routes/content');
 
+// Import admin routes
+const adminRoleRoutes = require('./routes/admin/roles');
+const adminPermissionRoutes = require('./routes/admin/permissions');
+
 const app = express();
 
 // Validate environment variables before starting
@@ -122,6 +126,10 @@ app.use(advancedPerformanceMonitor({
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
+// Serve JSDoc API documentation
+app.use('/api-docs', express.static('docs'));
+console.log('📚 API Documentation available at: http://localhost:3001/api-docs');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/games', gameRoutes);
@@ -169,6 +177,10 @@ app.use('/api/communications', communicationRoutes);
 app.use('/api/analytics/organizational', organizationalAnalyticsRoutes);
 app.use('/api/workflows', workflowRoutes);
 app.use('/api/content', contentRoutes);
+
+// Admin routes
+app.use('/api/admin/roles', adminRoleRoutes);
+app.use('/api/admin/permissions', adminPermissionRoutes);
 
 // Performance monitoring routes (admin only)
 app.use('/api/performance', performanceRoutes);

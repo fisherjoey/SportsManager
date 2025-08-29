@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, getUserPermissions } = require('../middleware/auth');
 const { authLimiter, registrationLimiter, passwordResetLimiter } = require('../middleware/rateLimiting');
 const { sanitizeAll } = require('../middleware/sanitization');
 const { asyncHandler, AuthenticationError, ValidationError } = require('../middleware/errorHandling');
@@ -94,13 +94,23 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     throw new AuthenticationError('Invalid credentials');
   }
 
+  // Get user permissions for the new RBAC system
+  let permissions = [];
+  try {
+    permissions = await getUserPermissions(user.id);
+  } catch (error) {
+    console.warn('Failed to get user permissions during login:', error.message);
+    // Don't fail login if permission retrieval fails
+  }
+
   // Generate JWT token (include roles array for new system)
   const token = jwt.sign(
     { 
       userId: user.id, 
       email: user.email, 
       role: user.role,  // Keep for backward compatibility
-      roles: user.roles || [user.role] // New roles array
+      roles: user.roles || [user.role], // New roles array
+      permissions: permissions.map(p => p.code || p.name) // Include permission codes in JWT
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -112,6 +122,7 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     email: user.email,
     role: user.role, // Keep for backward compatibility
     roles: user.roles || [user.role], // New roles array
+    permissions: permissions, // Include full permission objects
     name: user.name,
     phone: user.phone,
     location: user.location,
@@ -234,6 +245,8 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
       id: user.id,
       email: user.email,
       role: user.role,
+      roles: user.roles || [user.role],
+      permissions: permissions,
       name: user.name,
       phone: user.phone,
       location: user.location,
@@ -242,13 +255,23 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
       is_available: user.is_available
     };
 
+    // Get user permissions for the new RBAC system
+    let permissions = [];
+    try {
+      permissions = await getUserPermissions(user.id);
+    } catch (error) {
+      console.warn('Failed to get user permissions during registration:', error.message);
+      // Don't fail registration if permission retrieval fails
+    }
+
     // Generate JWT token (include roles array for new system)
     const token = jwt.sign(
       { 
         userId: user.id, 
         email: user.email, 
         role: user.role, // Keep for backward compatibility
-        roles: user.roles || [user.role] // New roles array
+        roles: user.roles || [user.role], // New roles array
+        permissions: permissions.map(p => p.code || p.name) // Include permission codes in JWT
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -303,11 +326,21 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Get user permissions for the new RBAC system
+    let permissions = [];
+    try {
+      permissions = await getUserPermissions(user.id);
+    } catch (error) {
+      console.warn('Failed to get user permissions for profile:', error.message);
+      // Don't fail profile retrieval if permission retrieval fails
+    }
+
     const userData = {
       id: user.id,
       email: user.email,
       role: user.role, // Keep for backward compatibility
       roles: user.roles || [user.role], // New roles array
+      permissions: permissions, // Include full permission objects
       name: user.name,
       phone: user.phone,
       location: user.location,
@@ -328,6 +361,26 @@ router.get('/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// POST /api/auth/refresh-permissions - Refresh user permissions
+router.post('/refresh-permissions', authenticateToken, async (req, res) => {
+  try {
+    // Get fresh permissions from database (bypass cache)
+    const permissions = await getUserPermissions(req.user.id, false);
+
+    res.json({
+      success: true,
+      data: { permissions },
+      message: 'Permissions refreshed successfully'
+    });
+  } catch (error) {
+    console.error('Error refreshing permissions:', error);
+    res.status(500).json({ 
+      error: 'Failed to refresh permissions',
+      details: error.message 
+    });
   }
 });
 

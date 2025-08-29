@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+const PermissionService = require('../services/PermissionService');
+
+// Initialize permission service
+const permissionService = new PermissionService();
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -104,9 +108,171 @@ function hasRole(user, roleName) {
   return userRoles.includes(roleName);
 }
 
+/**
+ * Middleware to require specific permission
+ * @param {string} permissionName - Required permission name
+ * @returns {Function} Express middleware
+ */
+function requirePermission(permissionName) {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    try {
+      // Admin always has access
+      const userRoles = req.user.roles || [req.user.role];
+      if (userRoles.includes('admin') || req.user.role === 'admin') {
+        return next();
+      }
+
+      // Check permission
+      const hasPermission = await permissionService.hasPermission(req.user.id, permissionName);
+      
+      if (!hasPermission) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: permissionName
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({ error: 'Permission check failed' });
+    }
+  };
+}
+
+/**
+ * Middleware to require any of multiple permissions
+ * @param {Array} permissionNames - Array of permission names
+ * @returns {Function} Express middleware
+ */
+function requireAnyPermission(permissionNames) {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!Array.isArray(permissionNames) || permissionNames.length === 0) {
+      return res.status(500).json({ error: 'Invalid permission configuration' });
+    }
+
+    try {
+      // Admin always has access
+      const userRoles = req.user.roles || [req.user.role];
+      if (userRoles.includes('admin') || req.user.role === 'admin') {
+        return next();
+      }
+
+      // Check if user has any of the required permissions
+      const hasAnyPermission = await permissionService.hasAnyPermission(req.user.id, permissionNames);
+      
+      if (!hasAnyPermission) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: `One of: ${permissionNames.join(', ')}`
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({ error: 'Permission check failed' });
+    }
+  };
+}
+
+/**
+ * Middleware to require all specified permissions
+ * @param {Array} permissionNames - Array of permission names
+ * @returns {Function} Express middleware
+ */
+function requireAllPermissions(permissionNames) {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!Array.isArray(permissionNames) || permissionNames.length === 0) {
+      return res.status(500).json({ error: 'Invalid permission configuration' });
+    }
+
+    try {
+      // Admin always has access
+      const userRoles = req.user.roles || [req.user.role];
+      if (userRoles.includes('admin') || req.user.role === 'admin') {
+        return next();
+      }
+
+      // Check if user has all required permissions
+      const hasAllPermissions = await permissionService.hasAllPermissions(req.user.id, permissionNames);
+      
+      if (!hasAllPermissions) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: `All of: ${permissionNames.join(', ')}`
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({ error: 'Permission check failed' });
+    }
+  };
+}
+
+/**
+ * Helper function to check if user has permission (non-middleware)
+ * @param {Object} user - User object
+ * @param {string} permissionName - Permission name
+ * @returns {Promise<boolean>} Has permission
+ */
+async function hasPermission(user, permissionName) {
+  if (!user || !permissionName) {
+    return false;
+  }
+
+  try {
+    // Admin always has access
+    const userRoles = user.roles || [user.role];
+    if (userRoles.includes('admin') || user.role === 'admin') {
+      return true;
+    }
+
+    return await permissionService.hasPermission(user.id, permissionName);
+  } catch (error) {
+    console.error('Permission check error:', error);
+    return false;
+  }
+}
+
+/**
+ * Helper function to get user permissions (non-middleware)
+ * @param {string} userId - User ID
+ * @param {boolean} useCache - Use cache
+ * @returns {Promise<Array>} User permissions
+ */
+async function getUserPermissions(userId, useCache = true) {
+  try {
+    return await permissionService.getUserPermissions(userId, useCache);
+  } catch (error) {
+    console.error('Error getting user permissions:', error);
+    return [];
+  }
+}
+
 module.exports = {
   authenticateToken,
   requireRole,
   requireAnyRole,
-  hasRole
+  hasRole,
+  requirePermission,
+  requireAnyPermission,
+  requireAllPermissions,
+  hasPermission,
+  getUserPermissions,
+  permissionService
 };
