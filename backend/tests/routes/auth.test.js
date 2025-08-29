@@ -179,11 +179,11 @@ describe('Auth Routes', () => {
       expect(response.body.error).toContain('Access token required');
     });
 
-    it('should return 401 with invalid token', async () => {
+    it('should return 403 with invalid token', async () => {
       const response = await request(app)
         .get('/api/auth/me')
         .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
+        .expect(403);
 
       expect(response.body.error).toBeDefined();
       expect(response.body.error).toContain('Invalid or expired token');
