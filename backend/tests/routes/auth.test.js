@@ -11,7 +11,7 @@ describe('Auth Routes', () => {
         password: 'password123',
         role: 'referee',
         phone: '555-1234',
-        certificationLevel: 'Level 1'
+        postal_code: '12345'  // Required for referee registration
       };
 
       const response = await request(app)
@@ -19,12 +19,13 @@ describe('Auth Routes', () => {
         .send(userData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.email).toBe(userData.email);
-      expect(response.body.data.user.name).toBe(userData.name);
-      expect(response.body.data.user.role).toBe(userData.role);
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.user.password).toBeUndefined();
+      expect(response.body.token).toBeDefined();
+      expect(response.body.user).toBeDefined();
+      expect(response.body.user.email).toBe(userData.email);
+      expect(response.body.user.name).toBe(userData.name);
+      expect(response.body.user.role).toBe(userData.role);
+      expect(response.body.user.password).toBeUndefined();
+      expect(response.body.user.password_hash).toBeUndefined();
     });
 
     it('should return 400 for missing required fields', async () => {
@@ -35,16 +36,17 @@ describe('Auth Routes', () => {
         })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('required');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('required');
     });
 
     it('should return 400 for duplicate email', async () => {
       const userData = {
         name: 'Test User',
-        email: 'admin@refassign.com', // Existing email from seeds
+        email: 'admin@test.com', // Existing email from test data
         password: 'password123',
-        role: 'referee'
+        role: 'referee',
+        postal_code: '12345'
       };
 
       const response = await request(app)
@@ -52,8 +54,8 @@ describe('Auth Routes', () => {
         .send(userData)
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('already exists');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('already registered');
     });
 
     it('should return 400 for invalid email format', async () => {
@@ -61,7 +63,8 @@ describe('Auth Routes', () => {
         name: 'Test User',
         email: 'invalid-email',
         password: 'password123',
-        role: 'referee'
+        role: 'referee',
+        postal_code: '12345'
       };
 
       const response = await request(app)
@@ -69,7 +72,7 @@ describe('Auth Routes', () => {
         .send(userData)
         .expect(400);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
   });
 
@@ -78,16 +81,17 @@ describe('Auth Routes', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'admin@refassign.com',
-          password: 'password'
+          email: 'admin@test.com',
+          password: 'password123'
         })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.email).toBe('admin@refassign.com');
-      expect(response.body.data.user.role).toBe('admin');
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.user.password).toBeUndefined();
+      expect(response.body.token).toBeDefined();
+      expect(response.body.user).toBeDefined();
+      expect(response.body.user.email).toBe('admin@test.com');
+      expect(response.body.user.role).toBe('admin');
+      expect(response.body.user.password).toBeUndefined();
+      expect(response.body.user.password_hash).toBeUndefined();
     });
 
     it('should return 401 for invalid email', async () => {
@@ -99,21 +103,21 @@ describe('Auth Routes', () => {
         })
         .expect(401);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid credentials');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Invalid credentials');
     });
 
     it('should return 401 for invalid password', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'admin@refassign.com',
+          email: 'admin@test.com',
           password: 'wrongpassword'
         })
         .expect(401);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid credentials');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Invalid credentials');
     });
 
     it('should return 400 for missing email', async () => {
@@ -124,64 +128,65 @@ describe('Auth Routes', () => {
         })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
 
     it('should return 400 for missing password', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'admin@refassign.com'
+          email: 'admin@test.com'
         })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
     });
   });
 
-  describe('GET /api/auth/profile', () => {
+  describe('GET /api/auth/me', () => {
     let authToken;
 
     beforeEach(async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'admin@refassign.com',
-          password: 'password'
+          email: 'admin@test.com',
+          password: 'password123'
         });
       
-      authToken = loginResponse.body.data.token;
+      authToken = loginResponse.body.token;
     });
 
     it('should get user profile with valid token', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/auth/me')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.email).toBe('admin@refassign.com');
-      expect(response.body.data.user.role).toBe('admin');
-      expect(response.body.data.user.password).toBeUndefined();
+      expect(response.body.user).toBeDefined();
+      expect(response.body.user.email).toBe('admin@test.com');
+      expect(response.body.user.role).toBe('admin');
+      expect(response.body.user.password).toBeUndefined();
+      expect(response.body.user.password_hash).toBeUndefined();
     });
 
     it('should return 401 without token', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/auth/me')
         .expect(401);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('No token provided');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Access token required');
     });
 
     it('should return 401 with invalid token', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/auth/me')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid token');
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error).toContain('Invalid or expired token');
     });
   });
 });
