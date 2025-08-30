@@ -7,29 +7,36 @@ const permissionService = new PermissionService();
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   
+  console.log('authenticateToken - Path:', req.path, 'URL:', req.url, 'Has authHeader:', !!authHeader);
+  
   if (!authHeader || !authHeader.trim()) {
+    console.log('No auth header provided');
     return res.status(401).json({ error: 'Access token required' });
   }
 
   // Check if header starts with 'Bearer ' (case sensitive)
   if (!authHeader.trim().startsWith('Bearer ')) {
+    console.log('Auth header does not start with Bearer');
     return res.status(401).json({ error: 'Access token required' });
   }
 
   const token = authHeader.trim().split(' ')[1];
   
   if (!token || token.trim() === '') {
+    console.log('No token after Bearer');
     return res.status(401).json({ error: 'Access token required' });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('JWT verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     // Standardize the user object - ensure 'id' field exists
     if (user.userId && !user.id) {
       user.id = user.userId;
     }
+    console.log('JWT decoded - User ID:', user.id, 'Email:', user.email, 'Role:', user.role, 'Roles array:', user.roles);
     req.user = user;
     next();
   });
@@ -162,7 +169,9 @@ function requireAnyPermission(permissionNames) {
     try {
       // Admin always has access
       const userRoles = req.user.roles || [req.user.role];
+      console.log('Permission check - User role:', req.user.role, 'User roles:', userRoles, 'Required:', permissionNames);
       if (userRoles.includes('admin') || req.user.role === 'admin') {
+        console.log('Admin bypass activated for user:', req.user.email);
         return next();
       }
 

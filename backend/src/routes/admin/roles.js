@@ -23,8 +23,8 @@ const createRoleSchema = Joi.object({
   description: Joi.string().min(5).max(500),
   code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
   category: Joi.string().min(2).max(30),
-  system_role: Joi.boolean().default(false),
-  active: Joi.boolean().default(true),
+  is_system: Joi.boolean().default(false),
+  is_active: Joi.boolean().default(true),
   permissions: Joi.array().items(Joi.string().uuid())
 });
 
@@ -33,7 +33,7 @@ const updateRoleSchema = Joi.object({
   description: Joi.string().min(5).max(500),
   code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
   category: Joi.string().min(2).max(30),
-  active: Joi.boolean(),
+  is_active: Joi.boolean(),
   permissions: Joi.array().items(Joi.string().uuid())
 });
 
@@ -52,6 +52,7 @@ const assignUserRoleSchema = Joi.object({
 // GET /api/admin/roles - Get all roles with metadata
 // Requires: roles:read or system:admin permission
 router.get('/', authenticateToken, requireAnyPermission(['roles:read', 'system:admin']), async (req, res) => {
+  console.log('Admin roles endpoint hit - User:', req.user?.email, 'Role:', req.user?.role);
   try {
     const { include_inactive } = req.query;
     const roles = await roleService.getRolesWithMetadata({
@@ -313,21 +314,21 @@ router.get('/:roleId/users', authenticateToken, requireRole('admin'), async (req
 router.patch('/:roleId/status', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { roleId } = req.params;
-    const { active } = req.body;
+    const { is_active } = req.body;
 
-    if (typeof active !== 'boolean') {
+    if (typeof is_active !== 'boolean') {
       return res.status(400).json({ 
         error: 'Validation failed',
-        details: 'active field must be a boolean' 
+        details: 'is_active field must be a boolean' 
       });
     }
 
-    const updatedRole = await roleService.setRoleStatus(roleId, active);
+    const updatedRole = await roleService.setRoleStatus(roleId, is_active);
 
     res.json({
       success: true,
       data: { role: updatedRole },
-      message: `Role ${active ? 'activated' : 'deactivated'} successfully`
+      message: `Role ${is_active ? 'activated' : 'deactivated'} successfully`
     });
   } catch (error) {
     console.error('Error updating role status:', error);

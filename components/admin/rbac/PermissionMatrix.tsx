@@ -54,7 +54,7 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
       // Fetch all permissions
       const permResponse = await fetch('/api/admin/permissions', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
       
@@ -70,7 +70,7 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
       // Fetch role with current permissions
       const roleResponse = await fetch(`/api/admin/roles/${role.id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
       
@@ -123,7 +123,7 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
       const response = await fetch(`/api/admin/roles/${role.id}/permissions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

@@ -78,7 +78,7 @@ export function RoleEditor({ role, open, onClose, onSuccess }: RoleEditorProps) 
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)

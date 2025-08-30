@@ -32,15 +32,25 @@ export function RoleManagementDashboard() {
 
   const fetchRoles = async () => {
     try {
+      console.log('Fetching roles from /api/admin/roles');
+      console.log('Token:', localStorage.getItem('auth_token')?.substring(0, 20) + '...');
+      
       const response = await fetch('/api/admin/roles', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
       
-      if (!response.ok) throw new Error('Failed to fetch roles')
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch roles')
+      }
       
       const data = await response.json()
+      console.log('Roles data:', data);
       setRoles(data.roles || [])
     } catch (error) {
       toast({
@@ -79,7 +89,7 @@ export function RoleManagementDashboard() {
       const response = await fetch(`/api/admin/roles/${roleId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       })
 
@@ -105,7 +115,7 @@ export function RoleManagementDashboard() {
       const response = await fetch(`/api/admin/roles/${role.id}/status`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ is_active: !role.is_active })

@@ -65,6 +65,7 @@ const contentRoutes = require('./routes/content');
 // Import admin routes
 const adminRoleRoutes = require('./routes/admin/roles');
 const adminPermissionRoutes = require('./routes/admin/permissions');
+const testRoleRoutes = require('./routes/admin/test-roles');
 
 const app = express();
 
@@ -181,6 +182,7 @@ app.use('/api/content', contentRoutes);
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/permissions', adminPermissionRoutes);
+app.use('/api/test-roles', testRoleRoutes);
 
 // Performance monitoring routes (admin only)
 app.use('/api/performance', performanceRoutes);
