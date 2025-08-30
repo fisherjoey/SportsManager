@@ -146,12 +146,17 @@ export function ResourceCentreNew() {
         : '/api/resources'
       
       const resourceData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        content: data.content, // Include the content field
         category_id: data.category || categories[0]?.id,
         type: data.type || 'document',
+        slug: data.slug,
         metadata: {
           tags: data.tags || [],
-          author: data.author || user?.email
+          author: data.author || user?.email,
+          content: data.content, // Also store in metadata for compatibility
+          slug: data.slug
         },
         is_featured: data.is_featured || false
       }
@@ -178,11 +183,16 @@ export function ResourceCentreNew() {
         : '/api/resources'
       
       const resourceData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        content: data.content,
         category_id: data.category || categories[0]?.id,
         type: data.type || 'document',
+        slug: data.slug,
         metadata: {
           ...data.metadata,
+          content: data.content,
+          slug: data.slug,
           is_draft: true
         }
       }
@@ -592,6 +602,7 @@ export function ResourceCentreNew() {
           <ResourceEditor
             onSave={handleResourceSave}
             onSaveDraft={handleResourceDraftSave}
+            categories={categories}
             initialData={editingResource ? {
               id: parseInt(editingResource.id),
               title: editingResource.title,
