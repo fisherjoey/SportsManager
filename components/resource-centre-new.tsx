@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { apiClient } from '@/lib/api'
-import { useAuth } from '@/lib/auth-context'
+import { useAuth } from '@/components/auth-provider'
 
 interface Resource {
   id: string
@@ -69,7 +69,7 @@ const typeIcons = {
 }
 
 export function ResourceCentreNew() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const isAdmin = user?.role === 'admin'
   
   const [resources, setResources] = useState<Resource[]>([])
