@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
+import { ResourceEditor } from '@/components/resource-centre/ResourceEditor'
 
 interface Resource {
   id: string
@@ -79,6 +80,7 @@ export function ResourceCentreNew() {
   const [selectedType, setSelectedType] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [showResourceEditor, setShowResourceEditor] = useState(false)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
   const [editingResource, setEditingResource] = useState<Resource | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -136,6 +138,66 @@ export function ResourceCentreNew() {
   useEffect(() => {
     loadResources()
   }, [selectedCategory, selectedType, searchQuery])
+
+  const handleResourceSave = async (data: any) => {
+    try {
+      const url = editingResource 
+        ? `/api/resources/${editingResource.id}`
+        : '/api/resources'
+      
+      const resourceData = {
+        ...data,
+        category_id: data.category || categories[0]?.id,
+        type: data.type || 'document',
+        metadata: {
+          tags: data.tags || [],
+          author: data.author || user?.email
+        },
+        is_featured: data.is_featured || false
+      }
+
+      const response = await apiClient[editingResource ? 'put' : 'post'](url, resourceData)
+      
+      if (response.success) {
+        setShowResourceEditor(false)
+        setEditingResource(null)
+        loadResources()
+      } else {
+        throw new Error('Failed to save resource')
+      }
+    } catch (error) {
+      console.error('Error saving resource:', error)
+      throw error
+    }
+  }
+
+  const handleResourceDraftSave = async (data: any) => {
+    try {
+      const url = data.id 
+        ? `/api/resources/${data.id}`
+        : '/api/resources'
+      
+      const resourceData = {
+        ...data,
+        category_id: data.category || categories[0]?.id,
+        type: data.type || 'document',
+        metadata: {
+          ...data.metadata,
+          is_draft: true
+        }
+      }
+
+      const response = await apiClient[data.id ? 'put' : 'post'](url, resourceData)
+      
+      if (response.success && response.resource) {
+        return { id: response.resource.id }
+      }
+      throw new Error('Failed to save draft')
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      throw error
+    }
+  }
 
   const handleFileUpload = async () => {
     try {
@@ -318,7 +380,7 @@ export function ResourceCentreNew() {
 
           {isAdmin && (
             <div className="flex gap-2">
-              <Button onClick={() => setShowUploadDialog(true)}>
+              <Button onClick={() => setShowResourceEditor(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Resource
               </Button>
@@ -439,16 +501,7 @@ export function ResourceCentreNew() {
                           variant="ghost"
                           onClick={() => {
                             setEditingResource(resource)
-                            setUploadForm({
-                              title: resource.title,
-                              description: resource.description || '',
-                              category_id: resource.category_id,
-                              type: resource.type,
-                              external_url: resource.external_url || '',
-                              file: null,
-                              is_featured: resource.is_featured
-                            })
-                            setShowUploadDialog(true)
+                            setShowResourceEditor(true)
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -527,7 +580,33 @@ export function ResourceCentreNew() {
         </div>
       )}
 
-      {/* Upload Dialog */}
+      {/* Resource Editor Dialog */}
+      <Dialog open={showResourceEditor} onOpenChange={setShowResourceEditor}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingResource ? 'Edit Resource' : 'Create New Resource'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ResourceEditor
+            onSave={handleResourceSave}
+            onSaveDraft={handleResourceDraftSave}
+            initialData={editingResource ? {
+              id: parseInt(editingResource.id),
+              title: editingResource.title,
+              description: editingResource.description || '',
+              category: editingResource.category_id,
+              type: editingResource.type,
+              content: editingResource.metadata?.content || '',
+              slug: editingResource.metadata?.slug || ''
+            } : undefined}
+            mode={editingResource ? 'edit' : 'create'}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Legacy Upload Dialog - keeping for file upload functionality */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

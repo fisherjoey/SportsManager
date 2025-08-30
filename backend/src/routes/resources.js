@@ -301,8 +301,15 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new resource (admin only)
-router.post('/', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+// Create a new resource (admin only) - handles both file uploads and JSON content
+router.post('/', authenticateToken, requireAdmin, (req, res, next) => {
+  // Check if this is a multipart request (file upload) or JSON
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    upload.single('file')(req, res, next);
+  } else {
+    next();
+  }
+}, async (req, res) => {
   const { 
     category_id, 
     title, 
@@ -314,17 +321,32 @@ router.post('/', authenticateToken, requireAdmin, upload.single('file'), async (
   } = req.body;
   
   try {
+    // Parse metadata based on type
+    let parsedMetadata = {};
+    if (metadata) {
+      parsedMetadata = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+    }
+    
     const resourceData = {
       category_id,
       title,
       description,
-      type,
+      type: type || 'document',
       external_url,
-      metadata: metadata ? JSON.parse(metadata) : {},
-      is_featured: is_featured === 'true',
+      metadata: parsedMetadata,
+      is_featured: typeof is_featured === 'string' ? is_featured === 'true' : is_featured,
       created_by: req.user.id,
       updated_by: req.user.id
     };
+    
+    // If we have content from ResourceEditor, store it in metadata
+    if (req.body.content) {
+      resourceData.metadata = {
+        ...resourceData.metadata,
+        content: req.body.content,
+        slug: req.body.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      };
+    }
     
     // Handle file upload
     if (req.file) {
@@ -359,8 +381,15 @@ router.post('/', authenticateToken, requireAdmin, upload.single('file'), async (
   }
 });
 
-// Update resource (admin only)
-router.put('/:id', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+// Update resource (admin only) - handles both file uploads and JSON content
+router.put('/:id', authenticateToken, requireAdmin, (req, res, next) => {
+  // Check if this is a multipart request (file upload) or JSON
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    upload.single('file')(req, res, next);
+  } else {
+    next();
+  }
+}, async (req, res) => {
   const { id } = req.params;
   const { 
     category_id, 
@@ -396,9 +425,26 @@ router.put('/:id', authenticateToken, requireAdmin, upload.single('file'), async
     if (description !== undefined) updates.description = description;
     if (type !== undefined) updates.type = type;
     if (external_url !== undefined) updates.external_url = external_url;
-    if (metadata !== undefined) updates.metadata = JSON.parse(metadata);
-    if (is_featured !== undefined) updates.is_featured = is_featured === 'true';
-    if (is_active !== undefined) updates.is_active = is_active === 'true';
+    if (metadata !== undefined) {
+      updates.metadata = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+    }
+    if (is_featured !== undefined) {
+      updates.is_featured = typeof is_featured === 'string' ? is_featured === 'true' : is_featured;
+    }
+    if (is_active !== undefined) {
+      updates.is_active = typeof is_active === 'string' ? is_active === 'true' : is_active;
+    }
+    
+    // If we have content from ResourceEditor, update metadata
+    if (req.body.content !== undefined) {
+      const existingMetadata = existingResource.metadata || {};
+      updates.metadata = {
+        ...existingMetadata,
+        ...updates.metadata,
+        content: req.body.content,
+        slug: req.body.slug || title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || existingResource.metadata?.slug
+      };
+    }
     
     // Handle file upload
     if (req.file) {
