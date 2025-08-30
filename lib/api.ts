@@ -75,9 +75,12 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Ensure token is initialized from localStorage if not already set
-    if (!this.token && typeof window !== 'undefined') {
-      this.initializeToken()
+    // Always check for the latest token from localStorage
+    if (typeof window !== 'undefined') {
+      const currentToken = localStorage.getItem('auth_token')
+      if (currentToken !== this.token) {
+        this.token = currentToken
+      }
     }
 
     const url = `${this.baseURL}${endpoint}`

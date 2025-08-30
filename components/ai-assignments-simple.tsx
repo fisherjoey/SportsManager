@@ -189,6 +189,9 @@ export default function AIAssignmentsSimple() {
     try {
       setDataLoading(true)
       
+      // Ensure apiClient has the current token
+      apiClient.initializeToken()
+      
       // Load games and referees in parallel
       const [gamesResponse, refereesResponse] = await Promise.all([
         apiClient.getGames(),

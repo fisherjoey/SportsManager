@@ -204,6 +204,9 @@ export function DashboardOverview() {
         return
       }
       
+      // Ensure apiClient has the current token
+      apiClient.initializeToken()
+      
       try {
         setLoading(true)
         setError(null)

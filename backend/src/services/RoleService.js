@@ -23,16 +23,18 @@ class RoleService extends BaseService {
   /**
    * Get role with its permissions
    * @param {string} roleId - Role ID
+   * @param {Object} options - Options including transaction
    * @returns {Object} Role with permissions
    */
-  async getRoleWithPermissions(roleId) {
+  async getRoleWithPermissions(roleId, options = {}) {
+    const db = options.transaction || this.db;
     try {
-      const role = await this.db('roles')
+      const role = await db('roles')
         .leftJoin('role_permissions', 'roles.id', 'role_permissions.role_id')
         .leftJoin('permissions', 'role_permissions.permission_id', 'permissions.id')
         .select(
           'roles.*',
-          this.db.raw('COALESCE(JSON_AGG(DISTINCT permissions.*) FILTER (WHERE permissions.id IS NOT NULL), \'[]\') as permissions')
+          db.raw('COALESCE(JSON_AGG(DISTINCT permissions.*) FILTER (WHERE permissions.id IS NOT NULL), \'[]\') as permissions')
         )
         .where('roles.id', roleId)
         .groupBy('roles.id')
@@ -77,7 +79,7 @@ class RoleService extends BaseService {
       }
 
       // Return role with permissions
-      return await this.getRoleWithPermissions(role.id);
+      return await this.getRoleWithPermissions(role.id, { transaction: trx });
     });
   }
 
@@ -115,7 +117,7 @@ class RoleService extends BaseService {
       }
 
       // Return updated role with permissions
-      return await this.getRoleWithPermissions(roleId);
+      return await this.getRoleWithPermissions(roleId, { transaction: trx });
     });
   }
 
