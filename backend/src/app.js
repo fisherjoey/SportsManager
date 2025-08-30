@@ -61,6 +61,7 @@ const communicationRoutes = require('./routes/communications');
 const organizationalAnalyticsRoutes = require('./routes/organizational-analytics');
 const workflowRoutes = require('./routes/workflows');
 const contentRoutes = require('./routes/content');
+const resourcesRoutes = require('./routes/resources');
 
 // Import admin routes
 const adminRoleRoutes = require('./routes/admin/roles');
@@ -178,6 +179,7 @@ app.use('/api/communications', communicationRoutes);
 app.use('/api/analytics/organizational', organizationalAnalyticsRoutes);
 app.use('/api/workflows', workflowRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/resources', resourcesRoutes);
 
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);

@@ -34,7 +34,7 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { WorkflowManagement } from '@/components/workflow-management'
 import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
-import { ResourceCentre, ResourceRenderer } from '@/components/resource-centre'
+import { ResourceCentreNew } from '@/components/resource-centre-new'
 import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
 
 
@@ -223,7 +223,7 @@ export function AdminDashboard() {
     case 'communications':
       return <CommunicationsManagement />
     case 'resources':
-      return <ResourceCentre onNavigate={handleViewChange} />
+      return <ResourceCentreNew />
       
       // Financial Management
     case 'financial-dashboard':

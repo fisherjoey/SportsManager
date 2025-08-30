@@ -1,7 +1,7 @@
-import { ResourceCentre } from '@/components/resource-centre'
+import { ResourceCentreNew } from '@/components/resource-centre-new'
 
 export default function ResourcesPage() {
-  return <ResourceCentre />
+  return <ResourceCentreNew />
 }
 
 export const metadata = {
