@@ -119,11 +119,11 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHa
   
   // Apply date range optimization for better index usage
   if (filters.date_from || filters.date_to) {
-    query = QueryBuilder.applyDateRange(query, 'games.game_date', filters.date_from, filters.date_to);
+    query = QueryBuilder.applyDateRange(query, 'games.date_time', filters.date_from, filters.date_to);
   }
   
-  // Use optimized sorting - games.game_date is indexed
-  query = query.orderBy('games.game_date', 'asc');
+  // Use optimized sorting - games.date_time is indexed
+  query = query.orderBy('games.date_time', 'asc');
   
   // Apply pagination
   query = QueryBuilder.applyPagination(query, page, limit);
@@ -196,7 +196,7 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHa
       id: game.id,
       homeTeam,
       awayTeam,
-      date: game.game_date,
+      date: game.date_time,
       time: game.game_time,
       location: game.location,
       postalCode: game.postal_code,
@@ -297,7 +297,7 @@ router.post('/', authenticateToken, requirePermission('games:create'), validateB
   // Check for venue scheduling conflicts
   const conflictCheck = await checkGameSchedulingConflicts({
     location: value.location,
-    game_date: value.date,
+    date_time: value.date,
     game_time: value.time
   });
 
@@ -305,7 +305,7 @@ router.post('/', authenticateToken, requirePermission('games:create'), validateB
   const dbData = {
     home_team: JSON.stringify(value.homeTeam),
     away_team: JSON.stringify(value.awayTeam),
-    game_date: value.date,
+    date_time: value.date,
     game_time: value.time,
     location: value.location,
     postal_code: value.postalCode,
@@ -379,7 +379,7 @@ router.put('/:id', authenticateToken, requireAnyPermission(['games:update', 'gam
 
       conflictCheck = await checkGameSchedulingConflicts({
         location: value.location || currentGame.location,
-        game_date: value.date || currentGame.game_date,
+        date_time: value.date || currentGame.date_time,
         game_time: value.time || currentGame.game_time
       }, req.params.id);
     }
@@ -524,7 +524,7 @@ router.post('/bulk-import', authenticateToken, requireAnyPermission(['games:crea
             .insert({
               home_team_id: homeTeam.id,
               away_team_id: awayTeam.id,
-              game_date: gameData.date,
+              date_time: gameData.date,
               game_time: gameData.time,
               location_id: location.id,
               level: gameData.level,
