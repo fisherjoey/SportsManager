@@ -7,15 +7,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { 
-  Save, Eye, X, Upload, AlertCircle, FileEdit
+  Save, Eye, X, Upload, AlertCircle, FileEdit, Shield, Info, Users
 } from 'lucide-react'
+import { ResourceAccessIndicator } from './ResourceAccessIndicator'
+import { AccessLevel, Role } from '@/lib/types'
 
 interface ResourceEditorProps {
   onSave: (data: any) => Promise<void>
   onSaveDraft?: (data: any) => Promise<{ id: number }>
   onFileUpload?: (file: File) => Promise<{ file_url: string; file_name: string }>
   categories?: Array<{ id: string; name: string; description?: string }>
+  roles?: Role[]
+  currentUserRole?: string
   initialData?: {
     id?: number
     title: string
@@ -25,8 +32,11 @@ interface ResourceEditorProps {
     content: string
     slug: string
     external_url?: string
+    access_level?: AccessLevel
+    permissions?: any
   }
   mode?: 'create' | 'edit'
+  showPermissions?: boolean
 }
 
 export function ResourceEditor({ 
@@ -34,8 +44,11 @@ export function ResourceEditor({
   onSaveDraft,
   onFileUpload,
   categories = [],
+  roles = [],
+  currentUserRole,
   initialData, 
-  mode = 'create' 
+  mode = 'create',
+  showPermissions = true
 }: ResourceEditorProps) {
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
@@ -43,6 +56,8 @@ export function ResourceEditor({
   const [type, setType] = useState(initialData?.type || '')
   const [content, setContent] = useState(initialData?.content || '')
   const [externalUrl, setExternalUrl] = useState(initialData?.external_url || '')
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>(initialData?.access_level || 'role-based')
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
@@ -71,7 +86,7 @@ export function ResourceEditor({
   // Track unsaved changes
   useEffect(() => {
     setHasUnsavedChanges(true)
-  }, [title, description, category, type, content])
+  }, [title, description, category, type, content, accessLevel, selectedRoles])
 
   // Auto-save as draft every 30 seconds if there are unsaved changes
   useEffect(() => {
@@ -189,7 +204,11 @@ export function ResourceEditor({
         content: htmlContent,
         slug: generateSlug(title),
         status: 'published',
-        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined
+        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined,
+        access_level: accessLevel,
+        permissions: accessLevel === 'role-based' ? {
+          allowed_roles: selectedRoles
+        } : undefined
       })
       
       setHasUnsavedChanges(false)
@@ -224,7 +243,11 @@ export function ResourceEditor({
         content: htmlContent,
         slug: title ? generateSlug(title) : `draft-${Date.now()}`,
         status: 'draft',
-        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined
+        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined,
+        access_level: accessLevel,
+        permissions: accessLevel === 'role-based' ? {
+          allowed_roles: selectedRoles
+        } : undefined
       })
       
       if (result?.id && !draftId) {
@@ -498,6 +521,152 @@ export function ResourceEditor({
           />
         </div>
 
+        {/* Permission Settings */}
+        {showPermissions && (
+          <>
+            <Separator />
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <h3 className="text-lg font-medium">Access Permissions</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="access-level" className="text-sm font-medium">
+                    Access Level
+                  </label>
+                  <Select value={accessLevel} onValueChange={(value: AccessLevel) => setAccessLevel(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select access level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span>Public - Everyone can access</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="role-based">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <span>Role-based - Specific roles only</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="restricted">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                          <span>Restricted - Limited access</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="private">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <span>Private - Admin only</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose who can access this resource
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Current Access</label>
+                  <div className="p-3 border rounded-md bg-muted/50">
+                    <ResourceAccessIndicator
+                      accessLevel={accessLevel}
+                      size="md"
+                      variant="full"
+                      showDetails
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Role Selection for Role-based Access */}
+              {accessLevel === 'role-based' && roles.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Allowed Roles
+                  </label>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {roles.map(role => (
+                      <div 
+                        key={role.id}
+                        className={`flex items-center space-x-2 p-2 rounded-md border cursor-pointer hover:bg-muted/50 transition-colors ${
+                          selectedRoles.includes(role.id) 
+                            ? 'bg-primary/10 border-primary' 
+                            : 'bg-background'
+                        }`}
+                        onClick={() => {
+                          setSelectedRoles(prev => 
+                            prev.includes(role.id)
+                              ? prev.filter(id => id !== role.id)
+                              : [...prev, role.id]
+                          )
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRoles.includes(role.id)}
+                          onChange={() => {}}
+                          className="rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{role.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{role.code}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {selectedRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {selectedRoles.map(roleId => {
+                        const role = roles.find(r => r.id === roleId)
+                        if (!role) return null
+                        
+                        return (
+                          <Badge 
+                            key={roleId} 
+                            variant="secondary" 
+                            className="text-xs"
+                          >
+                            {role.name}
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Select which roles can access this resource. If no roles are selected, 
+                    the resource will inherit permissions from its category.
+                  </p>
+                </div>
+              )}
+
+              {/* Info about permissions */}
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                <div className="flex gap-2">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">Permission Hierarchy</p>
+                    <p className="text-xs">
+                      Resource permissions override category permissions. If not set, 
+                      permissions are inherited from the selected category.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Content Input - Show different inputs based on type */}
         {!type ? (
           // Prompt to select a type first
@@ -696,6 +865,8 @@ export function ResourceEditor({
                 setCategory('')
                 setType('')
                 setContent('')
+                setAccessLevel('role-based')
+                setSelectedRoles([])
                 setError(null)
                 setValidationErrors([])
                 setHasUnsavedChanges(false)
