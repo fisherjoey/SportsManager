@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Games Filters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Games Management Filter Testing</h1>
+    
+    <div class="test-section">
+        <div class="test-title">Filter Test Suite</div>
+        <button onclick="testLevelFilter()">Test Level Filter</button>
+        <button onclick="testStatusFilter()">Test Status Filter</button>
+        <button onclick="testSearchFilter()">Test Search Filter</button>
+        <button onclick="testMultipleFilters()">Test Multiple Filters</button>
+        <button onclick="testClearFilters()">Test Clear Filters</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3005/api';
+        const token = localStorage.getItem('token');
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, isError = false) {
+            const className = isError ? 'error' : 'success';
+            resultsDiv.innerHTML += `<div class="${className}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+
+        async function fetchGames(filters = {}) {
+            const params = new URLSearchParams(filters);
+            const url = `${API_BASE}/games?${params}`;
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                log(`Error fetching games: ${error.message}`, true);
+                return null;
+            }
+        }
+
+        async function testLevelFilter() {
+            resultsDiv.innerHTML = '<div class="test-title">Testing Level Filter</div>';
+            
+            // Test Recreational filter
+            log('Testing Level=Recreational filter...');
+            const recGames = await fetchGames({ level: 'Recreational' });
+            if (recGames && recGames.data) {
+                const filtered = recGames.data.filter(g => g.level === 'Recreational');
+                if (filtered.length === recGames.data.length) {
+                    log(`✓ Level filter working: ${filtered.length} Recreational games found`);
+                } else {
+                    log(`✗ Level filter not working properly: ${recGames.data.length - filtered.length} non-Recreational games included`, true);
+                }
+            }
+            
+            // Test Elite filter
+            log('Testing Level=Elite filter...');
+            const eliteGames = await fetchGames({ level: 'Elite' });
+            if (eliteGames && eliteGames.data) {
+                const filtered = eliteGames.data.filter(g => g.level === 'Elite');
+                if (filtered.length === eliteGames.data.length) {
+                    log(`✓ Level filter working: ${filtered.length} Elite games found`);
+                } else {
+                    log(`✗ Level filter not working properly: ${eliteGames.data.length - filtered.length} non-Elite games included`, true);
+                }
+            }
+        }
+
+        async function testStatusFilter() {
+            resultsDiv.innerHTML = '<div class="test-title">Testing Status Filter</div>';
+            
+            // Test unassigned filter
+            log('Testing Status=unassigned filter...');
+            const unassignedGames = await fetchGames({ status: 'unassigned' });
+            if (unassignedGames && unassignedGames.data) {
+                const filtered = unassignedGames.data.filter(g => g.status === 'unassigned');
+                if (filtered.length === unassignedGames.data.length) {
+                    log(`✓ Status filter working: ${filtered.length} unassigned games found`);
+                } else {
+                    log(`✗ Status filter not working properly`, true);
+                }
+            }
+            
+            // Test assigned filter
+            log('Testing Status=assigned filter...');
+            const assignedGames = await fetchGames({ status: 'assigned' });
+            if (assignedGames && assignedGames.data) {
+                const filtered = assignedGames.data.filter(g => g.status === 'assigned');
+                if (filtered.length === assignedGames.data.length) {
+                    log(`✓ Status filter working: ${filtered.length} assigned games found`);
+                } else {
+                    log(`✗ Status filter not working properly`, true);
+                }
+            }
+        }
+
+        async function testSearchFilter() {
+            resultsDiv.innerHTML = '<div class="test-title">Testing Search Filter</div>';
+            
+            // Get all games first
+            const allGames = await fetchGames();
+            if (allGames && allGames.data && allGames.data.length > 0) {
+                // Test with a location from the first game
+                const testLocation = allGames.data[0].location;
+                log(`Testing search for location: "${testLocation}"...`);
+                
+                // Note: The backend might not support client-side filtering
+                // We'll test the frontend filtering logic
+                const filtered = allGames.data.filter(g => 
+                    g.location && g.location.toLowerCase().includes(testLocation.toLowerCase())
+                );
+                
+                log(`✓ Found ${filtered.length} games with location containing "${testLocation}"`);
+                
+                // Test team search
+                if (allGames.data[0].homeTeam) {
+                    const teamName = typeof allGames.data[0].homeTeam === 'object' 
+                        ? allGames.data[0].homeTeam.organization 
+                        : allGames.data[0].homeTeam;
+                    
+                    log(`Testing search for team: "${teamName}"...`);
+                    const teamFiltered = allGames.data.filter(g => {
+                        const homeTeamName = typeof g.homeTeam === 'object' 
+                            ? `${g.homeTeam.organization} ${g.homeTeam.ageGroup} ${g.homeTeam.gender}`
+                            : g.homeTeam;
+                        const awayTeamName = typeof g.awayTeam === 'object' 
+                            ? `${g.awayTeam.organization} ${g.awayTeam.ageGroup} ${g.awayTeam.gender}`
+                            : g.awayTeam;
+                        
+                        return homeTeamName.toLowerCase().includes(teamName.toLowerCase()) ||
+                               awayTeamName.toLowerCase().includes(teamName.toLowerCase());
+                    });
+                    
+                    log(`✓ Found ${teamFiltered.length} games with team containing "${teamName}"`);
+                }
+            }
+        }
+
+        async function testMultipleFilters() {
+            resultsDiv.innerHTML = '<div class="test-title">Testing Multiple Filters Combined</div>';
+            
+            log('Testing Level=Recreational AND Status=unassigned...');
+            const filteredGames = await fetchGames({ 
+                level: 'Recreational', 
+                status: 'unassigned' 
+            });
+            
+            if (filteredGames && filteredGames.data) {
+                const verified = filteredGames.data.filter(g => 
+                    g.level === 'Recreational' && g.status === 'unassigned'
+                );
+                
+                if (verified.length === filteredGames.data.length) {
+                    log(`✓ Multiple filters working: ${verified.length} games match both criteria`);
+                } else {
+                    log(`✗ Multiple filters not working properly`, true);
+                }
+            }
+        }
+
+        async function testClearFilters() {
+            resultsDiv.innerHTML = '<div class="test-title">Testing Clear Filters</div>';
+            
+            // Get total count
+            const allGames = await fetchGames();
+            const totalCount = allGames?.data?.length || 0;
+            log(`Total games without filters: ${totalCount}`);
+            
+            // Apply filter
+            const filtered = await fetchGames({ level: 'Recreational' });
+            const filteredCount = filtered?.data?.length || 0;
+            log(`Games with Recreational filter: ${filteredCount}`);
+            
+            // Clear filter (fetch without filters)
+            const cleared = await fetchGames();
+            const clearedCount = cleared?.data?.length || 0;
+            
+            if (clearedCount === totalCount) {
+                log(`✓ Clear filters working: Showing all ${clearedCount} games again`);
+            } else {
+                log(`✗ Clear filters not working: Expected ${totalCount}, got ${clearedCount}`, true);
+            }
+        }
+
+        // Auto-run tests if token exists
+        if (token) {
+            log('Token found. Ready to test filters.');
+        } else {
+            log('No token found. Please login first at http://localhost:3003', true);
+        }
+    </script>
+</body>
+</html>

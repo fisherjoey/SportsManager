@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><title>Games Test</title></head>
+<body>
+<h1>Games API Test</h1>
+<button onclick="test()">Test API</button>
+<div id="results"></div>
+<script>
+async function test() {
+  const res = await fetch("http://localhost:3001/api/games", {
+    headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+  });
+  const data = await res.json();
+  document.getElementById("results").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+}
+// Login first
+fetch("http://localhost:3001/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: "test@example.com", password: "test123" })
+}).then(r => r.json()).then(d => localStorage.setItem("token", d.token));
+</script>
+</body>
+</html>

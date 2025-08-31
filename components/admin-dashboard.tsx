@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, DollarSign, Home } from 'lucide-react'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -36,6 +36,8 @@ import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentreNew } from '@/components/resource-centre-new'
 import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
+import { UserManagementDashboard } from '@/components/admin/users/UserManagementDashboard'
+import { Button } from '@/components/ui/button'
 
 
 export function AdminDashboard() {
@@ -170,6 +172,8 @@ export function AdminDashboard() {
       return 'Analytics Dashboard'
       
       // Administration
+    case 'admin-users':
+      return 'User Management'
     case 'admin-workflows':
       return 'Workflow Management'
     case 'admin-security':
@@ -225,21 +229,36 @@ export function AdminDashboard() {
     case 'resources':
       return <ResourceCentreNew />
       
-      // Financial Management
+      // Financial Management - COMING SOON (Next Month)
     case 'financial-dashboard':
-      return <FinancialDashboard />
     case 'financial-receipts':
-      return <ReceiptUpload />
     case 'financial-budgets':
-      return <BudgetTracker />
     case 'financial-expenses':
-      return <ExpenseListEnhanced onCreateExpense={() => handleViewChange('financial-expense-create')} />
     case 'financial-expense-create':
-      return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange('financial-expenses')} />
     case 'financial-expense-approvals':
-      return <ExpenseApprovalDashboard />
     case 'financial-reports':
-      return <FinancialDashboard /> // Financial reports are part of the financial dashboard
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <DollarSign className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+            <h2 className="text-2xl font-bold text-muted-foreground">Financial Module Coming Soon</h2>
+            <p className="text-muted-foreground">
+              The financial management features are scheduled for release next month. 
+              Check back soon for budget tracking, expense management, and financial reporting.
+            </p>
+            <div className="pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => handleViewChange('dashboard')}
+                className="gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Return to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
       
       // Organization Management
     case 'organization-dashboard':
@@ -258,6 +277,8 @@ export function AdminDashboard() {
       return <AnalyticsDashboard />
       
       // Administration
+    case 'admin-users':
+      return <UserManagementDashboard />
     case 'admin-workflows':
       return <WorkflowManagement />
     case 'admin-security':

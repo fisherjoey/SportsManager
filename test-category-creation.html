@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Category Creation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e7f5e7;
+            border-radius: 4px;
+        }
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .alert-error {
+            background-color: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+        .alert-success {
+            background-color: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+        .validation-error {
+            border-color: red !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Resource Centre - Category Creation Test</h1>
+    
+    <div id="alerts"></div>
+    
+    <form id="categoryForm">
+        <div class="form-group">
+            <label for="name">Category Name <span style="color: red;">*</span></label>
+            <input type="text" id="name" name="name" placeholder="Enter category name">
+            <div id="nameError" class="error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" placeholder="Enter category description"></textarea>
+            <div id="descriptionError" class="error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="icon">Icon</label>
+            <select id="icon" name="icon">
+                <option value="file-text">File Text</option>
+                <option value="book">Book</option>
+                <option value="graduation-cap">Graduation Cap</option>
+                <option value="alert-circle">Alert Circle</option>
+                <option value="clipboard">Clipboard</option>
+                <option value="shield">Shield</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="order_index">Order Index</label>
+            <input type="number" id="order_index" name="order_index" value="0" min="0">
+        </div>
+        
+        <button type="submit">Create Category</button>
+        <button type="button" onclick="testValidation()">Test Validation</button>
+    </form>
+    
+    <h2>Test Results</h2>
+    <div id="results"></div>
+
+    <script>
+        // Get auth token from localStorage
+        const authToken = localStorage.getItem('auth_token');
+        
+        function showAlert(message, type = 'error') {
+            const alertsDiv = document.getElementById('alerts');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertsDiv.innerHTML = '';
+            alertsDiv.appendChild(alertDiv);
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        function clearValidationErrors() {
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+            document.querySelectorAll('input, textarea').forEach(el => {
+                el.classList.remove('validation-error');
+            });
+        }
+        
+        function validateForm() {
+            clearValidationErrors();
+            const errors = {};
+            
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            
+            // Validate name
+            if (!name.trim()) {
+                errors.name = 'Category name is required';
+                document.getElementById('nameError').textContent = errors.name;
+                document.getElementById('name').classList.add('validation-error');
+            } else if (name.trim().length < 2) {
+                errors.name = 'Category name must be at least 2 characters';
+                document.getElementById('nameError').textContent = errors.name;
+                document.getElementById('name').classList.add('validation-error');
+            } else if (name.trim().length > 50) {
+                errors.name = 'Category name must be less than 50 characters';
+                document.getElementById('nameError').textContent = errors.name;
+                document.getElementById('name').classList.add('validation-error');
+            }
+            
+            // Validate description
+            if (description && description.length > 200) {
+                errors.description = 'Description must be less than 200 characters';
+                document.getElementById('descriptionError').textContent = errors.description;
+                document.getElementById('description').classList.add('validation-error');
+            }
+            
+            return Object.keys(errors).length === 0;
+        }
+        
+        function testValidation() {
+            // Test empty name
+            document.getElementById('name').value = '';
+            if (validateForm()) {
+                showAlert('Validation failed: Empty name should be invalid', 'error');
+            } else {
+                console.log('✓ Empty name validation works');
+            }
+            
+            // Test short name
+            document.getElementById('name').value = 'a';
+            if (validateForm()) {
+                showAlert('Validation failed: Single character name should be invalid', 'error');
+            } else {
+                console.log('✓ Short name validation works');
+            }
+            
+            // Test long name
+            document.getElementById('name').value = 'a'.repeat(51);
+            if (validateForm()) {
+                showAlert('Validation failed: 51 character name should be invalid', 'error');
+            } else {
+                console.log('✓ Long name validation works');
+            }
+            
+            // Test long description
+            document.getElementById('description').value = 'a'.repeat(201);
+            document.getElementById('name').value = 'Valid Name';
+            if (validateForm()) {
+                showAlert('Validation failed: 201 character description should be invalid', 'error');
+            } else {
+                console.log('✓ Long description validation works');
+            }
+            
+            // Test valid input
+            document.getElementById('name').value = 'Test Category';
+            document.getElementById('description').value = 'This is a test description';
+            if (validateForm()) {
+                showAlert('All validation tests passed!', 'success');
+                console.log('✓ All validation tests passed');
+            } else {
+                showAlert('Validation failed: Valid input should pass', 'error');
+            }
+        }
+        
+        // Real-time validation
+        document.getElementById('name').addEventListener('input', function() {
+            const nameError = document.getElementById('nameError');
+            if (this.value.trim() && nameError.textContent) {
+                nameError.textContent = '';
+                this.classList.remove('validation-error');
+            }
+        });
+        
+        document.getElementById('description').addEventListener('input', function() {
+            const descError = document.getElementById('descriptionError');
+            if (descError.textContent) {
+                descError.textContent = '';
+                this.classList.remove('validation-error');
+            }
+        });
+        
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Clear previous alerts
+            document.getElementById('alerts').innerHTML = '';
+            
+            // Validate form
+            if (!validateForm()) {
+                showAlert('Please fix the validation errors before saving', 'error');
+                return;
+            }
+            
+            if (!authToken) {
+                showAlert('No auth token found. Please log in first.', 'error');
+                return;
+            }
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                icon: document.getElementById('icon').value,
+                order_index: parseInt(document.getElementById('order_index').value) || 0
+            };
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/resources/categories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showAlert('Category created successfully!', 'success');
+                    document.getElementById('results').innerHTML = `
+                        <div class="success">
+                            <h3>Category Created:</h3>
+                            <pre>${JSON.stringify(data.category, null, 2)}</pre>
+                        </div>
+                    `;
+                    // Reset form
+                    document.getElementById('categoryForm').reset();
+                    clearValidationErrors();
+                } else {
+                    const errorMsg = data.error || 'Failed to create category';
+                    showAlert(errorMsg, 'error');
+                    document.getElementById('results').innerHTML = `
+                        <div class="alert-error">
+                            <h3>Error:</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showAlert('Network error: ' + error.message, 'error');
+                document.getElementById('results').innerHTML = `
+                    <div class="alert-error">
+                        <h3>Network Error:</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

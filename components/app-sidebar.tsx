@@ -219,39 +219,40 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     }
   ]
 
-  // Financial Management Section
-  const financialItems = [
-    {
-      title: 'Financial Dashboard',
-      url: 'financial-dashboard',
-      icon: DollarSign
-    },
-    {
-      title: 'Receipt Processing',
-      url: 'financial-receipts',
-      icon: Receipt
-    },
-    {
-      title: 'Budget Management',
-      url: 'financial-budgets',
-      icon: BarChart3
-    },
-    {
-      title: 'Expense Management',
-      url: 'financial-expenses',
-      icon: FileX
-    },
-    {
-      title: 'Expense Approvals',
-      url: 'financial-expense-approvals',
-      icon: CheckCircle
-    },
-    {
-      title: 'Financial Reports',
-      url: 'financial-reports',
-      icon: FileText
-    }
-  ]
+  // Financial Management Section - DEACTIVATED (Coming in next month)
+  // const financialItems = [
+  //   {
+  //     title: 'Financial Dashboard',
+  //     url: 'financial-dashboard',
+  //     icon: DollarSign
+  //   },
+  //   {
+  //     title: 'Receipt Processing',
+  //     url: 'financial-receipts',
+  //     icon: Receipt
+  //   },
+  //   {
+  //     title: 'Budget Management',
+  //     url: 'financial-budgets',
+  //     icon: BarChart3
+  //   },
+  //   {
+  //     title: 'Expense Management',
+  //     url: 'financial-expenses',
+  //     icon: FileX
+  //   },
+  //   {
+  //     title: 'Expense Approvals',
+  //     url: 'financial-expense-approvals',
+  //     icon: CheckCircle
+  //   },
+  //   {
+  //     title: 'Financial Reports',
+  //     url: 'financial-reports',
+  //     icon: FileText
+  //   }
+  // ]
+  const financialItems = [] // Temporarily empty - coming next month
 
   // Organization Management Section
   const organizationItems = [
@@ -293,6 +294,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
 
   // Administration Section
   const administrationItems = [
+    {
+      title: 'User Management',
+      url: 'admin-users',
+      icon: Users2
+    },
     {
       title: 'Role Management',
       url: 'admin-roles',
@@ -361,7 +367,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const allAdminItems = user?.role === 'admin' ? [
     { section: 'Sports Management', items: sportsManagementItems },
     { section: 'Assignor Management', items: assignorItems },
-    { section: 'Financial Management', items: financialItems },
+    // Financial Management temporarily disabled - coming next month
+    ...(financialItems.length > 0 ? [{ section: 'Financial Management', items: financialItems }] : []),
     { section: 'Organization', items: organizationItems },
     { section: 'Analytics', items: analyticsItems },
     { section: 'Administration', items: administrationItems }
@@ -372,10 +379,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       collapsible="icon" 
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="flex flex-col h-full overflow-hidden transition-none"
+      className="flex flex-col h-screen transition-none"
       data-no-transition="true"
     >
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border flex-shrink-0">
         <div className="flex items-center gap-3 px-6 py-6 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img 
@@ -448,7 +455,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent 
         ref={contentRef}
-        className="px-0 pt-3 pb-2 overflow-y-auto overflow-x-hidden relative flex-1 min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-sidebar-border/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-sidebar-border group-data-[collapsible=icon]:[&::-webkit-scrollbar]:w-[3px] group-data-[state=expanded]:[&::-webkit-scrollbar]:w-[5px]"
+        className="px-0 pt-3 pb-2 overflow-y-scroll overflow-x-hidden relative flex-grow min-h-0 max-h-full [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-sidebar-border/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-sidebar-border group-data-[collapsible=icon]:[&::-webkit-scrollbar]:w-[3px]"
+        style={{ height: 'calc(100vh - 200px)' }}
       >
         {/* Scroll indicators - subtle gradients */}
         {showScrollTop && (

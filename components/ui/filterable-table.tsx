@@ -299,12 +299,14 @@ export function FilterableTable<T extends Record<string, any>>({
       )
     }
 
-    const currentValue = columnLevelFilters[column.id]
-    const hasActiveFilter = column.filterType === 'search' 
-      ? currentValue && currentValue !== '' 
-      : column.filterType === 'date'
-        ? currentValue instanceof Date
-        : Array.isArray(currentValue) && currentValue.length > 0
+    // Get the actual filter value from the column to determine if filter is active
+    const actualFilterValue = tanstackColumn.getFilterValue()
+    const hasActiveFilter = actualFilterValue !== undefined && actualFilterValue !== null && 
+      (column.filterType === 'search' 
+        ? actualFilterValue !== ''
+        : column.filterType === 'date'
+          ? actualFilterValue instanceof Date
+          : Array.isArray(actualFilterValue) && actualFilterValue.length > 0)
 
     return (
       <Popover>
@@ -331,18 +333,26 @@ export function FilterableTable<T extends Record<string, any>>({
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    const newValue = column.filterType === 'search' 
-                      ? '' 
-                      : column.filterType === 'date'
-                        ? undefined
-                        : []
-                    setColumnLevelFilters(prev => ({
-                      ...prev,
-                      [column.id]: newValue
-                    }))
+                    // Clear the filter completely
                     tanstackColumn.setFilterValue(undefined)
+                    
+                    // Update local state based on filter type
                     if (column.filterType === 'search') {
                       setSearchInput('')
+                      setColumnLevelFilters(prev => ({
+                        ...prev,
+                        [column.id]: ''
+                      }))
+                    } else if (column.filterType === 'date') {
+                      setColumnLevelFilters(prev => ({
+                        ...prev,
+                        [column.id]: undefined
+                      }))
+                    } else if (column.filterType === 'select') {
+                      setColumnLevelFilters(prev => ({
+                        ...prev,
+                        [column.id]: []
+                      }))
                     }
                   }}
                   className="h-6 w-6 p-0"
@@ -385,7 +395,7 @@ export function FilterableTable<T extends Record<string, any>>({
                   <Search className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                   <Input
                     placeholder={`Search ${column.title.toLowerCase()}...`}
-                    value={searchInput}
+                    value={searchInput || ''}
                     onChange={(e) => {
                       const value = e.target.value
                       setSearchInput(value)
@@ -394,6 +404,12 @@ export function FilterableTable<T extends Record<string, any>>({
                         [column.id]: value
                       }))
                       tanstackColumn.setFilterValue(value === '' ? undefined : value)
+                    }}
+                    onKeyDown={(e) => {
+                      // Stop propagation to prevent closing the popover on Enter
+                      if (e.key === 'Enter') {
+                        e.stopPropagation()
+                      }
                     }}
                     className="pl-7 h-8"
                   />
@@ -553,25 +569,56 @@ export function FilterableTable<T extends Record<string, any>>({
         const colDef = columns.find(c => c.id === columnId)
         if (!colDef || !filterValue) return true
 
-        let cellValue: string
-        if (typeof colDef.accessor === 'function') {
-          const rendered = colDef.accessor(row.original)
-          if (React.isValidElement(rendered)) {
-            cellValue = extractTextFromElement(rendered)
+        const originalData = row.original as any
+        
+        // Handle different filter types
+        if (colDef.filterType === 'select') {
+          // For select filters, we need the raw value from the data
+          // The columnId usually matches the data property name
+          let rawValue: string = ''
+          
+          // Check if accessor is a string (direct property access)
+          if (typeof colDef.accessor === 'string') {
+            rawValue = String(originalData[colDef.accessor] || '')
           } else {
-            cellValue = String(rendered || '')
+            // For function accessors, use the columnId to get the raw value
+            // This assumes the columnId matches the property name in the data
+            rawValue = String(originalData[columnId] || '')
           }
-        } else {
-          cellValue = String(row.getValue(columnId) || '')
-        }
-
-        if (colDef.filterType === 'search') {
-          return cellValue.toLowerCase().includes(filterValue.toLowerCase())
-        } else if (colDef.filterType === 'select') {
+          
+          // Handle array filter values (multiple selections)
           if (Array.isArray(filterValue)) {
-            return filterValue.length === 0 || filterValue.includes(cellValue)
+            // If no filters selected, show all
+            if (filterValue.length === 0) return true
+            // Check if the raw value matches any of the selected filters
+            return filterValue.includes(rawValue)
           }
-          return cellValue === filterValue
+          // Handle single filter value
+          return rawValue === filterValue
+        }
+        
+        if (colDef.filterType === 'search') {
+          // For search filters, extract text from rendered elements
+          let cellValue: string
+          
+          if (typeof colDef.accessor === 'function') {
+            // Call the accessor function to get the rendered element
+            const rendered = colDef.accessor(row.original)
+            if (React.isValidElement(rendered)) {
+              // Extract text from React elements
+              cellValue = extractTextFromElement(rendered)
+            } else {
+              cellValue = String(rendered || '')
+            }
+          } else if (typeof colDef.accessor === 'string') {
+            // Direct property access
+            cellValue = String(originalData[colDef.accessor] || '')
+          } else {
+            // Fallback to columnId
+            cellValue = String(originalData[columnId] || '')
+          }
+          
+          return cellValue.toLowerCase().includes(String(filterValue).toLowerCase())
         } else if (colDef.filterType === 'date' && filterValue instanceof Date) {
           // Extract date from the cell value
           let rowDate: Date | null = null
@@ -613,6 +660,11 @@ export function FilterableTable<T extends Record<string, any>>({
     if (!element) return ''
     
     if (React.isValidElement(element)) {
+      // Special handling for Badge components - extract the text content
+      if (element.type && typeof element.type === 'function' && element.type.name === 'Badge') {
+        return extractTextFromElement(element.props.children)
+      }
+      
       if (element.props.children) {
         if (Array.isArray(element.props.children)) {
           return element.props.children.map(extractTextFromElement).join(' ')
