@@ -100,6 +100,15 @@ function getCorsConfig() {
         return callback(null, true);
       }
       
+      // In development, allow any origin from local network
+      if (process.env.NODE_ENV === 'development') {
+        // Allow any IP-based origin on common ports
+        const ipPattern = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$/;
+        if (ipPattern.test(origin)) {
+          return callback(null, true);
+        }
+      }
+      
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
