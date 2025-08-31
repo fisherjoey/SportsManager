@@ -127,9 +127,12 @@ function requirePermission(permissionName) {
     }
 
     try {
-      // Admin always has access
+      // Admin and Super Admin always have access
       const userRoles = req.user.roles || [req.user.role];
-      if (userRoles.includes('admin') || req.user.role === 'admin') {
+      if (userRoles.includes('admin') || userRoles.includes('Admin') || 
+          userRoles.includes('Super Admin') || userRoles.includes('super admin') ||
+          req.user.role === 'admin') {
+        console.log('Admin bypass activated for permission:', permissionName);
         return next();
       }
 

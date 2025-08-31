@@ -103,13 +103,33 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     // Don't fail login if permission retrieval fails
   }
 
+  // Get user roles from the user_roles table
+  let userRoles = [];
+  try {
+    const roleRecords = await db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where('user_roles.user_id', user.id)
+      .where('roles.is_active', true)
+      .select('roles.name', 'roles.id');
+    
+    userRoles = roleRecords.map(r => r.name);
+  } catch (error) {
+    console.warn('Failed to get user roles during login:', error.message);
+    // Default to empty array if role retrieval fails
+    userRoles = [];
+  }
+
+  // If no roles found, user has no roles assigned
+  if (userRoles.length === 0) {
+    console.warn(`User ${user.email} has no roles assigned`);
+  }
+
   // Generate JWT token (include roles array for new system)
   const token = jwt.sign(
     { 
       userId: user.id, 
       email: user.email, 
-      role: user.role,  // Keep for backward compatibility
-      roles: user.roles || [user.role], // New roles array
+      roles: userRoles, // Roles array from database
       permissions: permissions.map(p => p.code || p.name) // Include permission codes in JWT
     },
     process.env.JWT_SECRET,
@@ -120,8 +140,7 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
   const userData = {
     id: user.id,
     email: user.email,
-    role: user.role, // Keep for backward compatibility
-    roles: user.roles || [user.role], // New roles array
+    roles: userRoles, // Roles array from database
     permissions: permissions, // Include full permission objects
     name: user.name,
     phone: user.phone,
@@ -152,7 +171,7 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
   // Track critical path
   ProductionMonitor.logCriticalPath('auth.login', {
     userId: user.id,
-    role: user.role,
+    roles: userRoles,
     ip: req.headers['x-forwarded-for'] || req.ip
   });
 
@@ -244,8 +263,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
     const responseUserData = {
       id: user.id,
       email: user.email,
-      role: user.role,
-      roles: user.roles || [user.role],
+      roles: user.roles || [],
       permissions: permissions,
       name: user.name,
       phone: user.phone,
@@ -269,8 +287,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
       { 
         userId: user.id, 
         email: user.email, 
-        role: user.role, // Keep for backward compatibility
-        roles: user.roles || [user.role], // New roles array
+        roles: user.roles || [], // Roles array
         permissions: permissions.map(p => p.code || p.name) // Include permission codes in JWT
       },
       process.env.JWT_SECRET,
@@ -335,11 +352,31 @@ router.get('/me', authenticateToken, async (req, res) => {
       // Don't fail profile retrieval if permission retrieval fails
     }
 
+    // Get user roles from the user_roles table
+    let userRoles = [];
+    try {
+      const roleRecords = await db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', user.id)
+        .where('roles.is_active', true)
+        .select('roles.name', 'roles.id');
+      
+      userRoles = roleRecords.map(r => r.name);
+    } catch (error) {
+      console.warn('Failed to get user roles for profile:', error.message);
+      // Fall back to legacy role field
+      userRoles = [];
+    }
+
+    // If no roles found, use legacy role field
+    if (userRoles.length === 0) {
+      userRoles = [];
+    }
+
     const userData = {
       id: user.id,
       email: user.email,
-      role: user.role, // Keep for backward compatibility
-      roles: user.roles || [user.role], // New roles array
+      roles: userRoles, // New roles array from database
       permissions: permissions, // Include full permission objects
       name: user.name,
       phone: user.phone,

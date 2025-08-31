@@ -21,6 +21,23 @@ class RoleService extends BaseService {
   }
 
   /**
+   * Get role by ID
+   * @param {string} roleId - Role ID
+   * @returns {Object} Role object
+   */
+  async getRoleById(roleId) {
+    try {
+      const role = await this.db('roles')
+        .where('id', roleId)
+        .first();
+      return role;
+    } catch (error) {
+      console.error('Error getting role by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get role with its permissions
    * @param {string} roleId - Role ID
    * @param {Object} options - Options including transaction
@@ -435,6 +452,92 @@ class RoleService extends BaseService {
       const deletedCount = await trx('roles').where('id', roleId).del();
 
       return deletedCount > 0;
+    });
+  }
+
+  /**
+   * Add users to a role
+   * @param {string} roleId - Role ID
+   * @param {Array<string>} userIds - Array of user IDs to add
+   * @returns {Object} Result with added users
+   */
+  async addUsersToRole(roleId, userIds) {
+    return await this.withTransaction(async (trx) => {
+      // Check if role exists
+      const role = await trx('roles').where('id', roleId).first();
+      if (!role) {
+        throw new Error(`Role with ID ${roleId} not found`);
+      }
+
+      // Check which users already have this role
+      const existingAssignments = await trx('user_roles')
+        .where('role_id', roleId)
+        .whereIn('user_id', userIds)
+        .select('user_id');
+      
+      const existingUserIds = new Set(existingAssignments.map(a => a.user_id));
+      
+      // Filter out users who already have the role
+      const newUserIds = userIds.filter(userId => !existingUserIds.has(userId));
+      
+      if (newUserIds.length > 0) {
+        // Check if all users exist
+        const existingUsers = await trx('users')
+          .whereIn('id', newUserIds)
+          .select('id');
+        
+        const existingUserSet = new Set(existingUsers.map(u => u.id));
+        const nonExistentUsers = newUserIds.filter(id => !existingUserSet.has(id));
+        
+        if (nonExistentUsers.length > 0) {
+          throw new Error(`Users not found: ${nonExistentUsers.join(', ')}`);
+        }
+        
+        // Add new user-role assignments
+        const assignments = newUserIds.map(userId => ({
+          user_id: userId,
+          role_id: roleId,
+          assigned_at: new Date(),
+          assigned_by: null // Should be set to current user ID in production
+        }));
+        
+        await trx('user_roles').insert(assignments);
+      }
+      
+      return {
+        role_id: roleId,
+        added_count: newUserIds.length,
+        already_assigned_count: existingUserIds.size,
+        total_users: userIds.length
+      };
+    });
+  }
+
+  /**
+   * Remove users from a role
+   * @param {string} roleId - Role ID
+   * @param {Array<string>} userIds - Array of user IDs to remove
+   * @returns {Object} Result with removed users
+   */
+  async removeUsersFromRole(roleId, userIds) {
+    return await this.withTransaction(async (trx) => {
+      // Check if role exists
+      const role = await trx('roles').where('id', roleId).first();
+      if (!role) {
+        throw new Error(`Role with ID ${roleId} not found`);
+      }
+
+      // Remove user-role assignments
+      const deletedCount = await trx('user_roles')
+        .where('role_id', roleId)
+        .whereIn('user_id', userIds)
+        .del();
+      
+      return {
+        role_id: roleId,
+        removed_count: deletedCount,
+        requested_count: userIds.length
+      };
     });
   }
 }

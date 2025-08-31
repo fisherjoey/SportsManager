@@ -78,6 +78,8 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
   'dashboard-view:admin-permissions': [PERMISSIONS.ROLES.READ],
   '/admin-permission-config': [PERMISSIONS.ROLES.MANAGE],
   'dashboard-view:admin-permission-config': [PERMISSIONS.ROLES.MANAGE],
+  '/admin-page-access': [PERMISSIONS.ROLES.MANAGE],
+  'dashboard-view:admin-page-access': [PERMISSIONS.ROLES.MANAGE],
   '/admin-workflows': [PERMISSIONS.SETTINGS.UPDATE],
   'dashboard-view:admin-workflows': [PERMISSIONS.SETTINGS.UPDATE],
   '/admin-security': [PERMISSIONS.SETTINGS.UPDATE],
@@ -188,6 +190,17 @@ export interface RoleConfig {
  * These define the standard roles and their permissions
  */
 export const ROLE_CONFIGS: RoleConfig[] = [
+  {
+    id: 'Super Admin',
+    name: 'Super Administrator',
+    description: 'Full system access with all permissions',
+    permissions: Object.values(PERMISSIONS).flatMap(category => Object.values(category)),
+    allowedViews: ['*'], // All views
+    restrictions: {
+      cannotDelete: true,
+      cannotModify: true
+    }
+  },
   {
     id: 'admin',
     name: 'Administrator',

@@ -97,6 +97,42 @@ class UserService extends BaseService {
   }
 
   /**
+   * Get user roles from the new RBAC system
+   * @param {string} userId - User ID
+   * @returns {Array} Array of role objects
+   */
+  async getUserRoles(userId) {
+    try {
+      const roles = await this.db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .select('roles.id', 'roles.name', 'roles.description');
+      
+      return roles;
+    } catch (error) {
+      console.error(`Error getting roles for user ${userId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Enhance user data with new roles
+   * @param {Object} user - User object
+   * @returns {Object} User with roles array
+   */
+  async enhanceUserWithRoles(user) {
+    if (!user) return user;
+    
+    const roles = await this.getUserRoles(user.id);
+    return {
+      ...user,
+      roles: roles.map(r => ({ id: r.id, name: r.name, description: r.description })),
+      // Keep legacy role for backward compatibility
+      legacy_role: user.role
+    };
+  }
+
+  /**
    * Get user with complete referee details including assignments
    * @param {string} userId - User ID
    * @param {Object} options - Query options

@@ -490,6 +490,292 @@ class PermissionService extends BaseService {
       throw new Error(`Failed to get permission: ${error.message}`);
     }
   }
+
+  /**
+   * Create a new permission
+   * @param {Object} permissionData - Permission data
+   * @returns {Object} Created permission
+   */
+  async createPermission(permissionData) {
+    try {
+      const { name, code, description, category, risk_level, resource_type, action } = permissionData;
+      
+      // Check if permission already exists
+      const existing = await this.db('permissions')
+        .where('name', name)
+        .orWhere('code', code || name.toLowerCase().replace(/\s+/g, '_'))
+        .first();
+      
+      if (existing) {
+        throw new Error(`Permission with name "${name}" or code already exists`);
+      }
+
+      const [permission] = await this.db('permissions')
+        .insert({
+          name,
+          code: code || name.toLowerCase().replace(/\s+/g, '_'),
+          description: description || '',
+          category: category || 'general',
+          risk_level: risk_level || 'low',
+          resource_type: resource_type || null,
+          action: action || null,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .returning('*');
+
+      // Invalidate cache
+      this.invalidatePermissionCache();
+
+      return permission;
+    } catch (error) {
+      console.error('Error creating permission:', error);
+      throw new Error(`Failed to create permission: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update a permission
+   * @param {string} id - Permission ID
+   * @param {Object} updates - Updates to apply
+   * @returns {Object} Updated permission
+   */
+  async updatePermission(id, updates) {
+    try {
+      // Check if permission exists
+      const existing = await this.db('permissions')
+        .where('id', id)
+        .first();
+      
+      if (!existing) {
+        throw new Error(`Permission with ID "${id}" not found`);
+      }
+
+      // If updating name or code, check for duplicates
+      if (updates.name || updates.code) {
+        const duplicate = await this.db('permissions')
+          .where(function() {
+            if (updates.name) this.where('name', updates.name);
+            if (updates.code) this.orWhere('code', updates.code);
+          })
+          .whereNot('id', id)
+          .first();
+        
+        if (duplicate) {
+          throw new Error('Permission with this name or code already exists');
+        }
+      }
+
+      const [permission] = await this.db('permissions')
+        .where('id', id)
+        .update({
+          ...updates,
+          updated_at: new Date()
+        })
+        .returning('*');
+
+      // Invalidate cache
+      this.invalidatePermissionCache();
+      this.invalidateUserCache(); // User permissions might have changed
+
+      return permission;
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      throw new Error(`Failed to update permission: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete a permission
+   * @param {string} id - Permission ID
+   * @returns {boolean} Success status
+   */
+  async deletePermission(id) {
+    const trx = await this.db.transaction();
+    
+    try {
+      // Check if permission exists
+      const permission = await trx('permissions')
+        .where('id', id)
+        .first();
+      
+      if (!permission) {
+        await trx.rollback();
+        throw new Error(`Permission with ID "${id}" not found`);
+      }
+
+      // Remove permission from all roles
+      await trx('role_permissions')
+        .where('permission_id', id)
+        .delete();
+
+      // Delete the permission
+      await trx('permissions')
+        .where('id', id)
+        .delete();
+
+      await trx.commit();
+
+      // Invalidate cache
+      this.invalidatePermissionCache();
+      this.invalidateUserCache(); // User permissions have changed
+
+      return true;
+    } catch (error) {
+      await trx.rollback();
+      console.error('Error deleting permission:', error);
+      throw new Error(`Failed to delete permission: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all permissions (with pagination)
+   * @param {Object} options - Query options
+   * @returns {Object} Paginated permissions
+   */
+  async getAllPermissions(options = {}) {
+    try {
+      const { page = 1, limit = 50, category, search } = options;
+      const offset = (page - 1) * limit;
+
+      let query = this.db('permissions');
+      let countQuery = this.db('permissions');
+
+      if (category) {
+        query = query.where('category', category);
+        countQuery = countQuery.where('category', category);
+      }
+
+      if (search) {
+        const searchTerm = `%${search.toLowerCase()}%`;
+        query = query.where(function() {
+          this.where(this.db.raw('LOWER(name)'), 'LIKE', searchTerm)
+              .orWhere(this.db.raw('LOWER(description)'), 'LIKE', searchTerm)
+              .orWhere(this.db.raw('LOWER(code)'), 'LIKE', searchTerm);
+        });
+        countQuery = countQuery.where(function() {
+          this.where(this.db.raw('LOWER(name)'), 'LIKE', searchTerm)
+              .orWhere(this.db.raw('LOWER(description)'), 'LIKE', searchTerm)
+              .orWhere(this.db.raw('LOWER(code)'), 'LIKE', searchTerm);
+        });
+      }
+
+      const [{ count }] = await countQuery.count('* as count');
+      const permissions = await query
+        .orderBy('category', 'asc')
+        .orderBy('name', 'asc')
+        .limit(limit)
+        .offset(offset);
+
+      return {
+        permissions,
+        pagination: {
+          page,
+          limit,
+          total: parseInt(count),
+          totalPages: Math.ceil(count / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error getting all permissions:', error);
+      throw new Error(`Failed to get permissions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Assign permissions to a role
+   * @param {string} roleId - Role ID
+   * @param {Array} permissionIds - Array of permission IDs
+   * @returns {Array} Updated role permissions
+   */
+  async assignPermissionsToRole(roleId, permissionIds) {
+    const trx = await this.db.transaction();
+    
+    try {
+      // Check if role exists
+      const role = await trx('roles')
+        .where('id', roleId)
+        .first();
+      
+      if (!role) {
+        await trx.rollback();
+        throw new Error(`Role with ID "${roleId}" not found`);
+      }
+
+      // Remove existing permissions for this role
+      await trx('role_permissions')
+        .where('role_id', roleId)
+        .delete();
+
+      // Add new permissions
+      if (permissionIds && permissionIds.length > 0) {
+        const rolePermissions = permissionIds.map(permId => ({
+          role_id: roleId,
+          permission_id: permId,
+          created_at: new Date()
+        }));
+
+        await trx('role_permissions').insert(rolePermissions);
+      }
+
+      await trx.commit();
+
+      // Get the updated permissions for this role
+      const updatedPermissions = await this.db('permissions')
+        .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
+        .where('role_permissions.role_id', roleId)
+        .select('permissions.*')
+        .orderBy('permissions.category', 'asc')
+        .orderBy('permissions.name', 'asc');
+
+      // Invalidate cache
+      this.invalidateUserCache(); // User permissions have changed
+
+      return updatedPermissions;
+    } catch (error) {
+      await trx.rollback();
+      console.error('Error assigning permissions to role:', error);
+      throw new Error(`Failed to assign permissions to role: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get permissions for a role
+   * @param {string} roleId - Role ID
+   * @returns {Array} Role permissions
+   */
+  async getRolePermissions(roleId) {
+    try {
+      const permissions = await this.db('permissions')
+        .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
+        .where('role_permissions.role_id', roleId)
+        .select('permissions.*')
+        .orderBy('permissions.category', 'asc')
+        .orderBy('permissions.name', 'asc');
+
+      return permissions;
+    } catch (error) {
+      console.error('Error getting role permissions:', error);
+      throw new Error(`Failed to get role permissions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all unique categories
+   * @returns {Array} List of categories
+   */
+  async getCategories() {
+    try {
+      const categories = await this.db('permissions')
+        .distinct('category')
+        .orderBy('category', 'asc');
+
+      return categories.map(row => row.category);
+    } catch (error) {
+      console.error('Error getting categories:', error);
+      throw new Error(`Failed to get categories: ${error.message}`);
+    }
+  }
 }
 
 module.exports = PermissionService;

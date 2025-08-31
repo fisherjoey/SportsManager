@@ -3143,6 +3143,189 @@ class ApiClient {
     }>(`/admin/roles${queryString ? `?${queryString}` : ''}`)
   }
 
+  // Get available roles for user assignment
+  async getUserRoles() {
+    return this.request<{
+      success: boolean;
+      data: { roles: any[] };
+    }>(`/users/roles`)
+  }
+
+  async getRoleById(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+    }>(`/admin/roles/${roleId}`)
+  }
+
+  // RBAC Access Control Management
+  async getRolePageAccess(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: { 
+        role: any;
+        pageAccess: Array<{
+          page_path: string;
+          page_name: string;
+          page_category: string;
+          page_description?: string;
+          can_access: boolean;
+          conditions?: any;
+        }>;
+      };
+    }>(`/admin/access/roles/${roleId}/pages`)
+  }
+
+  async updateRolePageAccess(roleId: string, pageAccess: any[]) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/access/roles/${roleId}/pages`, {
+      method: 'PUT',
+      body: JSON.stringify({ pageAccess })
+    })
+  }
+
+  async getPageRegistry() {
+    return this.request<{
+      success: boolean;
+      data: Array<{
+        path: string;
+        name: string;
+        category: string;
+        description: string;
+      }>;
+    }>('/admin/access/page-registry')
+  }
+
+  async getRoleApiAccess(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: any;
+        apiAccess: Array<{
+          http_method: string;
+          endpoint_pattern: string;
+          endpoint_category: string;
+          endpoint_description?: string;
+          can_access: boolean;
+          rate_limit?: number;
+          conditions?: any;
+        }>;
+      };
+    }>(`/admin/access/roles/${roleId}/apis`)
+  }
+
+  async updateRoleApiAccess(roleId: string, apiAccess: any[]) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/access/roles/${roleId}/apis`, {
+      method: 'PUT',
+      body: JSON.stringify({ apiAccess })
+    })
+  }
+
+  async getApiRegistry() {
+    return this.request<{
+      success: boolean;
+      data: Array<{
+        method: string;
+        pattern: string;
+        category: string;
+        description: string;
+      }>;
+    }>('/admin/access/api-registry')
+  }
+
+  async getRoleFeatures(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: any;
+        features: Array<{
+          feature_code: string;
+          feature_name: string;
+          feature_category?: string;
+          feature_description?: string;
+          is_enabled: boolean;
+          configuration?: any;
+        }>;
+      };
+    }>(`/admin/access/roles/${roleId}/features`)
+  }
+
+  async updateRoleFeatures(roleId: string, features: any[]) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/access/roles/${roleId}/features`, {
+      method: 'PUT',
+      body: JSON.stringify({ features })
+    })
+  }
+
+  async checkPageAccess(page: string) {
+    return this.request<{
+      success: boolean;
+      hasAccess: boolean;
+    }>('/admin/access/check-page', {
+      method: 'POST',
+      body: JSON.stringify({ page })
+    })
+  }
+
+  async checkApiAccess(method: string, endpoint: string) {
+    return this.request<{
+      success: boolean;
+      hasAccess: boolean;
+    }>('/admin/access/check-api', {
+      method: 'POST',
+      body: JSON.stringify({ method, endpoint })
+    })
+  }
+
+  async checkFeature(feature: string) {
+    return this.request<{
+      success: boolean;
+      isEnabled: boolean;
+    }>('/admin/access/check-feature', {
+      method: 'POST',
+      body: JSON.stringify({ feature })
+    })
+  }
+
+  async clearAccessCache() {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>('/admin/access/clear-cache', {
+      method: 'POST'
+    })
+  }
+
+  async getMyAccessiblePages() {
+    return this.request<{
+      success: boolean;
+      data: Array<{
+        page_path: string;
+        page_name: string;
+        page_category: string;
+      }>;
+    }>('/admin/access/my-pages')
+  }
+
+  async getMyAccessibleApis() {
+    return this.request<{
+      success: boolean;
+      data: Array<{
+        http_method: string;
+        endpoint_pattern: string;
+        endpoint_category: string;
+      }>;
+    }>('/admin/access/my-apis')
+  }
+
   async getRole(roleId: string) {
     return this.request<{
       success: boolean;
