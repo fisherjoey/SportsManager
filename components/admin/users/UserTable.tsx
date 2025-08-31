@@ -29,13 +29,39 @@ import {
   Shield, 
   UserCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  Whistle,
+  Star,
+  Award
 } from 'lucide-react'
+import { EditableWage } from '@/components/admin/referees/EditableWage'
+import { RefereeTypeManager } from '@/components/admin/referees/RefereeTypeManager'
 
 interface Role {
   id: string
   name: string
   description?: string
+  category?: string
+  referee_config?: any
+}
+
+interface RefereeProfile {
+  id: string
+  wage_amount: number
+  years_experience: number
+  evaluation_score?: number
+  is_white_whistle: boolean
+  show_white_whistle: boolean
+  referee_type: Role | null
+  capabilities: Role[]
+  computed_fields: {
+    type_config: any
+    capability_count: number
+    is_senior: boolean
+    is_junior: boolean
+    is_rookie: boolean
+  }
 }
 
 interface User {
@@ -47,6 +73,8 @@ interface User {
   roles?: Role[]  // New RBAC roles
   is_available?: boolean  // Referee availability
   is_active?: boolean  // Might not exist, treat as active if undefined
+  is_referee?: boolean  // Enhanced field
+  referee_profile?: RefereeProfile | null  // Enhanced field
   created_at: string
   updated_at?: string
 }
@@ -56,9 +84,12 @@ interface UserTableProps {
   onEdit: (user: User) => void
   onView: (user: User) => void
   onDelete: (userId: string) => void
+  onWageUpdate?: (userId: string, newWage: number) => void
+  onTypeChange?: (userId: string, newType: string) => void
   page?: number
   totalPages?: number
   onPageChange?: (page: number) => void
+  showRefereeColumns?: boolean
 }
 
 export function UserTable({ 
@@ -66,12 +97,35 @@ export function UserTable({
   onEdit, 
   onView, 
   onDelete,
+  onWageUpdate,
+  onTypeChange,
   page = 1,
   totalPages = 1,
-  onPageChange
+  onPageChange,
+  showRefereeColumns = false
 }: UserTableProps) {
-  const getRoleBadgeVariant = (roleName: string) => {
-    switch (roleName.toLowerCase()) {
+  const getRoleBadgeVariant = (role: Role) => {
+    // Handle referee type roles with special styling
+    if (role.category === 'referee_type') {
+      switch (role.name) {
+        case 'Senior Referee':
+          return 'default'
+        case 'Junior Referee':
+          return 'secondary'  
+        case 'Rookie Referee':
+          return 'outline'
+        default:
+          return 'outline'
+      }
+    }
+
+    // Handle referee capability roles
+    if (role.category === 'referee_capability') {
+      return 'outline'
+    }
+
+    // Handle legacy roles
+    switch (role.name.toLowerCase()) {
       case 'super admin':
       case 'admin':
         return 'destructive'
@@ -86,8 +140,28 @@ export function UserTable({
     }
   }
 
-  const getRoleIcon = (roleName: string) => {
-    switch (roleName.toLowerCase()) {
+  const getRoleIcon = (role: Role) => {
+    // Handle referee type roles
+    if (role.category === 'referee_type') {
+      switch (role.name) {
+        case 'Senior Referee':
+          return <Star className="h-3 w-3 mr-1" />
+        case 'Junior Referee':
+          return <UserCheck className="h-3 w-3 mr-1" />
+        case 'Rookie Referee':
+          return <Shield className="h-3 w-3 mr-1" />
+        default:
+          return <UserCheck className="h-3 w-3 mr-1" />
+      }
+    }
+
+    // Handle referee capability roles  
+    if (role.category === 'referee_capability') {
+      return <Award className="h-3 w-3 mr-1" />
+    }
+
+    // Handle legacy roles
+    switch (role.name.toLowerCase()) {
       case 'super admin':
       case 'admin':
         return <Shield className="h-3 w-3 mr-1" />
@@ -138,6 +212,8 @@ export function UserTable({
           <TableRow>
             <TableHead>User</TableHead>
             <TableHead>Roles</TableHead>
+            {showRefereeColumns && <TableHead>Wage</TableHead>}
+            {showRefereeColumns && <TableHead>Experience</TableHead>}
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Last Updated</TableHead>
@@ -163,23 +239,60 @@ export function UserTable({
                 {user.roles && user.roles.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {user.roles.map(role => (
-                      <Badge key={role.id} variant={getRoleBadgeVariant(role.name)}>
-                        <span className="flex items-center">
-                          {getRoleIcon(role.name)}
-                          {role.name}
-                        </span>
+                      <Badge key={role.id} variant={getRoleBadgeVariant(role)} className="flex items-center gap-1">
+                        {getRoleIcon(role)}
+                        {role.name}
+                        {/* White whistle indicator for referees */}
+                        {user.is_referee && user.referee_profile?.show_white_whistle && 
+                         role.category === 'referee_type' && (
+                          <Whistle className="h-3 w-3 ml-1" />
+                        )}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <Badge variant={getRoleBadgeVariant(user.role || 'none')}>
+                  <Badge variant="secondary">
                     <span className="flex items-center">
-                      {getRoleIcon(user.role || '')}
-                      {user.role || 'No Role'}
+                      No Roles
                     </span>
                   </Badge>
                 )}
               </TableCell>
+              
+              {/* Referee-specific columns */}
+              {showRefereeColumns && (
+                <TableCell>
+                  {user.is_referee && user.referee_profile ? (
+                    <EditableWage
+                      userId={user.id}
+                      currentWage={user.referee_profile.wage_amount}
+                      onWageUpdate={onWageUpdate || (() => {})}
+                      disabled={!onWageUpdate}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">N/A</span>
+                  )}
+                </TableCell>
+              )}
+
+              {showRefereeColumns && (
+                <TableCell>
+                  {user.is_referee && user.referee_profile ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {user.referee_profile.years_experience} years
+                      </span>
+                      {user.referee_profile.evaluation_score && (
+                        <Badge variant="outline" className="text-xs">
+                          {user.referee_profile.evaluation_score}%
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">N/A</span>
+                  )}
+                </TableCell>
+              )}
               <TableCell>
                 <Badge variant={user.is_active !== false ? 'outline' : 'secondary'}>
                   {user.is_active !== false ? 'Active' : 'Inactive'}
