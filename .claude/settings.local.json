@@ -52,7 +52,14 @@
       "Bash(start http://localhost:3000/games)",
       "Bash(start http://localhost:3005/?view=admin-permissions)",
       "Bash(start http://localhost:3005/?view=admin-roles)",
-      "Bash(start http://localhost:3005/?view=admin-permission-config)"
+      "Bash(start http://localhost:3005/?view=admin-permission-config)",
+      "Bash(del check-user-roles.js test-role-users.js)",
+      "Bash(start http://localhost:3000/?view=admin-permissions)",
+      "Bash(start http://localhost:3000/?view=admin-roles)",
+      "Bash(start http://localhost:3000/?view=admin-page-access)",
+      "Bash(start http://localhost:3000/?view=admin-access-control)",
+      "Bash(start test-user-management.html)",
+      "Bash(start test-roles-api.html)"
     ],
     "deny": [],
     "ask": []
