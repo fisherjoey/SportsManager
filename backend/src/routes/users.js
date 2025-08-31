@@ -84,7 +84,9 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
  * Create a new user (admin only)
  */
 router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(async (req, res) => {
-  const { email, password, name, role = 'referee', is_active = true, send_welcome_email = false } = req.body;
+  const { email, password, name, role = 'referee', send_welcome_email = false } = req.body;
+  
+  console.log('Creating user with data:', { email, name, role });
   
   // Validate required fields
   if (!email || !password) {
@@ -101,21 +103,34 @@ router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(a
   const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash(password, 10);
   
-  // Create user
-  const newUser = await userService.create({
-    email,
-    password: hashedPassword,
-    name,
-    role,
-    is_active
-  });
-  
-  // TODO: Send welcome email if requested
-  if (send_welcome_email) {
-    // Email service implementation would go here
+  // Create user with required fields and defaults
+  try {
+    const newUser = await userService.create({
+      email,
+      password_hash: hashedPassword,
+      name,
+      role,
+      is_available: true,
+      max_distance: 25,
+      phone: null,
+      location: null,
+      postal_code: 'N/A',  // Required field, cannot be null
+      wage_per_game: null,
+      years_experience: null,
+      evaluation_score: null
+    });
+    console.log('User created successfully:', newUser.id);
+    
+    // TODO: Send welcome email if requested
+    if (send_welcome_email) {
+      // Email service implementation would go here
+    }
+    
+    return ResponseFormatter.sendSuccess(res, { user: newUser }, 'User created successfully', 201);
+  } catch (createError) {
+    console.error('Error creating user:', createError.message, createError.code);
+    throw createError;
   }
-  
-  return ResponseFormatter.sendSuccess(res, { user: newUser }, 'User created successfully', 201);
 }));
 
 /**
@@ -124,7 +139,7 @@ router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(a
  */
 router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const userId = req.params.id;
-  const { email, name, role, is_active, password } = req.body;
+  const { email, name, role, password } = req.body;
   
   // Check if user exists
   const user = await userService.findById(userId);
@@ -137,12 +152,11 @@ router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdPar
   if (email !== undefined) updateData.email = email;
   if (name !== undefined) updateData.name = name;
   if (role !== undefined) updateData.role = role;
-  if (is_active !== undefined) updateData.is_active = is_active;
   
   // Hash password if provided
   if (password) {
     const bcrypt = require('bcryptjs');
-    updateData.password = await bcrypt.hash(password, 10);
+    updateData.password_hash = await bcrypt.hash(password, 10);
   }
   
   // Update user

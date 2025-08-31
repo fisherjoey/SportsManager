@@ -349,6 +349,9 @@ function errorHandler(error, req, res, next) {
   } else if (error.name === 'CastError') {
     processedError = new ValidationError('Invalid ID format');
   } else if (!error.isOperational) {
+    // Log the actual error before wrapping
+    console.error('ACTUAL ERROR BEFORE WRAPPING:', error);
+    console.error('Error stack:', error.stack);
     // Wrap unexpected errors
     processedError = new AppError('Internal server error', 500, ERROR_TYPES.INTERNAL_ERROR, false);
     processedError.originalError = error;

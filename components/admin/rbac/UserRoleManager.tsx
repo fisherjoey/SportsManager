@@ -72,7 +72,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
 
       // Fetch users with this role
       const roleUsersResponse = await apiClient.getRoleUsers(role.id)
-      const roleUsers = roleUsersResponse.data?.users || []
+      const roleUsers = roleUsersResponse.data?.data || []
       
       // Create a set of user IDs that have this role
       const roleUserIds = new Set(roleUsers.map((u: any) => u.id))

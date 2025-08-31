@@ -3206,7 +3206,17 @@ class ApiClient {
   async getRoleUsers(roleId: string) {
     return this.request<{
       success: boolean;
-      data: { users: any[] };
+      data: { 
+        data: any[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+        }
+      };
     }>(`/admin/roles/${roleId}/users`)
   }
 

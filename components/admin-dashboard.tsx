@@ -39,10 +39,18 @@ import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementD
 import { PermissionManagementDashboard } from '@/components/admin/rbac/PermissionManagementDashboard'
 import { UserManagementDashboard } from '@/components/admin/users/UserManagementDashboard'
 import { Button } from '@/components/ui/button'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getPagePermissions, isViewAllowedForRole, getRoleConfig } from '@/lib/rbac-config'
+import { useAuth } from '@/components/auth-provider'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ShieldOff } from 'lucide-react'
 
 
 export function AdminDashboard() {
-  const {} = useRouter()
+  const router = useRouter()
+  const { user } = useAuth()
+  const { hasAnyPermission } = usePermissions()
   const [activeView, setActiveView] = useState('dashboard')
   const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
 
@@ -201,7 +209,62 @@ export function AdminDashboard() {
     }
   }
 
+  // Check if user has permission to access the current view
+  const checkViewPermission = (view: string): boolean => {
+    // Admin always has access
+    if (user?.role === 'admin') return true
+    
+    // Check view-specific permissions
+    const viewKey = `dashboard-view:${view}`
+    const requiredPermissions = getPagePermissions(viewKey)
+    
+    // If no permissions required, allow access
+    if (requiredPermissions.length === 0) return true
+    
+    // Check if user has any of the required permissions
+    return hasAnyPermission(requiredPermissions)
+  }
+
+  // Check if view is allowed for user's role
+  const isViewAllowed = (view: string): boolean => {
+    if (!user?.role) return false
+    
+    // Admin always has access
+    if (user.role === 'admin') return true
+    
+    // Check role configuration
+    const roleConfig = getRoleConfig(user.role)
+    if (!roleConfig) return false
+    
+    // Check if view is in allowed views
+    if (roleConfig.allowedViews.includes('*')) return true
+    return roleConfig.allowedViews.includes(view)
+  }
+
   const renderContent = () => {
+    // Check permissions for current view
+    if (!checkViewPermission(activeView) || !isViewAllowed(activeView)) {
+      return (
+        <div className="flex items-center justify-center h-full p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <ShieldOff className="h-16 w-16 mx-auto text-destructive opacity-75" />
+            <h2 className="text-2xl font-bold">Access Denied</h2>
+            <p className="text-muted-foreground">
+              You don't have permission to access this section.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => handleViewChange('dashboard')}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
     switch (activeView) {
     // Sports Management
     case 'dashboard':

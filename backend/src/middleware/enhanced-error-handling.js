@@ -242,6 +242,10 @@ const enhancedAsyncHandler = (handler) => {
         } else if (error.code && error.code.startsWith('23')) {
           error = ErrorFactory.fromDatabaseError(error);
         } else {
+          // Log the actual error before wrapping
+          console.error('ENHANCED ERROR HANDLER - ACTUAL ERROR:', error);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
           // Wrap unknown errors
           const wrappedError = new Error('An unexpected error occurred');
           wrappedError.originalError = error;

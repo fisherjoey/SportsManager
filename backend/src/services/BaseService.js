@@ -88,6 +88,8 @@ class BaseService {
         updated_at: data.updated_at || new Date()
       };
       
+      console.log(`Creating ${this.tableName} record with data:`, JSON.stringify(recordData, null, 2));
+      
       const [record] = await trx(this.tableName)
         .insert(recordData)
         .returning('*');
@@ -100,6 +102,13 @@ class BaseService {
       return record;
     } catch (error) {
       console.error(`Error creating ${this.tableName} record:`, error);
+      console.error('Database error details:', {
+        code: error.code,
+        detail: error.detail,
+        table: error.table,
+        constraint: error.constraint,
+        column: error.column
+      });
       
       // Handle specific database errors
       if (error.code === '23505') { // Unique constraint violation

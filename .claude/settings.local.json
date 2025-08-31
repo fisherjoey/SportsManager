@@ -49,7 +49,9 @@
       "Bash(git log:*)",
       "Bash(set DISABLE_RATE_LIMIT=true)",
       "Bash(start test-api.html)",
-      "Bash(start http://localhost:3000/games)"
+      "Bash(start http://localhost:3000/games)",
+      "Bash(start http://localhost:3005/?view=admin-permissions)",
+      "Bash(start http://localhost:3005/?view=admin-roles)"
     ],
     "deny": [],
     "ask": []

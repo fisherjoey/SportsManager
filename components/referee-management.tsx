@@ -413,12 +413,7 @@ export function RefereeManagement() {
         icon={Users}
         title="Referee Management"
         description="Manage referee profiles and availability"
-      >
-        <Button onClick={() => setIsInviteDialogOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Referee
-        </Button>
-      </PageHeader>
+      />
 
       <StatsGrid stats={stats} />
 

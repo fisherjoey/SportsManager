@@ -20,6 +20,8 @@ import {
   useSidebar
 } from '@/components/ui/sidebar'
 import { useAuth } from '@/components/auth-provider'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getPagePermissions, getRoleConfig, isViewAllowedForRole } from '@/lib/rbac-config'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -37,6 +39,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { user, logout } = useAuth()
+  const { hasAnyPermission } = usePermissions()
   const { state, toggleSidebar, setOpen } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
@@ -364,15 +367,93 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     }
   ]
 
-  const allAdminItems = user?.role === 'admin' ? [
-    { section: 'Sports Management', items: sportsManagementItems },
-    { section: 'Assignor Management', items: assignorItems },
-    // Financial Management temporarily disabled - coming next month
-    ...(financialItems.length > 0 ? [{ section: 'Financial Management', items: financialItems }] : []),
-    { section: 'Organization', items: organizationItems },
-    { section: 'Analytics', items: analyticsItems },
-    { section: 'Administration', items: administrationItems }
-  ] : null
+  // Filter navigation items based on permissions
+  const filterItemsByPermissions = (items: any[]) => {
+    return items.filter(item => {
+      // Check view permissions
+      const viewKey = `dashboard-view:${item.url}`
+      const requiredPermissions = getPagePermissions(viewKey)
+      
+      // If no permissions required, show the item
+      if (requiredPermissions.length === 0) return true
+      
+      // Admin always sees everything
+      if (user?.role === 'admin') return true
+      
+      // Check if user has required permissions
+      return hasAnyPermission(requiredPermissions)
+    })
+  }
+
+  // Filter items based on role configuration
+  const filterItemsByRole = (items: any[]) => {
+    if (!user?.role) return []
+    
+    // Admin sees everything
+    if (user.role === 'admin') return items
+    
+    const roleConfig = getRoleConfig(user.role)
+    if (!roleConfig) return []
+    
+    return items.filter(item => {
+      // Check if view is allowed for this role
+      if (roleConfig.allowedViews.includes('*')) return true
+      return roleConfig.allowedViews.includes(item.url)
+    })
+  }
+
+  // Apply both permission and role filters
+  const filterNavigationItems = (items: any[]) => {
+    const permissionFiltered = filterItemsByPermissions(items)
+    return filterItemsByRole(permissionFiltered)
+  }
+
+  // Build navigation sections based on user role and permissions
+  const buildNavigationSections = () => {
+    if (!user) return []
+    
+    const sections = []
+    
+    // Sports Management - available to most roles
+    const filteredSportsItems = filterNavigationItems(sportsManagementItems)
+    if (filteredSportsItems.length > 0) {
+      sections.push({ section: 'Sports Management', items: filteredSportsItems })
+    }
+    
+    // Assignor Management - for assignor-related roles
+    const filteredAssignorItems = filterNavigationItems(assignorItems)
+    if (filteredAssignorItems.length > 0) {
+      sections.push({ section: 'Assignor Management', items: filteredAssignorItems })
+    }
+    
+    // Financial Management - when enabled
+    const filteredFinancialItems = filterNavigationItems(financialItems)
+    if (filteredFinancialItems.length > 0) {
+      sections.push({ section: 'Financial Management', items: filteredFinancialItems })
+    }
+    
+    // Organization - for managers and admin
+    const filteredOrgItems = filterNavigationItems(organizationItems)
+    if (filteredOrgItems.length > 0) {
+      sections.push({ section: 'Organization', items: filteredOrgItems })
+    }
+    
+    // Analytics - for roles with report access
+    const filteredAnalyticsItems = filterNavigationItems(analyticsItems)
+    if (filteredAnalyticsItems.length > 0) {
+      sections.push({ section: 'Analytics', items: filteredAnalyticsItems })
+    }
+    
+    // Administration - for admin roles
+    const filteredAdminItems = filterNavigationItems(administrationItems)
+    if (filteredAdminItems.length > 0) {
+      sections.push({ section: 'Administration', items: filteredAdminItems })
+    }
+    
+    return sections
+  }
+  
+  const navigationSections = buildNavigationSections()
 
   return (
     <Sidebar 
@@ -465,9 +546,9 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         {showScrollBottom && (
           <div className="sticky bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-sidebar via-sidebar/80 to-transparent pointer-events-none z-10 -mt-6" />
         )}
-        {user?.role === 'admin' ? (
+        {navigationSections.length > 0 ? (
           <>
-            {allAdminItems?.map((section) => (
+            {navigationSections.map((section) => (
               <SidebarGroup key={section.section}>
                 <SidebarGroupLabel className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
                   {section.section}
@@ -517,10 +598,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             ))}
           </>
         ) : (
+          // If no sections available, show a basic menu for referee role
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0">
-                {refereeItems.map((item) => (
+                {filterNavigationItems(refereeItems).map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       onClick={() => {
