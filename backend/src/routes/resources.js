@@ -6,7 +6,28 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 
-// Admin middleware
+// Import new services
+const ResourcePermissionService = require('../services/ResourcePermissionService');
+const ResourceAuditService = require('../services/ResourceAuditService');
+const ResourceVersionService = require('../services/ResourceVersionService');
+
+// Import permission middleware
+const {
+  checkResourcePermission,
+  checkCategoryPermission,
+  checkPermissionManagement,
+  checkAuditAccess,
+  extractAuditMetadata,
+  requireResourcePermission,
+  requireCategoryPermission
+} = require('../middleware/resourcePermissions');
+
+// Initialize services
+const resourcePermissionService = new ResourcePermissionService();
+const resourceAuditService = new ResourceAuditService();
+const resourceVersionService = new ResourceVersionService();
+
+// Admin middleware (kept for backward compatibility)
 const requireAdmin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -55,7 +76,7 @@ const upload = multer({
 });
 
 // Get all resource categories
-router.get('/categories', authenticateToken, async (req, res) => {
+router.get('/categories', authenticateToken, extractAuditMetadata(), async (req, res) => {
   try {
     const categories = await db('resource_categories')
       .where('is_active', true)
@@ -75,8 +96,8 @@ router.get('/categories', authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new category (admin only)
-router.post('/categories', authenticateToken, requireAdmin, async (req, res) => {
+// Create a new category (with permission check)
+router.post('/categories', authenticateToken, ...requireCategoryPermission('create'), async (req, res) => {
   const { name, description, icon, order_index } = req.body;
   
   try {
@@ -93,6 +114,16 @@ router.post('/categories', authenticateToken, requireAdmin, async (req, res) => 
       })
       .returning('*');
     
+    // Log category creation
+    await resourceAuditService.logCategoryAction(
+      req.user.id,
+      category.id,
+      'create',
+      null,
+      category,
+      req.auditMetadata
+    );
+    
     res.json({
       success: true,
       category
@@ -106,12 +137,24 @@ router.post('/categories', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// Update category (admin only)
-router.put('/categories/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Update category (with permission check)
+router.put('/categories/:id', authenticateToken, ...requireCategoryPermission('edit'), async (req, res) => {
   const { id } = req.params;
   const { name, description, icon, order_index, is_active } = req.body;
   
   try {
+    // Get existing category for audit logging
+    const existingCategory = await db('resource_categories')
+      .where('id', id)
+      .first();
+    
+    if (!existingCategory) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+    
     const updates = {};
     if (name !== undefined) {
       updates.name = name;
@@ -127,12 +170,15 @@ router.put('/categories/:id', authenticateToken, requireAdmin, async (req, res) 
       .update(updates)
       .returning('*');
     
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        error: 'Category not found'
-      });
-    }
+    // Log category update
+    await resourceAuditService.logCategoryAction(
+      req.user.id,
+      id,
+      'edit',
+      existingCategory,
+      category,
+      req.auditMetadata
+    );
     
     res.json({
       success: true,
@@ -147,21 +193,36 @@ router.put('/categories/:id', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// Delete category (admin only)
-router.delete('/categories/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Delete category (with permission check)
+router.delete('/categories/:id', authenticateToken, ...requireCategoryPermission('delete'), async (req, res) => {
   const { id } = req.params;
   
   try {
-    const deleted = await db('resource_categories')
+    // Get category before deletion for audit logging
+    const categoryToDelete = await db('resource_categories')
       .where('id', id)
-      .del();
+      .first();
     
-    if (!deleted) {
+    if (!categoryToDelete) {
       return res.status(404).json({
         success: false,
         error: 'Category not found'
       });
     }
+    
+    const deleted = await db('resource_categories')
+      .where('id', id)
+      .del();
+    
+    // Log category deletion
+    await resourceAuditService.logCategoryAction(
+      req.user.id,
+      id,
+      'delete',
+      categoryToDelete,
+      null,
+      req.auditMetadata
+    );
     
     res.json({
       success: true,
@@ -177,7 +238,7 @@ router.delete('/categories/:id', authenticateToken, requireAdmin, async (req, re
 });
 
 // Get all resources with filters
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, extractAuditMetadata(), async (req, res) => {
   try {
     const { 
       category_id, 
@@ -262,8 +323,8 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get single resource
-router.get('/:id', authenticateToken, async (req, res) => {
+// Get single resource (with permission check)
+router.get('/:id', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -287,14 +348,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
     
-    // Log view
-    await db('resource_access_logs').insert({
-      resource_id: id,
-      user_id: req.user.id,
-      action: 'view',
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    // Log resource view using audit service
+    await resourceAuditService.logResourceView(
+      req.user.id,
+      id,
+      req.auditMetadata
+    );
     
     // Increment view count
     await db('resources')
@@ -314,8 +373,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new resource (admin only) - handles both file uploads and JSON content
-router.post('/', authenticateToken, requireAdmin, (req, res, next) => {
+// Create a new resource (with permission check) - handles both file uploads and JSON content
+router.post('/', authenticateToken, extractAuditMetadata(), checkResourcePermission('create'), (req, res, next) => {
   // Check if this is a multipart request (file upload) or JSON
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     upload.single('file')(req, res, next);
@@ -373,6 +432,23 @@ router.post('/', authenticateToken, requireAdmin, (req, res, next) => {
       .insert(resourceData)
       .returning('*');
     
+    // Log resource creation
+    await resourceAuditService.logResourceCreation(
+      req.user.id,
+      resource.id,
+      resource,
+      req.auditMetadata
+    );
+    
+    // Create initial version
+    await resourceVersionService.createVersion(
+      resource.id,
+      resource,
+      req.user.id,
+      'Initial version',
+      { initial_creation: true }
+    );
+    
     res.json({
       success: true,
       resource
@@ -394,8 +470,8 @@ router.post('/', authenticateToken, requireAdmin, (req, res, next) => {
   }
 });
 
-// Update resource (admin only) - handles both file uploads and JSON content
-router.put('/:id', authenticateToken, requireAdmin, (req, res, next) => {
+// Update resource (with permission check) - handles both file uploads and JSON content
+router.put('/:id', authenticateToken, ...requireResourcePermission('edit'), (req, res, next) => {
   // Check if this is a multipart request (file upload) or JSON
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     upload.single('file')(req, res, next);
@@ -482,6 +558,24 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res, next) => {
       .update(updates)
       .returning('*');
     
+    // Log resource update
+    await resourceAuditService.logResourceUpdate(
+      req.user.id,
+      id,
+      existingResource,
+      resource,
+      req.auditMetadata
+    );
+    
+    // Create new version
+    await resourceVersionService.createVersion(
+      id,
+      resource,
+      req.user.id,
+      req.body.changeReason || 'Resource updated',
+      { update_timestamp: new Date().toISOString() }
+    );
+    
     res.json({
       success: true,
       resource
@@ -503,8 +597,8 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res, next) => {
   }
 });
 
-// Delete resource (admin only)
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Delete resource (with permission check)
+router.delete('/:id', authenticateToken, ...requireResourcePermission('delete'), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -530,6 +624,17 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     }
     
+    // Log resource deletion before actual deletion
+    await resourceAuditService.logResourceDeletion(
+      req.user.id,
+      id,
+      resource,
+      req.auditMetadata
+    );
+    
+    // Delete resource versions
+    await resourceVersionService.deleteResourceVersions(id);
+    
     // Delete resource from database
     await db('resources')
       .where('id', id)
@@ -548,8 +653,8 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Download resource file
-router.get('/:id/download', authenticateToken, async (req, res) => {
+// Download resource file (with permission check)
+router.get('/:id/download', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -571,14 +676,12 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
       });
     }
     
-    // Log download
-    await db('resource_access_logs').insert({
-      resource_id: id,
-      user_id: req.user.id,
-      action: 'download',
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    // Log resource download using audit service
+    await resourceAuditService.logResourceDownload(
+      req.user.id,
+      id,
+      req.auditMetadata
+    );
     
     // Increment download count
     await db('resources')
@@ -597,8 +700,8 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
   }
 });
 
-// Get resource statistics (admin only)
-router.get('/stats/overview', authenticateToken, requireAdmin, async (req, res) => {
+// Get resource statistics (with permission check)
+router.get('/stats/overview', authenticateToken, checkAuditAccess(), async (req, res) => {
   try {
     const [totalResources] = await db('resources').count('* as count');
     const [totalCategories] = await db('resource_categories').count('* as count');
@@ -649,7 +752,7 @@ router.get('/stats/overview', authenticateToken, requireAdmin, async (req, res) 
 });
 
 // File upload endpoint for TinyMCE and other file uploads
-router.post('/upload', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+router.post('/upload', authenticateToken, checkResourcePermission('create'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -673,6 +776,476 @@ router.post('/upload', authenticateToken, requireAdmin, upload.single('file'), a
     res.status(500).json({
       success: false,
       error: 'Failed to upload file'
+    });
+  }
+});
+
+// === PERMISSION MANAGEMENT ENDPOINTS ===
+
+// Get category permissions
+router.get('/categories/:id/permissions', authenticateToken, checkPermissionManagement(), async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const permissions = await resourcePermissionService.getCategoryPermissions(id);
+    
+    res.json({
+      success: true,
+      permissions
+    });
+  } catch (error) {
+    console.error('Error fetching category permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch category permissions'
+    });
+  }
+});
+
+// Set category permissions
+router.put('/categories/:id/permissions', authenticateToken, checkPermissionManagement(), async (req, res) => {
+  const { id } = req.params;
+  const { role_id, permissions } = req.body;
+  
+  try {
+    if (!role_id || !permissions) {
+      return res.status(400).json({
+        success: false,
+        error: 'Role ID and permissions are required'
+      });
+    }
+    
+    const result = await resourcePermissionService.setCategoryPermissions(
+      id,
+      role_id,
+      permissions,
+      req.user.id
+    );
+    
+    // Log permission change
+    await resourceAuditService.logPermissionChange(
+      req.user.id,
+      null,
+      id,
+      'set_category_permissions',
+      { role_id, permissions: result },
+      req.auditMetadata
+    );
+    
+    res.json({
+      success: true,
+      permission: result
+    });
+  } catch (error) {
+    console.error('Error setting category permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set category permissions'
+    });
+  }
+});
+
+// Get resource permissions
+router.get('/:id/permissions', authenticateToken, checkPermissionManagement(), async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const permissions = await resourcePermissionService.getResourcePermissions(id);
+    
+    res.json({
+      success: true,
+      permissions
+    });
+  } catch (error) {
+    console.error('Error fetching resource permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch resource permissions'
+    });
+  }
+});
+
+// Set resource permissions
+router.put('/:id/permissions', authenticateToken, checkPermissionManagement(), async (req, res) => {
+  const { id } = req.params;
+  const { role_id, permissions } = req.body;
+  
+  try {
+    if (!role_id || !permissions) {
+      return res.status(400).json({
+        success: false,
+        error: 'Role ID and permissions are required'
+      });
+    }
+    
+    const result = await resourcePermissionService.setResourcePermissions(
+      id,
+      role_id,
+      permissions,
+      req.user.id
+    );
+    
+    // Log permission change
+    await resourceAuditService.logPermissionChange(
+      req.user.id,
+      id,
+      null,
+      'set_resource_permissions',
+      { role_id, permissions: result },
+      req.auditMetadata
+    );
+    
+    res.json({
+      success: true,
+      permission: result
+    });
+  } catch (error) {
+    console.error('Error setting resource permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set resource permissions'
+    });
+  }
+});
+
+// Get effective permissions for current user on a resource
+router.get('/:id/my-permissions', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const permissions = await resourcePermissionService.getEffectivePermissions(req.user.id, id);
+    
+    res.json({
+      success: true,
+      permissions
+    });
+  } catch (error) {
+    console.error('Error fetching effective permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch effective permissions'
+    });
+  }
+});
+
+// === CATEGORY MANAGER ENDPOINTS ===
+
+// Get category managers
+router.get('/categories/:id/managers', authenticateToken, checkCategoryPermission('manage'), async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const managers = await db('resource_category_managers')
+      .select(
+        'resource_category_managers.*',
+        'users.email as manager_email',
+        'users.first_name',
+        'users.last_name'
+      )
+      .leftJoin('users', 'resource_category_managers.user_id', 'users.id')
+      .where('resource_category_managers.category_id', id)
+      .orderBy('users.email', 'asc');
+    
+    res.json({
+      success: true,
+      managers
+    });
+  } catch (error) {
+    console.error('Error fetching category managers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch category managers'
+    });
+  }
+});
+
+// Add category manager
+router.post('/categories/:id/managers', authenticateToken, checkCategoryPermission('manage'), async (req, res) => {
+  const { id } = req.params;
+  const { user_id, permissions } = req.body;
+  
+  try {
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Check if manager already exists
+    const existing = await db('resource_category_managers')
+      .where('category_id', id)
+      .where('user_id', user_id)
+      .first();
+    
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        error: 'User is already a manager of this category'
+      });
+    }
+    
+    const [manager] = await db('resource_category_managers')
+      .insert({
+        category_id: id,
+        user_id,
+        can_edit: permissions?.can_edit || false,
+        can_delete: permissions?.can_delete || false,
+        can_manage_permissions: permissions?.can_manage_permissions || false,
+        assigned_by: req.user.id
+      })
+      .returning('*');
+    
+    res.json({
+      success: true,
+      manager
+    });
+  } catch (error) {
+    console.error('Error adding category manager:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add category manager'
+    });
+  }
+});
+
+// Remove category manager
+router.delete('/categories/:id/managers/:managerId', authenticateToken, checkCategoryPermission('manage'), async (req, res) => {
+  const { id, managerId } = req.params;
+  
+  try {
+    const deleted = await db('resource_category_managers')
+      .where('id', managerId)
+      .where('category_id', id)
+      .del();
+    
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Manager not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Manager removed successfully'
+    });
+  } catch (error) {
+    console.error('Error removing category manager:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove category manager'
+    });
+  }
+});
+
+// === AUDIT LOG ENDPOINTS ===
+
+// Get audit logs
+router.get('/audit-log', authenticateToken, checkAuditAccess(), async (req, res) => {
+  try {
+    const filters = {
+      user_id: req.query.user_id,
+      resource_id: req.query.resource_id,
+      category_id: req.query.category_id,
+      action: req.query.action ? req.query.action.split(',') : undefined,
+      entity_type: req.query.entity_type,
+      start_date: req.query.start_date ? new Date(req.query.start_date) : undefined,
+      end_date: req.query.end_date ? new Date(req.query.end_date) : undefined,
+      ip_address: req.query.ip_address,
+      search: req.query.search,
+      limit: req.query.limit ? parseInt(req.query.limit) : 50,
+      offset: req.query.offset ? parseInt(req.query.offset) : 0
+    };
+    
+    const result = await resourceAuditService.getAuditLogs(filters);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch audit logs'
+    });
+  }
+});
+
+// Get audit statistics
+router.get('/audit-log/statistics', authenticateToken, checkAuditAccess(), async (req, res) => {
+  try {
+    const filters = {
+      start_date: req.query.start_date ? new Date(req.query.start_date) : undefined,
+      end_date: req.query.end_date ? new Date(req.query.end_date) : undefined
+    };
+    
+    const statistics = await resourceAuditService.getAuditStatistics(filters);
+    
+    res.json({
+      success: true,
+      statistics
+    });
+  } catch (error) {
+    console.error('Error fetching audit statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch audit statistics'
+    });
+  }
+});
+
+// Export audit logs
+router.get('/audit-log/export', authenticateToken, checkAuditAccess(), async (req, res) => {
+  try {
+    const filters = {
+      user_id: req.query.user_id,
+      resource_id: req.query.resource_id,
+      category_id: req.query.category_id,
+      action: req.query.action ? req.query.action.split(',') : undefined,
+      entity_type: req.query.entity_type,
+      start_date: req.query.start_date ? new Date(req.query.start_date) : undefined,
+      end_date: req.query.end_date ? new Date(req.query.end_date) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit) : 10000
+    };
+    
+    const exportData = await resourceAuditService.exportAuditLogs(filters);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="resource-audit-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export audit logs'
+    });
+  }
+});
+
+// === VERSION MANAGEMENT ENDPOINTS ===
+
+// Get resource version history
+router.get('/:id/versions', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const options = {
+      limit: req.query.limit ? parseInt(req.query.limit) : 20,
+      offset: req.query.offset ? parseInt(req.query.offset) : 0,
+      includeContent: req.query.include_content === 'true'
+    };
+    
+    const result = await resourceVersionService.getVersionHistory(id, options);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error fetching version history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch version history'
+    });
+  }
+});
+
+// Get specific version
+router.get('/:id/versions/:versionNumber', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
+  const { id, versionNumber } = req.params;
+  
+  try {
+    const version = await resourceVersionService.getVersion(id, parseInt(versionNumber));
+    
+    if (!version) {
+      return res.status(404).json({
+        success: false,
+        error: 'Version not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      version
+    });
+  } catch (error) {
+    console.error('Error fetching version:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch version'
+    });
+  }
+});
+
+// Restore resource to previous version
+router.post('/:id/versions/:versionNumber/restore', authenticateToken, ...requireResourcePermission('edit'), async (req, res) => {
+  const { id, versionNumber } = req.params;
+  const { restore_reason } = req.body;
+  
+  try {
+    const result = await resourceVersionService.restoreVersion(
+      id,
+      parseInt(versionNumber),
+      req.user.id,
+      restore_reason || `Restored to version ${versionNumber}`
+    );
+    
+    res.json({
+      success: true,
+      resource: result,
+      message: `Resource restored to version ${versionNumber}`
+    });
+  } catch (error) {
+    console.error('Error restoring version:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to restore version'
+    });
+  }
+});
+
+// Compare resource versions
+router.get('/:id/versions/:version1/compare/:version2', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
+  const { id, version1, version2 } = req.params;
+  
+  try {
+    const comparison = await resourceVersionService.compareVersions(
+      id,
+      parseInt(version1),
+      parseInt(version2)
+    );
+    
+    res.json({
+      success: true,
+      comparison
+    });
+  } catch (error) {
+    console.error('Error comparing versions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to compare versions'
+    });
+  }
+});
+
+// Get version statistics
+router.get('/:id/versions/statistics', authenticateToken, ...requireResourcePermission('view'), async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const statistics = await resourceVersionService.getVersionStatistics(id);
+    
+    res.json({
+      success: true,
+      statistics
+    });
+  } catch (error) {
+    console.error('Error fetching version statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch version statistics'
     });
   }
 });
