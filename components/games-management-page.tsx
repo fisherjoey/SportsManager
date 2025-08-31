@@ -9,23 +9,77 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
-import { mockGames, type Game } from '@/lib/mock-data'
+import { type Game } from '@/lib/types/games'
 import { useToast } from '@/components/ui/use-toast'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatsGrid } from '@/components/ui/stats-grid'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/components/auth-provider'
+import { usePermissions } from '@/hooks/usePermissions'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface GamesManagementPageProps {
   initialDateFilter?: string
 }
 
 export function GamesManagementPage({ initialDateFilter }: GamesManagementPageProps = {}) {
-  const [games, setGames] = useState<Game[]>(mockGames)
+  const [games, setGames] = useState<Game[]>([])
+  const [totalGames, setTotalGames] = useState<number>(0)
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLevel, setSelectedLevel] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || 'all')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [gameToDelete, setGameToDelete] = useState<Game | null>(null)
   const { toast } = useToast()
+  const { isAuthenticated } = useAuth()
+  const { hasPermission } = usePermissions()
+
+  // Fetch games from API
+  useEffect(() => {
+    const fetchGames = async () => {
+      if (!isAuthenticated) {
+        setLoading(false)
+        return
+      }
+      
+      try {
+        setLoading(true)
+        // Initialize token before making API calls
+        apiClient.initializeToken()
+        const response = await apiClient.getGames({ limit: 100 })
+        setGames(response.data || [])
+        // Set total count from pagination if available
+        if (response.pagination?.total) {
+          setTotalGames(response.pagination.total)
+        } else {
+          setTotalGames(response.data?.length || 0)
+        }
+      } catch (error) {
+        console.error('Failed to fetch games:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to load games. Please try again later.',
+          variant: 'destructive'
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGames()
+  }, [isAuthenticated, toast])
 
   // Update date filter when initialDateFilter prop changes
   useEffect(() => {
@@ -53,18 +107,37 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
     return matchesSearch && matchesLevel && matchesStatus && matchesDate
   })
 
-  const handleDeleteGame = (gameId: string) => {
-    setGames(games.filter((g) => g.id !== gameId))
-    toast({
-      title: 'Game deleted',
-      description: 'The game has been removed from the system.'
-    })
+  const handleDeleteGame = async () => {
+    if (!gameToDelete) return
+    
+    try {
+      await apiClient.deleteGame(gameToDelete.id)
+      setGames(games.filter((g) => g.id !== gameToDelete.id))
+      toast({
+        title: 'Game deleted',
+        description: 'The game has been removed from the system.'
+      })
+      setDeleteDialogOpen(false)
+      setGameToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete game:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete game. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const openDeleteDialog = (game: Game) => {
+    setGameToDelete(game)
+    setDeleteDialogOpen(true)
   }
 
   const stats = [
     {
       title: selectedDate !== 'all' ? 'Games This Day' : 'Total Games',
-      value: filteredGames.length,
+      value: selectedDate !== 'all' ? filteredGames.length : totalGames,
       icon: Calendar,
       color: 'text-blue-600'
     },
@@ -215,9 +288,16 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           <Button variant="ghost" size="sm">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDeleteGame(game.id)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {hasPermission('games:delete') && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => openDeleteDialog(game)}
+              className="hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )
     }
@@ -332,9 +412,61 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           </div>
 
           {/* Games Table */}
-          <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading games...</p>
+              </div>
+            </div>
+          ) : (
+            <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+          )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Game</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this game?
+              {gameToDelete && (
+                <div className="mt-2 p-3 bg-muted rounded-md">
+                  <p className="font-medium">
+                    {typeof gameToDelete.homeTeam === 'object' 
+                      ? `${gameToDelete.homeTeam.organization} ${gameToDelete.homeTeam.ageGroup} ${gameToDelete.homeTeam.gender}`
+                      : gameToDelete.homeTeam}
+                    {' vs '}
+                    {typeof gameToDelete.awayTeam === 'object' 
+                      ? `${gameToDelete.awayTeam.organization} ${gameToDelete.awayTeam.ageGroup} ${gameToDelete.awayTeam.gender}`
+                      : gameToDelete.awayTeam}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(gameToDelete.date).toLocaleDateString()} at {gameToDelete.time || gameToDelete.startTime}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Location: {gameToDelete.location}
+                  </p>
+                </div>
+              )}
+              <p className="mt-3 text-sm font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteGame}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Game
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageLayout>
   )
 }

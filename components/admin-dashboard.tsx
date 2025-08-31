@@ -10,7 +10,7 @@ import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { DashboardOverview } from '@/components/dashboard-overview'
 import { LeagueCreation } from '@/components/league-creation'
 import { TournamentGenerator } from '@/components/tournament-generator'
-import { GameManagement } from '@/components/game-management'
+import { GamesManagementPage } from '@/components/games-management-page'
 import { GameAssignmentBoard } from '@/components/game-assignment-board'
 import { TeamsLocationsPage } from '@/components/teams-locations/teams-locations-page'
 import { RefereeManagement } from '@/components/referee-management'
@@ -204,7 +204,7 @@ export function AdminDashboard() {
     case 'tournaments':
       return <TournamentGenerator />
     case 'games':
-      return <GameManagement initialDateFilter={gameManagementDateFilter} />
+      return <GamesManagementPage initialDateFilter={gameManagementDateFilter} />
     case 'assigning':
       return <GameAssignmentBoard />
     case 'ai-assignments':

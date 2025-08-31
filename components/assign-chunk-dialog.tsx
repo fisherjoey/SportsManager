@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
-import { type Game, type Referee, mockGames } from '@/lib/mock-data'
+import { type Game } from '@/lib/types/games'
+import { type Referee } from '@/lib/types/referees'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 
 interface GameChunk {
@@ -27,10 +28,11 @@ interface AssignChunkDialogProps {
   onOpenChange: (open: boolean) => void
   chunk: GameChunk
   availableReferees: Referee[]
+  existingGames?: Game[]  // Pass in actual games data
   onAssign: (chunk: GameChunk, refereeId: string) => void
 }
 
-export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees, onAssign }: AssignChunkDialogProps) {
+export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees, existingGames = [], onAssign }: AssignChunkDialogProps) {
   const [selectedReferee, setSelectedReferee] = useState<string | null>(null)
 
   const isRefereeAvailable = (referee: Referee) => {
@@ -41,7 +43,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
 
   const getRefereeConflicts = (referee: Referee) => {
     // Check for existing assignments that conflict with this chunk
-    const conflicts = mockGames.filter(
+    const conflicts = existingGames.filter(
       (game) =>
         game.assignedReferees?.includes(referee.name) &&
         game.date === chunk.date &&

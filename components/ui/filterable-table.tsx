@@ -125,15 +125,25 @@ export function FilterableTable<T extends Record<string, any>>({
   // Column-level filters state (for the dropdown popovers)
   const [columnLevelFilters, setColumnLevelFilters] = useState<Record<string, string | string[] | Date | undefined>>(() => {
     const initialFilters: Record<string, string | string[] | Date | undefined> = {}
+    
+    // Initialize from columnFilters state to maintain sync
+    columnFilters.forEach(filter => {
+      initialFilters[filter.id] = filter.value as string | string[] | Date | undefined
+    })
+    
+    // Set defaults for columns that don't have filters yet
     columns.forEach(col => {
-      if (col.filterType === 'search') {
-        initialFilters[col.id] = ''
-      } else if (col.filterType === 'select') {
-        initialFilters[col.id] = []
-      } else if (col.filterType === 'date') {
-        initialFilters[col.id] = undefined
+      if (!(col.id in initialFilters)) {
+        if (col.filterType === 'search') {
+          initialFilters[col.id] = ''
+        } else if (col.filterType === 'select') {
+          initialFilters[col.id] = []
+        } else if (col.filterType === 'date') {
+          initialFilters[col.id] = undefined
+        }
       }
     })
+    
     return initialFilters
   })
 
@@ -262,7 +272,13 @@ export function FilterableTable<T extends Record<string, any>>({
     column: ColumnDef<T>
     tanstackColumn: any
   }> = ({ column, tanstackColumn }) => {
-    const [searchInput, setSearchInput] = useState('')
+    // Initialize search input from the current filter value
+    const currentFilterValue = tanstackColumn.getFilterValue()
+    const [searchInput, setSearchInput] = useState(
+      column.filterType === 'search' && typeof currentFilterValue === 'string' 
+        ? currentFilterValue 
+        : ''
+    )
     
     if (column.filterType === 'none' || !column.filterType) {
       return (
@@ -371,12 +387,13 @@ export function FilterableTable<T extends Record<string, any>>({
                     placeholder={`Search ${column.title.toLowerCase()}...`}
                     value={searchInput}
                     onChange={(e) => {
-                      setSearchInput(e.target.value)
+                      const value = e.target.value
+                      setSearchInput(value)
                       setColumnLevelFilters(prev => ({
                         ...prev,
-                        [column.id]: e.target.value
+                        [column.id]: value
                       }))
-                      tanstackColumn.setFilterValue(e.target.value === '' ? undefined : e.target.value)
+                      tanstackColumn.setFilterValue(value === '' ? undefined : value)
                     }}
                     className="pl-7 h-8"
                   />
@@ -439,17 +456,23 @@ export function FilterableTable<T extends Record<string, any>>({
                 <div className="space-y-2">
                   <div className="max-h-48 overflow-y-auto space-y-1">
                     {column.filterOptions?.filter(option => option.value !== 'all').map((option) => {
-                      const currentArray = Array.isArray(currentValue) ? currentValue : []
+                      // Get the filter value directly from the column to ensure state sync
+                      const filterValue = tanstackColumn.getFilterValue()
+                      const currentArray = Array.isArray(filterValue) ? filterValue : []
                       const isSelected = currentArray.includes(option.value)
+                      
                       return (
                         <div key={option.value} className="flex items-center space-x-2">
                           <Checkbox
                             id={`${column.id}-${option.value}`}
-                            checked={Boolean(isSelected)}
+                            checked={isSelected}
                             onCheckedChange={(checked) => {
-                              const newValue = checked === true
-                                ? [...currentArray, option.value]
-                                : currentArray.filter(v => v !== option.value)
+                              let newValue: string[]
+                              if (checked) {
+                                newValue = [...currentArray, option.value]
+                              } else {
+                                newValue = currentArray.filter(v => v !== option.value)
+                              }
                               
                               setColumnLevelFilters(prev => ({
                                 ...prev,

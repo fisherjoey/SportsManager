@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
-import { mockGames, mockReferees, type Game, type Referee } from '@/lib/mock-data'
+import { type Game } from '@/lib/types/games'
+import { type Referee } from '@/lib/types/referees'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
@@ -102,25 +103,27 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
   }, [initialDateFilter])
   const { toast } = useToast()
 
-  // Load mock games data (temporarily using mock data instead of API)
+  // Load games from API
   useEffect(() => {
     const loadGames = async () => {
       try {
-        // Using mock data temporarily
-        setGames(mockGames)
+        // This component needs to be connected to the API
+        // For now, show an error that it needs implementation
+        throw new Error('This component needs to be connected to the games API. Use the games-management-page component instead.')
       } catch (error) {
         console.error('Error loading games:', error)
         toast({
-          title: 'Error',
-          description: 'Failed to load games.',
+          title: 'Component Not Connected',
+          description: 'This component needs to be connected to the games API. Please use the games-management-page component for production use.',
           variant: 'destructive'
         })
+        setGames([]) // Set empty array instead of undefined
       } finally {
         setLoading(false)
       }
     }
     loadGames()
-  }, [])
+  }, [toast])
 
   const handleCreateGame = (gameData: any) => {
     const newGame = {
@@ -164,16 +167,13 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
       return
     }
     
-    // Use only fallback logic (API endpoints not available yet)
-    const referee = mockReferees.find((r) => r.id === refereeId)
-    if (!referee) {
-      toast({
-        title: 'Error',
-        description: 'Referee not found.',
-        variant: 'destructive'
-      })
-      return
-    }
+    // This function needs API integration
+    toast({
+      title: 'Not Implemented',
+      description: 'Referee assignment requires API integration. Use the games-management-page component.',
+      variant: 'destructive'
+    })
+    return
 
     setGames(
       games.map((game) => {
@@ -448,9 +448,22 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
 
   return (
     <PageLayout>
+      {/* Deprecation Notice */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+        <div className="flex">
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>⚠️ This component is deprecated and not connected to the API.</strong> 
+              Please use the <code className="font-mono text-xs">games-management-page</code> component for production use.
+              This component will be removed in a future update.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <PageHeader
         icon={Calendar}
-        title="Game Management"
+        title="Game Management (Deprecated)"
         description={
           selectedDate !== 'all' 
             ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
@@ -774,8 +787,11 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
   const fetchAvailableReferees = async () => {
     setLoading(true)
     
-    // Use only client-side filtering (API endpoints not available yet)
-    const filteredReferees = mockReferees.filter(referee => {
+    // This needs API integration - return empty array for now
+    const filteredReferees: Referee[] = []
+    
+    // Original filter logic commented for reference when implementing API
+    /* filteredReferees = referees.filter(referee => {
       // Only show available referees
       if (!referee.isAvailable) return false
       
@@ -799,7 +815,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
       })
       
       return !conflictingGame
-    }) as Referee[]
+    }) */
     
     setAvailableReferees(filteredReferees)
     setLoading(false)

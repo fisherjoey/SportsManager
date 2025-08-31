@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { type Game } from '@/lib/mock-data'
+import { type Game } from '@/lib/types/games'
 
 export interface GameFilterOptions {
   ageGroups: string[]
