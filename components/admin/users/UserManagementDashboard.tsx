@@ -19,15 +19,33 @@ interface Role {
   description?: string
 }
 
+interface RefereeProfile {
+  id: string
+  wage_amount: number
+  years_experience: number
+  evaluation_score?: number
+  is_white_whistle: boolean
+  show_white_whistle: boolean
+  referee_type: Role | null
+  capabilities: Role[]
+  computed_fields: {
+    type_config: any
+    capability_count: number
+    is_senior: boolean
+    is_junior: boolean
+    is_rookie: boolean
+  }
+}
+
 interface User {
   id: string
   name: string
   email: string
-  role: string  // Legacy role field
-  legacy_role?: string  // Explicitly marked as legacy
-  roles?: Role[]  // New RBAC roles
+  roles?: Role[]  // RBAC roles
   is_available?: boolean  // Referee availability
   is_active?: boolean  // Might not exist, treat as active if undefined
+  is_referee?: boolean  // Enhanced field
+  referee_profile?: RefereeProfile | null  // Enhanced field
   created_at: string
   updated_at?: string
 }
@@ -55,18 +73,39 @@ export function UserManagementDashboard() {
         limit: 20
       }
       
-      if (filters.role !== 'all') {
-        params.role = filters.role
-      }
-      
-      const response = await apiClient.getUsers(params)
-      
-      if (response.data?.users) {
-        setUsers(response.data.users)
-      } else if (response.data?.data && response.data?.pagination) {
-        // Handle paginated response
-        setUsers(response.data.data)
-        setTotalPages(response.data.pagination.totalPages || 1)
+      // Handle referee filters - include all referee types or specific ones
+      if (filters.role === 'referee' || filters.role.endsWith('_referee')) {
+        // Use the enhanced referees API for referee data
+        if (filters.role === 'senior_referee') {
+          params.referee_type = 'Senior Referee'
+        } else if (filters.role === 'junior_referee') {
+          params.referee_type = 'Junior Referee'
+        } else if (filters.role === 'rookie_referee') {
+          params.referee_type = 'Rookie Referee'
+        }
+        // For 'referee', we don't add any filter to get all types
+        
+        const response = await apiClient.get('/referees', { params })
+        
+        if (response.data?.data && response.data?.pagination) {
+          setUsers(response.data.data)
+          setTotalPages(response.data.pagination.totalPages || 1)
+        }
+      } else {
+        // Use regular users API for non-referee filters
+        if (filters.role !== 'all') {
+          params.role = filters.role
+        }
+        
+        const response = await apiClient.getUsers(params)
+        
+        if (response.data?.users) {
+          setUsers(response.data.users)
+        } else if (response.data?.data && response.data?.pagination) {
+          // Handle paginated response
+          setUsers(response.data.data)
+          setTotalPages(response.data.pagination.totalPages || 1)
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load users'
@@ -127,6 +166,51 @@ export function UserManagementDashboard() {
   const handleFormSuccess = () => {
     setShowUserForm(false)
     fetchUsers()
+  }
+
+  const handleWageUpdate = async (userId: string, newWage: number) => {
+    try {
+      await apiClient.put(`/referees/${userId}/wage`, {
+        wage_amount: newWage
+      })
+      
+      toast({
+        title: 'Wage Updated',
+        description: `Referee wage updated to $${newWage.toFixed(2)} per game`,
+      })
+      
+      fetchUsers() // Refresh the data
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update wage'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleTypeChange = async (userId: string, newType: string) => {
+    try {
+      await apiClient.put(`/referees/${userId}/type`, {
+        referee_type: newType,
+        update_wage_to_default: false
+      })
+      
+      toast({
+        title: 'Referee Type Updated',
+        description: `Referee type changed to ${newType}`,
+      })
+      
+      fetchUsers() // Refresh the data
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change referee type'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+    }
   }
 
   // Filter users based on search
@@ -278,9 +362,12 @@ export function UserManagementDashboard() {
             onEdit={handleEditUser}
             onView={handleViewUser}
             onDelete={handleDeleteUser}
+            onWageUpdate={handleWageUpdate}
+            onTypeChange={handleTypeChange}
             page={page}
             totalPages={totalPages}
             onPageChange={setPage}
+            showRefereeColumns={filters.role === 'referee' || filters.role.endsWith('_referee')}
           />
         </CardContent>
       </Card>

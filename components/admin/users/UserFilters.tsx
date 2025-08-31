@@ -64,7 +64,10 @@ export function UserFilters({ filters, onFiltersChange }: UserFiltersProps) {
           <SelectItem value="all">All Roles</SelectItem>
           <SelectItem value="admin">Administrators</SelectItem>
           <SelectItem value="assignor">Assignors</SelectItem>
-          <SelectItem value="referee">Referees</SelectItem>
+          <SelectItem value="referee">All Referees</SelectItem>
+          <SelectItem value="senior_referee">Senior Referees</SelectItem>
+          <SelectItem value="junior_referee">Junior Referees</SelectItem>
+          <SelectItem value="rookie_referee">Rookie Referees</SelectItem>
         </SelectContent>
       </Select>
 
