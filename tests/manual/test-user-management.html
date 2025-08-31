@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .user-card { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .role-badge.super-admin { background: #ff6b6b; color: white; }
+        .role-badge.admin { background: #ff9999; color: white; }
+        .role-badge.referee { background: #6b9fff; color: white; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>User Management Test</h1>
+    <div id="status">Logging in...</div>
+    <div id="users"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let authToken = '';
+
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@cmba.ca',
+                        password: 'password'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.token) {
+                    authToken = data.token;
+                    document.getElementById('status').innerHTML = '<span class="success">✅ Logged in as admin@cmba.ca</span>';
+                    await loadUsers();
+                } else {
+                    throw new Error('No token received');
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<span class="error">❌ Login failed: ${error.message}</span>`;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                console.log('Users response:', data);
+
+                if (data.data && data.data.users) {
+                    displayUsers(data.data.users);
+                } else {
+                    throw new Error('No users data in response');
+                }
+            } catch (error) {
+                document.getElementById('users').innerHTML = `<span class="error">❌ Failed to load users: ${error.message}</span>`;
+            }
+        }
+
+        function displayUsers(users) {
+            const usersDiv = document.getElementById('users');
+            usersDiv.innerHTML = `<h2>Users (${users.length} total)</h2>`;
+
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                
+                // Display roles
+                let rolesHtml = '';
+                if (user.roles && user.roles.length > 0) {
+                    rolesHtml = user.roles.map(role => {
+                        const className = role.name.toLowerCase().replace(' ', '-');
+                        return `<span class="role-badge ${className}">${role.name}</span>`;
+                    }).join('');
+                } else {
+                    rolesHtml = `<span class="role-badge">Legacy: ${user.role || 'No Role'}</span>`;
+                }
+
+                userCard.innerHTML = `
+                    <strong>${user.name || 'No Name'}</strong> - ${user.email}<br>
+                    Roles: ${rolesHtml}<br>
+                    Status: ${user.is_available ? '✅ Available' : '❌ Not Available'}<br>
+                    Created: ${new Date(user.created_at).toLocaleDateString()}
+                `;
+                
+                usersDiv.appendChild(userCard);
+            });
+        }
+
+        // Start the test
+        login();
+    </script>
+</body>
+</html>
