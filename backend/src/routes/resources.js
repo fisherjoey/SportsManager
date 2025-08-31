@@ -29,7 +29,8 @@ const resourceVersionService = new ResourceVersionService();
 
 // Admin middleware (kept for backward compatibility)
 const requireAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  const isAdmin = req.user && req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (isAdmin) {
     next();
   } else {
     res.status(403).json({

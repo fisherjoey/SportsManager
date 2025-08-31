@@ -80,7 +80,8 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
   const userId = req.params.id;
   
   // Users can only view their own profile unless they're admin
-  if (req.user.role !== 'admin' && req.user.id !== userId) {
+  const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (!isAdmin && req.user.id !== userId) {
     throw ErrorFactory.forbidden('Not authorized to view this user');
   }
 
@@ -93,7 +94,8 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
   }
 
   // For referees, get additional details if admin is requesting
-  if (user.role === 'referee' && req.user.role === 'admin') {
+  const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (user.role === 'referee' && isAdmin) {
     const detailedUser = await userService.getUserWithRefereeDetails(userId, {
       assignmentLimit: 5 // Limit recent assignments for this endpoint
     });

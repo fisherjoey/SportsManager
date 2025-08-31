@@ -190,7 +190,8 @@ function checkRoutePermission(req, res, next) {
   }
   
   // Admin bypass - admins have all permissions
-  if (req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'))) {
+  const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (isAdmin) {
     return next();
   }
   
@@ -260,7 +261,8 @@ function requirePermissions(...permissions) {
     }
     
     // Admin bypass
-    if (req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'))) {
+    const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+    if (isAdmin) {
       return next();
     }
     

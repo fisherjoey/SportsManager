@@ -1375,7 +1375,8 @@ router.get('/reimbursements', authenticateToken, async (req, res) => {
     }
 
     // Only show reimbursements for user's organization unless admin
-    if (req.user.role !== 'admin') {
+    const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+    if (!isAdmin) {
       query = query.where('expense_reimbursements.organization_id', req.user.id);
     }
 
@@ -1399,7 +1400,8 @@ router.get('/reimbursements', authenticateToken, async (req, res) => {
     if (payPeriod) {
       totalQuery.where('pay_period', payPeriod);
     }
-    if (req.user.role !== 'admin') {
+    const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+    if (!isAdmin) {
       totalQuery.where('organization_id', req.user.id);
     }
     
@@ -1510,7 +1512,8 @@ router.get('/users/:userId/earnings', authenticateToken, async (req, res) => {
     const { payPeriod, earningType, page = 1, limit = 50 } = req.query;
 
     // Check authorization
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
+    const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+    if (!isAdmin && req.user.id !== userId) {
       return res.status(403).json({
         error: 'Not authorized to view these earnings'
       });
@@ -1876,7 +1879,7 @@ router.get('/payment-methods/detect', authenticateToken, async (req, res) => {
         amount: receiptData.total_amount,
         category: receiptData.category_id,
         urgency: context.urgency,
-        userRole: req.user.role
+        userRoles: req.user.roles
       },
       detectionMetadata: {
         totalMethodsEvaluated: await paymentMethodService.getAvailablePaymentMethods(

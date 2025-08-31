@@ -103,7 +103,7 @@ class ErrorLogger {
         user: req?.user ? {
           id: req.user.id,
           email: req.user.email,
-          role: req.user.role,
+          roles: req.user.roles,
           organizationId: req.user.organization_id
         } : null,
         ...error.details && { errorDetails: error.details }

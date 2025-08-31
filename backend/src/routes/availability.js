@@ -117,7 +117,11 @@ router.put('/:windowId', authenticateToken, requireAnyRole('admin', 'referee'), 
     }
 
     // Authorization check - referees can only update their own windows
-    if (req.user.role === 'referee') {
+    const isReferee = req.user.roles && req.user.roles.some(role => 
+      ['referee', 'Referee'].includes(role.name || role) || 
+      (typeof role === 'object' && role.name && ['referee', 'Referee'].includes(role.name))
+    );
+    if (isReferee) {
       // Get the referee record for this user to compare referee_id
       const referee = await db('referees').where('user_id', req.user.userId).first();
       if (!referee || referee.id !== existingWindow.referee_id) {
@@ -187,7 +191,11 @@ router.delete('/:windowId', authenticateToken, requireAnyRole('admin', 'referee'
     }
 
     // Authorization check
-    if (req.user.role === 'referee') {
+    const isReferee = req.user.roles && req.user.roles.some(role => 
+      ['referee', 'Referee'].includes(role.name || role) || 
+      (typeof role === 'object' && role.name && ['referee', 'Referee'].includes(role.name))
+    );
+    if (isReferee) {
       // Get the referee record for this user to compare referee_id
       const referee = await db('referees').where('user_id', req.user.userId).first();
       if (!referee || referee.id !== existingWindow.referee_id) {
@@ -281,7 +289,11 @@ router.post('/bulk', authenticateToken, requireAnyRole('admin', 'referee'), asyn
     }
 
     // Authorization check - referees can only create availability for themselves
-    if (req.user.role === 'referee') {
+    const isReferee = req.user.roles && req.user.roles.some(role => 
+      ['referee', 'Referee'].includes(role.name || role) || 
+      (typeof role === 'object' && role.name && ['referee', 'Referee'].includes(role.name))
+    );
+    if (isReferee) {
       // Get the referee record for this user to compare referee_id
       const refereeRecord = await db('referees').where('user_id', req.user.userId).first();
       if (!refereeRecord || refereeRecord.id !== referee_id) {
