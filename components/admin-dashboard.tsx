@@ -35,14 +35,11 @@ import { WorkflowManagement } from '@/components/workflow-management'
 import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentreNew } from '@/components/resource-centre-new'
-import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
-import { PermissionManagementDashboard } from '@/components/admin/rbac/PermissionManagementDashboard'
-import { PermissionConfigurationDashboard } from '@/components/admin/rbac/PermissionConfigurationDashboard'
-import { UserManagementDashboard } from '@/components/admin/users/UserManagementDashboard'
+import { UnifiedAccessControlDashboard } from '@/components/admin/access-control/UnifiedAccessControlDashboard'
 import { Button } from '@/components/ui/button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { usePermissions } from '@/hooks/usePermissions'
-import { getPagePermissions, isViewAllowedForRole, getRoleConfig } from '@/lib/rbac-config'
+import { usePageAccess } from '@/hooks/usePageAccess'
 import { useAuth } from '@/components/auth-provider'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ShieldOff } from 'lucide-react'
@@ -52,17 +49,27 @@ export function AdminDashboard() {
   const router = useRouter()
   const { user } = useAuth()
   const { hasAnyPermission } = usePermissions()
-  const [activeView, setActiveView] = useState('dashboard')
+  const { hasPageAccess, loading: pageAccessLoading } = usePageAccess()
+  
+  // Initialize activeView from URL on first render
+  const getInitialView = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const viewFromUrl = urlParams.get('view') || 'dashboard'
+      console.log('[AdminDashboard] Initial view from URL:', viewFromUrl)
+      return viewFromUrl
+    }
+    return 'dashboard'
+  }
+  
+  const [activeView, setActiveView] = useState(getInitialView)
   const [gameManagementDateFilter, setGameManagementDateFilter] = useState<string>()
 
-  // Initialize from URL on mount
+  // No longer needed since we initialize from URL in useState
+  // Keep only for debugging purposes temporarily
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const viewFromUrl = urlParams.get('view') || 'dashboard'
-    if (viewFromUrl !== activeView) {
-      setActiveView(viewFromUrl)
-    }
-  }, []) // Remove activeView dependency to prevent infinite loop
+    console.log('[AdminDashboard] Component mounted with activeView:', activeView)
+  }, [])
 
   // Handle browser back/forward navigation AND URL changes
   useEffect(() => {
@@ -182,20 +189,14 @@ export function AdminDashboard() {
       return 'Analytics Dashboard'
       
       // Administration
-    case 'admin-users':
-      return 'User Management'
+    case 'admin-access-control':
+      return 'Access Control'
     case 'admin-workflows':
       return 'Workflow Management'
     case 'admin-security':
       return 'Security & Audit'
     case 'admin-settings':
       return 'System Settings'
-    case 'admin-roles':
-      return 'Role Management'
-    case 'admin-permissions':
-      return 'Permission Matrix'
-    case 'admin-permission-config':
-      return 'Permission Configuration'
       
       // Account
     case 'profile':
@@ -212,41 +213,21 @@ export function AdminDashboard() {
     }
   }
 
-  // Check if user has permission to access the current view
+  // Check if user has permission to access the current view using database
   const checkViewPermission = (view: string): boolean => {
-    // Admin always has access
-    if (user?.role === 'admin') return true
+    // During loading, return true to prevent flashing
+    if (pageAccessLoading) return true
     
-    // Check view-specific permissions
-    const viewKey = `dashboard-view:${view}`
-    const requiredPermissions = getPagePermissions(viewKey)
-    
-    // If no permissions required, allow access
-    if (requiredPermissions.length === 0) return true
-    
-    // Check if user has any of the required permissions
-    return hasAnyPermission(requiredPermissions)
-  }
-
-  // Check if view is allowed for user's role
-  const isViewAllowed = (view: string): boolean => {
-    if (!user?.role) return false
-    
-    // Admin always has access
-    if (user.role === 'admin') return true
-    
-    // Check role configuration
-    const roleConfig = getRoleConfig(user.role)
-    if (!roleConfig) return false
-    
-    // Check if view is in allowed views
-    if (roleConfig.allowedViews.includes('*')) return true
-    return roleConfig.allowedViews.includes(view)
+    // Use database-driven access check
+    return hasPageAccess(view)
   }
 
   const renderContent = () => {
-    // Check permissions for current view
-    if (!checkViewPermission(activeView) || !isViewAllowed(activeView)) {
+    console.log('[AdminDashboard] Rendering content for activeView:', activeView)
+    
+    // Check permissions for current view using database
+    if (!checkViewPermission(activeView)) {
+      console.log('[AdminDashboard] No permission for view:', activeView)
       return (
         <div className="flex items-center justify-center h-full p-8">
           <div className="text-center space-y-4 max-w-md">
@@ -346,20 +327,21 @@ export function AdminDashboard() {
       return <AnalyticsDashboard />
       
       // Administration
-    case 'admin-users':
-      return <UserManagementDashboard />
+    case 'admin-access-control':
+      return <UnifiedAccessControlDashboard />
     case 'admin-workflows':
       return <WorkflowManagement />
     case 'admin-security':
       return <SecurityAudit />
     case 'admin-settings':
       return <SystemSettings />
+    // Legacy routes - redirect to unified access control
+    case 'admin-users':
     case 'admin-roles':
-      return <RoleManagementDashboard />
     case 'admin-permissions':
-      return <PermissionManagementDashboard />
     case 'admin-permission-config':
-      return <PermissionConfigurationDashboard />
+    case 'admin-page-access':
+      return <UnifiedAccessControlDashboard />
       
       // Account
     case 'profile':
@@ -370,8 +352,8 @@ export function AdminDashboard() {
     default:
       // Handle resources/[slug] pattern
       if (activeView.startsWith('resources/')) {
-        const slug = activeView.replace('resources/', '')
-        return <ResourceRenderer slug={slug} onNavigate={handleViewChange} />
+        // For now, redirect to main resources page
+        return <ResourceCentreNew />
       }
       return <DashboardOverview />
     }

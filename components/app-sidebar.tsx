@@ -1,10 +1,11 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical } from 'lucide-react'
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import { NotificationsBell } from '@/components/notifications-bell'
+import { usePageAccess } from '@/hooks/usePageAccess'
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +22,7 @@ import {
 } from '@/components/ui/sidebar'
 import { useAuth } from '@/components/auth-provider'
 import { usePermissions } from '@/hooks/usePermissions'
-import { getPagePermissions, getRoleConfig, isViewAllowedForRole } from '@/lib/rbac-config'
+// Legacy RBAC config removed - now using database-driven access control
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -40,6 +41,7 @@ interface AppSidebarProps {
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { user, logout } = useAuth()
   const { hasAnyPermission } = usePermissions()
+  const { hasPageAccess, accessiblePages } = usePageAccess()
   const { state, toggleSidebar, setOpen } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
@@ -298,24 +300,9 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   // Administration Section
   const administrationItems = [
     {
-      title: 'User Management',
-      url: 'admin-users',
-      icon: Users2
-    },
-    {
-      title: 'Role Management',
-      url: 'admin-roles',
-      icon: UserCheck
-    },
-    {
-      title: 'Permission Matrix',
-      url: 'admin-permissions',
-      icon: Grid3X3
-    },
-    {
-      title: 'Permission Config',
-      url: 'admin-permission-config',
-      icon: Settings
+      title: 'Access Control',
+      url: 'admin-access-control',
+      icon: ShieldIcon
     },
     {
       title: 'Workflow Management',
@@ -325,7 +312,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     {
       title: 'Security & Audit',
       url: 'admin-security',
-      icon: ShieldIcon
+      icon: Key
     },
     {
       title: 'System Settings',
@@ -372,45 +359,17 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     }
   ]
 
-  // Filter navigation items based on permissions
+  // Filter navigation items based on database permissions
   const filterItemsByPermissions = (items: any[]) => {
     return items.filter(item => {
-      // Check view permissions
-      const viewKey = `dashboard-view:${item.url}`
-      const requiredPermissions = getPagePermissions(viewKey)
-      
-      // If no permissions required, show the item
-      if (requiredPermissions.length === 0) return true
-      
-      // Admin always sees everything
-      if (user?.role === 'admin') return true
-      
-      // Check if user has required permissions
-      return hasAnyPermission(requiredPermissions)
+      // Use database-driven access check
+      return hasPageAccess(item.url)
     })
   }
 
-  // Filter items based on role configuration
-  const filterItemsByRole = (items: any[]) => {
-    if (!user?.role) return []
-    
-    // Admin sees everything
-    if (user.role === 'admin') return items
-    
-    const roleConfig = getRoleConfig(user.role)
-    if (!roleConfig) return []
-    
-    return items.filter(item => {
-      // Check if view is allowed for this role
-      if (roleConfig.allowedViews.includes('*')) return true
-      return roleConfig.allowedViews.includes(item.url)
-    })
-  }
-
-  // Apply both permission and role filters
+  // Apply database-driven permission filter only
   const filterNavigationItems = (items: any[]) => {
-    const permissionFiltered = filterItemsByPermissions(items)
-    return filterItemsByRole(permissionFiltered)
+    return filterItemsByPermissions(items)
   }
 
   // Build navigation sections based on user role and permissions
@@ -663,7 +622,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                   <span className="truncate text-left group-data-[collapsible=icon]:hidden">Profile</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {user?.role === 'admin' && (
+              {(user?.roles?.includes('Super Admin') || user?.roles?.includes('admin') || user?.role === 'admin') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     onClick={() => setActiveView('organization-settings')} 
