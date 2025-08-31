@@ -40,7 +40,16 @@
       "Bash(set DISABLE_REDIS=true)",
       "Bash(set PORT=3000)",
       "Bash(npx nodemon:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npx:*)",
+      "Bash(kill-localhost-ports.bat)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)",
+      "Bash(start test-permissions-direct.html)",
+      "Bash(git log:*)",
+      "Bash(set DISABLE_RATE_LIMIT=true)",
+      "Bash(start test-api.html)",
+      "Bash(start http://localhost:3000/games)"
     ],
     "deny": [],
     "ask": []
