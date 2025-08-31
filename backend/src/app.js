@@ -9,6 +9,16 @@ const { Sentry, ProductionMonitor } = require('./utils/monitor');
 const { getCorsConfig, requestSizeLimit, validateEnvironment } = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandling');
 
+// Import audit middleware
+const { 
+  createResourceAuditMiddleware, 
+  createGlobalAuditMiddleware, 
+  createSensitiveOperationsAuditMiddleware 
+} = require('./middleware/auditLogger');
+
+// Import audit cleanup job
+const { auditCleanupJob } = require('./jobs/auditLogCleanup');
+
 // Import performance monitoring middleware
 const { performanceMonitor } = require('./middleware/performanceMonitor');
 const { advancedPerformanceMonitor, setupAlertHandlers } = require('./middleware/advanced-performance');
@@ -66,6 +76,7 @@ const resourcesRoutes = require('./routes/resources');
 // Import admin routes
 const adminRoleRoutes = require('./routes/admin/roles');
 const adminPermissionRoutes = require('./routes/admin/permissions');
+const adminMaintenanceRoutes = require('./routes/admin/maintenance');
 const testRoleRoutes = require('./routes/admin/test-roles');
 
 const app = express();
@@ -75,6 +86,14 @@ validateEnvironment();
 
 // Setup performance alert handlers
 setupAlertHandlers();
+
+// Initialize audit log cleanup job
+try {
+  auditCleanupJob.init();
+  console.log('✅ Audit log cleanup job initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize audit log cleanup job:', error.message);
+}
 
 // Add Sentry request handler (must be first middleware)
 if (process.env.SENTRY_DSN) {
@@ -115,15 +134,22 @@ app.use(advancedPerformanceMonitor({
   trackIpAddresses: true
 }));
 
-// Audit trail for API requests (exclude health checks and static files)
-// app.use(auditMiddleware({ // TEMPORARILY DISABLED
-//   logAllRequests: false,
-//   logAuthRequests: true,
-//   logAdminRequests: true,
-//   logFailedRequests: true,
-//   excludePaths: ['/api/health', '/uploads'],
-//   sensitiveEndpoints: ['/api/auth', '/api/admin', '/api/reports', '/api/employees', '/api/compliance', '/api/analytics/organizational']
-// }));
+// Resource audit logging middleware (logs successful resource operations)
+app.use(createResourceAuditMiddleware({
+  resourceRoutes: ['/api/resources', '/api/users', '/api/games', '/api/assignments', '/api/teams', '/api/leagues'],
+  excludeRoutes: ['/api/auth/login', '/api/auth/refresh', '/api/health', '/api/performance'],
+  logViewOperations: false,
+  captureRequestBody: true,
+  maxDataSize: 10240
+}));
+
+// Sensitive operations audit logging (logs all operations including views)
+app.use(createSensitiveOperationsAuditMiddleware({
+  resourceRoutes: ['/api/admin', '/api/financial', '/api/compliance', '/api/reports', '/api/analytics/organizational'],
+  logViewOperations: true,
+  captureRequestBody: true,
+  maxDataSize: 5120
+}));
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
@@ -184,6 +210,7 @@ app.use('/api/resources', resourcesRoutes);
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/permissions', adminPermissionRoutes);
+app.use('/api/admin/maintenance', adminMaintenanceRoutes);
 app.use('/api/test-roles', testRoleRoutes);
 
 // Performance monitoring routes (admin only)
