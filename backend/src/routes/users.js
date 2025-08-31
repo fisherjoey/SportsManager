@@ -79,4 +79,103 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
   return ResponseFormatter.sendSuccess(res, { user }, 'User retrieved successfully');
 }));
 
+/**
+ * POST /api/users
+ * Create a new user (admin only)
+ */
+router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(async (req, res) => {
+  const { email, password, name, role = 'referee', is_active = true, send_welcome_email = false } = req.body;
+  
+  // Validate required fields
+  if (!email || !password) {
+    throw ErrorFactory.badRequest('Email and password are required');
+  }
+  
+  // Check if user already exists
+  const existingUser = await userService.findWhere({ email });
+  if (existingUser.length > 0) {
+    throw ErrorFactory.conflict('User with this email already exists');
+  }
+  
+  // Hash password
+  const bcrypt = require('bcryptjs');
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  // Create user
+  const newUser = await userService.create({
+    email,
+    password: hashedPassword,
+    name,
+    role,
+    is_active
+  });
+  
+  // TODO: Send welcome email if requested
+  if (send_welcome_email) {
+    // Email service implementation would go here
+  }
+  
+  return ResponseFormatter.sendSuccess(res, { user: newUser }, 'User created successfully', 201);
+}));
+
+/**
+ * PUT /api/users/:id
+ * Update a user (admin only)
+ */
+router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const { email, name, role, is_active, password } = req.body;
+  
+  // Check if user exists
+  const user = await userService.findById(userId);
+  if (!user) {
+    throw ErrorFactory.notFound('User', userId);
+  }
+  
+  // Build update object
+  const updateData = {};
+  if (email !== undefined) updateData.email = email;
+  if (name !== undefined) updateData.name = name;
+  if (role !== undefined) updateData.role = role;
+  if (is_active !== undefined) updateData.is_active = is_active;
+  
+  // Hash password if provided
+  if (password) {
+    const bcrypt = require('bcryptjs');
+    updateData.password = await bcrypt.hash(password, 10);
+  }
+  
+  // Update user
+  const updatedUser = await userService.update(userId, updateData);
+  
+  return ResponseFormatter.sendSuccess(res, { user: updatedUser }, 'User updated successfully');
+}));
+
+/**
+ * DELETE /api/users/:id
+ * Delete a user (admin only)
+ */
+router.delete('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  
+  // Prevent deleting own account
+  if (req.user.id === userId) {
+    throw ErrorFactory.badRequest('Cannot delete your own account');
+  }
+  
+  // Check if user exists
+  const user = await userService.findById(userId);
+  if (!user) {
+    throw ErrorFactory.notFound('User', userId);
+  }
+  
+  // Soft delete by setting deleted_at timestamp
+  await userService.update(userId, { 
+    is_active: false,
+    deleted_at: new Date()
+  });
+  
+  return ResponseFormatter.sendSuccess(res, null, 'User deleted successfully');
+}));
+
 module.exports = router;

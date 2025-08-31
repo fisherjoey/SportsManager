@@ -3250,11 +3250,52 @@ class ApiClient {
     })
   }
 
-  async getUsers() {
+  async getUsers(params?: { page?: number; limit?: number; role?: string }) {
+    const queryParams = new URLSearchParams()
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.role && params.role !== 'all') queryParams.append('role', params.role)
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : ''
+    
     return this.request<{
       success: boolean;
-      data: { users: any[] };
-    }>('/users')
+      data: { users: any[] } | { data: any[]; pagination: any };
+    }>(`/users${query}`)
+  }
+
+  async createUser(userData: any) {
+    return this.request<{
+      success: boolean;
+      data: { user: any };
+    }>('/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData)
+    })
+  }
+
+  async updateUser(userId: string, userData: any) {
+    return this.request<{
+      success: boolean;
+      data: { user: any };
+    }>(`/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData)
+    })
+  }
+
+  async deleteUser(userId: string) {
+    return this.request<{
+      success: boolean;
+    }>(`/users/${userId}`, {
+      method: 'DELETE'
+    })
   }
 
   // Generic HTTP methods for resources and other endpoints
