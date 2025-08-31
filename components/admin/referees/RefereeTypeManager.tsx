@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { toast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import {
   AlertDialog,

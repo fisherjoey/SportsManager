@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Edit2, Check, X, DollarSign } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 
 interface EditableWageProps {
   userId: string
