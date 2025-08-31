@@ -36,7 +36,7 @@ function authenticateToken(req, res, next) {
     if (user.userId && !user.id) {
       user.id = user.userId;
     }
-    console.log('JWT decoded - User ID:', user.id, 'Email:', user.email, 'Role:', user.role, 'Roles array:', user.roles);
+    console.log('JWT decoded - User ID:', user.id, 'Email:', user.email, 'Roles array:', user.roles);
     req.user = user;
     next();
   });
@@ -48,11 +48,11 @@ function requireRole(role) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Check new roles array first, fallback to legacy role field
-    const userRoles = req.user.roles || [req.user.role];
+    // Check roles array
+    const userRoles = req.user.roles || [];
     
-    // Admin always has access (from either system)
-    if (userRoles.includes('admin') || req.user.role === 'admin') {
+    // Admin always has access
+    if (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin')) {
       return next();
     }
     
@@ -72,11 +72,11 @@ function requireAnyRole(...roles) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Check new roles array first, fallback to legacy role field
-    const userRoles = (req.user.roles && req.user.roles.length > 0) ? req.user.roles : [req.user.role];
+    // Check roles array
+    const userRoles = req.user.roles || [];
     
     // Admin always has access
-    if (userRoles.includes('admin') || req.user.role === 'admin') {
+    if (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin')) {
       return next();
     }
     
@@ -97,18 +97,11 @@ function hasRole(user, roleName) {
     return false;
   }
   
-  // Handle roles array with proper fallback
-  let userRoles;
-  if (Array.isArray(user.roles) && user.roles.length > 0) {
-    userRoles = user.roles;
-  } else if (user.role) {
-    userRoles = [user.role];
-  } else {
-    return false;
-  }
+  // Handle roles array
+  const userRoles = user.roles || [];
   
   // Admin always has access (except to itself - avoid infinite recursion)
-  if (roleName !== 'admin' && (userRoles.includes('admin') || user.role === 'admin')) {
+  if (roleName !== 'admin' && (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin'))) {
     return true;
   }
   
@@ -128,10 +121,9 @@ function requirePermission(permissionName) {
 
     try {
       // Admin and Super Admin always have access
-      const userRoles = req.user.roles || [req.user.role];
+      const userRoles = req.user.roles || [];
       if (userRoles.includes('admin') || userRoles.includes('Admin') || 
-          userRoles.includes('Super Admin') || userRoles.includes('super admin') ||
-          req.user.role === 'admin') {
+          userRoles.includes('Super Admin') || userRoles.includes('super admin')) {
         console.log('Admin bypass activated for permission:', permissionName);
         return next();
       }
@@ -171,9 +163,9 @@ function requireAnyPermission(permissionNames) {
 
     try {
       // Admin always has access
-      const userRoles = req.user.roles || [req.user.role];
-      console.log('Permission check - User role:', req.user.role, 'User roles:', userRoles, 'Required:', permissionNames);
-      if (userRoles.includes('admin') || req.user.role === 'admin') {
+      const userRoles = req.user.roles || [];
+      console.log('Permission check - User roles:', userRoles, 'Required:', permissionNames);
+      if (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin')) {
         console.log('Admin bypass activated for user:', req.user.email);
         return next();
       }
@@ -213,8 +205,8 @@ function requireAllPermissions(permissionNames) {
 
     try {
       // Admin always has access
-      const userRoles = req.user.roles || [req.user.role];
-      if (userRoles.includes('admin') || req.user.role === 'admin') {
+      const userRoles = req.user.roles || [];
+      if (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin')) {
         return next();
       }
 
@@ -249,8 +241,8 @@ async function hasPermission(user, permissionName) {
 
   try {
     // Admin always has access
-    const userRoles = user.roles || [user.role];
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    const userRoles = user.roles || [];
+    if (userRoles.includes('admin') || userRoles.includes('Admin') || userRoles.includes('Super Admin')) {
       return true;
     }
 
