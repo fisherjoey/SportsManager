@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateProfile = async (updates: Partial<User>) => {
-    if (user && user.role === 'referee') {
+    if (user && user.roles?.some(r => ['referee', 'Referee', 'Senior Referee'].includes(typeof r === 'string' ? r : r))) {
       try {
         const response = await apiClient.updateReferee(user.id, updates)
         if (response.success && response.data) {
@@ -176,11 +176,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = (role: string): boolean => {
     if (!user) return false
     
-    // Check new roles array first, fallback to legacy role field
-    const userRoles = user.roles || [user.role]
+    // Check roles array
+    const userRoles = user.roles || []
     
     // Super Admin and Admin always have access
-    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
     
@@ -195,11 +195,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasAnyRole = (...roles: string[]): boolean => {
     if (!user) return false
     
-    // Check new roles array first, fallback to legacy role field
-    const userRoles = user.roles || [user.role]
+    // Check roles array
+    const userRoles = user.roles || []
     
     // Super Admin and Admin always have access
-    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
     
@@ -211,8 +211,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !isAuthenticated) return false
     
     // Super Admin and Admin always have access to everything
-    const userRoles = user.roles || [user.role]
-    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+    const userRoles = user.roles || []
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
     
@@ -224,8 +224,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !isAuthenticated) return false
     
     // Super Admin and Admin always have access to everything
-    const userRoles = user.roles || [user.role]
-    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+    const userRoles = user.roles || []
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
     
@@ -239,8 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !isAuthenticated) return false
     
     // Super Admin and Admin always have access to everything
-    const userRoles = user.roles || [user.role]
-    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+    const userRoles = user.roles || []
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
     
