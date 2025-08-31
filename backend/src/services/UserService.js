@@ -99,14 +99,21 @@ class UserService extends BaseService {
   /**
    * Get user roles from the new RBAC system
    * @param {string} userId - User ID
-   * @returns {Array} Array of role objects
+   * @returns {Array} Array of role objects with enhanced data
    */
   async getUserRoles(userId) {
     try {
       const roles = await this.db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
         .where('user_roles.user_id', userId)
-        .select('roles.id', 'roles.name', 'roles.description');
+        .where('user_roles.is_active', true)
+        .select(
+          'roles.id', 
+          'roles.name', 
+          'roles.description',
+          'roles.category',
+          'roles.referee_config'
+        );
       
       return roles;
     } catch (error) {
@@ -116,19 +123,51 @@ class UserService extends BaseService {
   }
 
   /**
-   * Enhance user data with new roles
+   * Enhance user data with new roles and referee profile
    * @param {Object} user - User object
-   * @returns {Object} User with roles array
+   * @returns {Object} User with roles array and referee data
    */
   async enhanceUserWithRoles(user) {
     if (!user) return user;
     
     const roles = await this.getUserRoles(user.id);
+    const isReferee = roles.some(r => r.category === 'referee_type');
+
+    let refereeData = {};
+    if (isReferee) {
+      // Lazy load referee service to avoid circular dependency
+      if (!this._refereeService) {
+        const RefereeService = require('./RefereeService');
+        this._refereeService = new RefereeService(this.db);
+      }
+
+      try {
+        const profile = await this._refereeService.getRefereeProfile(user.id);
+        refereeData = {
+          referee_profile: profile,
+          is_referee: true
+        };
+      } catch (error) {
+        console.warn(`Failed to get referee profile for user ${user.id}:`, error.message);
+        refereeData = {
+          referee_profile: null,
+          is_referee: true
+        };
+      }
+    }
+
     return {
       ...user,
-      roles: roles.map(r => ({ id: r.id, name: r.name, description: r.description })),
+      roles: roles.map(r => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        category: r.category,
+        referee_config: r.referee_config
+      })),
       // Keep legacy role for backward compatibility
-      legacy_role: user.role
+      legacy_role: user.role,
+      ...refereeData
     };
   }
 
