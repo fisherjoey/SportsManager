@@ -211,6 +211,8 @@ app.use('/api/resources', resourcesRoutes);
 app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/permissions', adminPermissionRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
+app.use('/api/admin/access', require('./routes/admin/access'));
+app.use('/api/admin/users', require('./routes/admin/users'));
 app.use('/api/test-roles', testRoleRoutes);
 
 // Performance monitoring routes (admin only)

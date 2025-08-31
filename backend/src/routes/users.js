@@ -13,6 +13,18 @@ const UserService = require('../services/UserService');
 const userService = new UserService(db);
 
 /**
+ * GET /api/users/roles
+ * Get all available roles
+ */
+router.get('/roles', authenticateToken, enhancedAsyncHandler(async (req, res) => {
+  const roles = await db('roles')
+    .select('id', 'name', 'description')
+    .orderBy('name', 'asc');
+  
+  return ResponseFormatter.sendSuccess(res, { roles }, 'Roles retrieved successfully');
+}));
+
+/**
  * GET /api/users
  * Get all users (for admin dropdown selections)
  */
@@ -28,19 +40,32 @@ router.get('/', authenticateToken, requirePermission('users:read'), validateQuer
       page,
       limit,
       { 
-        select: ['id', 'email', 'role', 'name', 'created_at'],
+        select: ['id', 'email', 'role', 'name', 'created_at', 'updated_at', 'is_available'],
         orderBy: 'email',
         orderDirection: 'asc'
       }
     );
-    return ResponseFormatter.sendPaginated(res, result.data, result.pagination);
+    
+    // Enhance users with new roles
+    const enhancedUsers = await Promise.all(
+      result.data.map(user => userService.enhanceUserWithRoles(user))
+    );
+    
+    return ResponseFormatter.sendPaginated(res, enhancedUsers, result.pagination);
   } else {
     // Get all users with basic info
     users = await userService.findWhere({}, {
-      select: ['id', 'email', 'role', 'name'],
+      select: ['id', 'email', 'role', 'name', 'created_at', 'updated_at', 'is_available'],
       orderBy: 'email',
       orderDirection: 'asc'
     });
+    
+    // Enhance all users with new roles
+    const enhancedUsers = await Promise.all(
+      users.map(user => userService.enhanceUserWithRoles(user))
+    );
+    
+    users = enhancedUsers;
   }
 
   // Maintain backward compatibility with existing API consumers
@@ -139,7 +164,7 @@ router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(a
  */
 router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
   const userId = req.params.id;
-  const { email, name, role, password } = req.body;
+  const { email, name, role, password, roles } = req.body;
   
   // Check if user exists
   const user = await userService.findById(userId);
@@ -151,7 +176,7 @@ router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdPar
   const updateData = {};
   if (email !== undefined) updateData.email = email;
   if (name !== undefined) updateData.name = name;
-  if (role !== undefined) updateData.role = role;
+  if (role !== undefined) updateData.role = role;  // Keep legacy role for backward compatibility
   
   // Hash password if provided
   if (password) {
@@ -159,10 +184,31 @@ router.put('/:id', authenticateToken, requireRole('admin'), validateParams(IdPar
     updateData.password_hash = await bcrypt.hash(password, 10);
   }
   
-  // Update user
+  // Update user basic info
   const updatedUser = await userService.update(userId, updateData);
   
-  return ResponseFormatter.sendSuccess(res, { user: updatedUser }, 'User updated successfully');
+  // Update roles if provided (new RBAC system)
+  if (roles && Array.isArray(roles)) {
+    // Remove existing roles
+    await db('user_roles').where('user_id', userId).del();
+    
+    // Add new roles
+    if (roles.length > 0) {
+      const roleAssignments = roles.map(roleId => ({
+        user_id: userId,
+        role_id: roleId,
+        assigned_at: new Date(),
+        assigned_by: req.user.id
+      }));
+      
+      await db('user_roles').insert(roleAssignments);
+    }
+  }
+  
+  // Get the updated user with new roles
+  const enhancedUser = await userService.enhanceUserWithRoles(updatedUser);
+  
+  return ResponseFormatter.sendSuccess(res, { user: enhancedUser }, 'User updated successfully');
 }));
 
 /**

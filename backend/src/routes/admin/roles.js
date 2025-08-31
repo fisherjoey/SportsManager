@@ -311,6 +311,78 @@ router.get('/:roleId/users', authenticateToken, requireRole('admin'), async (req
   }
 });
 
+// POST /api/admin/roles/:roleId/users - Add users to role
+router.post('/:roleId/users', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { user_ids } = req.body;
+
+    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: 'user_ids must be a non-empty array' 
+      });
+    }
+
+    const result = await roleService.addUsersToRole(roleId, user_ids);
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Users added to role successfully'
+    });
+  } catch (error) {
+    console.error('Error adding users to role:', error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ 
+        error: 'Role or user not found',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to add users to role',
+        details: error.message 
+      });
+    }
+  }
+});
+
+// DELETE /api/admin/roles/:roleId/users - Remove users from role
+router.delete('/:roleId/users', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { user_ids } = req.body;
+
+    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: 'user_ids must be a non-empty array' 
+      });
+    }
+
+    const result = await roleService.removeUsersFromRole(roleId, user_ids);
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Users removed from role successfully'
+    });
+  } catch (error) {
+    console.error('Error removing users from role:', error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ 
+        error: 'Role or user not found',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to remove users from role',
+        details: error.message 
+      });
+    }
+  }
+});
+
 // PATCH /api/admin/roles/:roleId/status - Activate/deactivate role
 router.patch('/:roleId/status', authenticateToken, requireRole('admin'), async (req, res) => {
   try {

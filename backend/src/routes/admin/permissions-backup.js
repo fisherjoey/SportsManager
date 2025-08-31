@@ -6,8 +6,6 @@
  * - Get permissions by category
  * - Search permissions
  * - Permission metadata and statistics
- * - Full CRUD operations for permissions
- * - Role permission assignment
  */
 
 const express = require('express');
@@ -55,8 +53,6 @@ const assignPermissionsSchema = Joi.object({
   permission_ids: Joi.array().items(Joi.string().uuid()).required()
 });
 
-// ===== ROUTES WITHOUT PARAMETERS FIRST =====
-
 // GET /api/admin/permissions - Get all permissions with optional filtering
 // Requires: permissions:read or system:admin permission
 router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
@@ -92,41 +88,6 @@ router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'sy
   }
 });
 
-// POST /api/admin/permissions - Create a new permission
-// Requires: system:admin permission
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { error, value } = createPermissionSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: error.details[0].message 
-      });
-    }
-
-    const permission = await permissionService.createPermission(value);
-
-    res.status(201).json({
-      success: true,
-      data: { permission },
-      message: 'Permission created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating permission:', error);
-    if (error.message.includes('already exists')) {
-      res.status(409).json({ 
-        error: 'Permission already exists',
-        details: error.message 
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to create permission',
-        details: error.message 
-      });
-    }
-  }
-});
-
 // GET /api/admin/permissions/categories - Get unique permission categories
 // Requires: permissions:read or system:admin permission
 router.get('/categories', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
@@ -153,6 +114,43 @@ router.get('/categories', authenticateToken, requireAnyPermission(['permissions:
     console.error('Error getting categories:', error);
     res.status(500).json({ 
       error: 'Failed to retrieve categories',
+      details: error.message 
+    });
+  }
+});
+
+// GET /api/admin/permissions/category/:category - Get permissions for specific category
+// Requires: permissions:read or system:admin permission
+router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { active_only = 'true' } = req.query;
+    
+    const permissions = await permissionService.findWhere(
+      { category },
+      { 
+        orderBy: 'name',
+        orderDirection: 'asc'
+      }
+    );
+
+    const filteredPermissions = active_only === 'true' 
+      ? permissions.filter(p => p.active)
+      : permissions;
+
+    res.json({
+      success: true,
+      data: { 
+        category,
+        permissions: filteredPermissions,
+        count: filteredPermissions.length
+      },
+      message: 'Category permissions retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting category permissions:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve category permissions',
       details: error.message 
     });
   }
@@ -196,46 +194,86 @@ router.post('/search', authenticateToken, requireRole('admin'), async (req, res)
   }
 });
 
-// GET /api/admin/permissions/cache/stats - Get permission cache statistics
-router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req, res) => {
+// DELETE /api/admin/permissions/:permissionId - Delete a permission
+// Requires: system:admin permission
+router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
-    const stats = permissionService.getCacheStats();
+    const { error, value } = createPermissionSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: error.details[0].message 
+      });
+    }
 
-    res.json({
+    const permission = await permissionService.createPermission(value);
+
+    res.status(201).json({
       success: true,
-      data: { cache_stats: stats },
-      message: 'Cache statistics retrieved successfully'
+      data: { permission },
+      message: 'Permission created successfully'
     });
   } catch (error) {
-    console.error('Error getting cache stats:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve cache statistics',
-      details: error.message 
-    });
+    console.error('Error creating permission:', error);
+    if (error.message.includes('already exists')) {
+      res.status(409).json({ 
+        error: 'Permission already exists',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to create permission',
+        details: error.message 
+      });
+    }
   }
 });
 
-// DELETE /api/admin/permissions/cache - Clear permission cache
-router.delete('/cache', authenticateToken, requireRole('admin'), async (req, res) => {
+// GET /api/admin/permissions/:permissionId - Get specific permission details
+router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
-    const { user_id } = req.query;
+    const { permissionId } = req.params;
+    
+    const permission = await permissionService.findById(permissionId);
 
-    if (user_id) {
-      permissionService.invalidateUserCache(user_id);
-    } else {
-      permissionService.invalidateAllCaches();
+    if (!permission) {
+      return res.status(404).json({ 
+        error: 'Permission not found'
+      });
     }
+
+    // Get roles that have this permission
+    const rolesWithPermission = await permissionService.db('roles')
+      .join('role_permissions', 'roles.id', 'role_permissions.role_id')
+      .where('role_permissions.permission_id', permissionId)
+      .where('roles.is_active', true)
+      .select('roles.id', 'roles.name', 'roles.description')
+      .orderBy('roles.name');
+
+    // Get count of users with this permission (through roles)
+    const userCount = await permissionService.db('users')
+      .join('user_roles', 'users.id', 'user_roles.user_id')
+      .join('role_permissions', 'user_roles.role_id', 'role_permissions.role_id')
+      .where('role_permissions.permission_id', permissionId)
+      .where('users.active', true)
+      .countDistinct('users.id as count')
+      .first();
 
     res.json({
       success: true,
-      message: user_id 
-        ? `Cache cleared for user ${user_id}` 
-        : 'All caches cleared successfully'
+      data: { 
+        permission: {
+          ...permission,
+          roles: rolesWithPermission,
+          user_count: parseInt(userCount.count) || 0
+        }
+      },
+      message: 'Permission details retrieved successfully'
     });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    console.error('Error getting permission details:', error);
     res.status(500).json({ 
-      error: 'Failed to clear cache',
+      error: 'Failed to retrieve permission details',
       details: error.message 
     });
   }
@@ -280,45 +318,6 @@ router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async 
     console.error('Error in bulk permission check:', error);
     res.status(500).json({ 
       error: 'Failed to perform bulk permission check',
-      details: error.message 
-    });
-  }
-});
-
-// ===== ROUTES WITH SPECIFIC PATH PARAMETERS =====
-
-// GET /api/admin/permissions/category/:category - Get permissions for specific category
-// Requires: permissions:read or system:admin permission
-router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req, res) => {
-  try {
-    const { category } = req.params;
-    const { active_only = 'true' } = req.query;
-    
-    const permissions = await permissionService.findWhere(
-      { category },
-      { 
-        orderBy: 'name',
-        orderDirection: 'asc'
-      }
-    );
-
-    const filteredPermissions = active_only === 'true' 
-      ? permissions.filter(p => p.active)
-      : permissions;
-
-    res.json({
-      success: true,
-      data: { 
-        category,
-        permissions: filteredPermissions,
-        count: filteredPermissions.length
-      },
-      message: 'Category permissions retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Error getting category permissions:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve category permissions',
       details: error.message 
     });
   }
@@ -373,6 +372,139 @@ router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req
     } else {
       res.status(500).json({ 
         error: 'Failed to retrieve user permissions',
+        details: error.message 
+      });
+    }
+  }
+});
+
+// GET /api/admin/permissions/cache/stats - Get permission cache statistics
+router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const stats = permissionService.getCacheStats();
+
+    res.json({
+      success: true,
+      data: { cache_stats: stats },
+      message: 'Cache statistics retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting cache stats:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve cache statistics',
+      details: error.message 
+    });
+  }
+});
+
+// PUT /api/admin/permissions/:permissionId - Update a permission
+// Requires: system:admin permission
+router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { error, value } = updatePermissionSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: error.details[0].message 
+      });
+    }
+
+    const { permissionId } = req.params;
+    const permission = await permissionService.updatePermission(permissionId, value);
+
+    res.json({
+      success: true,
+      data: { permission },
+      message: 'Permission updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating permission:', error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ 
+        error: 'Permission not found',
+        details: error.message 
+      });
+    } else if (error.message.includes('already exists')) {
+      res.status(409).json({ 
+        error: 'Permission with this name or code already exists',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to update permission',
+        details: error.message 
+      });
+    }
+  }
+});
+
+// DELETE /api/admin/permissions/cache - Clear permission cache
+router.delete('/cache', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { user_id } = req.query;
+
+    if (user_id) {
+      permissionService.invalidateUserCache(user_id);
+    } else {
+      permissionService.invalidateAllCaches();
+    }
+
+    res.json({
+      success: true,
+      message: user_id 
+        ? `Cache cleared for user ${user_id}` 
+        : 'All caches cleared successfully'
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({ 
+      error: 'Failed to clear cache',
+      details: error.message 
+    });
+  }
+});
+
+// DELETE /api/admin/permissions/:permissionId - Delete a permission
+// Requires: system:admin permission
+router.delete('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { permissionId } = req.params;
+    
+    // Don't allow deletion of core permissions
+    const corePermissions = [
+      'system:admin',
+      'permissions:read',
+      'permissions:write',
+      'roles:read',
+      'roles:write',
+      'users:read',
+      'users:write'
+    ];
+    
+    const permission = await permissionService.getPermission(permissionId);
+    if (permission && corePermissions.includes(permission.code)) {
+      return res.status(403).json({ 
+        error: 'Cannot delete core system permission',
+        details: `The permission "${permission.code}" is a core system permission and cannot be deleted` 
+      });
+    }
+
+    await permissionService.deletePermission(permissionId);
+
+    res.json({
+      success: true,
+      message: 'Permission deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting permission:', error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ 
+        error: 'Permission not found',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to delete permission',
         details: error.message 
       });
     }
@@ -440,146 +572,6 @@ router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (re
     } else {
       res.status(500).json({ 
         error: 'Failed to assign permissions to role',
-        details: error.message 
-      });
-    }
-  }
-});
-
-// ===== GENERIC PARAMETER ROUTES LAST =====
-
-// GET /api/admin/permissions/:permissionId - Get specific permission details
-router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { permissionId } = req.params;
-    
-    const permission = await permissionService.findById(permissionId);
-
-    if (!permission) {
-      return res.status(404).json({ 
-        error: 'Permission not found'
-      });
-    }
-
-    // Get roles that have this permission
-    const rolesWithPermission = await permissionService.db('roles')
-      .join('role_permissions', 'roles.id', 'role_permissions.role_id')
-      .where('role_permissions.permission_id', permissionId)
-      .where('roles.is_active', true)
-      .select('roles.id', 'roles.name', 'roles.description')
-      .orderBy('roles.name');
-
-    // Get count of users with this permission (through roles)
-    const userCount = await permissionService.db('users')
-      .join('user_roles', 'users.id', 'user_roles.user_id')
-      .join('role_permissions', 'user_roles.role_id', 'role_permissions.role_id')
-      .where('role_permissions.permission_id', permissionId)
-      .where('users.active', true)
-      .countDistinct('users.id as count')
-      .first();
-
-    res.json({
-      success: true,
-      data: { 
-        permission: {
-          ...permission,
-          roles: rolesWithPermission,
-          user_count: parseInt(userCount.count) || 0
-        }
-      },
-      message: 'Permission details retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Error getting permission details:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve permission details',
-      details: error.message 
-    });
-  }
-});
-
-// PUT /api/admin/permissions/:permissionId - Update a permission
-// Requires: system:admin permission
-router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { error, value } = updatePermissionSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: error.details[0].message 
-      });
-    }
-
-    const { permissionId } = req.params;
-    const permission = await permissionService.updatePermission(permissionId, value);
-
-    res.json({
-      success: true,
-      data: { permission },
-      message: 'Permission updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating permission:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({ 
-        error: 'Permission not found',
-        details: error.message 
-      });
-    } else if (error.message.includes('already exists')) {
-      res.status(409).json({ 
-        error: 'Permission with this name or code already exists',
-        details: error.message 
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to update permission',
-        details: error.message 
-      });
-    }
-  }
-});
-
-// DELETE /api/admin/permissions/:permissionId - Delete a permission
-// Requires: system:admin permission
-router.delete('/:permissionId', authenticateToken, requireRole('admin'), async (req, res) => {
-  try {
-    const { permissionId } = req.params;
-    
-    // Don't allow deletion of core permissions
-    const corePermissions = [
-      'system:admin',
-      'permissions:read',
-      'permissions:write',
-      'roles:read',
-      'roles:write',
-      'users:read',
-      'users:write'
-    ];
-    
-    const permission = await permissionService.getPermission(permissionId);
-    if (permission && corePermissions.includes(permission.code)) {
-      return res.status(403).json({ 
-        error: 'Cannot delete core system permission',
-        details: `The permission "${permission.code}" is a core system permission and cannot be deleted` 
-      });
-    }
-
-    await permissionService.deletePermission(permissionId);
-
-    res.json({
-      success: true,
-      message: 'Permission deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting permission:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({ 
-        error: 'Permission not found',
-        details: error.message 
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to delete permission',
         details: error.message 
       });
     }
