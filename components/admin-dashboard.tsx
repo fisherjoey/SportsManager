@@ -37,6 +37,7 @@ import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentreNew } from '@/components/resource-centre-new'
 import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
 import { PermissionManagementDashboard } from '@/components/admin/rbac/PermissionManagementDashboard'
+import { PermissionConfigurationDashboard } from '@/components/admin/rbac/PermissionConfigurationDashboard'
 import { UserManagementDashboard } from '@/components/admin/users/UserManagementDashboard'
 import { Button } from '@/components/ui/button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -193,6 +194,8 @@ export function AdminDashboard() {
       return 'Role Management'
     case 'admin-permissions':
       return 'Permission Matrix'
+    case 'admin-permission-config':
+      return 'Permission Configuration'
       
       // Account
     case 'profile':
@@ -355,6 +358,8 @@ export function AdminDashboard() {
       return <RoleManagementDashboard />
     case 'admin-permissions':
       return <PermissionManagementDashboard />
+    case 'admin-permission-config':
+      return <PermissionConfigurationDashboard />
       
       // Account
     case 'profile':

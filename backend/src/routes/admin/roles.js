@@ -303,6 +303,7 @@ router.get('/:roleId/users', authenticateToken, requireRole('admin'), async (req
     });
   } catch (error) {
     console.error('Error getting users with role:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ 
       error: 'Failed to retrieve users',
       details: error.message 

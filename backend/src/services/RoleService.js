@@ -214,6 +214,11 @@ class RoleService extends BaseService {
       const { page = 1, limit = 50 } = options;
       const offset = (page - 1) * limit;
 
+      if (!this.db) {
+        console.error('Database connection not available in RoleService');
+        throw new Error('Database connection not initialized');
+      }
+
       const query = this.db('users')
         .join('user_roles', 'users.id', 'user_roles.user_id')
         .where('user_roles.role_id', roleId)
@@ -228,7 +233,7 @@ class RoleService extends BaseService {
         query.clone().count('* as total').first()
       ]);
 
-      const total = parseInt(countResult.total);
+      const total = parseInt(countResult?.total || 0);
       const totalPages = Math.ceil(total / limit);
 
       return {

@@ -76,6 +76,8 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
   'dashboard-view:admin-roles': [PERMISSIONS.ROLES.READ],
   '/admin-permissions': [PERMISSIONS.ROLES.READ],
   'dashboard-view:admin-permissions': [PERMISSIONS.ROLES.READ],
+  '/admin-permission-config': [PERMISSIONS.ROLES.MANAGE],
+  'dashboard-view:admin-permission-config': [PERMISSIONS.ROLES.MANAGE],
   '/admin-workflows': [PERMISSIONS.SETTINGS.UPDATE],
   'dashboard-view:admin-workflows': [PERMISSIONS.SETTINGS.UPDATE],
   '/admin-security': [PERMISSIONS.SETTINGS.UPDATE],

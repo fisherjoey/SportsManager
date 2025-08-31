@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "validate:permissions": "node scripts/validate-permissions.js",
+    "prebuild": "npm run validate:permissions",
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",

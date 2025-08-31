@@ -313,6 +313,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: Grid3X3
     },
     {
+      title: 'Permission Config',
+      url: 'admin-permission-config',
+      icon: Settings
+    },
+    {
       title: 'Workflow Management',
       url: 'admin-workflows',
       icon: Workflow
