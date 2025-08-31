@@ -77,28 +77,31 @@ const gameUpdateSchema = Joi.object({
 
 // GET /api/games - Get all games with optional filters
 router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHandler(async (req, res) => {
-  const filters = {
-    status: req.query.status,
-    level: req.query.level,
-    game_type: req.query.game_type,
-    date_from: req.query.date_from,
-    date_to: req.query.date_to,
-    postal_code: req.query.postal_code
-  };
+  try {
+    console.log('Games endpoint hit with query:', req.query);
+    
+    const filters = {
+      status: req.query.status,
+      level: req.query.level,
+      game_type: req.query.game_type,
+      date_from: req.query.date_from,
+      date_to: req.query.date_to,
+      postal_code: req.query.postal_code
+    };
+    
+    const paginationParams = QueryBuilder.validatePaginationParams(req.query);
+    const { page, limit } = paginationParams;
   
-  const paginationParams = QueryBuilder.validatePaginationParams(req.query);
-  const { page, limit } = paginationParams;
+    // Try to get cached results first
+    const cacheKey = queryCache.generateKey('games_list', filters, { page, limit });
+    const cachedResult = queryCache.get(cacheKey);
   
-  // Try to get cached results first
-  const cacheKey = queryCache.generateKey('games_list', filters, { page, limit });
-  const cachedResult = queryCache.get(cacheKey);
-  
-  if (cachedResult) {
-    return res.json(cachedResult);
-  }
-  
-  // Build optimized query using indexes
-  let query = db('games')
+    if (cachedResult) {
+      return res.json(cachedResult);
+    }
+    
+    // Build optimized query using indexes
+    let query = db('games')
     .select(
       'games.*',
       'home_teams.name as home_team_name',
@@ -113,58 +116,62 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHa
     .leftJoin('teams as away_teams', 'games.away_team_id', 'away_teams.id')
     .leftJoin('leagues', 'games.league_id', 'leagues.id');
 
-  // Apply filters using QueryBuilder with performance indexes
-  // This will use idx_games_status_date and idx_games_date_location indexes
-  query = QueryBuilder.applyCommonFilters(query, filters, QueryHelpers.getGameFilterMap());
-  
-  // Apply date range optimization for better index usage
-  if (filters.date_from || filters.date_to) {
-    query = QueryBuilder.applyDateRange(query, 'games.date_time', filters.date_from, filters.date_to);
-  }
-  
-  // Use optimized sorting - games.date_time is indexed
-  query = query.orderBy('games.date_time', 'asc');
-  
-  // Apply pagination
-  query = QueryBuilder.applyPagination(query, page, limit);
+    // Apply filters using QueryBuilder with performance indexes
+    // This will use idx_games_status_date and idx_games_date_location indexes
+    query = QueryBuilder.applyCommonFilters(query, filters, QueryHelpers.getGameFilterMap());
+    
+    // Apply date range optimization for better index usage
+    if (filters.date_from || filters.date_to) {
+      query = QueryBuilder.applyDateRange(query, 'games.date_time', filters.date_from, filters.date_to);
+    }
+    
+    // Use optimized sorting - games.date_time is indexed
+    query = query.orderBy('games.date_time', 'asc');
+    
+    // Get total count before pagination
+    const countQuery = query.clone();
+    const [{ count: totalCount }] = await countQuery.clearSelect().clearOrder().count('* as count');
+    
+    // Apply pagination
+    query = QueryBuilder.applyPagination(query, page, limit);
 
-  const games = await query;
+    const games = await query;
     
-  // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
-  const gameIds = games.map(game => game.id);
-  const teamIds = [...new Set([
-    ...games.map(game => game.home_team_id).filter(Boolean),
-    ...games.map(game => game.away_team_id).filter(Boolean)
-  ])];
-    
-  // Fetch all assignments in one query
-  const allAssignments = gameIds.length > 0 ? await db('game_assignments')
-    .join('users', 'game_assignments.user_id', 'users.id')
-    .join('positions', 'game_assignments.position_id', 'positions.id')
+    // PERFORMANCE OPTIMIZATION: Batch fetch all related data to avoid N+1 queries
+    const gameIds = games.map(game => game.id);
+    const teamIds = [...new Set([
+      ...games.map(game => game.home_team_id).filter(Boolean),
+      ...games.map(game => game.away_team_id).filter(Boolean)
+    ])];
+      
+    // Fetch all assignments in one query
+    const allAssignments = gameIds.length > 0 ? await db('game_assignments')
+    .leftJoin('users', 'game_assignments.referee_id', 'users.id')
     .select(
       'game_assignments.game_id',
       'users.name as referee_name', 
-      'positions.name as position_name', 
+      'game_assignments.position as position_name', 
       'game_assignments.status'
     )
     .whereIn('game_assignments.game_id', gameIds) : [];
     
-  // Fetch all teams with league info in one query
-  const allTeams = teamIds.length > 0 ? await db('teams')
-    .join('leagues', 'teams.league_id', 'leagues.id')
+    // Fetch all teams with league info in one query
+    const allTeams = teamIds.length > 0 ? await db('teams')
+    .leftJoin('leagues', 'teams.league_id', 'leagues.id')
     .select(
       'teams.id',
       'teams.name',
-      'teams.rank',
+      'teams.display_name',
+      'teams.team_number',
       'leagues.organization',
       'leagues.age_group',
       'leagues.gender'
     )
     .whereIn('teams.id', teamIds) : [];
     
-  // Create lookup maps for O(1) access
-  const assignmentsByGameId = {};
-  allAssignments.forEach(assignment => {
+    // Create lookup maps for O(1) access
+    const assignmentsByGameId = {};
+    allAssignments.forEach(assignment => {
     if (!assignmentsByGameId[assignment.game_id]) {
       assignmentsByGameId[assignment.game_id] = [];
     }
@@ -175,59 +182,86 @@ router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHa
     });
   });
     
-  const teamsById = {};
-  allTeams.forEach(team => {
+    const teamsById = {};
+    allTeams.forEach(team => {
     teamsById[team.id] = {
       organization: team.organization,
       ageGroup: team.age_group,
       gender: team.gender,
-      rank: team.rank,
-      name: team.name
+      rank: team.team_number || 1,
+      name: team.display_name || team.name
     };
   });
     
-  // Transform games using lookup maps (no async operations needed)
-  const transformedGames = games.map(game => {
-    const homeTeam = teamsById[game.home_team_id] || {};
-    const awayTeam = teamsById[game.away_team_id] || {};
+    // Transform games using lookup maps (no async operations needed)
+    const transformedGames = games.map(game => {
+    const homeTeam = teamsById[game.home_team_id] || {
+      organization: game.home_team_name || 'Unknown',
+      ageGroup: 'Unknown',
+      gender: 'Unknown',
+      rank: 1
+    };
+    const awayTeam = teamsById[game.away_team_id] || {
+      organization: game.away_team_name || 'Unknown',
+      ageGroup: 'Unknown',
+      gender: 'Unknown',
+      rank: 1
+    };
     const assignments = assignmentsByGameId[game.id] || [];
+    
+    // Parse date and time from date_time field
+    let gameDate = '';
+    let gameTime = '';
+    if (game.date_time) {
+      const dt = new Date(game.date_time);
+      gameDate = dt.toISOString().split('T')[0]; // YYYY-MM-DD format
+      gameTime = dt.toTimeString().slice(0, 5); // HH:MM format
+    }
       
     return {
       id: game.id,
       homeTeam,
       awayTeam,
-      date: game.date_time,
-      time: game.game_time,
-      location: game.location,
-      postalCode: game.postal_code,
-      level: game.level,
-      gameType: game.game_type,
-      division: game.division,
-      season: game.season,
-      payRate: game.pay_rate,
-      status: game.status,
-      refsNeeded: game.refs_needed,
-      wageMultiplier: game.wage_multiplier,
-      wageMultiplierReason: game.wage_multiplier_reason,
+      date: gameDate,
+      time: gameTime,
+      startTime: gameTime, // Add startTime for compatibility
+      location: game.field || game.location || '',
+      postalCode: game.postal_code || '',
+      level: game.level || 'Recreational',
+      gameType: game.game_type || 'Community',
+      division: game.division || '',
+      season: game.season || '',
+      payRate: parseFloat(game.base_wage) || 0,
+      status: game.metadata?.status || 'unassigned',
+      refsNeeded: game.refs_needed || 2,
+      assignedReferees: assignments.map(a => a.referee_name).filter(Boolean),
+      wageMultiplier: parseFloat(game.wage_multiplier) || 1.0,
+      wageMultiplierReason: '',
       assignments,
-      notes: '', // placeholder
+      notes: game.metadata?.notes || '', 
       createdAt: game.created_at,
       updatedAt: game.updated_at
     };
   });
 
-  const result = {
-    data: transformedGames,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit)
-    }
-  };
-    
-  // Cache the result for 5 minutes
-  queryCache.set(cacheKey, result, 5 * 60 * 1000);
-    
-  res.json(result);
+    const result = {
+      data: transformedGames,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(totalCount),
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    };
+      
+    // Cache the result for 5 minutes
+    queryCache.set(cacheKey, result, 5 * 60 * 1000);
+      
+    res.json(result);
+  } catch (error) {
+    console.error('Games endpoint error:', error);
+    throw error;
+  }
 }));
 
 // GET /api/games/:id - Get specific game

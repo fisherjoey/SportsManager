@@ -25,7 +25,7 @@ class QueryBuilder {
   static applyPagination(query, page = 1, limit = 50) {
     // Validate parameters
     const validPage = Math.max(1, parseInt(page, 10) || 1);
-    const validLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const validLimit = Math.min(300, Math.max(1, parseInt(limit, 10) || 50));
     
     const offset = (validPage - 1) * validLimit;
     
@@ -255,7 +255,7 @@ class QueryBuilder {
 
     // Calculate pagination metadata
     const validPage = Math.max(1, parseInt(page, 10) || 1);
-    const validLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const validLimit = Math.min(300, Math.max(1, parseInt(limit, 10) || 50));
     const totalPages = Math.ceil(totalCount / validLimit);
     const hasNextPage = validPage < totalPages;
     const hasPrevPage = validPage > 1;
@@ -319,7 +319,7 @@ class QueryBuilder {
 
     return {
       page: Math.max(1, parseInt(page, 10) || 1),
-      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 50)),
+      limit: Math.min(300, Math.max(1, parseInt(limit, 10) || 50)),
       sortBy: sortBy || null,
       sortOrder: ['asc', 'desc'].includes(String(sortOrder).toLowerCase()) 
         ? String(sortOrder).toLowerCase() 

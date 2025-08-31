@@ -234,7 +234,7 @@ const BudgetSchemas = {
  */
 const PaginationSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(1).max(300).default(50),
   sort_by: Joi.string().optional(),
   sort_order: Joi.string().valid('asc', 'desc').default('asc')
 });

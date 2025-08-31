@@ -10,8 +10,6 @@
 
 import { AvailabilityWindow, AvailabilityResponse } from './types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-
 interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -31,17 +29,48 @@ interface ApiResponse<T> {
  * @class ApiClient
  */
 class ApiClient {
-  private baseURL: string
   private token: string | null = null
 
   /**
    * Create an API client instance
-   * 
-   * @param {string} baseURL - Base URL for all API requests
    */
-  constructor(baseURL: string) {
-    this.baseURL = baseURL
+  constructor() {
     this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  }
+
+  /**
+   * Get the base URL dynamically based on current host
+   */
+  private getBaseURL(): string {
+    // For server-side rendering, always use localhost
+    if (typeof window === 'undefined') {
+      return 'http://localhost:3001/api'
+    }
+    
+    // For client-side, use the current host
+    const host = window.location.hostname
+    const protocol = window.location.protocol
+    
+    console.log('[API Client] Current host:', host)
+    console.log('[API Client] Current protocol:', protocol)
+    
+    // If we have an environment variable set and it's not localhost, use it
+    if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
+      console.log('[API Client] Using env API URL:', process.env.NEXT_PUBLIC_API_URL)
+      return process.env.NEXT_PUBLIC_API_URL
+    }
+    
+    // If accessing from localhost, use localhost
+    if (host === 'localhost' || host === '127.0.0.1') {
+      const url = 'http://localhost:3001/api'
+      console.log('[API Client] Using localhost URL:', url)
+      return url
+    }
+    
+    // Otherwise, use the same host but on port 3001 (backend port)
+    const url = `${protocol}//${host}:3001/api`
+    console.log('[API Client] Using network URL:', url)
+    return url
   }
 
   setToken(token: string) {
@@ -83,8 +112,12 @@ class ApiClient {
       }
     }
 
-    const url = `${this.baseURL}${endpoint}`
+    const baseURL = this.getBaseURL()
+    const url = `${baseURL}${endpoint}`
     const method = options.method || 'GET'
+    
+    console.log(`[API Client] ${method} request to:`, url)
+    
     const headers: HeadersInit = {
       ...options.headers
     }
@@ -109,11 +142,13 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`
         console.error(`API Error [${method}] ${url}:`, {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
+          errorData: errorData,
+          headers: Object.fromEntries(response.headers.entries()),
           body: config.body
         })
         throw new Error(errorMessage)
@@ -182,16 +217,21 @@ class ApiClient {
     // Transform backend response to frontend format
     const transformedGames = response.data.map((game: any) => ({
       id: game.id,
-      homeTeam: game.homeTeam || { name: game.home_team_name } || 'Home Team',
-      awayTeam: game.awayTeam || { name: game.away_team_name } || 'Away Team',
+      homeTeam: game.homeTeam || { name: game.home_team_name },
+      awayTeam: game.awayTeam || { name: game.away_team_name },
       date: game.date || game.game_date,
       time: game.time || game.game_time,
+      startTime: game.startTime || game.time || game.game_time, // Add startTime
+      endTime: game.endTime || '', // Add endTime
       location: game.location,
+      postalCode: game.postalCode || '',
       level: game.level,
+      division: game.division || '',
       payRate: game.payRate || game.pay_rate,
       status: game.status,
       assignments: game.assignments || [],
-      refsNeeded: game.refsNeeded || game.refs_needed,
+      assignedReferees: game.assignedReferees || [], // Add assignedReferees array
+      refsNeeded: game.refsNeeded || game.refs_needed || 2,
       wageMultiplier: game.wageMultiplier || game.wage_multiplier,
       gameType: game.gameType || game.game_type,
       notes: game.notes || '',
@@ -3057,6 +3097,19 @@ class ApiClient {
     }>('/admin/permissions')
   }
 
+  async getPermissions() {
+    return this.request<{
+      success: boolean;
+      data: { 
+        permissions: PermissionsByCategory;
+        statistics?: {
+          total: number;
+          categories: number;
+        };
+      };
+    }>('/admin/permissions')
+  }
+
   async getPermissionsByCategory(category: string) {
     return this.request<{
       success: boolean;
@@ -3080,6 +3133,181 @@ class ApiClient {
       body: JSON.stringify({ permissions })
     })
   }
+
+  // RBAC Role Management
+  async getRoles(params?: { include_inactive?: boolean }) {
+    const queryString = params ? new URLSearchParams(params as any).toString() : ''
+    return this.request<{
+      success: boolean;
+      data: { roles: any[] };
+    }>(`/admin/roles${queryString ? `?${queryString}` : ''}`)
+  }
+
+  async getRole(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+    }>(`/admin/roles/${roleId}`)
+  }
+
+  async createRole(roleData: any) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>('/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async updateRole(roleId: string, roleData: any) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>(`/admin/roles/${roleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async deleteRole(roleId: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/roles/${roleId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async updateRoleStatus(roleId: string, isActive: boolean) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>(`/admin/roles/${roleId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: isActive })
+    })
+  }
+
+  async assignPermissionsToRole(roleId: string, permissionIds: string[]) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>(`/admin/roles/${roleId}/permissions`, {
+      method: 'POST',
+      body: JSON.stringify({ permission_ids: permissionIds })
+    })
+  }
+
+  async getRoleUsers(roleId: string) {
+    return this.request<{
+      success: boolean;
+      data: { users: any[] };
+    }>(`/admin/roles/${roleId}/users`)
+  }
+
+  async getUserRoles(userId: string) {
+    return this.request<{
+      success: boolean;
+      data: { roles: any[] };
+    }>(`/admin/users/${userId}/roles`)
+  }
+
+  async assignRolesToUser(userId: string, roleIds: string[]) {
+    return this.request<{
+      success: boolean;
+      data: { user: any };
+      message: string;
+    }>(`/admin/users/${userId}/roles`, {
+      method: 'PUT',
+      body: JSON.stringify({ role_ids: roleIds })
+    })
+  }
+
+  async addRolesToUser(userId: string, roleIds: string[]) {
+    return this.request<{
+      success: boolean;
+      data: { user: any };
+      message: string;
+    }>(`/admin/users/${userId}/roles`, {
+      method: 'POST',
+      body: JSON.stringify({ role_ids: roleIds })
+    })
+  }
+
+  async removeRolesFromUser(userId: string, roleIds: string[]) {
+    return this.request<{
+      success: boolean;
+      data: { user: any };
+      message: string;
+    }>(`/admin/users/${userId}/roles`, {
+      method: 'DELETE',
+      body: JSON.stringify({ role_ids: roleIds })
+    })
+  }
+
+  async getUsers() {
+    return this.request<{
+      success: boolean;
+      data: { users: any[] };
+    }>('/users')
+  }
+
+  // Generic HTTP methods for resources and other endpoints
+  async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'GET'
+    })
+  }
+
+  async post<T = any>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+  }
+
+  async put<T = any>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+  }
+
+  async patch<T = any>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+  }
+
+  async delete<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'DELETE'
+    })
+  }
+
 }
 
 // Types (updated to match backend schema)
@@ -3301,7 +3529,7 @@ export interface PostCategory {
 }
 
 // Create and export API client instance
-export const apiClient = new ApiClient(API_BASE_URL)
+export const apiClient = new ApiClient()
 
 // AI Assignment Rule interfaces
 export interface AIAssignmentRule {

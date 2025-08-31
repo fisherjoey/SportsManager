@@ -221,9 +221,22 @@ router.get('/', authenticateToken, async (req, res) => {
       });
     }
     
-    // Get total count
-    const countQuery = query.clone();
-    const [{ count }] = await countQuery.count('* as count');
+    // Get total count (simplified to avoid join issues)
+    const countResult = await db('resources')
+      .where('is_active', true)
+      .modify(qb => {
+        if (category_id) qb.where('category_id', category_id);
+        if (type) qb.where('type', type);
+        if (is_featured !== undefined) qb.where('is_featured', is_featured === 'true');
+        if (search) {
+          qb.where(function() {
+            this.where('title', 'ilike', `%${search}%`)
+              .orWhere('description', 'ilike', `%${search}%`);
+          });
+        }
+      })
+      .count('* as count');
+    const count = countResult[0]?.count || 0;
     
     // Apply pagination and sorting
     const resources = await query
@@ -631,6 +644,35 @@ router.get('/stats/overview', authenticateToken, requireAdmin, async (req, res) 
     res.status(500).json({
       success: false,
       error: 'Failed to fetch statistics'
+    });
+  }
+});
+
+// File upload endpoint for TinyMCE and other file uploads
+router.post('/upload', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+
+    // Generate public URL for the file
+    const file_url = `/uploads/resources/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      file_url: file_url,
+      file_name: req.file.originalname,
+      file_size: req.file.size,
+      mime_type: req.file.mimetype
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload file'
     });
   }
 });
