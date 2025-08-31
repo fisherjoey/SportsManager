@@ -92,6 +92,16 @@ class RoleService extends BaseService {
    */
   async updateRole(roleId, roleData, permissions = null) {
     return await this.withTransaction(async (trx) => {
+      // Check if trying to update Super Admin
+      const existingRole = await trx('roles').where('id', roleId).first();
+      if (!existingRole) {
+        throw new Error(`Role not found with id: ${roleId}`);
+      }
+      
+      if (existingRole.name === 'Super Admin') {
+        throw new Error('Super Admin role cannot be modified');
+      }
+
       // Update the role
       const [role] = await trx('roles')
         .where('id', roleId)
@@ -135,6 +145,11 @@ class RoleService extends BaseService {
       const role = await trx('roles').where('id', roleId).first();
       if (!role) {
         throw new Error(`Role not found with id: ${roleId}`);
+      }
+
+      // Prevent modifying Super Admin permissions
+      if (role.name === 'Super Admin') {
+        throw new Error('Super Admin permissions cannot be modified');
       }
 
       // Validate permissions exist
@@ -202,12 +217,11 @@ class RoleService extends BaseService {
       const query = this.db('users')
         .join('user_roles', 'users.id', 'user_roles.user_id')
         .where('user_roles.role_id', roleId)
-        .select('users.id', 'users.name', 'users.email', 'users.active')
+        .select('users.id', 'users.name', 'users.email')
         .orderBy('users.name');
 
-      if (options.includeInactive !== true) {
-        query.where('users.active', true);
-      }
+      // Note: Users table doesn't have an active/is_active column
+      // If we need to filter inactive users in the future, we'll need to add this column
 
       const [users, countResult] = await Promise.all([
         query.clone().limit(limit).offset(offset),
@@ -286,6 +300,11 @@ class RoleService extends BaseService {
         throw new Error(`Role not found with id: ${roleId}`);
       }
 
+      // Prevent any modifications to Super Admin
+      if (role.name === 'Super Admin') {
+        throw new Error('Super Admin role cannot be modified');
+      }
+
       if (!active && role.system_role) {
         throw new Error('Cannot deactivate system roles');
       }
@@ -293,7 +312,7 @@ class RoleService extends BaseService {
       const [updatedRole] = await this.db('roles')
         .where('id', roleId)
         .update({
-          active,
+          is_active: active,
           updated_at: new Date()
         })
         .returning('*');
@@ -332,6 +351,11 @@ class RoleService extends BaseService {
       const role = await this.findById(roleId);
       if (!role) {
         return { canDelete: false, reason: 'Role not found' };
+      }
+
+      // Super Admin cannot be deleted
+      if (role.name === 'Super Admin') {
+        return { canDelete: false, reason: 'Super Admin role cannot be deleted' };
       }
 
       // System roles cannot be deleted

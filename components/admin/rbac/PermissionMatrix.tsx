@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { Loader2, Shield, CheckSquare, Square } from 'lucide-react'
+import { apiClient } from '@/lib/api'
 
 interface Permission {
   id: string
@@ -52,38 +53,44 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
     setLoading(true)
     try {
       // Fetch all permissions
-      const permResponse = await fetch('/api/admin/permissions', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
+      console.log('Fetching permissions...')
+      const permData = await apiClient.getPermissions()
+      console.log('Permissions response:', permData)
+      
+      const permissionsObj = permData.data?.permissions || {}
+      console.log('Permissions object:', permissionsObj)
+      
+      // Convert object of categories to flat array of permissions
+      const permissionsList: Permission[] = []
+      const categoryList: string[] = []
+      
+      Object.keys(permissionsObj).forEach(category => {
+        categoryList.push(category)
+        permissionsObj[category].forEach((perm: Permission) => {
+          permissionsList.push(perm)
+        })
       })
       
-      if (!permResponse.ok) throw new Error('Failed to fetch permissions')
+      console.log('Processed permissions list:', permissionsList)
+      console.log('Categories:', categoryList)
       
-      const permData = await permResponse.json()
-      setPermissions(permData.permissions || [])
-      
-      // Extract unique categories
-      const uniqueCategories = [...new Set(permData.permissions.map((p: Permission) => p.category))]
-      setCategories(uniqueCategories.sort())
+      setPermissions(permissionsList)
+      setCategories(categoryList.sort())
       
       // Fetch role with current permissions
-      const roleResponse = await fetch(`/api/admin/roles/${role.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      })
+      console.log('Fetching role:', role.id)
+      const roleData = await apiClient.getRole(role.id)
+      console.log('Role data:', roleData)
       
-      if (!roleResponse.ok) throw new Error('Failed to fetch role permissions')
-      
-      const roleData = await roleResponse.json()
-      const rolePermissions = new Set(roleData.permissions?.map((p: Permission) => p.id) || [])
+      const rolePermissions = new Set(roleData.data?.role?.permissions?.map((p: Permission) => p.id) || [])
+      console.log('Role permissions:', rolePermissions)
       setSelectedPermissions(rolePermissions)
       
     } catch (error) {
+      console.error('Error in fetchPermissionsAndRole:', error)
       toast({
         title: 'Error',
-        description: 'Failed to load permissions',
+        description: error instanceof Error ? error.message : 'Failed to load permissions',
         variant: 'destructive'
       })
     } finally {
@@ -117,21 +124,22 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
   }
 
   const handleSave = async () => {
+    // Validate that at least one permission is selected
+    if (selectedPermissions.size === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select at least one permission for this role',
+        variant: 'destructive'
+      })
+      return
+    }
+
     setSaving(true)
     
     try {
-      const response = await fetch(`/api/admin/roles/${role.id}/permissions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          permissionIds: Array.from(selectedPermissions)
-        })
-      })
+      const response = await apiClient.assignPermissionsToRole(role.id, Array.from(selectedPermissions))
 
-      if (!response.ok) throw new Error('Failed to update permissions')
+      if (!response.success) throw new Error('Failed to update permissions')
 
       toast({
         title: 'Success',
@@ -142,7 +150,7 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to update permissions',
+        description: error instanceof Error ? error.message : 'Failed to update permissions',
         variant: 'destructive'
       })
     } finally {
@@ -235,20 +243,37 @@ export function PermissionMatrix({ role, open, onClose, onSuccess }: PermissionM
         )}
         
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={loading || saving}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Permissions
-          </Button>
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-muted-foreground">
+              {selectedPermissions.size === 0 && (
+                <span className="text-destructive">
+                  Select at least one permission
+                </span>
+              )}
+              {selectedPermissions.size > 0 && (
+                <span>
+                  {selectedPermissions.size} permission{selectedPermissions.size !== 1 ? 's' : ''} selected
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={loading || saving || selectedPermissions.size === 0}
+                title={selectedPermissions.size === 0 ? 'Please select at least one permission' : ''}
+              >
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Permissions
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

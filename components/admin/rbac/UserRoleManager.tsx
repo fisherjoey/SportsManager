@@ -1,70 +1,97 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Users, Plus, Minus, UserX, Mail, Calendar, Shield } from 'lucide-react'
 import {
+  Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/components/ui/use-toast'
-import { formatDistanceToNow } from 'date-fns'
-import type { Role, User, UsersWithRoleResponse } from '@/lib/types'
+import { Search, Loader2, Users, UserPlus, UserMinus, Mail } from 'lucide-react'
+import { apiClient } from '@/lib/api'
+
+interface User {
+  id: string
+  name: string
+  email: string
+  role?: string
+  hasRole?: boolean
+}
 
 interface UserRoleManagerProps {
-  role: Role | null
-  isOpen: boolean
-  onClose: () => void
-}
-
-interface UserWithRoles extends User {
-  user_roles?: Array<{
+  role: {
     id: string
-    assigned_at: string
-    assigned_by: string
-    active: boolean
-  }>
+    name: string
+    description?: string
+  }
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
 }
 
-export function UserRoleManager({ role, isOpen, onClose }: UserRoleManagerProps) {
-  const [usersWithRole, setUsersWithRole] = useState<UserWithRoles[]>([])
-  const [allUsers, setAllUsers] = useState<UserWithRoles[]>([])
-  const [loading, setLoading] = useState(true)
+export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleManagerProps) {
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
-  const [showAssignUsers, setShowAssignUsers] = useState(false)
-  const [updating, setUpdating] = useState(false)
+  const [currentRoleUsers, setCurrentRoleUsers] = useState<Set<string>>(new Set())
   const { toast } = useToast()
 
-  const fetchUsersWithRole = async () => {
-    if (!role) return
+  useEffect(() => {
+    if (open && role) {
+      fetchUsersAndRoleMembers()
+    }
+  }, [open, role])
 
+  useEffect(() => {
+    // Filter users based on search term
+    const filtered = users.filter(user =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    setFilteredUsers(filtered)
+  }, [searchTerm, users])
+
+  const fetchUsersAndRoleMembers = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-      const response = await fetch(`/api/admin/roles/${role.id}/users`, {
-        credentials: 'include'
-      })
+      // Fetch all users
+      const usersResponse = await apiClient.getUsers()
+      const allUsers = usersResponse.data?.users || []
+
+      // Fetch users with this role
+      const roleUsersResponse = await apiClient.getRoleUsers(role.id)
+      const roleUsers = roleUsersResponse.data?.users || []
       
-      if (!response.ok) throw new Error('Failed to fetch users')
+      // Create a set of user IDs that have this role
+      const roleUserIds = new Set(roleUsers.map((u: any) => u.id))
       
-      const data: UsersWithRoleResponse = await response.json()
-      setUsersWithRole(data.data.users as UserWithRoles[])
+      // Mark users that already have this role
+      const usersWithRoleInfo = allUsers.map((user: any) => ({
+        ...user,
+        hasRole: roleUserIds.has(user.id)
+      }))
+      
+      setUsers(usersWithRoleInfo)
+      setCurrentRoleUsers(roleUserIds)
+      setSelectedUsers(new Set(roleUserIds))
+      
     } catch (error) {
-      console.error('Error fetching users with role:', error)
+      console.error('Error fetching users:', error)
       toast({
         title: 'Error',
-        description: 'Failed to load users with this role.',
+        description: 'Failed to load users',
         variant: 'destructive'
       })
     } finally {
@@ -72,420 +99,249 @@ export function UserRoleManager({ role, isOpen, onClose }: UserRoleManagerProps)
     }
   }
 
-  const fetchAllUsers = async () => {
-    try {
-      const response = await fetch('/api/users', {
-        credentials: 'include'
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch users')
-      
-      const data = await response.json()
-      setAllUsers(data.data?.users || data.users || [])
-    } catch (error) {
-      console.error('Error fetching all users:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load users for assignment.',
-        variant: 'destructive'
-      })
-    }
-  }
-
-  useEffect(() => {
-    if (isOpen && role) {
-      fetchUsersWithRole()
-      if (showAssignUsers) {
-        fetchAllUsers()
-      }
-    }
-  }, [role, isOpen, showAssignUsers])
-
-  const handleRemoveRole = async (userId: string) => {
-    if (!role || !confirm('Are you sure you want to remove this role from the user?')) {
-      return
-    }
-
-    setUpdating(true)
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/roles`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role_ids: [role.id] }),
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to remove role')
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Role removed from user successfully'
-      })
-      
-      fetchUsersWithRole()
-    } catch (error) {
-      console.error('Error removing role:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove role',
-        variant: 'destructive'
-      })
-    } finally {
-      setUpdating(false)
-    }
-  }
-
-  const handleAssignRoles = async () => {
-    if (!role || selectedUsers.size === 0) return
-
-    setUpdating(true)
-    try {
-      const userIds = Array.from(selectedUsers)
-      
-      // Assign role to selected users
-      const promises = userIds.map(userId =>
-        fetch(`/api/admin/users/${userId}/roles`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ role_ids: [role.id] }),
-          credentials: 'include'
-        })
-      )
-
-      const responses = await Promise.all(promises)
-      const failed = responses.filter(r => !r.ok)
-      
-      if (failed.length > 0) {
-        throw new Error(`Failed to assign role to ${failed.length} user${failed.length !== 1 ? 's' : ''}`)
-      }
-
-      toast({
-        title: 'Success',
-        description: `Role assigned to ${userIds.length} user${userIds.length !== 1 ? 's' : ''} successfully`
-      })
-      
-      setSelectedUsers(new Set())
-      setShowAssignUsers(false)
-      fetchUsersWithRole()
-    } catch (error) {
-      console.error('Error assigning roles:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to assign roles',
-        variant: 'destructive'
-      })
-    } finally {
-      setUpdating(false)
-    }
-  }
-
-  const handleUserSelection = (userId: string, checked: boolean) => {
-    const newSelection = new Set(selectedUsers)
-    if (checked) {
-      newSelection.add(userId)
+  const handleUserToggle = (userId: string) => {
+    const newSelected = new Set(selectedUsers)
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId)
     } else {
-      newSelection.delete(userId)
+      newSelected.add(userId)
     }
-    setSelectedUsers(newSelection)
+    setSelectedUsers(newSelected)
   }
 
-  const getInitials = (name: string, email: string) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const handleSelectAll = () => {
+    if (selectedUsers.size === filteredUsers.length) {
+      // Deselect all
+      setSelectedUsers(new Set())
+    } else {
+      // Select all filtered users
+      const allUserIds = new Set(filteredUsers.map(u => u.id))
+      setSelectedUsers(allUserIds)
     }
-    return email.slice(0, 2).toUpperCase()
   }
 
-  const filteredUsersWithRole = usersWithRole.filter(user =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleSave = async () => {
+    setSaving(true)
+    
+    try {
+      // Determine which users to add and remove
+      const usersToAdd: string[] = []
+      const usersToRemove: string[] = []
+      
+      // Find users to add (selected but not currently in role)
+      selectedUsers.forEach(userId => {
+        if (!currentRoleUsers.has(userId)) {
+          usersToAdd.push(userId)
+        }
+      })
+      
+      // Find users to remove (currently in role but not selected)
+      currentRoleUsers.forEach(userId => {
+        if (!selectedUsers.has(userId)) {
+          usersToRemove.push(userId)
+        }
+      })
+      
+      // Execute changes
+      const promises = []
+      
+      if (usersToAdd.length > 0) {
+        // Add users to role
+        for (const userId of usersToAdd) {
+          promises.push(apiClient.addRolesToUser(userId, [role.id]))
+        }
+      }
+      
+      if (usersToRemove.length > 0) {
+        // Remove users from role
+        for (const userId of usersToRemove) {
+          promises.push(apiClient.removeRolesFromUser(userId, [role.id]))
+        }
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises)
+        
+        toast({
+          title: 'Success',
+          description: `Updated users for role ${role.name}`,
+        })
+        
+        onSuccess()
+      } else {
+        toast({
+          title: 'No Changes',
+          description: 'No changes were made to user assignments',
+        })
+      }
+      
+    } catch (error) {
+      console.error('Error updating user roles:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update user roles',
+        variant: 'destructive'
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
 
-  const availableUsers = allUsers.filter(user => {
-    const hasRole = usersWithRole.some(u => u.id === user.id)
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    return !hasRole && matchesSearch
-  })
-
-  if (!role) return null
+  const hasChanges = () => {
+    // Check if there are any differences between current and selected
+    if (selectedUsers.size !== currentRoleUsers.size) return true
+    
+    for (const userId of selectedUsers) {
+      if (!currentRoleUsers.has(userId)) return true
+    }
+    
+    return false
+  }
 
   return (
-    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Manage Users for Role: {role.name}
-        </DialogTitle>
-        <DialogDescription>
-          Assign or remove users from this role. Changes take effect immediately.
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="space-y-6">
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <div className="text-2xl font-bold">{usersWithRole.length}</div>
-                  <div className="text-xs text-muted-foreground">Users with Role</div>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Manage Users for {role.name}
+          </DialogTitle>
+          <DialogDescription>
+            Add or remove users from this role. Users with this role will inherit all associated permissions.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Search and Actions Bar */}
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                >
+                  {selectedUsers.size === filteredUsers.length ? 'Deselect All' : 'Select All'}
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <div className="text-2xl font-bold">{role.permissions?.length || 0}</div>
-                  <div className="text-xs text-muted-foreground">Permissions</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Badge variant={role.active ? 'default' : 'secondary'} className="text-xs">
-                  {role.active ? 'Active' : 'Inactive'}
-                </Badge>
-                {role.system_role && (
+              
+              {/* Selection Summary */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+                </span>
+                {hasChanges() && (
                   <Badge variant="outline" className="text-xs">
-                    System
+                    Unsaved changes
                   </Badge>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search and Actions */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1 max-w-sm">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
+            </div>
+            
+            {/* Users List */}
+            <ScrollArea className="h-[400px] border rounded-md">
+              <div className="p-4 space-y-2">
+                {filteredUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    {searchTerm ? 'No users found matching your search' : 'No users available'}
+                  </p>
+                ) : (
+                  filteredUsers.map(user => (
+                    <div
+                      key={user.id}
+                      className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
+                        selectedUsers.has(user.id)
+                          ? 'bg-accent border-accent-foreground/20'
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={selectedUsers.has(user.id)}
+                        onCheckedChange={() => handleUserToggle(user.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{user.name}</span>
+                          {currentRoleUsers.has(user.id) && (
+                            <Badge variant="secondary" className="text-xs">
+                              Current member
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Mail className="h-3 w-3" />
+                          {user.email}
+                        </div>
+                        {user.role && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Legacy role: {user.role}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        {selectedUsers.has(user.id) && !currentRoleUsers.has(user.id) && (
+                          <Badge variant="default" className="text-xs">
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            To add
+                          </Badge>
+                        )}
+                        {!selectedUsers.has(user.id) && currentRoleUsers.has(user.id) && (
+                          <Badge variant="destructive" className="text-xs">
+                            <UserMinus className="h-3 w-3 mr-1" />
+                            To remove
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </>
+        )}
+        
+        <DialogFooter>
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-muted-foreground">
+              {hasChanges() && (
+                <span>
+                  {Array.from(selectedUsers).filter(id => !currentRoleUsers.has(id)).length} to add,{' '}
+                  {Array.from(currentRoleUsers).filter(id => !selectedUsers.has(id)).length} to remove
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={loading || saving || !hasChanges()}
+              >
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </div>
           </div>
-          
-          <Button
-            onClick={() => {
-              setShowAssignUsers(!showAssignUsers)
-              if (!showAssignUsers) {
-                fetchAllUsers()
-              }
-              setSearchTerm('')
-              setSelectedUsers(new Set())
-            }}
-            className="gap-2"
-          >
-            {showAssignUsers ? (
-              <>
-                <Minus className="h-4 w-4" />
-                Cancel
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                Assign Users
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Content */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>
-                {showAssignUsers ? 'Assign Users to Role' : 'Users with Role'}
-              </span>
-              {showAssignUsers && selectedUsers.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {selectedUsers.size} selected
-                  </Badge>
-                  <Button
-                    size="sm"
-                    onClick={handleAssignRoles}
-                    disabled={updating}
-                    className="gap-1"
-                  >
-                    {updating ? (
-                      <LoadingSpinner className="h-3 w-3" />
-                    ) : (
-                      <Plus className="h-3 w-3" />
-                    )}
-                    Assign Role
-                  </Button>
-                </div>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <LoadingSpinner />
-              </div>
-            ) : showAssignUsers ? (
-              /* Assign Users View */
-              availableUsers.length === 0 ? (
-                <EmptyState
-                  title="No users available"
-                  description="All users already have this role or no users match your search."
-                />
-              ) : (
-                <ScrollArea className="h-96">
-                  <div className="space-y-2">
-                    {availableUsers.map(user => (
-                      <div
-                        key={user.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                          selectedUsers.has(user.id)
-                            ? 'bg-accent border-accent-foreground/20'
-                            : 'hover:bg-muted/50'
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedUsers.has(user.id)}
-                          onCheckedChange={(checked) => 
-                            handleUserSelection(user.id, checked === true)
-                          }
-                        />
-                        
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {getInitials(user.name || '', user.email)}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">
-                            {user.name || 'Unnamed User'}
-                          </div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {user.email}
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <Badge variant="outline" className="text-xs">
-                            {user.role}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )
-            ) : (
-              /* Users with Role View */
-              filteredUsersWithRole.length === 0 ? (
-                <EmptyState
-                  title="No users found"
-                  description={searchTerm ? "No users match your search criteria." : "No users have been assigned this role yet."}
-                  action={
-                    <Button onClick={() => setShowAssignUsers(true)} className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      Assign Users
-                    </Button>
-                  }
-                />
-              ) : (
-                <ScrollArea className="h-96">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Primary Role</TableHead>
-                        <TableHead>Assigned</TableHead>
-                        <TableHead className="w-20">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsersWithRole.map(user => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {getInitials(user.name || '', user.email)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">
-                                  {user.name || 'Unnamed User'}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell>
-                            <div className="text-sm text-muted-foreground">
-                              {user.email}
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {user.role}
-                            </Badge>
-                          </TableCell>
-                          
-                          <TableCell>
-                            <div className="text-sm">
-                              {user.user_roles?.[0]?.assigned_at && (
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {formatDistanceToNow(new Date(user.user_roles[0].assigned_at), { 
-                                    addSuffix: true 
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveRole(user.id)}
-                              disabled={updating || role.system_role}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </DialogContent>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

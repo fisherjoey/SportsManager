@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Edit, Trash, Shield, Users, Power, Lock } from 'lucide-react'
+import { MoreVertical, Edit, Trash, Shield, Users, Power, Lock, UserPlus, Crown } from 'lucide-react'
 
 interface RoleCardProps {
   role: {
@@ -27,10 +27,12 @@ interface RoleCardProps {
   onDelete: (roleId: string) => void
   onToggleStatus: (role: any) => void
   onManagePermissions: (role: any) => void
+  onManageUsers?: (role: any) => void
 }
 
-export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermissions }: RoleCardProps) {
+export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermissions, onManageUsers }: RoleCardProps) {
   const isSystemRole = ['Super Admin', 'Admin', 'Referee'].includes(role.name)
+  const isSuperAdmin = role.name === 'Super Admin'
 
   return (
     <Card className={`relative ${!role.is_active ? 'opacity-60' : ''}`}>
@@ -39,8 +41,11 @@ export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermi
           <div className="space-y-1">
             <CardTitle className="text-lg flex items-center gap-2">
               {role.name}
-              {isSystemRole && (
-                <Lock className="h-3 w-3 text-muted-foreground" />
+              {isSuperAdmin && (
+                <Crown className="h-4 w-4 text-yellow-500" title="Super Admin - Protected Role" />
+              )}
+              {!isSuperAdmin && isSystemRole && (
+                <Lock className="h-3 w-3 text-muted-foreground" title="System Role" />
               )}
             </CardTitle>
             <Badge variant={role.is_active ? 'default' : 'secondary'} className="text-xs">
@@ -54,17 +59,41 @@ export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermi
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(role)}>
+              <DropdownMenuItem 
+                onClick={() => !isSuperAdmin && onEdit(role)}
+                disabled={isSuperAdmin}
+                className={isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}
+              >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Role
+                <span>Edit Role</span>
+                {isSuperAdmin && <span className="ml-auto text-xs text-muted-foreground">Protected</span>}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onManagePermissions(role)}>
+              
+              <DropdownMenuItem 
+                onClick={() => !isSuperAdmin && onManagePermissions(role)}
+                disabled={isSuperAdmin}
+                className={isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}
+              >
                 <Shield className="h-4 w-4 mr-2" />
-                Manage Permissions
+                <span>Manage Permissions</span>
+                {isSuperAdmin && <span className="ml-auto text-xs text-muted-foreground">All</span>}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onToggleStatus(role)}>
+              
+              {onManageUsers && (
+                <DropdownMenuItem onClick={() => onManageUsers(role)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Manage Users
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuItem 
+                onClick={() => !isSuperAdmin && onToggleStatus(role)}
+                disabled={isSuperAdmin}
+                className={isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}
+              >
                 <Power className="h-4 w-4 mr-2" />
-                {role.is_active ? 'Deactivate' : 'Activate'}
+                <span>{role.is_active ? 'Deactivate' : 'Activate'}</span>
+                {isSuperAdmin && <span className="ml-auto text-xs text-muted-foreground">Protected</span>}
               </DropdownMenuItem>
               {!isSystemRole && (
                 <>
@@ -84,7 +113,9 @@ export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermi
       </CardHeader>
       <CardContent className="pb-3">
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {role.description || 'No description provided'}
+          {isSuperAdmin 
+            ? 'Protected system role with unrestricted access to all features and permissions.' 
+            : (role.description || 'No description provided')}
         </p>
       </CardContent>
       <CardFooter className="pt-3 border-t">
@@ -95,7 +126,9 @@ export function RoleCard({ role, onEdit, onDelete, onToggleStatus, onManagePermi
           </div>
           <div className="flex items-center gap-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">{role.permission_count || 0} permissions</span>
+            <span className="text-muted-foreground">
+              {isSuperAdmin ? 'All permissions' : `${role.permission_count || 0} permissions`}
+            </span>
           </div>
         </div>
       </CardFooter>

@@ -80,7 +80,33 @@ class PermissionService extends BaseService {
     }
 
     try {
-      // Get permissions through role assignments
+      // Check if user has Super Admin role
+      const superAdminRole = await this.db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .where('roles.name', 'Super Admin')
+        .where('roles.is_active', true)
+        .first();
+
+      // If user is Super Admin, return all permissions
+      if (superAdminRole) {
+        const allPermissions = await this.db('permissions')
+          .select('*')
+          .orderBy('category', 'asc')
+          .orderBy('name', 'asc');
+
+        // Cache the result
+        if (useCache) {
+          this.userPermissionsCache.set(cacheKey, {
+            data: allPermissions,
+            timestamp: Date.now()
+          });
+        }
+
+        return allPermissions;
+      }
+
+      // Get permissions through role assignments for non-Super Admin users
       const permissions = await this.db('permissions')
         .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
         .join('roles', 'role_permissions.role_id', 'roles.id')
@@ -115,6 +141,19 @@ class PermissionService extends BaseService {
    */
   async hasPermission(userId, permissionName) {
     try {
+      // Quick check for Super Admin
+      const superAdminRole = await this.db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .where('roles.name', 'Super Admin')
+        .where('roles.is_active', true)
+        .first();
+
+      // Super Admin has all permissions
+      if (superAdminRole) {
+        return true;
+      }
+
       const permissions = await this.getUserPermissions(userId);
       
       // Check by name or ID
@@ -243,9 +282,8 @@ class PermissionService extends BaseService {
         .orderBy('category', 'asc')
         .orderBy('name', 'asc');
 
-      if (options.activeOnly !== false) {
-        query = query.where('active', true);
-      }
+      // Note: permissions table doesn't have an active column
+      // All permissions in the table are considered active
 
       const permissions = await query;
 

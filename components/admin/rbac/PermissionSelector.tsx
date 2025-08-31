@@ -12,6 +12,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { useToast } from '@/components/ui/use-toast'
 import type { Permission, PermissionsByCategory, PermissionsResponse } from '@/lib/types'
+import { apiClient } from '@/lib/api'
 
 interface PermissionSelectorProps {
   selectedPermissions: Permission[]
@@ -35,13 +36,10 @@ export function PermissionSelector({
   const fetchPermissions = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/permissions', {
-        credentials: 'include'
-      })
+      const data = await apiClient.getPermissions()
       
-      if (!response.ok) throw new Error('Failed to fetch permissions')
+      if (!data.success) throw new Error('Failed to fetch permissions')
       
-      const data: PermissionsResponse = await response.json()
       setPermissions(data.data.permissions)
       
       // Expand all categories by default
