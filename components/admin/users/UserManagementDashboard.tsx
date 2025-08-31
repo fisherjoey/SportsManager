@@ -8,20 +8,28 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
 import { Plus, Users, Shield, AlertCircle, Search, Filter, Download, MoreVertical } from 'lucide-react'
 import { UserTable } from './UserTable'
-import { UserForm } from './UserForm'
+import { UserForm } from './UserFormNew'
 import { UserDetailsModal } from './UserDetailsModal'
 import { UserFilters } from './UserFilters'
 import { apiClient } from '@/lib/api'
+
+interface Role {
+  id: string
+  name: string
+  description?: string
+}
 
 interface User {
   id: string
   name: string
   email: string
-  role: string
-  is_active?: boolean
+  role: string  // Legacy role field
+  legacy_role?: string  // Explicitly marked as legacy
+  roles?: Role[]  // New RBAC roles
+  is_available?: boolean  // Referee availability
+  is_active?: boolean  // Might not exist, treat as active if undefined
   created_at: string
   updated_at?: string
-  last_login_at?: string
 }
 
 export function UserManagementDashboard() {
@@ -127,19 +135,30 @@ export function UserManagementDashboard() {
       user.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
       user.email.toLowerCase().includes(filters.search.toLowerCase())
     
+    // If is_active is undefined, treat user as active
+    const isActive = user.is_active !== false
     const matchesStatus = filters.status === 'all' ||
-      (filters.status === 'active' && user.is_active !== false) ||
-      (filters.status === 'inactive' && user.is_active === false)
+      (filters.status === 'active' && isActive) ||
+      (filters.status === 'inactive' && !isActive)
     
     return matchesSearch && matchesStatus
   })
 
-  // Get user statistics
+  // Get user statistics based on new roles
   const stats = {
     total: users.length,
-    admins: users.filter(u => u.role === 'admin').length,
-    assignors: users.filter(u => u.role === 'assignor').length,
-    referees: users.filter(u => u.role === 'referee').length,
+    admins: users.filter(u => 
+      u.roles?.some(r => r.name === 'Super Admin' || r.name === 'Admin') || 
+      u.role === 'admin'
+    ).length,
+    assignors: users.filter(u => 
+      u.roles?.some(r => r.name === 'Assignor') || 
+      u.role === 'assignor'
+    ).length,
+    referees: users.filter(u => 
+      u.roles?.some(r => r.name === 'Referee') || 
+      u.role === 'referee'
+    ).length,
     active: users.filter(u => u.is_active !== false).length
   }
 
