@@ -9,9 +9,11 @@ const { validateBody, validateParams, validateQuery } = require('../middleware/v
 const { UserSchemas, RefereeSchemas, FilterSchemas, IdParamSchema } = require('../utils/validation-schemas');
 const { ErrorFactory } = require('../utils/errors');
 const UserService = require('../services/UserService');
+const RefereeService = require('../services/RefereeService');
 
-// Initialize UserService with database connection
+// Initialize services with database connection
 const userService = new UserService(db);
+const refereeService = new RefereeService(db);
 
 // Validation schemas are now centralized in validation-schemas.js
 
@@ -20,49 +22,61 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Referees API is working', timestamp: new Date().toISOString() });
 });
 
-// GET /api/referees - Get all referees with optional filters  
-router.get('/', enhancedAsyncHandler(async (req, res) => {
-  try {
-    // Simple query to test database connection
-    const referees = await db('users')
-      .where('role', 'referee')
-      .select('id', 'name', 'email', 'is_available')
-      .limit(10);
+// GET /api/referees - Get all referees with optional filters and pagination
+router.get('/', 
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  validateQuery(Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+    search: Joi.string().trim().max(255),
+    referee_type: Joi.string().valid('Senior Referee', 'Junior Referee', 'Rookie Referee'),
+    wage_min: Joi.number().min(0),
+    wage_max: Joi.number().min(0),
+    experience_min: Joi.number().integer().min(0),
+    is_white_whistle: Joi.boolean(),
+    is_available: Joi.boolean()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { page, limit, ...filters } = req.query;
     
-    res.json({
-      success: true,
-      data: { 
-        referees,
-        total: referees.length
-      }
+    // Use RefereeService to get paginated profiles with enhanced data
+    const result = await refereeService.getRefereeProfiles(filters, page, limit);
+    
+    return ResponseFormatter.sendSuccess(res, result, 'Referees retrieved successfully');
+  })
+);
+
+// GET /api/referees/:id - Get specific referee with enhanced profile data
+router.get('/:id', 
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  validateParams(IdParamSchema), 
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    
+    // Use RefereeService to get complete referee profile
+    const profile = await refereeService.getRefereeProfile(refereeId, { includeUser: true });
+    
+    if (!profile) {
+      throw ErrorFactory.notFound('Referee profile not found', refereeId);
+    }
+
+    // Get assignment data for backward compatibility
+    const assignmentData = await userService.getUserWithRefereeDetails(refereeId, {
+      assignmentLimit: 50
     });
-  } catch (error) {
-    console.error('Referees endpoint error:', error);
-    throw error;
-  }
-}));
+    
+    const enhancedProfile = {
+      ...profile,
+      // Include assignment data if available
+      assignments: assignmentData?.recent_assignments || [],
+      assignment_stats: assignmentData?.assignment_stats || {}
+    };
 
-// GET /api/referees/:id - Get specific referee
-router.get('/:id', validateParams(IdParamSchema), enhancedAsyncHandler(async (req, res) => {
-  const refereeId = req.params.id;
-  
-  // Use UserService to get referee with complete details
-  const referee = await userService.getUserWithRefereeDetails(refereeId, {
-    assignmentLimit: 50 // Get more assignments for detailed view
-  });
-
-  if (!referee || referee.role !== 'referee') {
-    throw ErrorFactory.notFound('Referee', refereeId);
-  }
-
-  // Maintain backward compatibility - rename assignments field
-  if (referee.recent_assignments) {
-    referee.assignments = referee.recent_assignments;
-    delete referee.recent_assignments;
-  }
-
-  return ResponseFormatter.sendSuccess(res, referee, 'Referee details retrieved successfully');
-}));
+    return ResponseFormatter.sendSuccess(res, enhancedProfile, 'Referee profile retrieved successfully');
+  })
+);
 
 // POST /api/referees - Create new referee
 // Requires: referees:create or referees:manage permission
@@ -330,7 +344,9 @@ router.get('/levels/summary',
         'users.new_referee_level',
         db.raw('COUNT(*) as count')
       )
-      .where('users.role', 'referee')
+      .join('user_roles', 'users.id', 'user_roles.user_id')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .whereIn('roles.name', ['Referee', 'Senior Referee'])
       .groupBy('referee_levels.name', 'users.new_referee_level')
       .orderBy('referee_levels.name');
     
@@ -341,7 +357,9 @@ router.get('/levels/summary',
         db.raw('COUNT(*) as total'),
         db.raw('COUNT(CASE WHEN is_white_whistle = true THEN 1 END) as with_white_whistle')
       )
-      .where('role', 'referee')
+      .join('user_roles', 'users.id', 'user_roles.user_id')
+      .join('roles as r2', 'user_roles.role_id', 'r2.id')
+      .whereIn('r2.name', ['Referee', 'Senior Referee'])
       .whereNotNull('new_referee_level')
       .groupBy('new_referee_level')
       .orderBy('new_referee_level');
@@ -356,7 +374,9 @@ router.get('/levels/summary',
       )
       .where('user_referee_roles.is_active', true)
       .where('referee_roles.is_active', true)
-      .where('users.role', 'referee')
+      .join('user_roles', 'users.id', 'user_roles.user_id')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .whereIn('roles.name', ['Referee', 'Senior Referee'])
       .groupBy('referee_roles.name')
       .orderBy('referee_roles.name');
     
@@ -372,6 +392,235 @@ router.get('/levels/summary',
     };
     
     return ResponseFormatter.sendSuccess(res, summary, 'Referee levels summary retrieved successfully');
+  })
+);
+
+// ===== NEW ENHANCED REFEREE SYSTEM ENDPOINTS =====
+
+// GET /api/referees/:id/profile - Get complete referee profile
+router.get('/:id/profile',
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  validateParams(IdParamSchema),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    
+    const profile = await refereeService.getRefereeProfile(refereeId, { includeUser: true });
+    if (!profile) {
+      throw ErrorFactory.notFound('Referee profile not found', refereeId);
+    }
+
+    return ResponseFormatter.sendSuccess(res, { profile }, 'Referee profile retrieved successfully');
+  })
+);
+
+// PUT /api/referees/:id/wage - Update individual referee wage
+router.put('/:id/wage',
+  authenticateToken,
+  requireAnyPermission(['referees:update', 'referees:manage']),
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    wage_amount: Joi.number().positive().precision(2).max(500).required(),
+    notes: Joi.string().max(500).optional()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    const { wage_amount, notes } = req.body;
+
+    await refereeService.updateWage(refereeId, wage_amount, req.user.id, { notes });
+
+    return ResponseFormatter.sendSuccess(res, {}, 'Referee wage updated successfully');
+  })
+);
+
+// PUT /api/referees/:id/type - Change referee type (role reassignment)
+router.put('/:id/type',
+  authenticateToken,
+  requirePermission('referees:manage'),
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    referee_type: Joi.string()
+      .valid('Senior Referee', 'Junior Referee', 'Rookie Referee')
+      .required(),
+    update_wage_to_default: Joi.boolean().default(false),
+    reason: Joi.string().max(255).optional()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    const { referee_type, update_wage_to_default, reason } = req.body;
+
+    const result = await refereeService.changeRefereeType(
+      refereeId, 
+      referee_type, 
+      req.user.id,
+      { 
+        updateWageToDefault: update_wage_to_default,
+        reason 
+      }
+    );
+
+    return ResponseFormatter.sendSuccess(res, result, 'Referee type updated successfully');
+  })
+);
+
+// GET /api/referees/types - Get available referee types with configurations
+router.get('/types',
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  enhancedAsyncHandler(async (req, res) => {
+    const types = await refereeService.getRefereeTypes();
+    
+    return ResponseFormatter.sendSuccess(res, { types }, 'Referee types retrieved successfully');
+  })
+);
+
+// GET /api/referees/capabilities - Get available referee capabilities
+router.get('/capabilities',
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  enhancedAsyncHandler(async (req, res) => {
+    const capabilities = await refereeService.getRefereeCapabilities();
+    
+    return ResponseFormatter.sendSuccess(res, { capabilities }, 'Referee capabilities retrieved successfully');
+  })
+);
+
+// POST /api/referees/:id/profile - Create referee profile (when assigning referee role)
+router.post('/:id/profile',
+  authenticateToken,
+  requirePermission('referees:manage'),
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    referee_type: Joi.string()
+      .valid('Senior Referee', 'Junior Referee', 'Rookie Referee')
+      .required(),
+    wage_amount: Joi.number().positive().precision(2).max(500).optional(),
+    years_experience: Joi.number().integer().min(0).max(50).optional(),
+    certification_number: Joi.string().max(50).optional(),
+    certification_date: Joi.date().optional(),
+    certification_expiry: Joi.date().optional(),
+    certification_level: Joi.string().max(50).optional(),
+    emergency_contact: Joi.object({
+      name: Joi.string().max(100).optional(),
+      phone: Joi.string().max(20).optional(),
+      relationship: Joi.string().max(50).optional()
+    }).optional(),
+    special_qualifications: Joi.array().items(Joi.string()).optional(),
+    notes: Joi.string().max(1000).optional()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const profileData = req.body;
+    const { referee_type, ...initialData } = profileData;
+
+    // Get the referee type role
+    const refereeTypeRole = await db('roles')
+      .where({ name: referee_type, category: 'referee_type' })
+      .first();
+
+    if (!refereeTypeRole) {
+      throw ErrorFactory.badRequest(`Invalid referee type: ${referee_type}`);
+    }
+
+    // Create the referee profile
+    const profile = await refereeService.createRefereeProfile(
+      userId, 
+      refereeTypeRole, 
+      initialData
+    );
+
+    // Assign the referee type role
+    await db('user_roles').insert({
+      user_id: userId,
+      role_id: refereeTypeRole.id,
+      assigned_by: req.user.id,
+      assigned_at: new Date(),
+      is_active: true
+    });
+
+    return ResponseFormatter.sendCreated(
+      res, 
+      profile, 
+      'Referee profile created successfully',
+      `/api/referees/${userId}/profile`
+    );
+  })
+);
+
+// PATCH /api/referees/:id/profile - Update referee profile
+router.patch('/:id/profile',
+  authenticateToken,
+  requireAnyPermission(['referees:update', 'referees:manage']),
+  validateParams(IdParamSchema),
+  validateBody(Joi.object({
+    years_experience: Joi.number().integer().min(0).max(50).optional(),
+    evaluation_score: Joi.number().min(0).max(100).optional(),
+    certification_number: Joi.string().max(50).optional(),
+    certification_date: Joi.date().optional(),
+    certification_expiry: Joi.date().optional(),
+    certification_level: Joi.string().max(50).optional(),
+    is_white_whistle: Joi.boolean().optional(),
+    max_weekly_games: Joi.number().integer().min(1).max(20).optional(),
+    preferred_positions: Joi.array().items(Joi.string()).optional(),
+    availability_pattern: Joi.object().optional(),
+    emergency_contact: Joi.object({
+      name: Joi.string().max(100).optional(),
+      phone: Joi.string().max(20).optional(),
+      relationship: Joi.string().max(50).optional()
+    }).optional(),
+    special_qualifications: Joi.array().items(Joi.string()).optional(),
+    notes: Joi.string().max(1000).optional(),
+    is_active: Joi.boolean().optional()
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const updateData = req.body;
+
+    // Get current profile
+    const profiles = await refereeService.findWhere({ user_id: userId, is_active: true });
+    if (!profiles.length) {
+      throw ErrorFactory.notFound('Referee profile not found');
+    }
+
+    // Update profile
+    const updatedProfile = await refereeService.update(profiles[0].id, updateData);
+
+    return ResponseFormatter.sendSuccess(res, updatedProfile, 'Referee profile updated successfully');
+  })
+);
+
+// GET /api/referees/:id/white-whistle - Get enhanced white whistle status
+router.get('/:id/white-whistle',
+  authenticateToken,
+  requireAnyPermission(['referees:read', 'referees:manage']),
+  validateParams(IdParamSchema),
+  enhancedAsyncHandler(async (req, res) => {
+    const refereeId = req.params.id;
+    
+    const [refereeType, profile, showWhiteWhistle] = await Promise.all([
+      refereeService.getRefereeType(refereeId),
+      refereeService.getRefereeProfile(refereeId),
+      refereeService.shouldDisplayWhiteWhistle(refereeId)
+    ]);
+
+    if (!refereeType || !profile) {
+      throw ErrorFactory.notFound('Referee not found or has no profile');
+    }
+
+    const status = {
+      user_id: refereeId,
+      referee_type: refereeType.name,
+      individual_flag: profile.is_white_whistle,
+      should_display: showWhiteWhistle,
+      business_logic: {
+        [refereeType.name]: refereeType.referee_config?.white_whistle || 'unknown'
+      },
+      explanation: showWhiteWhistle 
+        ? `White whistle displayed based on ${refereeType.name} rules`
+        : `White whistle not displayed for ${refereeType.name}`
+    };
+    
+    return ResponseFormatter.sendSuccess(res, status, 'White whistle status retrieved successfully');
   })
 );
 
