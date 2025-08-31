@@ -219,19 +219,40 @@ class RoleService extends BaseService {
         throw new Error('Database connection not initialized');
       }
 
-      const query = this.db('users')
-        .join('user_roles', 'users.id', 'user_roles.user_id')
-        .where('user_roles.role_id', roleId)
-        .select('users.id', 'users.name', 'users.email')
-        .orderBy('users.name');
+      console.log('Fetching users for role:', roleId);
+      
+      let users = [];
+      let countResult = { total: 0 };
+      
+      try {
+        const query = this.db('users')
+          .join('user_roles', 'users.id', 'user_roles.user_id')
+          .where('user_roles.role_id', roleId)
+          .select('users.id', 'users.name', 'users.email')
+          .orderBy('users.name');
 
-      // Note: Users table doesn't have an active/is_active column
-      // If we need to filter inactive users in the future, we'll need to add this column
+        // Note: Users table doesn't have an active/is_active column
+        // If we need to filter inactive users in the future, we'll need to add this column
 
-      const [users, countResult] = await Promise.all([
-        query.clone().limit(limit).offset(offset),
-        query.clone().count('* as total').first()
-      ]);
+        [users, countResult] = await Promise.all([
+          query.clone().limit(limit).offset(offset),
+          query.clone().count('* as total').first()
+        ]);
+      } catch (queryError) {
+        console.error('Query error in getUsersWithRole:', queryError);
+        // Return empty result on query error
+        return {
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPreviousPage: false
+          }
+        };
+      }
 
       const total = parseInt(countResult?.total || 0);
       const totalPages = Math.ceil(total / limit);
