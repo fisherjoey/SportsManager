@@ -15,15 +15,16 @@ interface ResourceEditorProps {
   onSave: (data: any) => Promise<void>
   onSaveDraft?: (data: any) => Promise<{ id: number }>
   onFileUpload?: (file: File) => Promise<{ file_url: string; file_name: string }>
-  categories?: Array<{ id: string; name: string; slug: string }>
+  categories?: Array<{ id: string; name: string; description?: string }>
   initialData?: {
     id?: number
     title: string
     description: string
-    category: string
+    category: string | number
     type: string
     content: string
     slug: string
+    external_url?: string
   }
   mode?: 'create' | 'edit'
 }
@@ -38,9 +39,10 @@ export function ResourceEditor({
 }: ResourceEditorProps) {
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
-  const [category, setCategory] = useState(initialData?.category || '')
+  const [category, setCategory] = useState<string | number>(initialData?.category || '')
   const [type, setType] = useState(initialData?.type || '')
   const [content, setContent] = useState(initialData?.content || '')
+  const [externalUrl, setExternalUrl] = useState(initialData?.external_url || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
@@ -120,12 +122,44 @@ export function ResourceEditor({
       errors.push('Title is required')
     }
     
+    if (!type) {
+      errors.push('Content type is required')
+    }
+    
     if (!category) {
       errors.push('Category is required')
     }
     
-    if (!content.trim()) {
-      errors.push('Content cannot be empty')
+    // Validate based on content type
+    if (type === 'link' || type === 'video') {
+      // For links and videos, external URL is required
+      if (!externalUrl.trim()) {
+        errors.push(`${type === 'video' ? 'Video URL' : 'External URL'} is required for ${type} resources`)
+      } else {
+        try {
+          new URL(externalUrl)
+        } catch {
+          errors.push('Please enter a valid URL')
+        }
+      }
+    } else if (type === 'document') {
+      // For documents, content is required
+      if (!content.trim()) {
+        errors.push('Document content is required')
+      }
+    } else if (type === 'mixed') {
+      // For mixed content, either content or external URL is required
+      if (!content.trim() && !externalUrl.trim()) {
+        errors.push('Either content or external URL is required for mixed resources')
+      }
+      // If URL is provided, validate it
+      if (externalUrl.trim()) {
+        try {
+          new URL(externalUrl)
+        } catch {
+          errors.push('Please enter a valid URL')
+        }
+      }
     }
     
     return errors
@@ -154,7 +188,8 @@ export function ResourceEditor({
         type,
         content: htmlContent,
         slug: generateSlug(title),
-        status: 'published'
+        status: 'published',
+        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined
       })
       
       setHasUnsavedChanges(false)
@@ -184,11 +219,12 @@ export function ResourceEditor({
         id: draftId,
         title: title || 'Untitled Draft',
         description,
-        category: category || 'General',
+        category: category || categories[0]?.id,
         type: type || 'document',
         content: htmlContent,
         slug: title ? generateSlug(title) : `draft-${Date.now()}`,
-        status: 'draft'
+        status: 'draft',
+        external_url: (type === 'link' || type === 'video' || type === 'mixed') ? externalUrl : undefined
       })
       
       if (result?.id && !draftId) {
@@ -320,15 +356,15 @@ export function ResourceEditor({
           </CardTitle>
           
           {/* Auto-save status */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
             {lastSaved && (
               <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
             )}
             {hasUnsavedChanges && !isDraftSaving && (
-              <span className="text-warning">Unsaved changes</span>
+              <span className="text-orange-500">Unsaved changes</span>
             )}
             {isDraftSaving && (
-              <span className="text-primary">Saving draft...</span>
+              <span className="text-blue-500">Saving draft...</span>
             )}
           </div>
         </div>
@@ -337,14 +373,14 @@ export function ResourceEditor({
       <CardContent className="space-y-4">
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+          <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-md p-3">
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-destructive">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
                   Please fix the following errors:
                 </h3>
-                <ul className="mt-2 text-sm text-destructive list-disc list-inside">
+                <ul className="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
@@ -356,11 +392,11 @@ export function ResourceEditor({
 
         {/* Error Message */}
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+          <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-md p-3">
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500" />
               <div className="ml-3">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
               </div>
             </div>
           </div>
@@ -384,7 +420,7 @@ export function ResourceEditor({
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select Category</option>
               {categories.map(cat => (
@@ -402,26 +438,53 @@ export function ResourceEditor({
               placeholder="URL Slug"
               value={generateSlug(title)}
               readOnly
-              className="bg-muted"
+              className="bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 cursor-not-allowed"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="type" className="text-sm font-medium">Content Type</label>
+            <label htmlFor="type" className="text-sm font-medium">
+              Content Type <span className="text-red-500">*</span>
+            </label>
             <select
               id="type"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Content Type</option>
-              <option value="document">Document</option>
-              <option value="video">Video</option>
-              <option value="link">Link</option>
-              <option value="mixed">Mixed Content</option>
+              <option value="">-- Select Content Type --</option>
+              <option value="document">📄 Document (Rich text editor)</option>
+              <option value="link">🔗 Link (External URL)</option>
+              <option value="video">🎥 Video (YouTube, Vimeo, etc.)</option>
+              <option value="mixed">📦 Mixed Content (Text + uploads)</option>
             </select>
+            <p className="text-xs text-muted-foreground">
+              Choose how you want to add this resource
+            </p>
           </div>
         </div>
+
+        {/* External URL field - shown for link and video types */}
+        {(type === 'link' || type === 'video') && (
+          <div className="space-y-2">
+            <label htmlFor="external-url" className="text-sm font-medium">
+              {type === 'video' ? 'Video URL' : 'External URL'} <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="external-url"
+              type="url"
+              placeholder={type === 'video' ? "https://youtube.com/watch?v=... or https://vimeo.com/..." : "https://example.com/resource"}
+              value={externalUrl}
+              onChange={(e) => setExternalUrl(e.target.value)}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              {type === 'video' 
+                ? 'Enter a YouTube, Vimeo, or direct video URL'
+                : 'Enter the full URL including https://'}
+            </p>
+          </div>
+        )}
 
         {/* Description */}
         <div className="space-y-2">
@@ -435,11 +498,20 @@ export function ResourceEditor({
           />
         </div>
 
-        {/* TinyMCE Editor */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Content</label>
-          <div className="border rounded-lg overflow-hidden">
-            <Editor
+        {/* Content Input - Show different inputs based on type */}
+        {!type ? (
+          // Prompt to select a type first
+          <div className="p-8 border-2 border-dashed border-input rounded-lg text-center bg-muted">
+            <p className="text-muted-foreground">Please select a content type above to continue</p>
+          </div>
+        ) : type === 'document' || type === 'mixed' ? (
+          // TinyMCE Editor for document and mixed content
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {type === 'mixed' ? 'Content (can include links, embeds, and rich text)' : 'Document Content'}
+            </label>
+            <div className="border border-input rounded-lg overflow-hidden bg-background">
+              <Editor
               key={editorKey}
               ref={editorRef}
               apiKey="g7uhwpygdstjbgrssf1s8x665vjg9ep442amg14895x8bq0q"
@@ -472,14 +544,97 @@ export function ResourceEditor({
                 file_picker_callback: filePickerCallback
               }}
             />
+            </div>
           </div>
-        </div>
+        ) : type === 'link' ? (
+          // Link preview for link type
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Link Preview</label>
+            <div className="p-4 border border-input rounded-lg bg-muted">
+              {externalUrl ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">This resource will open:</p>
+                  <a 
+                    href={externalUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all"
+                  >
+                    {externalUrl}
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Enter a URL above to preview</p>
+              )}
+            </div>
+          </div>
+        ) : type === 'video' ? (
+          // Video preview for video type
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Video Preview</label>
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-black">
+              {externalUrl ? (
+                <div className="aspect-video">
+                  {(() => {
+                    // Try to embed YouTube videos
+                    if (externalUrl.includes('youtube.com') || externalUrl.includes('youtu.be')) {
+                      const videoId = externalUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1]
+                      if (videoId) {
+                        return (
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            title="YouTube video"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        )
+                      }
+                    }
+                    // Try to embed Vimeo videos
+                    if (externalUrl.includes('vimeo.com')) {
+                      const videoId = externalUrl.match(/vimeo\.com\/(\d+)/)?.[1]
+                      if (videoId) {
+                        return (
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://player.vimeo.com/video/${videoId}`}
+                            title="Vimeo video"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                          />
+                        )
+                      }
+                    }
+                    // For other videos, show a preview message
+                    return (
+                      <div className="flex items-center justify-center h-full p-8 text-white">
+                        <div className="text-center">
+                          <p className="mb-2">Video URL provided:</p>
+                          <p className="text-sm text-gray-300 break-all">{externalUrl}</p>
+                          <p className="text-xs text-gray-400 mt-4">Preview available for YouTube and Vimeo</p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              ) : (
+                <div className="aspect-video flex items-center justify-center text-gray-400">
+                  <p>Enter a video URL above to preview</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
 
-        {/* File Upload Drop Zone */}
-        <div className="space-y-2">
+        {/* File Upload Drop Zone - Only for document and mixed types */}
+        {(type === 'document' || type === 'mixed') && (
+          <div className="space-y-2">
           <label className="text-sm font-medium">Attachments</label>
           <div 
-            className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors"
+            className="border-2 border-dashed border-input rounded-lg p-6 text-center hover:border-muted-foreground transition-colors bg-muted/50"
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
@@ -491,7 +646,8 @@ export function ResourceEditor({
               Supports: PDF, DOC, MP4, MOV, JPG, PNG (Max 10MB each)
             </p>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-4">

@@ -84,6 +84,9 @@ export function ResourceCentreNew() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
   const [editingResource, setEditingResource] = useState<Resource | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [uploadForm, setUploadForm] = useState({
     title: '',
     description: '',
@@ -107,7 +110,7 @@ export function ResourceCentreNew() {
 
   const loadCategories = async () => {
     try {
-      const response = await apiClient.get('/api/resources/categories')
+      const response = await apiClient.get('/resources/categories')
       if (response.categories) {
         setCategories(response.categories)
       }
@@ -124,7 +127,7 @@ export function ResourceCentreNew() {
       if (selectedType !== 'all') params.append('type', selectedType)
       if (searchQuery) params.append('search', searchQuery)
       
-      const response = await apiClient.get(`/api/resources?${params}`)
+      const response = await apiClient.get(`/resources?${params}`)
       if (response.resources) {
         setResources(response.resources)
       }
@@ -142,8 +145,8 @@ export function ResourceCentreNew() {
   const handleResourceSave = async (data: any) => {
     try {
       const url = editingResource 
-        ? `/api/resources/${editingResource.id}`
-        : '/api/resources'
+        ? `/resources/${editingResource.id}`
+        : '/resources'
       
       const resourceData = {
         title: data.title,
@@ -152,6 +155,7 @@ export function ResourceCentreNew() {
         category_id: data.category || categories[0]?.id,
         type: data.type || 'document',
         slug: data.slug,
+        external_url: data.external_url, // Add external URL for links
         metadata: {
           tags: data.tags || [],
           author: data.author || user?.email,
@@ -179,8 +183,8 @@ export function ResourceCentreNew() {
   const handleResourceDraftSave = async (data: any) => {
     try {
       const url = data.id 
-        ? `/api/resources/${data.id}`
-        : '/api/resources'
+        ? `/resources/${data.id}`
+        : '/resources'
       
       const resourceData = {
         title: data.title,
@@ -209,7 +213,40 @@ export function ResourceCentreNew() {
     }
   }
 
-  const handleFileUpload = async () => {
+  const handleFileUpload = async (file: File): Promise<{ file_url: string; file_name: string }> => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('/api/resources/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('File upload failed')
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.file_url) {
+        return {
+          file_url: data.file_url,
+          file_name: data.file_name || file.name
+        }
+      }
+      
+      throw new Error('Upload failed')
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      throw error
+    }
+  }
+
+  const handleUploadDialogSubmit = async () => {
     try {
       const formData = new FormData()
       formData.append('title', uploadForm.title)
@@ -225,8 +262,8 @@ export function ResourceCentreNew() {
       }
 
       const url = editingResource 
-        ? `/api/resources/${editingResource.id}`
-        : '/api/resources'
+        ? `/resources/${editingResource.id}`
+        : '/resources'
       
       const response = await fetch(url, {
         method: editingResource ? 'PUT' : 'POST',
@@ -258,15 +295,43 @@ export function ResourceCentreNew() {
     }
   }
 
+  const validateCategoryForm = () => {
+    const errors: Record<string, string> = {}
+    
+    if (!categoryForm.name.trim()) {
+      errors.name = 'Category name is required'
+    } else if (categoryForm.name.trim().length < 2) {
+      errors.name = 'Category name must be at least 2 characters'
+    } else if (categoryForm.name.trim().length > 50) {
+      errors.name = 'Category name must be less than 50 characters'
+    }
+    
+    if (categoryForm.description && categoryForm.description.length > 200) {
+      errors.description = 'Description must be less than 200 characters'
+    }
+    
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleCategorySave = async () => {
+    setError(null)
+    setSuccess(null)
+    
+    if (!validateCategoryForm()) {
+      setError('Please fix the validation errors before saving')
+      return
+    }
+    
     try {
       const url = editingCategory 
-        ? `/api/resources/categories/${editingCategory.id}`
-        : '/api/resources/categories'
+        ? `/resources/categories/${editingCategory.id}`
+        : '/resources/categories'
       
       const response = await apiClient[editingCategory ? 'put' : 'post'](url, categoryForm)
       
       if (response.success) {
+        setSuccess(editingCategory ? 'Category updated successfully!' : 'Category created successfully!')
         setShowCategoryDialog(false)
         setEditingCategory(null)
         setCategoryForm({
@@ -275,35 +340,61 @@ export function ResourceCentreNew() {
           icon: 'file-text',
           order_index: 0
         })
+        setValidationErrors({})
         loadCategories()
+        
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        throw new Error(response.error || 'Failed to save category')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving category:', error)
-      alert('Failed to save category')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to save category'
+      setError(errorMessage)
     }
   }
 
   const handleDeleteResource = async (id: string) => {
     if (!confirm('Are you sure you want to delete this resource?')) return
     
+    setError(null)
+    setSuccess(null)
+    
     try {
-      await apiClient.delete(`/api/resources/${id}`)
-      loadResources()
-    } catch (error) {
+      const response = await apiClient.delete(`/resources/${id}`)
+      if (response.success) {
+        setSuccess('Resource deleted successfully!')
+        loadResources()
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        throw new Error(response.error || 'Failed to delete resource')
+      }
+    } catch (error: any) {
       console.error('Error deleting resource:', error)
-      alert('Failed to delete resource')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete resource'
+      setError(errorMessage)
     }
   }
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    if (!confirm('Are you sure you want to delete this category? All resources in this category will need to be reassigned.')) return
+    
+    setError(null)
+    setSuccess(null)
     
     try {
-      await apiClient.delete(`/api/resources/categories/${id}`)
-      loadCategories()
-    } catch (error) {
+      const response = await apiClient.delete(`/resources/categories/${id}`)
+      if (response.success) {
+        setSuccess('Category deleted successfully!')
+        loadCategories()
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        throw new Error(response.error || 'Failed to delete category')
+      }
+    } catch (error: any) {
       console.error('Error deleting category:', error)
-      alert('Failed to delete category')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete category'
+      setError(errorMessage)
     }
   }
 
@@ -318,17 +409,33 @@ export function ResourceCentreNew() {
 
   const handleView = async (resource: Resource) => {
     try {
-      // Track view
-      await apiClient.get(`/api/resources/${resource.id}`)
+      // Track view (don't await to avoid blocking)
+      apiClient.get(`/resources/${resource.id}`).catch(err => {
+        console.log('Failed to track view:', err)
+      })
       
-      // Open resource
+      // Open resource based on type
       if (resource.external_url) {
-        window.open(resource.external_url, '_blank')
+        // External links open in new tab with security attributes
+        // Show user it's an external link
+        if (resource.external_url.includes('example.com')) {
+          // Demo links - show alert
+          alert('This is a demo link to example.com. In production, this would link to the actual resource.')
+        }
+        window.open(resource.external_url, '_blank', 'noopener,noreferrer')
       } else if (resource.file_url) {
-        window.open(resource.file_url, '_blank')
+        // Uploaded files open in new tab
+        window.open(`http://localhost:3001${resource.file_url}`, '_blank')
+      } else if (resource.metadata?.content) {
+        // Resources with embedded content could open in a modal
+        console.log('Resource has embedded content:', resource.title)
+        setError('This resource has embedded content. View functionality coming soon.')
+      } else {
+        setError('No viewable content available for this resource.')
       }
     } catch (error) {
       console.error('Error viewing resource:', error)
+      setError('Failed to open resource. Please try again.')
     }
   }
 
@@ -394,7 +501,18 @@ export function ResourceCentreNew() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Resource
               </Button>
-              <Button variant="outline" onClick={() => setShowCategoryDialog(true)}>
+              <Button variant="outline" onClick={() => {
+                setCategoryForm({
+                  name: '',
+                  description: '',
+                  icon: 'file-text',
+                  order_index: 0
+                })
+                setValidationErrors({})
+                setError(null)
+                setEditingCategory(null)
+                setShowCategoryDialog(true)
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Category
               </Button>
@@ -443,6 +561,8 @@ export function ResourceCentreNew() {
                                 icon: category.icon || 'file-text',
                                 order_index: category.order_index
                               })
+                              setValidationErrors({})
+                              setError(null)
                               setShowCategoryDialog(true)
                             }}
                           >
@@ -534,6 +654,22 @@ export function ResourceCentreNew() {
                     </p>
                   )}
                   
+                  {/* Show external link indicator */}
+                  {resource.external_url && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="truncate">
+                        {(() => {
+                          try {
+                            return new URL(resource.external_url).hostname
+                          } catch {
+                            return 'External Link'
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{resource.category_name}</span>
                     {resource.file_size && (
@@ -558,11 +694,17 @@ export function ResourceCentreNew() {
                       variant="outline"
                       className="flex-1"
                       onClick={() => handleView(resource)}
+                      title={resource.external_url ? `Opens ${resource.external_url} in a new tab` : 'View resource'}
                     >
-                      {resource.type === 'link' ? (
+                      {resource.type === 'link' || resource.external_url ? (
                         <>
                           <ExternalLink className="h-4 w-4 mr-2" />
-                          Open
+                          Visit Link
+                        </>
+                      ) : resource.file_url ? (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View File
                         </>
                       ) : (
                         <>
@@ -571,12 +713,13 @@ export function ResourceCentreNew() {
                         </>
                       )}
                     </Button>
-                    {resource.file_url && (
+                    {resource.file_url && !resource.external_url && (
                       <Button
                         size="sm"
                         variant="default"
                         className="flex-1"
                         onClick={() => handleDownload(resource)}
+                        title="Download file to your device"
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download
@@ -602,6 +745,7 @@ export function ResourceCentreNew() {
           <ResourceEditor
             onSave={handleResourceSave}
             onSaveDraft={handleResourceDraftSave}
+            onFileUpload={handleFileUpload}
             categories={categories}
             initialData={editingResource ? {
               id: parseInt(editingResource.id),
@@ -610,7 +754,8 @@ export function ResourceCentreNew() {
               category: editingResource.category_id,
               type: editingResource.type,
               content: editingResource.metadata?.content || '',
-              slug: editingResource.metadata?.slug || ''
+              slug: editingResource.metadata?.slug || '',
+              external_url: editingResource.external_url || ''
             } : undefined}
             mode={editingResource ? 'edit' : 'create'}
           />
@@ -727,7 +872,7 @@ export function ResourceCentreNew() {
             <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleFileUpload}>
+            <Button onClick={handleUploadDialogSubmit}>
               {editingResource ? 'Update' : 'Upload'}
             </Button>
           </DialogFooter>
@@ -798,11 +943,22 @@ export function ResourceCentreNew() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowCategoryDialog(false)
+              setEditingCategory(null)
+              setCategoryForm({
+                name: '',
+                description: '',
+                icon: 'file-text',
+                order_index: 0
+              })
+              setValidationErrors({})
+              setError(null)
+            }}>
               Cancel
             </Button>
             <Button onClick={handleCategorySave}>
-              {editingCategory ? 'Update' : 'Create'}
+              {editingCategory ? 'Update' : 'Create'} Category
             </Button>
           </DialogFooter>
         </DialogContent>
