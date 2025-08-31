@@ -32,15 +32,23 @@ import {
   ChevronRight
 } from 'lucide-react'
 
+interface Role {
+  id: string
+  name: string
+  description?: string
+}
+
 interface User {
   id: string
   name: string
   email: string
-  role: string
-  is_active?: boolean
+  role: string  // Legacy role field
+  legacy_role?: string  // Explicitly marked as legacy
+  roles?: Role[]  // New RBAC roles
+  is_available?: boolean  // Referee availability
+  is_active?: boolean  // Might not exist, treat as active if undefined
   created_at: string
   updated_at?: string
-  last_login_at?: string
 }
 
 interface UserTableProps {
@@ -62,21 +70,25 @@ export function UserTable({
   totalPages = 1,
   onPageChange
 }: UserTableProps) {
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
+  const getRoleBadgeVariant = (roleName: string) => {
+    switch (roleName.toLowerCase()) {
+      case 'super admin':
       case 'admin':
         return 'destructive'
       case 'assignor':
         return 'default'
       case 'referee':
         return 'secondary'
+      case 'league manager':
+        return 'outline'
       default:
         return 'outline'
     }
   }
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
+  const getRoleIcon = (roleName: string) => {
+    switch (roleName.toLowerCase()) {
+      case 'super admin':
       case 'admin':
         return <Shield className="h-3 w-3 mr-1" />
       case 'assignor':
@@ -125,10 +137,10 @@ export function UserTable({
         <TableHeader>
           <TableRow>
             <TableHead>User</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead>Roles</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Last Login</TableHead>
+            <TableHead>Last Updated</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -148,12 +160,25 @@ export function UserTable({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={getRoleBadgeVariant(user.role)}>
-                  <span className="flex items-center">
-                    {getRoleIcon(user.role)}
-                    {user.role}
-                  </span>
-                </Badge>
+                {user.roles && user.roles.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles.map(role => (
+                      <Badge key={role.id} variant={getRoleBadgeVariant(role.name)}>
+                        <span className="flex items-center">
+                          {getRoleIcon(role.name)}
+                          {role.name}
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <Badge variant={getRoleBadgeVariant(user.role || 'none')}>
+                    <span className="flex items-center">
+                      {getRoleIcon(user.role || '')}
+                      {user.role || 'No Role'}
+                    </span>
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
                 <Badge variant={user.is_active !== false ? 'outline' : 'secondary'}>
@@ -161,7 +186,7 @@ export function UserTable({
                 </Badge>
               </TableCell>
               <TableCell>{formatDate(user.created_at)}</TableCell>
-              <TableCell>{formatDate(user.last_login_at || '')}</TableCell>
+              <TableCell>{formatDate(user.updated_at || '')}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

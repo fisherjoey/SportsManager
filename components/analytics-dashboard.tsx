@@ -53,6 +53,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { chartColorArray } from '@/lib/theme-colors'
 
 interface AnalyticsMetrics {
   organizationalHealth: {
@@ -209,18 +210,18 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-    case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />
-    case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />
-    default: return <Activity className="h-4 w-4 text-gray-500" />
+    case 'up': return <TrendingUp className="h-4 w-4 text-success" />
+    case 'down': return <TrendingDown className="h-4 w-4 text-destructive" />
+    default: return <Activity className="h-4 w-4 text-muted-foreground" />
     }
   }
 
   const getInsightBadge = (type: string) => {
     const variants = {
-      opportunity: { variant: 'default', icon: Target, text: 'Opportunity', color: 'bg-green-100 text-green-800' },
-      risk: { variant: 'destructive', icon: AlertTriangle, text: 'Risk', color: 'bg-red-100 text-red-800' },
-      recommendation: { variant: 'secondary', icon: Brain, text: 'Recommendation', color: 'bg-blue-100 text-blue-800' },
-      alert: { variant: 'secondary', icon: Zap, text: 'Alert', color: 'bg-yellow-100 text-yellow-800' }
+      opportunity: { variant: 'default', icon: Target, text: 'Opportunity', color: 'bg-success/10 text-success dark:bg-success/20' },
+      risk: { variant: 'destructive', icon: AlertTriangle, text: 'Risk', color: 'bg-destructive/10 text-destructive dark:bg-destructive/20' },
+      recommendation: { variant: 'secondary', icon: Brain, text: 'Recommendation', color: 'bg-info/10 text-info dark:bg-info/20' },
+      alert: { variant: 'secondary', icon: Zap, text: 'Alert', color: 'bg-warning/10 text-warning dark:bg-warning/20' }
     }
 
     const config = variants[type as keyof typeof variants] || variants.recommendation
@@ -258,7 +259,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
     }).format(amount)
   }
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+  const COLORS = chartColorArray
 
   if (loading) {
     return (

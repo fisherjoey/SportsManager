@@ -17,16 +17,24 @@ import { ExpenseListEnhanced } from '@/components/expense-list-enhanced'
 import { ResourceCentre } from '@/components/resource-centre'
 
 export function RefereeDashboard() {
-  const [activeView, setActiveView] = useState('dashboard')
   const { user } = useAuth()
-
-  // Initialize from URL on mount and handle browser navigation
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const viewFromUrl = urlParams.get('view')
-    if (viewFromUrl && viewFromUrl !== activeView) {
-      setActiveView(viewFromUrl)
+  
+  // Initialize activeView from URL on first render
+  const getInitialView = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const viewFromUrl = urlParams.get('view') || 'dashboard'
+      console.log('[RefereeDashboard] Initial view from URL:', viewFromUrl)
+      return viewFromUrl
     }
+    return 'dashboard'
+  }
+  
+  const [activeView, setActiveView] = useState(getInitialView)
+
+  // No longer needed since we initialize from URL in useState
+  useEffect(() => {
+    console.log('[RefereeDashboard] Component mounted with activeView:', activeView)
   }, [])
 
   // Handle browser back/forward navigation

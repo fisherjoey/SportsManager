@@ -124,7 +124,7 @@ export function AuditLogStatsComponent({
       }
     ]
 
-    return <StatsGrid stats={overviewStats} />
+    return <StatsGrid items={overviewStats} />
   }
 
   const renderActionStats = () => {
@@ -353,3 +353,6 @@ export function AuditLogStatsCompact({
     />
   )
 }
+
+// Default export for easier importing
+export default AuditLogStatsComponent

@@ -35,7 +35,8 @@ import {
   Settings,
   Database,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react'
 import { PAGE_PERMISSIONS, API_PERMISSIONS, ROLE_CONFIGS } from '@/lib/rbac-config'
 import { PERMISSIONS } from '@/lib/permissions'

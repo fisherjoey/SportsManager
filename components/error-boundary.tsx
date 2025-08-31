@@ -91,6 +91,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <Button onClick={() => window.location.reload()}>
               Refresh Page
             </Button>
+            <Button onClick={() => window.location.href = '/'} variant="secondary">
+              Back to Dashboard
+            </Button>
           </div>
         </div>
       )

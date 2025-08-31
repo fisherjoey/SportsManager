@@ -7,13 +7,16 @@ import {
   ArrowLeft, Calendar, Download, ExternalLink, 
   FileText, Users, Trophy, BookOpen, 
   GraduationCap, ClipboardList, Library,
-  UserCheck, Settings, Plus, Edit, Trash2
+  UserCheck, Settings, Plus, Edit, Trash2,
+  FolderOpen, FileCheck, Eye, Clock, ShieldCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceManager } from '@/components/resource-centre/ResourceManager'
 import { ResourceEditor } from '@/components/resource-centre/ResourceEditor'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Info } from 'lucide-react'
 
 interface ResourceRendererProps {
   slug: string
@@ -243,38 +246,113 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
     )
   }
 
+  // Calculate stats for the stat cards
+  const totalResources = contentItems.length
+  const totalCategories = categories.length
+  const publishedCount = contentItems.filter(item => item.status === 'published').length
+  const recentlyUpdated = contentItems.filter(item => {
+    const updatedAt = new Date(item.updated_at || item.updatedAt)
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    return updatedAt >= weekAgo
+  }).length
+
   return (
-    <div className="container mx-auto py-6 px-4">
-      {/* Header with Admin Controls */}
-      <div className="mb-8 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">
-            CBOA Resource Centre
-          </h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <BookOpen className="h-8 w-8 text-primary" />
+              CBOA Resource Centre
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Calgary Basketball Officials Association - Resources and Information for Active Members
+            </p>
+          </div>
+          {/* Admin Controls - TODO: Show only for admins */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowEditor(true)}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Resource
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setShowManager(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Manage
+            </Button>
+          </div>
         </div>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Calgary Basketball Officials Association - Resources and Information for Active Members
-        </p>
-        
-        {/* Admin Controls - TODO: Show only for admins */}
-        <div className="flex justify-center gap-2 mt-4">
-          <Button 
-            onClick={() => setShowEditor(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Resource
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => setShowManager(true)}
-            className="flex items-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            Manage Content
-          </Button>
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Resources</CardTitle>
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalResources}</div>
+              <p className="text-xs text-muted-foreground">
+                Available documents
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Categories</CardTitle>
+              <Library className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalCategories}</div>
+              <p className="text-xs text-muted-foreground">
+                Resource groups
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Published</CardTitle>
+              <FileCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{publishedCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Active resources
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Recent Updates</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{recentlyUpdated}</div>
+              <p className="text-xs text-muted-foreground">
+                Last 7 days
+              </p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Info Alert */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Browse and access official CBOA resources, documents, and training materials. 
+            All content is exclusively for active members.
+          </AlertDescription>
+        </Alert>
       </div>
 
       {/* Loading State */}
@@ -284,9 +362,9 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
         </div>
       )}
 
-      {/* Content Grid - Theme Consistent */}
+      {/* Main Content - Full Width Grid */}
       {!loading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => {
           const IconComponent = category.icon
           return (
@@ -339,17 +417,6 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
         })}
         </div>
       )}
-
-      {/* Simple Footer */}
-      <div className="mt-8 p-4 bg-primary/10 rounded-lg border border-primary/20">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <UserCheck className="h-4 w-4 text-primary" />
-          <Badge variant="secondary" className="text-xs">Members Only</Badge>
-        </div>
-        <p className="text-sm text-muted-foreground text-center">
-          <strong>Note:</strong> This site and its contents are exclusively for the use of active CBOA members.
-        </p>
-      </div>
     </div>
   )
 }

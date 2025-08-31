@@ -14,5 +14,8 @@ export { default as CategoryManagerDashboard } from './CategoryManagerDashboard'
 export { default as CategoryManagerList } from './CategoryManagerList'
 export { default as CategoryInsights } from './CategoryInsights'
 
-// Re-export commonly used components
-export { ResourceEditor } from './ResourceEditor'
+// Audit Log Components
+export { default as AuditLogViewer } from './AuditLogViewer'
+export { default as AuditLogFilters } from './AuditLogFilters'
+export { default as AuditLogEntry } from './AuditLogEntry'
+export { default as AuditLogStats } from './AuditLogStats'

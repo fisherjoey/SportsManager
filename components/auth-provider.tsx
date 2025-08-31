@@ -179,8 +179,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check new roles array first, fallback to legacy role field
     const userRoles = user.roles || [user.role]
     
-    // Admin always has access
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    // Super Admin and Admin always have access
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
+      return true
+    }
+    
+    // For backward compatibility, if checking for 'admin' role, also accept 'Super Admin'
+    if (role === 'admin' && userRoles.includes('Super Admin')) {
       return true
     }
     
@@ -193,8 +198,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check new roles array first, fallback to legacy role field
     const userRoles = user.roles || [user.role]
     
-    // Admin always has access
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    // Super Admin and Admin always have access
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
       return true
     }
     
@@ -205,9 +210,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = useCallback((permission: string): boolean => {
     if (!user || !isAuthenticated) return false
     
-    // Admin always has access to everything
+    // Super Admin and Admin always have access to everything
     const userRoles = user.roles || [user.role]
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
       return true
     }
     
@@ -218,9 +223,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasAnyPermission = useCallback((permissionList: string[]): boolean => {
     if (!user || !isAuthenticated) return false
     
-    // Admin always has access to everything
+    // Super Admin and Admin always have access to everything
     const userRoles = user.roles || [user.role]
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
       return true
     }
     
@@ -233,9 +238,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasAllPermissions = useCallback((permissionList: string[]): boolean => {
     if (!user || !isAuthenticated) return false
     
-    // Admin always has access to everything
+    // Super Admin and Admin always have access to everything
     const userRoles = user.roles || [user.role]
-    if (userRoles.includes('admin') || user.role === 'admin') {
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || user.role === 'admin') {
       return true
     }
     

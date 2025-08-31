@@ -56,10 +56,14 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
 
   useEffect(() => {
     // Filter users based on search term
-    const filtered = users.filter(user =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filtered = users.filter(user => {
+      const userName = user.name || ''
+      const userEmail = user.email || ''
+      const searchLower = searchTerm.toLowerCase()
+      
+      return userName.toLowerCase().includes(searchLower) ||
+             userEmail.toLowerCase().includes(searchLower)
+    })
     setFilteredUsers(filtered)
   }, [searchTerm, users])
 
@@ -142,21 +146,41 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
         }
       })
       
-      // Execute changes
+      // Execute changes using the role-based endpoints
       const promises = []
       
       if (usersToAdd.length > 0) {
-        // Add users to role
-        for (const userId of usersToAdd) {
-          promises.push(apiClient.addRolesToUser(userId, [role.id]))
-        }
+        // Add users to role using the POST /admin/roles/:roleId/users endpoint
+        promises.push(
+          fetch(`/api/admin/roles/${role.id}/users`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: JSON.stringify({ user_ids: usersToAdd })
+          }).then(res => {
+            if (!res.ok) throw new Error('Failed to add users to role')
+            return res.json()
+          })
+        )
       }
       
       if (usersToRemove.length > 0) {
-        // Remove users from role
-        for (const userId of usersToRemove) {
-          promises.push(apiClient.removeRolesFromUser(userId, [role.id]))
-        }
+        // Remove users from role using the DELETE /admin/roles/:roleId/users endpoint
+        promises.push(
+          fetch(`/api/admin/roles/${role.id}/users`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: JSON.stringify({ user_ids: usersToRemove })
+          }).then(res => {
+            if (!res.ok) throw new Error('Failed to remove users from role')
+            return res.json()
+          })
+        )
       }
       
       if (promises.length > 0) {
@@ -274,7 +298,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{user.name}</span>
+                          <span className="font-medium text-sm">{user.name || 'Unknown User'}</span>
                           {currentRoleUsers.has(user.id) && (
                             <Badge variant="secondary" className="text-xs">
                               Current member
@@ -283,7 +307,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
-                          {user.email}
+                          {user.email || 'No email'}
                         </div>
                         {user.role && (
                           <div className="text-xs text-muted-foreground mt-1">

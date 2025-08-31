@@ -26,62 +26,62 @@ export function StatusBadge({ status, children, className, showIcon = false }: S
   const statusConfig = {
     completed: {
       variant: 'default' as const,
-      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
+      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
       icon: CheckCircle
     },
     pending: {
       variant: 'secondary' as const,
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30',
       icon: Clock
     },
     failed: {
       variant: 'destructive' as const,
-      className: 'bg-red-100 text-red-800 border-red-200',
+      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30',
       icon: XCircle
     },
     in_progress: {
       variant: 'default' as const,
-      className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
+      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30',
       icon: Clock
     },
     cancelled: {
       variant: 'secondary' as const,
-      className: 'bg-gray-100 text-gray-600 border-gray-200',
+      className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted',
       icon: XCircle
     },
     available: {
       variant: 'default' as const,
-      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
+      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
       icon: CheckCircle
     },
     unavailable: {
       variant: 'secondary' as const,
-      className: 'bg-gray-100 text-gray-600 border-gray-200',
+      className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted',
       icon: XCircle
     },
     assigned: {
       variant: 'default' as const,
-      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
+      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
       icon: UserCheck
     },
     unassigned: {
       variant: 'destructive' as const,
-      className: 'bg-red-100 text-red-800 border-red-200',
+      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30',
       icon: AlertCircle
     },
     full: {
       variant: 'default' as const,
-      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
+      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
       icon: CheckCircle
     },
     partial: {
       variant: 'secondary' as const,
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30',
       icon: UserCheck
     },
     up_for_grabs: {
       variant: 'outline' as const,
-      className: 'border-orange-200 text-orange-800',
+      className: 'border-warning/50 text-warning hover:bg-warning/10 dark:border-warning/50 dark:text-warning dark:hover:bg-warning/20',
       icon: AlertCircle
     }
   }
@@ -112,47 +112,47 @@ export function LevelBadge({ level, children, className, showIcon = false }: Lev
   const levelConfig = {
     // Legacy game levels
     'Recreational': {
-      className: 'bg-green-100 text-green-800 border-green-200'
+      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
     },
     'Competitive': {
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
     },
     'Elite': {
-      className: 'bg-red-100 text-red-800 border-red-200'
+      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30'
     },
     // New referee levels
     'Rookie': {
-      className: 'bg-green-100 text-green-800 border-green-200'
+      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
     },
     'Junior': {
-      className: 'bg-blue-100 text-blue-800 border-blue-200'
+      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
     },
     'Senior': {
-      className: 'bg-purple-100 text-purple-800 border-purple-200'
+      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
     },
     // Legacy referee levels
     'Learning': {
-      className: 'bg-green-100 text-green-800 border-green-200'
+      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
     },
     'Learning+': {
-      className: 'bg-blue-100 text-blue-800 border-blue-200'
+      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
     },
     'Growing': {
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
     },
     'Growing+': {
-      className: 'bg-orange-100 text-orange-800 border-orange-200'
+      className: 'bg-warning/20 text-warning border-warning/30 hover:bg-warning/25 dark:bg-warning/30 dark:text-warning dark:border-warning/40'
     },
     'Teaching': {
-      className: 'bg-purple-100 text-purple-800 border-purple-200'
+      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
     },
     'Expert': {
-      className: 'bg-red-100 text-red-800 border-red-200'
+      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30'
     }
   }
 
   const config = levelConfig[level as keyof typeof levelConfig] || {
-    className: 'bg-gray-100 text-gray-800 border-gray-200'
+    className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted'
   }
 
   return (
@@ -272,21 +272,21 @@ interface GameTypeBadgeProps {
 export function GameTypeBadge({ type, className }: GameTypeBadgeProps) {
   const typeConfig = {
     'Community': {
-      className: 'bg-blue-100 text-blue-800 border-blue-200'
+      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
     },
     'Club': {
-      className: 'bg-green-100 text-green-800 border-green-200'
+      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
     },
     'Tournament': {
-      className: 'bg-purple-100 text-purple-800 border-purple-200'
+      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
     },
     'Private Tournament': {
-      className: 'bg-orange-100 text-orange-800 border-orange-200'
+      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
     }
   }
 
   const config = typeConfig[type as keyof typeof typeConfig] || {
-    className: 'bg-gray-100 text-gray-800 border-gray-200'
+    className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted'
   }
 
   return (
