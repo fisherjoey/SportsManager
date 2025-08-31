@@ -36,6 +36,7 @@ import { SecurityAudit } from '@/components/security-audit'
 import { SystemSettings } from '@/components/system-settings'
 import { ResourceCentreNew } from '@/components/resource-centre-new'
 import { RoleManagementDashboard } from '@/components/admin/rbac/RoleManagementDashboard'
+import { PermissionManagementDashboard } from '@/components/admin/rbac/PermissionManagementDashboard'
 import { UserManagementDashboard } from '@/components/admin/users/UserManagementDashboard'
 import { Button } from '@/components/ui/button'
 
@@ -182,6 +183,8 @@ export function AdminDashboard() {
       return 'System Settings'
     case 'admin-roles':
       return 'Role Management'
+    case 'admin-permissions':
+      return 'Permission Matrix'
       
       // Account
     case 'profile':
@@ -287,6 +290,8 @@ export function AdminDashboard() {
       return <SystemSettings />
     case 'admin-roles':
       return <RoleManagementDashboard />
+    case 'admin-permissions':
+      return <PermissionManagementDashboard />
       
       // Account
     case 'profile':

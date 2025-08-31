@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { 
   Save, Eye, X, Upload, AlertCircle, FileEdit, Shield, Info, Users
 } from 'lucide-react'
-import { ResourceAccessIndicator } from './ResourceAccessIndicator'
+import { ResourceAccessIndicator } from '@/components/resources/ResourceAccessIndicator'
 import { AccessLevel, Role } from '@/lib/types'
 
 interface ResourceEditorProps {
