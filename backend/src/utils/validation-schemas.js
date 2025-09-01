@@ -430,6 +430,122 @@ const AvailabilitySchemas = {
   })
 };
 
+/**
+ * Mentorship-related validation schemas
+ */
+const MentorshipSchemas = {
+  /**
+   * Schema for mentorship creation
+   */
+  create: Joi.object({
+    mentor_id: BaseSchemas.id,
+    mentee_id: BaseSchemas.id,
+    start_date: BaseSchemas.date,
+    notes: BaseSchemas.notes
+  }),
+
+  /**
+   * Schema for mentorship updates
+   */
+  update: Joi.object({
+    status: Joi.string().valid('active', 'paused', 'completed', 'terminated').optional(),
+    notes: BaseSchemas.notes,
+    end_date: BaseSchemas.optionalDate
+  }),
+
+  /**
+   * Schema for mentorship notes creation
+   */
+  noteCreate: Joi.object({
+    title: Joi.string().min(1).max(200).trim().required(),
+    content: Joi.string().min(1).max(10000).required(),
+    note_type: Joi.string().valid('progress', 'concern', 'achievement', 'general').default('general'),
+    is_private: Joi.boolean().default(false)
+  }),
+
+  /**
+   * Schema for mentorship notes updates
+   */
+  noteUpdate: Joi.object({
+    title: Joi.string().min(1).max(200).trim().optional(),
+    content: Joi.string().min(1).max(10000).optional(),
+    note_type: Joi.string().valid('progress', 'concern', 'achievement', 'general').optional(),
+    is_private: Joi.boolean().optional()
+  }),
+
+  /**
+   * Schema for mentorship search and filtering
+   */
+  search: Joi.object({
+    search: Joi.string().min(1).max(100).optional(),
+    note_type: Joi.string().valid('progress', 'concern', 'achievement', 'general').optional(),
+    include_private: Joi.boolean().default(false),
+    limit: Joi.number().integer().min(1).max(50).default(20)
+  }),
+
+  /**
+   * Schema for document upload metadata
+   */
+  documentMetadata: Joi.object({
+    description: Joi.string().max(500).optional(),
+    document_type: Joi.string().valid(
+      'assessment',
+      'feedback',
+      'training_material',
+      'certificate',
+      'report',
+      'other'
+    ).default('other'),
+    is_confidential: Joi.boolean().default(false)
+  })
+};
+
+/**
+ * Mentee games validation schemas
+ */
+const MenteeGameSchemas = {
+  /**
+   * Schema for game query filters
+   */
+  gameFilters: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').optional(),
+    date_from: BaseSchemas.optionalDate,
+    date_to: BaseSchemas.optionalDate,
+    season: Joi.string().max(50).optional(),
+    level: Joi.string().max(50).optional(),
+    game_type: Joi.string().valid('Community', 'Club', 'Tournament', 'Private Tournament').optional(),
+    include_details: Joi.boolean().default(true),
+    sort_by: Joi.string().valid('game_date', 'created_at', 'wage', 'status').default('game_date'),
+    sort_order: Joi.string().valid('asc', 'desc').default('desc')
+  }),
+
+  /**
+   * Schema for upcoming games query
+   */
+  upcomingGames: Joi.object({
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    days_ahead: Joi.number().integer().min(1).max(365).default(30),
+    include_details: Joi.boolean().default(true),
+    status_filter: Joi.array().items(
+      Joi.string().valid('pending', 'accepted')
+    ).default(['pending', 'accepted'])
+  }),
+
+  /**
+   * Schema for analytics query parameters
+   */
+  analytics: Joi.object({
+    date_from: BaseSchemas.optionalDate,
+    date_to: BaseSchemas.optionalDate,
+    season: Joi.string().max(50).optional(),
+    compare_to_previous: Joi.boolean().default(false),
+    group_by: Joi.string().valid('month', 'week', 'season', 'level', 'type').default('month'),
+    include_trends: Joi.boolean().default(true)
+  })
+};
+
 module.exports = {
   // Base schemas
   BaseSchemas,
@@ -444,6 +560,8 @@ module.exports = {
   AuthSchemas,
   FileSchemas,
   AvailabilitySchemas,
+  MentorshipSchemas,
+  MenteeGameSchemas,
   
   // Utility schemas
   PaginationSchema,
