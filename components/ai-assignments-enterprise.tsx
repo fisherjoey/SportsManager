@@ -306,7 +306,7 @@ export function AIAssignmentsEnterprise() {
         setLoading(true)
         
         // Load games and referees in parallel
-        const [gamesResponse, refereesResponse] = await Promise.all([
+        const [gamesResponse, referees] = await Promise.all([
           apiClient.getGames({ status: 'unassigned', limit: 100 }),
           apiClient.getReferees({ available: true, limit: 100 })
         ])
@@ -325,9 +325,9 @@ export function AIAssignmentsEnterprise() {
           setGames(transformedGames)
         }
 
-        if (refereesResponse?.success && refereesResponse.data?.referees) {
+        if (referees && Array.isArray(referees)) {
           // Transform backend referee data to match our interface
-          const transformedReferees = refereesResponse.data.referees.map(ref => ({
+          const transformedReferees = referees.map(ref => ({
             id: ref.id,
             name: ref.name,
             level: ref.certificationLevel || 'Level 1',

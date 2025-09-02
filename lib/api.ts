@@ -341,10 +341,10 @@ class ApiClient {
     if (params?.limit) transformedParams.limit = params.limit
     
     const queryString = Object.keys(transformedParams).length > 0 ? new URLSearchParams(transformedParams).toString() : ''
-    const response = await this.request<{ success: boolean; data: { referees: any[]; total: number } }>(`/referees${queryString ? `?${queryString}` : ''}`)
+    const response = await this.request<{ success: boolean; data: { data: any[]; pagination: any } }>(`/referees${queryString ? `?${queryString}` : ''}`)
     
-    // Transform backend response to frontend format
-    const referees = response.data?.referees || []
+    // Transform backend response to frontend format  
+    const referees = response.data?.data || []
     const transformedReferees = referees.map((referee: any) => ({
       id: referee.id,
       name: referee.name,
@@ -367,17 +367,7 @@ class ApiClient {
       updatedAt: referee.updated_at
     }))
     
-    return { 
-      success: true, 
-      data: { 
-        referees: transformedReferees, 
-        pagination: {
-          total: response.data?.total || transformedReferees.length,
-          page: params?.page || 1,
-          limit: params?.limit || 50
-        }
-      } 
-    }
+    return transformedReferees
   }
 
   async getReferee(id: string) {

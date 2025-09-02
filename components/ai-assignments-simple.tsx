@@ -193,7 +193,7 @@ export default function AIAssignmentsSimple() {
       apiClient.initializeToken()
       
       // Load games and referees in parallel
-      const [gamesResponse, refereesResponse] = await Promise.all([
+      const [gamesResponse, referees] = await Promise.all([
         apiClient.getGames(),
         apiClient.getReferees()
       ])
@@ -219,9 +219,9 @@ export default function AIAssignmentsSimple() {
         setGames(mockGames)
       }
 
-      if (refereesResponse.success) {
+      if (referees && Array.isArray(referees)) {
         // Transform API referees to our interface
-        const transformedReferees: Referee[] = refereesResponse.data.map((ref: any) => ({
+        const transformedReferees: Referee[] = referees.map((ref: any) => ({
           id: ref.id.toString(),
           name: ref.name,
           level: ref.level || 'Junior',

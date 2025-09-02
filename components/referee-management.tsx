@@ -62,8 +62,18 @@ export function RefereeManagement() {
     const fetchReferees = async () => {
       try {
         setIsLoading(true)
-        const response = await api.getReferees({ limit: 100 }) // Get all referees
-        setReferees(response.data.referees)
+        const referees = await api.getReferees({ limit: 100 }) // Get all referees
+        console.log('Referees API response:', referees) // Debug log
+        
+        // The getReferees method returns transformed referees directly
+        console.log('Referees data type:', typeof referees, 'Is array:', Array.isArray(referees))
+        
+        if (Array.isArray(referees)) {
+          setReferees(referees)
+        } else {
+          console.warn('Referees is not an array:', referees)
+          setReferees([])
+        }
       } catch (error) {
         console.error('Failed to fetch referees:', error)
         toast({
@@ -697,7 +707,7 @@ export function RefereeManagement() {
           <DialogHeader>
             <DialogTitle>Manage Availability</DialogTitle>
             <DialogDescription>
-              View and manage availability windows for {referees.find(r => r.id === availabilityRefereeId)?.name}
+              View and manage availability windows for {Array.isArray(referees) ? referees.find(r => r.id === availabilityRefereeId)?.name : 'Unknown Referee'}
             </DialogDescription>
           </DialogHeader>
           

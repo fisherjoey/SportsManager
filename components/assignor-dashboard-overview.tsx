@@ -100,8 +100,8 @@ export function AssignorDashboardOverview() {
         }))
       
       // Fetch referees
-      const refereesResponse = await apiClient.getReferees()
-      const referees = refereesResponse.data || []
+      const referees = await apiClient.getReferees()
+      console.log('Referees in assignor dashboard:', referees) // Debug log
       const availableRefs = referees.filter((r: any) => r.status === 'active').length
       
       // Calculate assignments count (mock data for now)
