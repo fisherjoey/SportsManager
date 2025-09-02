@@ -73,11 +73,16 @@ const workflowRoutes = require('./routes/workflows');
 const contentRoutes = require('./routes/content');
 const resourcesRoutes = require('./routes/resources');
 
+// Import mentorship routes
+const mentorshipRoutes = require('./routes/mentorships');
+const menteeGamesRoutes = require('./routes/mentee-games');
+
 // Import admin routes
 const adminRoleRoutes = require('./routes/admin/roles');
 const adminPermissionRoutes = require('./routes/admin/permissions');
 const adminMaintenanceRoutes = require('./routes/admin/maintenance');
 const testRoleRoutes = require('./routes/admin/test-roles');
+const adminRBACRegistryRoutes = require('./routes/admin/rbac-registry');
 
 const app = express();
 
@@ -207,12 +212,17 @@ app.use('/api/workflows', workflowRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/resources', resourcesRoutes);
 
+// Mentorship routes
+app.use('/api/mentorships', mentorshipRoutes);
+app.use('/api/mentees', menteeGamesRoutes);
+
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/permissions', adminPermissionRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
 app.use('/api/admin/access', require('./routes/admin/access'));
 app.use('/api/admin/users', require('./routes/admin/users'));
+app.use('/api/admin/rbac-registry', adminRBACRegistryRoutes);
 app.use('/api/test-roles', testRoleRoutes);
 
 // Performance monitoring routes (admin only)

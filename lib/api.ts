@@ -42,12 +42,12 @@ class ApiClient {
    * Get the base URL dynamically based on current host
    */
   private getBaseURL(): string {
-    // For server-side rendering, always use localhost
+    // For server-side rendering, always use localhost direct URL
     if (typeof window === 'undefined') {
       return 'http://localhost:3001/api'
     }
     
-    // For client-side, use the current host
+    // For client-side, use Next.js proxy to avoid CORS issues
     const host = window.location.hostname
     const protocol = window.location.protocol
     
@@ -60,10 +60,10 @@ class ApiClient {
       return process.env.NEXT_PUBLIC_API_URL
     }
     
-    // If accessing from localhost, use localhost
+    // For localhost development, use Next.js proxy (no port 3001, no /api suffix)
     if (host === 'localhost' || host === '127.0.0.1') {
-      const url = 'http://localhost:3001/api'
-      console.log('[API Client] Using localhost URL:', url)
+      const url = '/api'  // Use Next.js proxy instead of direct backend URL
+      console.log('[API Client] Using Next.js proxy URL:', url)
       return url
     }
     
@@ -3540,6 +3540,137 @@ class ApiClient {
       ...options,
       method: 'DELETE'
     })
+  }
+
+  // ===== MENTORSHIP API METHODS =====
+
+  /**
+   * Get all mentorships for the current user (as mentor or mentee)
+   */
+  async getMentorships(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'active' | 'inactive' | 'completed';
+    role?: 'mentor' | 'mentee';
+  }): Promise<ApiResponse<any[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.role) searchParams.append('role', params.role);
+
+    const queryString = searchParams.toString();
+    return this.get(`/mentorships${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get mentorship details
+   */
+  async getMentorship(id: string): Promise<ApiResponse<any>> {
+    return this.get(`/mentorships/${id}`);
+  }
+
+  /**
+   * Get mentees for a specific mentor
+   */
+  async getMenteesByMentor(mentorId?: string, params?: {
+    status?: 'active' | 'inactive' | 'completed';
+    includeDetails?: boolean;
+  }): Promise<ApiResponse<any[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.includeDetails) searchParams.append('include_details', params.includeDetails.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = mentorId 
+      ? `/mentorships/mentor/${mentorId}/mentees${queryString ? `?${queryString}` : ''}`
+      : `/mentorships/my-mentees${queryString ? `?${queryString}` : ''}`;
+    
+    return this.get(endpoint);
+  }
+
+  /**
+   * Get mentee's games with comprehensive details
+   */
+  async getMenteeGames(menteeId: string, params?: {
+    page?: number;
+    limit?: number;
+    status?: 'pending' | 'accepted' | 'completed' | 'declined';
+    date_from?: string;
+    date_to?: string;
+    sort_by?: 'game_date' | 'wage';
+    sort_order?: 'asc' | 'desc';
+  }): Promise<ApiResponse<any[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.date_from) searchParams.append('date_from', params.date_from);
+    if (params?.date_to) searchParams.append('date_to', params.date_to);
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) searchParams.append('sort_order', params.sort_order);
+
+    const queryString = searchParams.toString();
+    return this.get(`/mentees/${menteeId}/games${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get mentee's upcoming games
+   */
+  async getMenteeUpcomingGames(menteeId: string, params?: {
+    limit?: number;
+    days_ahead?: number;
+    include_details?: boolean;
+  }): Promise<ApiResponse<any>> {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.days_ahead) searchParams.append('days_ahead', params.days_ahead.toString());
+    if (params?.include_details) searchParams.append('include_details', params.include_details.toString());
+
+    const queryString = searchParams.toString();
+    return this.get(`/mentees/${menteeId}/games/upcoming${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get mentee's game history with analytics
+   */
+  async getMenteeGameHistory(menteeId: string, params?: {
+    page?: number;
+    limit?: number;
+    date_from?: string;
+    date_to?: string;
+    season?: string;
+    include_analytics?: boolean;
+  }): Promise<ApiResponse<any>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.date_from) searchParams.append('date_from', params.date_from);
+    if (params?.date_to) searchParams.append('date_to', params.date_to);
+    if (params?.season) searchParams.append('season', params.season);
+    if (params?.include_analytics !== undefined) searchParams.append('include_analytics', params.include_analytics.toString());
+
+    const queryString = searchParams.toString();
+    return this.get(`/mentees/${menteeId}/games/history${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get comprehensive analytics for mentee's refereeing performance
+   */
+  async getMenteeGameAnalytics(menteeId: string, params?: {
+    date_from?: string;
+    date_to?: string;
+    season?: string;
+    compare_to_previous?: boolean;
+  }): Promise<ApiResponse<any>> {
+    const searchParams = new URLSearchParams();
+    if (params?.date_from) searchParams.append('date_from', params.date_from);
+    if (params?.date_to) searchParams.append('date_to', params.date_to);
+    if (params?.season) searchParams.append('season', params.season);
+    if (params?.compare_to_previous) searchParams.append('compare_to_previous', params.compare_to_previous.toString());
+
+    const queryString = searchParams.toString();
+    return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`);
   }
 
 }

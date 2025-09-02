@@ -17,6 +17,8 @@ import { StatsGrid } from '@/components/ui/stats-grid'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 import { usePermissions } from '@/hooks/usePermissions'
+import { MenteeSelector } from '@/components/MenteeSelector'
+import { MenteeGamesView } from '@/components/MenteeGamesView'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,9 +44,51 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || 'all')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null)
+  // Mentorship-related state
+  const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(null)
+  const [selectedMenteeName, setSelectedMenteeName] = useState<string>('')
+  const [mentees, setMentees] = useState<any[]>([])
   const { toast } = useToast()
   const { isAuthenticated } = useAuth()
-  const { hasPermission } = usePermissions()
+  const { hasPermission, hasAnyPermission } = usePermissions()
+
+  // Check if user has mentorship permissions
+  const isMentor = hasAnyPermission(['mentorships:read', 'mentorships:manage'])
+
+  // Fetch mentees for mentor dropdown
+  useEffect(() => {
+    const fetchMentees = async () => {
+      if (!isAuthenticated || !isMentor) return
+
+      try {
+        apiClient.initializeToken()
+        const response = await apiClient.getMenteesByMentor(undefined, {
+          status: 'active',
+          includeDetails: true
+        })
+        
+        if (response.data) {
+          setMentees(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch mentees:', error)
+        // Don't show toast error for mentees as it's optional functionality
+      }
+    }
+
+    fetchMentees()
+  }, [isAuthenticated, isMentor])
+
+  // Handle mentee selection
+  const handleMenteeChange = (menteeId: string | null) => {
+    setSelectedMenteeId(menteeId)
+    if (menteeId) {
+      const mentee = mentees.find(m => m.id === menteeId)
+      setSelectedMenteeName(mentee?.name || '')
+    } else {
+      setSelectedMenteeName('')
+    }
+  }
 
   // Fetch games from API
   useEffect(() => {
@@ -307,16 +351,18 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
     <PageLayout>
       <PageHeader
         icon={Calendar}
-        title="Game Management"
+        title={selectedMenteeId ? `${selectedMenteeName}'s Games` : "Game Management"}
         description={
-          selectedDate !== 'all' 
-            ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}`
-            : 'Manage all games across divisions and levels'
+          selectedMenteeId 
+            ? `Viewing game assignments and performance for ${selectedMenteeName}`
+            : selectedDate !== 'all' 
+              ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}`
+              : 'Manage all games across divisions and levels'
         }
       >
         {selectedDate !== 'all' && (
@@ -349,25 +395,54 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
         </Button>
       </PageHeader>
 
-      <StatsGrid stats={stats} />
+      {/* Only show regular stats grid when not viewing mentee games */}
+      {!selectedMenteeId && <StatsGrid stats={stats} />}
 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Game Directory</CardTitle>
-          <CardDescription>Search and filter games across all divisions and levels</CardDescription>
+          <CardTitle>
+            {selectedMenteeId ? 'Mentorship Controls' : 'Game Directory'}
+          </CardTitle>
+          <CardDescription>
+            {selectedMenteeId 
+              ? 'Select a different mentee or switch back to all games view'
+              : 'Search and filter games across all divisions and levels'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search games..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
+          {/* Mentorship Selector - only show for mentors */}
+          {isMentor && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-sm">Mentorship View</h4>
+                  <p className="text-xs text-muted-foreground">
+                    View games for your mentees or switch to all games view
+                  </p>
+                </div>
+                <MenteeSelector
+                  selectedMenteeId={selectedMenteeId}
+                  onMenteeChange={handleMenteeChange}
+                  placeholder="Select a mentee..."
+                />
+              </div>
             </div>
+          )}
+
+          {/* Regular filters - only show when not viewing mentee games */}
+          {!selectedMenteeId && (
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search games..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             <Select value={selectedLevel} onValueChange={setSelectedLevel}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Level" />
@@ -409,21 +484,34 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
                 </Badge>
               )}
             </div>
-          </div>
-
-          {/* Games Table */}
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading games...</p>
-              </div>
             </div>
-          ) : (
-            <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+          )}
+
+          {/* Regular Games Table - only show when not viewing mentee games */}
+          {!selectedMenteeId && (
+            <>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading games...</p>
+                  </div>
+                </div>
+              ) : (
+                <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+              )}
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Mentee Games View - only show when mentee is selected */}
+      {selectedMenteeId && selectedMenteeName && (
+        <MenteeGamesView 
+          menteeId={selectedMenteeId}
+          menteeName={selectedMenteeName}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
