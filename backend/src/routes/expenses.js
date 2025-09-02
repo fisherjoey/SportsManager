@@ -1400,7 +1400,6 @@ router.get('/reimbursements', authenticateToken, async (req, res) => {
     if (payPeriod) {
       totalQuery.where('pay_period', payPeriod);
     }
-    const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
     if (!isAdmin) {
       totalQuery.where('organization_id', req.user.id);
     }

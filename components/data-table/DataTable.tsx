@@ -26,6 +26,7 @@ import { DataTableToolbar } from './DataTableToolbar'
 import { MobileFilterSheet } from './MobileFilterSheet'
 import { GameMobileCard } from './GameMobileCard'
 import { RefereeMobileCard } from './RefereeMobileCard'
+import { UserMobileCard } from './UserMobileCard'
 import { Game, Team, Referee } from './types'
 
 interface DataTableProps<TData, TValue> {
@@ -36,8 +37,14 @@ interface DataTableProps<TData, TValue> {
   onAssignReferee?: (game: Game) => void
   onEditReferee?: (referee: Referee) => void
   onViewProfile?: (referee: Referee) => void
-  mobileCardType?: 'game' | 'referee'
+  onEditUser?: (user: any) => void
+  onViewUser?: (user: any) => void
+  onDeleteUser?: (userId: string) => void
+  onWageUpdate?: (userId: string, wage: number) => void
+  onTypeChange?: (userId: string, type: string) => void
+  mobileCardType?: 'game' | 'referee' | 'user'
   enableViewToggle?: boolean
+  showRefereeColumns?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -48,8 +55,14 @@ export function DataTable<TData, TValue>({
   onAssignReferee,
   onEditReferee,
   onViewProfile,
+  onEditUser,
+  onViewUser,
+  onDeleteUser,
+  onWageUpdate,
+  onTypeChange,
   mobileCardType = 'game',
-  enableViewToggle = false
+  enableViewToggle = false,
+  showRefereeColumns = false
 }: DataTableProps<TData, TValue>) {
   // Generate storage key based on table type
   const storageKey = `datatable-${mobileCardType}-state`
@@ -390,6 +403,21 @@ export function DataTable<TData, TValue>({
                     onViewProfile={onViewProfile}
                   />
                 )
+              } else if (mobileCardType === 'user') {
+                return (
+                  <UserMobileCard
+                    key={row.id}
+                    user={row.original as any}
+                    isSelected={row.getIsSelected()}
+                    onSelect={(selected) => row.toggleSelected(selected)}
+                    onEditUser={onEditUser}
+                    onViewProfile={onViewUser}
+                    onDeleteUser={onDeleteUser}
+                    onWageUpdate={onWageUpdate}
+                    onTypeChange={onTypeChange}
+                    showRefereeColumns={showRefereeColumns}
+                  />
+                )
               } else {
                 return (
                   <GameMobileCard
@@ -428,6 +456,21 @@ export function DataTable<TData, TValue>({
                   onSelect={(selected) => row.toggleSelected(selected)}
                   onEditReferee={onEditReferee}
                   onViewProfile={onViewProfile}
+                />
+              )
+            } else if (mobileCardType === 'user') {
+              return (
+                <UserMobileCard
+                  key={row.id}
+                  user={row.original as any}
+                  isSelected={row.getIsSelected()}
+                  onSelect={(selected) => row.toggleSelected(selected)}
+                  onEditUser={onEditUser}
+                  onViewProfile={onViewUser}
+                  onDeleteUser={onDeleteUser}
+                  onWageUpdate={onWageUpdate}
+                  onTypeChange={onTypeChange}
+                  showRefereeColumns={showRefereeColumns}
                 />
               )
             } else {

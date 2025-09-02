@@ -58,7 +58,7 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
         id: user.id,
         name: user.name || '',
         email: user.email,
-        role: user.role,
+        role: '',  // Role is handled through RBAC system
         is_active: user.is_active !== false
       })
       setPassword('')

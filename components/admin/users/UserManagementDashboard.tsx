@@ -6,49 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
-import { Plus, Users, Shield, AlertCircle, Search, Filter, Download, MoreVertical } from 'lucide-react'
-import { UserTable } from './UserTable'
+import { Plus, Users, Shield, AlertCircle, Search, Filter, Download, MoreVertical, Edit, Eye, Trash2, DollarSign, UserCog } from 'lucide-react'
 import { UserForm } from './UserFormNew'
 import { UserDetailsModal } from './UserDetailsModal'
-import { UserFilters } from './UserFilters'
 import { apiClient } from '@/lib/api'
-
-interface Role {
-  id: string
-  name: string
-  description?: string
-}
-
-interface RefereeProfile {
-  id: string
-  wage_amount: number
-  years_experience: number
-  evaluation_score?: number
-  is_white_whistle: boolean
-  show_white_whistle: boolean
-  referee_type: Role | null
-  capabilities: Role[]
-  computed_fields: {
-    type_config: any
-    capability_count: number
-    is_senior: boolean
-    is_junior: boolean
-    is_rookie: boolean
-  }
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-  roles?: Role[]  // RBAC roles
-  is_available?: boolean  // Referee availability
-  is_active?: boolean  // Might not exist, treat as active if undefined
-  is_referee?: boolean  // Enhanced field
-  referee_profile?: RefereeProfile | null  // Enhanced field
-  created_at: string
-  updated_at?: string
-}
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { User, Role, getUserDisplayName, getYearsOfExperience, getExperienceLevel, getUserFullAddress } from '@/types/user'
 
 export function UserManagementDashboard() {
   const [users, setUsers] = useState<User[]>([])
@@ -63,6 +29,7 @@ export function UserManagementDashboard() {
   })
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [editingWage, setEditingWage] = useState<{ userId: string; wage: number } | null>(null)
   const { toast } = useToast()
 
   const fetchUsers = async () => {
@@ -213,19 +180,15 @@ export function UserManagementDashboard() {
     }
   }
 
-  // Filter users based on search
+  // Filter users based on search (now handled by DataTable)
   const filteredUsers = users.filter(user => {
-    const matchesSearch = filters.search === '' || 
-      user.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-      user.email.toLowerCase().includes(filters.search.toLowerCase())
-    
     // If is_active is undefined, treat user as active
     const isActive = user.is_active !== false
     const matchesStatus = filters.status === 'all' ||
       (filters.status === 'active' && isActive) ||
       (filters.status === 'inactive' && !isActive)
     
-    return matchesSearch && matchesStatus
+    return matchesStatus
   })
 
   // Get user statistics based on new roles
@@ -277,6 +240,318 @@ export function UserManagementDashboard() {
     )
   }
 
+  // Handle inline wage editing
+  const handleWageEdit = (userId: string, currentWage: number) => {
+    setEditingWage({ userId, wage: currentWage })
+  }
+
+  const handleWageSave = async () => {
+    if (!editingWage) return
+    await handleWageUpdate(editingWage.userId, editingWage.wage)
+    setEditingWage(null)
+  }
+
+  const handleWageCancel = () => {
+    setEditingWage(null)
+  }
+
+  // Column definitions for FilterableTable
+  const getUserColumns = (showRefereeColumns: boolean): ColumnDef<User>[] => {
+    const baseColumns: ColumnDef<User>[] = [
+      {
+        id: 'name',
+        title: 'Name',
+        filterType: 'search',
+        accessor: (user) => {
+          return (
+            <div>
+              <div className="font-medium">{getUserDisplayName(user)}</div>
+              {user.date_of_birth && (
+                <div className="text-xs text-muted-foreground">
+                  Born: {new Date(user.date_of_birth).toLocaleDateString()}
+                </div>
+              )}
+              {user.communication_preferences?.preferred_language && user.communication_preferences.preferred_language !== 'en' && (
+                <div className="text-xs text-blue-600">
+                  Language: {user.communication_preferences.preferred_language.toUpperCase()}
+                </div>
+              )}
+            </div>
+          )
+        }
+      },
+      {
+        id: 'email',
+        title: 'Email',
+        filterType: 'search',
+        accessor: (user) => (
+          <div className="text-sm">{user.email}</div>
+        )
+      },
+      {
+        id: 'contact',
+        title: 'Contact Info',
+        filterType: 'search',
+        accessor: (user) => {
+          const fullAddress = getUserFullAddress(user)
+          return (
+            <div className="space-y-1">
+              <div className="text-sm font-medium">{user.phone || '-'}</div>
+              {fullAddress && (
+                <div className="text-xs text-muted-foreground truncate max-w-[200px]" title={fullAddress}>
+                  {fullAddress}
+                </div>
+              )}
+              {user.emergency_contact_name && (
+                <div className="text-xs text-blue-600">
+                  Emergency: {user.emergency_contact_name}
+                </div>
+              )}
+            </div>
+          )
+        }
+      },
+      {
+        id: 'professional',
+        title: 'Professional Info',
+        filterType: 'select',
+        filterOptions: [
+          { value: 'all', label: 'All Experience' },
+          { value: 'new', label: 'New (0-1 years)' },
+          { value: 'junior', label: 'Junior (2-5 years)' },
+          { value: 'senior', label: 'Senior (6+ years)' }
+        ],
+        accessor: (user) => {
+          const years = getYearsOfExperience(user)
+          const startYear = user.year_started_refereeing
+          
+          return (
+            <div className="text-sm space-y-1">
+              <div className="font-medium">
+                {years > 0 ? `${years} ${years === 1 ? 'year' : 'years'}` : 'New'}
+              </div>
+              {startYear && (
+                <div className="text-xs text-muted-foreground">
+                  Since {startYear}
+                </div>
+              )}
+              {user.certifications && user.certifications.length > 0 && (
+                <div className="text-xs text-green-600">
+                  {user.certifications.slice(0, 2).join(', ')}
+                  {user.certifications.length > 2 && ` +${user.certifications.length - 2}`}
+                </div>
+              )}
+              {user.specializations && user.specializations.length > 0 && (
+                <div className="text-xs text-purple-600">
+                  {user.specializations.slice(0, 1).join(', ')}
+                  {user.specializations.length > 1 && ` +${user.specializations.length - 1}`}
+                </div>
+              )}
+            </div>
+          )
+        }
+      },
+      {
+        id: 'roles',
+        title: 'Roles',
+        filterType: 'select',
+        filterOptions: [
+          { value: 'all', label: 'All Roles' },
+          { value: 'Super Admin', label: 'Super Admin' },
+          { value: 'Admin', label: 'Admin' },
+          { value: 'Assignor', label: 'Assignor' },
+          { value: 'Referee', label: 'Referee' }
+        ],
+        accessor: (user) => {
+          const roles = user.roles?.map(r => r.name) || [user.role] || ['User']
+          
+          return (
+            <div className="flex flex-wrap gap-1">
+              {roles.map((role, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {role}
+                </Badge>
+              ))}
+            </div>
+          )
+        }
+      },
+      {
+        id: 'status',
+        title: 'Status',
+        filterType: 'select',
+        filterOptions: [
+          { value: 'all', label: 'All Status' },
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+          { value: 'on_break', label: 'On Break' }
+        ],
+        accessor: (user) => {
+          const availabilityStatus = user.availability_status || 'active'
+          const accountStatus = user.is_active !== false ? 'active' : 'inactive'
+          const statusColors = {
+            'active': 'bg-green-100 text-green-800 border-green-200',
+            'inactive': 'bg-red-100 text-red-800 border-red-200',
+            'on_break': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+          }
+          
+          return (
+            <div className="space-y-1">
+              <div className="flex gap-1">
+                <Badge variant="outline" className={`text-xs ${statusColors[availabilityStatus as keyof typeof statusColors] || ''}`}>
+                  {availabilityStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Badge>
+                {accountStatus === 'inactive' && (
+                  <Badge variant="outline" className="text-xs bg-gray-100 text-gray-800 border-gray-200">
+                    Disabled
+                  </Badge>
+                )}
+              </div>
+              {user.last_login && (
+                <div className="text-xs text-muted-foreground">
+                  Last login: {new Date(user.last_login).toLocaleDateString()}
+                </div>
+              )}
+              {user.profile_completion_percentage !== undefined && user.profile_completion_percentage < 100 && (
+                <div className="text-xs text-orange-600">
+                  Profile {user.profile_completion_percentage}% complete
+                </div>
+              )}
+            </div>
+          )
+        }
+      },
+    ]
+
+    if (showRefereeColumns) {
+      baseColumns.push(
+        {
+          id: 'refereeType',
+          title: 'Type',
+          filterType: 'select',
+          filterOptions: [
+            { value: 'all', label: 'All Types' },
+            { value: 'Rookie Referee', label: 'Rookie' },
+            { value: 'Junior Referee', label: 'Junior' },
+            { value: 'Senior Referee', label: 'Senior' }
+          ],
+          accessor: (user) => {
+            const refereeType = user.referee_profile?.referee_type?.name || 'N/A'
+            
+            return (
+              <Select
+                value={refereeType}
+                onValueChange={(value) => handleTypeChange(user.id, value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Rookie Referee">Rookie</SelectItem>
+                  <SelectItem value="Junior Referee">Junior</SelectItem>
+                  <SelectItem value="Senior Referee">Senior</SelectItem>
+                </SelectContent>
+              </Select>
+            )
+          }
+        },
+        {
+          id: 'wage',
+          title: 'Wage',
+          filterType: 'none',
+          accessor: (user) => {
+            const currentWage = user.referee_profile?.wage_amount || 0
+            const isEditing = editingWage?.userId === user.id
+            
+            return (
+              <div className="flex items-center space-x-2">
+                {isEditing ? (
+                  <>
+                    <Input
+                      type="number"
+                      value={editingWage.wage}
+                      onChange={(e) => setEditingWage({ ...editingWage, wage: parseFloat(e.target.value) || 0 })}
+                      className="w-20"
+                      step="0.01"
+                    />
+                    <Button size="sm" onClick={handleWageSave}>Save</Button>
+                    <Button size="sm" variant="outline" onClick={handleWageCancel}>Cancel</Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium">${currentWage.toFixed(2)}</span>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => handleWageEdit(user.id, currentWage)}
+                    >
+                      <DollarSign className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            )
+          }
+        },
+        {
+          id: 'availability',
+          title: 'Available',
+          filterType: 'select',
+          filterOptions: [
+            { value: 'all', label: 'All' },
+            { value: 'available', label: 'Available' },
+            { value: 'unavailable', label: 'Unavailable' }
+          ],
+          accessor: (user) => {
+            const isAvailable = user.is_available !== false
+            return (
+              <Badge variant={isAvailable ? 'default' : 'secondary'}>
+                {isAvailable ? 'Yes' : 'No'}
+              </Badge>
+            )
+          }
+        }
+      )
+    }
+
+    // Add actions column
+    baseColumns.push({
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (user) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => handleViewUser(user)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleEditUser(user)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit User
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => handleDeleteUser(user.id)}
+              className="text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete User
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    })
+
+    return baseColumns
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -293,81 +568,39 @@ export function UserManagementDashboard() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.active} active
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administrators</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.admins}</div>
-            <p className="text-xs text-muted-foreground">
-              Full system access
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assignors</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.assignors}</div>
-            <p className="text-xs text-muted-foreground">
-              Manage assignments
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Referees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.referees}</div>
-            <p className="text-xs text-muted-foreground">
-              Game officials
-            </p>
-          </CardContent>
-        </Card>
+      {/* Quick Stats in Header */}
+      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+        <span className="flex items-center gap-1">
+          <Users className="h-4 w-4" />
+          {stats.total} total users
+        </span>
+        <span>•</span>
+        <span>{stats.active} active</span>
+        <span>•</span>
+        <span>{stats.admins} admins</span>
+        <span>•</span>
+        <span>{stats.referees} referees</span>
       </div>
-
-      {/* Filters */}
-      <UserFilters 
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
 
       {/* Users Table */}
       <Card>
-        <CardContent className="p-0">
-          <UserTable
-            users={filteredUsers}
-            onEdit={handleEditUser}
-            onView={handleViewUser}
-            onDelete={handleDeleteUser}
-            onWageUpdate={handleWageUpdate}
-            onTypeChange={handleTypeChange}
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            showRefereeColumns={filters.role === 'referee' || filters.role.endsWith('_referee')}
+        <CardHeader>
+          <CardTitle>User Directory</CardTitle>
+          <CardDescription>Search and manage all system users with advanced filtering</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FilterableTable
+            columns={getUserColumns(filters.role === 'referee' || filters.role.endsWith('_referee'))}
+            data={filteredUsers}
+            loading={loading}
+            mobileCardType="user"
+            enableViewToggle={true}
+            enableCSV={true}
+            csvFilename="users-export"
+            searchKey="name"
+            onEditReferee={handleEditUser}
+            onViewProfile={handleViewUser}
+            emptyMessage="No users found matching your criteria."
           />
         </CardContent>
       </Card>

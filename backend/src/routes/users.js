@@ -30,43 +30,22 @@ router.get('/roles', authenticateToken, enhancedAsyncHandler(async (req, res) =>
  */
 // Requires: users:read permission
 router.get('/', authenticateToken, requirePermission('users:read'), validateQuery(FilterSchemas.referees), enhancedAsyncHandler(async (req, res) => {
-  const { role, page = 1, limit = 50 } = req.query;
+  const { page = 1, limit = 50 } = req.query;
   
   let users;
-  if (role) {
-    // Get users by specific role with pagination
-    const result = await userService.findWithPagination(
-      { role },
-      page,
-      limit,
-      { 
-        select: ['id', 'email', 'role', 'name', 'created_at', 'updated_at', 'is_available'],
-        orderBy: 'email',
-        orderDirection: 'asc'
-      }
-    );
-    
-    // Enhance users with new roles
-    const enhancedUsers = await Promise.all(
-      result.data.map(user => userService.enhanceUserWithRoles(user))
-    );
-    
-    return ResponseFormatter.sendPaginated(res, enhancedUsers, result.pagination);
-  } else {
-    // Get all users with basic info
-    users = await userService.findWhere({}, {
-      select: ['id', 'email', 'role', 'name', 'created_at', 'updated_at', 'is_available'],
-      orderBy: 'email',
-      orderDirection: 'asc'
-    });
-    
-    // Enhance all users with new roles
-    const enhancedUsers = await Promise.all(
-      users.map(user => userService.enhanceUserWithRoles(user))
-    );
-    
-    users = enhancedUsers;
-  }
+  // Get all users with basic info (no role filtering since we use RBAC now)
+  users = await userService.findWhere({}, {
+    select: ['id', 'email', 'name', 'created_at', 'updated_at', 'is_available'],
+    orderBy: 'email',
+    orderDirection: 'asc'
+  });
+  
+  // Enhance all users with new roles
+  const enhancedUsers = await Promise.all(
+    users.map(user => userService.enhanceUserWithRoles(user))
+  );
+  
+  users = enhancedUsers;
 
   // Maintain backward compatibility with existing API consumers
   return ResponseFormatter.sendSuccess(res, { users }, 'Users retrieved successfully');
@@ -86,24 +65,18 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
   }
 
   const user = await userService.findById(userId, {
-    select: ['id', 'email', 'role', 'name', 'created_at', 'updated_at']
+    select: ['id', 'email', 'name', 'created_at', 'updated_at']
   });
 
   if (!user) {
     throw ErrorFactory.notFound('User', userId);
   }
 
-  // For referees, get additional details if admin is requesting
-  const isAdmin = req.user.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
-  if (user.role === 'referee' && isAdmin) {
-    const detailedUser = await userService.getUserWithRefereeDetails(userId, {
-      assignmentLimit: 5 // Limit recent assignments for this endpoint
-    });
-    return ResponseFormatter.sendSuccess(res, { user: detailedUser }, 'User details retrieved successfully');
-  }
+  // Enhance user with roles from RBAC system
+  const userWithRoles = await userService.enhanceUserWithRoles(user);
 
-  // Maintain backward compatibility with existing API consumers
-  return ResponseFormatter.sendSuccess(res, { user }, 'User retrieved successfully');
+  // Return user with roles
+  return ResponseFormatter.sendSuccess(res, { user: userWithRoles }, 'User retrieved successfully');
 }));
 
 /**
@@ -111,9 +84,9 @@ router.get('/:id', authenticateToken, validateParams(IdParamSchema), enhancedAsy
  * Create a new user (admin only)
  */
 router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(async (req, res) => {
-  const { email, password, name, role = 'referee', send_welcome_email = false } = req.body;
+  const { email, password, name, send_welcome_email = false } = req.body;
   
-  console.log('Creating user with data:', { email, name, role });
+  console.log('Creating user with data:', { email, name });
   
   // Validate required fields
   if (!email || !password) {
@@ -136,14 +109,13 @@ router.post('/', authenticateToken, requireRole('admin'), enhancedAsyncHandler(a
       email,
       password_hash: hashedPassword,
       name,
-      role,
       is_available: true,
       max_distance: 25,
       phone: null,
       location: null,
       postal_code: 'N/A',  // Required field, cannot be null
       wage_per_game: null,
-      years_experience: null,
+      year_started_refereeing: null,
       evaluation_score: null
     });
     console.log('User created successfully:', newUser.id);

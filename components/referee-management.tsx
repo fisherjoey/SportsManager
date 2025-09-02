@@ -62,18 +62,55 @@ export function RefereeManagement() {
     const fetchReferees = async () => {
       try {
         setIsLoading(true)
-        const referees = await api.getReferees({ limit: 100 }) // Get all referees
-        console.log('Referees API response:', referees) // Debug log
+        // Use the same approach as User Management for consistency
+        const response = await api.request('/users', {
+          method: 'GET', 
+          query: { 
+            limit: 100,
+            role: 'referee' // Filter for referee role like User Management does
+          }
+        })
+        console.log('Users API response:', response) // Debug log
         
-        // The getReferees method returns transformed referees directly
-        console.log('Referees data type:', typeof referees, 'Is array:', Array.isArray(referees))
-        
-        if (Array.isArray(referees)) {
-          setReferees(referees)
-        } else {
-          console.warn('Referees is not an array:', referees)
-          setReferees([])
+        // Extract referees from users response
+        let referees = []
+        if (response.data?.users) {
+          referees = response.data.users.filter(user => {
+            // Check if user has any referee-related roles
+            const hasRefereeRole = user.roles?.some(role => {
+              const roleName = typeof role === 'object' ? role.name : role
+              return roleName === 'Referee' || 
+                     roleName === 'Senior Referee' || 
+                     roleName === 'Junior Referee' || 
+                     roleName === 'Rookie Referee' ||
+                     (typeof role === 'object' && role.category === 'referee_type')
+            }) || user.role === 'referee' || user.is_referee === true
+            return hasRefereeRole
+          })
+        } else if (response.data?.data) {
+          referees = response.data.data.filter(user => {
+            // Check if user has any referee-related roles
+            const hasRefereeRole = user.roles?.some(role => {
+              const roleName = typeof role === 'object' ? role.name : role
+              return roleName === 'Referee' || 
+                     roleName === 'Senior Referee' || 
+                     roleName === 'Junior Referee' || 
+                     roleName === 'Rookie Referee' ||
+                     (typeof role === 'object' && role.category === 'referee_type')
+            }) || user.role === 'referee' || user.is_referee === true
+            return hasRefereeRole
+          })
         }
+        
+        console.log('Filtered referees:', referees)
+        // Debug: Log role structures
+        referees.forEach((ref, i) => {
+          if (i < 2) { // Only log first 2 to avoid spam
+            console.log(`Referee ${i} roles:`, ref.roles)
+            console.log(`Referee ${i} role_names:`, ref.role_names)
+          }
+        })
+        setReferees(referees)
       } catch (error) {
         console.error('Failed to fetch referees:', error)
         toast({
@@ -328,32 +365,71 @@ export function RefereeManagement() {
         { value: 'Inspector', label: 'Inspector' }
       ],
       accessor: (referee) => {
-        // Prefer new role system, fallback to legacy
-        const roles = referee.role_names || referee.roles || ['Referee']
+        // Handle different role data structures from User API
+        let allRoles = []
+        
+        if (referee.role_names && Array.isArray(referee.role_names)) {
+          allRoles = referee.role_names.map(role => 
+            typeof role === 'object' ? (role.name || String(role)) : String(role)
+          )
+        } else if (referee.roles && Array.isArray(referee.roles)) {
+          // Handle both string arrays and object arrays
+          allRoles = referee.roles.map(role => 
+            typeof role === 'object' ? (role.name || String(role)) : String(role)
+          )
+        } else if (referee.role) {
+          allRoles = [typeof referee.role === 'object' ? (referee.role.name || String(referee.role)) : String(referee.role)]
+        } else {
+          allRoles = ['Referee'] // Default fallback
+        }
+        
+        // Filter out basic "Referee" role and admin roles - show only referee-specific roles
+        // Anyone with a "Referee" type role automatically gets base Referee access
+        const displayRoles = allRoles.filter(role => 
+          role !== 'Referee' && 
+          role !== 'referee' &&
+          role !== 'Admin' &&
+          role !== 'Super Admin' &&
+          !role.toLowerCase().includes('admin')
+        )
         
         const roleColors = {
-          'Referee': 'bg-blue-100 text-blue-800',
-          'Evaluator': 'bg-green-100 text-green-800',
-          'Mentor': 'bg-purple-100 text-purple-800',
+          'Senior Referee': 'bg-purple-100 text-purple-800',
+          'Junior Referee': 'bg-blue-100 text-blue-800', 
+          'Rookie Referee': 'bg-green-100 text-green-800',
+          'Evaluator': 'bg-emerald-100 text-emerald-800', 
+          'Mentor': 'bg-indigo-100 text-indigo-800',
           'Regional Lead': 'bg-orange-100 text-orange-800',
           'Assignor': 'bg-red-100 text-red-800',
           'Inspector': 'bg-gray-100 text-gray-800'
         }
         
+        // If no specialized roles, show a default indicator
+        if (displayRoles.length === 0) {
+          return (
+            <div className="text-xs text-muted-foreground italic">
+              Base Referee
+            </div>
+          )
+        }
+        
         return (
           <div className="space-y-1">
-            {roles.slice(0, 2).map((role, index) => (
-              <Badge 
-                key={index} 
-                variant="secondary"
-                className={`text-xs ${roleColors[role as keyof typeof roleColors] || 'bg-secondary text-secondary-foreground'}`}
-              >
-                {role}
-              </Badge>
-            ))}
-            {roles.length > 2 && (
+            {displayRoles.slice(0, 2).map((role, index) => {
+              const roleText = String(role) // Force to string
+              return (
+                <Badge 
+                  key={index} 
+                  variant="secondary"
+                  className={`text-xs ${roleColors[roleText as keyof typeof roleColors] || 'bg-secondary text-secondary-foreground'}`}
+                >
+                  {roleText}
+                </Badge>
+              )
+            })}
+            {displayRoles.length > 2 && (
               <div className="text-xs text-muted-foreground">
-                +{roles.length - 2} more
+                +{displayRoles.length - 2} more
               </div>
             )}
           </div>
@@ -671,7 +747,7 @@ export function RefereeManagement() {
                 <div className="flex flex-wrap gap-1 mt-1">
                   {(selectedReferee.role_names || selectedReferee.roles || ['Referee']).map((role, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
-                      {role}
+                      {typeof role === 'object' ? (role.name || 'Unknown Role') : role}
                     </Badge>
                   ))}
                 </div>

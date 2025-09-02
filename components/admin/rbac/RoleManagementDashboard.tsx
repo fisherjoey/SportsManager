@@ -17,6 +17,7 @@ interface Role {
   id: string
   name: string
   description: string
+  color?: string
   is_active: boolean
   user_count: number
   permission_count: number

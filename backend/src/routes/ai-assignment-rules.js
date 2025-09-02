@@ -170,8 +170,11 @@ class AlgorithmicAssignmentService {
     const skillScore = Math.min(1, refLevel / gameRequiredLevel);
     score += skillScore * weights.skill;
 
-    // Experience score
-    const experienceScore = Math.min(1, (referee.years_experience || 0) / 10);
+    // Experience score - calculate from year_started_refereeing
+    const currentYear = new Date().getFullYear();
+    const yearsExperience = referee.year_started_refereeing ? 
+      Math.max(0, currentYear - referee.year_started_refereeing) : 0;
+    const experienceScore = Math.min(1, yearsExperience / 10);
     score += experienceScore * weights.experience;
 
     // Partner preference bonus (simplified)
@@ -190,7 +193,10 @@ class AlgorithmicAssignmentService {
       reasons.push(`Skill level match (${referee.referee_level})`);
     }
     if (weights.experience > 0.1) {
-      reasons.push(`${referee.years_experience || 0} years experience`);
+      const currentYear = new Date().getFullYear();
+      const yearsExperience = referee.year_started_refereeing ? 
+        Math.max(0, currentYear - referee.year_started_refereeing) : 0;
+      reasons.push(`${yearsExperience} years experience`);
     }
 
     return reasons.join(', ');
@@ -293,9 +299,14 @@ class LLMAssignmentService {
   }
 
   static generateLLMReasoning(referee, game, contextComments) {
+    // Calculate experience from year_started_refereeing
+    const currentYear = new Date().getFullYear();
+    const yearsExperience = referee.year_started_refereeing ? 
+      Math.max(0, currentYear - referee.year_started_refereeing) : 0;
+      
     const reasons = [
       `${referee.referee_level} level referee`,
-      `${referee.years_experience || 0} years experience`,
+      `${yearsExperience} years experience`,
       'Analyzed compatibility with game requirements'
     ];
 

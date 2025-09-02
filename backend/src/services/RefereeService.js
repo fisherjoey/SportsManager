@@ -115,14 +115,25 @@ class RefereeService extends BaseService {
   /**
    * Determine if white whistle should be displayed for a referee
    * @param {string} userId - User ID
+   * @param {Object} refereeType - Optional referee type to avoid circular call
+   * @param {Object} profile - Optional profile data to avoid circular call
    * @returns {boolean} True if white whistle should be shown
    */
-  async shouldDisplayWhiteWhistle(userId) {
+  async shouldDisplayWhiteWhistle(userId, refereeType = null, profile = null) {
     try {
-      const refereeType = await this.getRefereeType(userId);
+      // Use provided data or fetch if not provided
+      if (!refereeType) {
+        refereeType = await this.getRefereeType(userId);
+      }
       if (!refereeType) return false;
 
-      const profile = await this.getRefereeProfile(userId);
+      if (!profile) {
+        // Get profile data directly from DB without calling getRefereeProfile to avoid circular dependency
+        profile = await this.db('referee_profiles')
+          .where('user_id', userId)
+          .where('is_active', true)
+          .first();
+      }
       
       // Business logic for white whistle display
       switch (refereeType.name) {
@@ -166,11 +177,13 @@ class RefereeService extends BaseService {
       }
 
       // Get referee type and capabilities
-      const [refereeType, capabilities, showWhiteWhistle] = await Promise.all([
+      const [refereeType, capabilities] = await Promise.all([
         this.getRefereeType(userId),
-        this.getRefereeCapabilities(userId),
-        this.shouldDisplayWhiteWhistle(userId)
+        this.getRefereeCapabilities(userId)
       ]);
+      
+      // Pass the referee type and profile to avoid circular dependency
+      const showWhiteWhistle = await this.shouldDisplayWhiteWhistle(userId, refereeType, profile);
 
       // Include user data if requested
       let userData = {};
@@ -354,7 +367,6 @@ class RefereeService extends BaseService {
       const profileData = {
         user_id: userId,
         wage_amount: initialData.wage_amount || defaultWage,
-        years_experience: initialData.years_experience || 0,
         certification_number: initialData.certification_number,
         certification_date: initialData.certification_date,
         certification_expiry: initialData.certification_expiry,
@@ -409,7 +421,10 @@ class RefereeService extends BaseService {
       }
 
       if (filters.experience_min) {
-        query = query.where('referee_profiles.years_experience', '>=', filters.experience_min);
+        const currentYear = new Date().getFullYear();
+        const maxStartYear = currentYear - filters.experience_min;
+        query = query.where('users.year_started_refereeing', '<=', maxStartYear)
+                    .whereNotNull('users.year_started_refereeing');
       }
 
       if (filters.is_white_whistle !== undefined) {
@@ -439,11 +454,13 @@ class RefereeService extends BaseService {
       // Enhance profiles with role information
       const enhancedProfiles = await Promise.all(
         profiles.map(async (profile) => {
-          const [refereeType, capabilities, showWhiteWhistle] = await Promise.all([
+          const [refereeType, capabilities] = await Promise.all([
             this.getRefereeType(profile.user_id),
-            this.getRefereeCapabilities(profile.user_id),
-            this.shouldDisplayWhiteWhistle(profile.user_id)
+            this.getRefereeCapabilities(profile.user_id)
           ]);
+          
+          // Pass both refereeType and profile to avoid circular dependency
+          const showWhiteWhistle = await this.shouldDisplayWhiteWhistle(profile.user_id, refereeType, profile);
 
           return {
             ...profile,

@@ -16,8 +16,7 @@ import {
   getFacetedUniqueValues,
   useReactTable
 } from '@tanstack/react-table'
-import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Calendar as CalendarIcon, Download, Upload } from 'lucide-react'
-import { format, isValid, parseISO } from 'date-fns'
+import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload } from 'lucide-react'
 import Papa from 'papaparse'
 
 import { Button } from '@/components/ui/button'
@@ -31,14 +30,14 @@ import { DataTableViewOptions } from '@/components/data-table/DataTableViewOptio
 import { DataTablePagination } from '@/components/data-table/DataTablePagination'
 import { GameMobileCard } from '@/components/data-table/GameMobileCard'
 import { RefereeMobileCard } from '@/components/data-table/RefereeMobileCard'
-import { Calendar } from '@/components/ui/calendar'
+import { UserMobileCard } from '@/components/data-table/UserMobileCard'
 import { getTeamSearchTerms } from '@/lib/team-utils'
 
 export interface ColumnDef<T> {
   id: string
   title: string
   accessor: keyof T | ((item: T) => React.ReactNode)
-  filterType?: 'search' | 'select' | 'date' | 'none'
+  filterType?: 'search' | 'select' | 'none'
   filterOptions?: { value: string; label: string }[]
   className?: string
 }
@@ -53,7 +52,7 @@ interface FilterableTableProps<T> {
   onAssignReferee?: (game: any) => void
   onEditReferee?: (referee: any) => void
   onViewProfile?: (referee: any) => void
-  mobileCardType?: 'game' | 'referee' | 'team' | 'location'
+  mobileCardType?: 'game' | 'referee' | 'team' | 'location' | 'user'
   enableViewToggle?: boolean
   enableCSV?: boolean
   onDataImport?: (newData: T[]) => void
@@ -138,8 +137,6 @@ export function FilterableTable<T extends Record<string, any>>({
           initialFilters[col.id] = ''
         } else if (col.filterType === 'select') {
           initialFilters[col.id] = []
-        } else if (col.filterType === 'date') {
-          initialFilters[col.id] = undefined
         }
       }
     })
@@ -229,12 +226,7 @@ export function FilterableTable<T extends Record<string, any>>({
               if (csvValue !== undefined && csvValue !== null && csvValue !== '') {
                 if (typeof col.accessor === 'string') {
                   // Handle dates
-                  if (col.filterType === 'date' && typeof csvValue === 'string') {
-                    const dateValue = new Date(csvValue)
-                    newItem[col.accessor] = isValid(dateValue) ? dateValue.toISOString().split('T')[0] : csvValue
-                  } else {
-                    newItem[col.accessor] = csvValue
-                  }
+                  newItem[col.accessor] = csvValue
                 } else {
                   // For function accessors, use the column id
                   newItem[col.id] = csvValue
@@ -304,9 +296,7 @@ export function FilterableTable<T extends Record<string, any>>({
     const hasActiveFilter = actualFilterValue !== undefined && actualFilterValue !== null && 
       (column.filterType === 'search' 
         ? actualFilterValue !== ''
-        : column.filterType === 'date'
-          ? actualFilterValue instanceof Date
-          : Array.isArray(actualFilterValue) && actualFilterValue.length > 0)
+        : Array.isArray(actualFilterValue) && actualFilterValue.length > 0)
 
     return (
       <Popover>
@@ -342,11 +332,6 @@ export function FilterableTable<T extends Record<string, any>>({
                       setColumnLevelFilters(prev => ({
                         ...prev,
                         [column.id]: ''
-                      }))
-                    } else if (column.filterType === 'date') {
-                      setColumnLevelFilters(prev => ({
-                        ...prev,
-                        [column.id]: undefined
                       }))
                     } else if (column.filterType === 'select') {
                       setColumnLevelFilters(prev => ({
@@ -412,60 +397,6 @@ export function FilterableTable<T extends Record<string, any>>({
                       }
                     }}
                     className="pl-7 h-8"
-                  />
-                </div>
-              ) : column.filterType === 'date' ? (
-                <div className="space-y-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full h-8 px-2 text-xs justify-start font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-3 w-3" />
-                        {currentValue instanceof Date ? format(currentValue, 'MMM dd, yyyy') : 'Pick date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={currentValue instanceof Date ? currentValue : undefined}
-                        onSelect={(date) => {
-                          setColumnLevelFilters(prev => ({
-                            ...prev,
-                            [column.id]: date
-                          }))
-                          tanstackColumn.setFilterValue(date ? date : undefined)
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    type="date"
-                    value={currentValue instanceof Date ? format(currentValue, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => {
-                      const dateValue = e.target.value
-                      if (dateValue === '') {
-                        setColumnLevelFilters(prev => ({
-                          ...prev,
-                          [column.id]: undefined
-                        }))
-                        tanstackColumn.setFilterValue(undefined)
-                        return
-                      }
-                      
-                      const date = parseISO(dateValue)
-                      if (isValid(date)) {
-                        setColumnLevelFilters(prev => ({
-                          ...prev,
-                          [column.id]: date
-                        }))
-                        tanstackColumn.setFilterValue(date)
-                      }
-                    }}
-                    className="h-7 text-xs"
-                    placeholder="YYYY-MM-DD"
                   />
                 </div>
               ) : (
@@ -783,6 +714,17 @@ export function FilterableTable<T extends Record<string, any>>({
                 key={row.id}
                 referee={item as any}
                 onEditReferee={onEditReferee}
+                onViewProfile={onViewProfile}
+              />
+            )
+          } else if (mobileCardType === 'user') {
+            return (
+              <UserMobileCard
+                key={row.id}
+                user={item as any}
+                isSelected={false}
+                onSelect={() => {}}
+                onEditUser={onEditReferee}
                 onViewProfile={onViewProfile}
               />
             )

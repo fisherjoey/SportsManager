@@ -14,61 +14,69 @@ const createWorkflowTables = async () => {
   try {
     
     // Workflow definitions table
-    await db.schema.createTable('workflow_definitions', function(table) {
-      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
-      table.string('name', 100).notNullable();
-      table.text('description');
-      table.string('category', 50); // 'onboarding', 'asset_management', 'approval', 'compliance'
-      table.string('trigger_event', 100); // What starts this workflow
-      table.boolean('is_active').defaultTo(true);
-      table.json('steps').notNullable(); // Array of workflow steps
-      table.json('conditions'); // Conditions for workflow execution
-      table.uuid('created_by').references('id').inTable('users');
-      table.timestamps(true, true);
-    }).onConflict().ignore();
+    if (!(await db.schema.hasTable('workflow_definitions'))) {
+      await db.schema.createTable('workflow_definitions', function(table) {
+        table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+        table.string('name', 100).notNullable();
+        table.text('description');
+        table.string('category', 50); // 'onboarding', 'asset_management', 'approval', 'compliance'
+        table.string('trigger_event', 100); // What starts this workflow
+        table.boolean('is_active').defaultTo(true);
+        table.json('steps').notNullable(); // Array of workflow steps
+        table.json('conditions'); // Conditions for workflow execution
+        table.uuid('created_by').references('id').inTable('users');
+        table.timestamps(true, true);
+      });
+    }
     
-    await db.schema.createTable('workflow_instances', function(table) {
-      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
-      table.uuid('workflow_definition_id').references('id').inTable('workflow_definitions').onDelete('CASCADE');
-      table.string('entity_type', 50); // 'employee', 'asset', 'document', etc.
-      table.uuid('entity_id'); // ID of the entity this workflow is for
-      table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'cancelled'
-      table.integer('current_step').defaultTo(0);
-      table.json('context'); // Workflow-specific data and variables
-      table.uuid('started_by').references('id').inTable('users');
-      table.timestamp('started_at').defaultTo(db.fn.now());
-      table.timestamp('completed_at');
-      table.text('error_message');
-      table.timestamps(true, true);
-    }).onConflict().ignore();
+    if (!(await db.schema.hasTable('workflow_instances'))) {
+      await db.schema.createTable('workflow_instances', function(table) {
+        table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+        table.uuid('workflow_definition_id').references('id').inTable('workflow_definitions').onDelete('CASCADE');
+        table.string('entity_type', 50); // 'employee', 'asset', 'document', etc.
+        table.uuid('entity_id'); // ID of the entity this workflow is for
+        table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'cancelled'
+        table.integer('current_step').defaultTo(0);
+        table.json('context'); // Workflow-specific data and variables
+        table.uuid('started_by').references('id').inTable('users');
+        table.timestamp('started_at').defaultTo(db.fn.now());
+        table.timestamp('completed_at');
+        table.text('error_message');
+        table.timestamps(true, true);
+      });
+    }
     
-    await db.schema.createTable('workflow_step_executions', function(table) {
-      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
-      table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
-      table.integer('step_number').notNullable();
-      table.string('step_name', 100).notNullable();
-      table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'skipped'
-      table.uuid('assigned_to').references('id').inTable('users');
-      table.timestamp('started_at');
-      table.timestamp('completed_at');
-      table.timestamp('due_date');
-      table.json('input_data');
-      table.json('output_data');
-      table.text('error_message');
-      table.text('notes');
-      table.timestamps(true, true);
-    }).onConflict().ignore();
+    if (!(await db.schema.hasTable('workflow_step_executions'))) {
+      await db.schema.createTable('workflow_step_executions', function(table) {
+        table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+        table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
+        table.integer('step_number').notNullable();
+        table.string('step_name', 100).notNullable();
+        table.string('status', 30).defaultTo('pending'); // 'pending', 'in_progress', 'completed', 'failed', 'skipped'
+        table.uuid('assigned_to').references('id').inTable('users');
+        table.timestamp('started_at');
+        table.timestamp('completed_at');
+        table.timestamp('due_date');
+        table.json('input_data');
+        table.json('output_data');
+        table.text('error_message');
+        table.text('notes');
+        table.timestamps(true, true);
+      });
+    }
     
-    await db.schema.createTable('workflow_approvals', function(table) {
-      table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
-      table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
-      table.uuid('step_execution_id').references('id').inTable('workflow_step_executions').onDelete('CASCADE');
-      table.uuid('approver_id').references('id').inTable('users');
-      table.string('status', 30).defaultTo('pending'); // 'pending', 'approved', 'rejected'
-      table.timestamp('decision_date');
-      table.text('comments');
-      table.timestamps(true, true);
-    }).onConflict().ignore();
+    if (!(await db.schema.hasTable('workflow_approvals'))) {
+      await db.schema.createTable('workflow_approvals', function(table) {
+        table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
+        table.uuid('workflow_instance_id').references('id').inTable('workflow_instances').onDelete('CASCADE');
+        table.uuid('step_execution_id').references('id').inTable('workflow_step_executions').onDelete('CASCADE');
+        table.uuid('approver_id').references('id').inTable('users');
+        table.string('status', 30).defaultTo('pending'); // 'pending', 'approved', 'rejected'
+        table.timestamp('decision_date');
+        table.text('comments');
+        table.timestamps(true, true);
+      });
+    }
 
   } catch (error) {
     console.error('Error creating workflow tables:', error.message);

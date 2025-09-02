@@ -23,6 +23,7 @@ const createRoleSchema = Joi.object({
   description: Joi.string().min(5).max(500),
   code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
   category: Joi.string().min(2).max(30),
+  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).default('#6B7280'),
   is_system: Joi.boolean().default(false),
   is_active: Joi.boolean().default(true),
   permissions: Joi.array().items(Joi.string().uuid())
@@ -33,6 +34,7 @@ const updateRoleSchema = Joi.object({
   description: Joi.string().min(5).max(500),
   code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
   category: Joi.string().min(2).max(30),
+  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/),
   is_active: Joi.boolean(),
   permissions: Joi.array().items(Joi.string().uuid())
 });

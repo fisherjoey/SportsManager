@@ -1,13 +1,10 @@
 exports.seed = async function(knex) {
-  // Get the referee level IDs
-  const levels = await knex('referee_levels').select('id', 'name');
-  const rookieLevel = levels.find(l => l.name === 'Rookie');
-  const juniorLevel = levels.find(l => l.name === 'Junior');
-  const seniorLevel = levels.find(l => l.name === 'Senior');
-
-  if (!rookieLevel || !juniorLevel || !seniorLevel) {
-    throw new Error('Required referee levels (Rookie, Junior, Senior) not found in database');
-  }
+  // Define referee levels for categorization
+  const REFEREE_LEVELS = {
+    ROOKIE: 'Rookie',
+    JUNIOR: 'Junior', 
+    SENIOR: 'Senior'
+  };
 
   const bcrypt = require('bcryptjs');
   const saltRounds = 12;
@@ -21,7 +18,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0101',
       postal_code: 'T2N 1N4',
       max_distance: 15,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -36,7 +33,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0102',
       postal_code: 'T2A 2B3',
       max_distance: 20,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -51,7 +48,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0103',
       postal_code: 'T2S 2K5',
       max_distance: 25,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -66,7 +63,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0104',
       postal_code: 'T2W 3M7',
       max_distance: 30,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -81,7 +78,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0105',
       postal_code: 'T3A 4R2',
       max_distance: 35,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -98,7 +95,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0106',
       postal_code: 'T2E 5P8',
       max_distance: 25,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -113,7 +110,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0107',
       postal_code: 'T2C 1A9',
       max_distance: 20,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -128,7 +125,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0108',
       postal_code: 'T2J 3K4',
       max_distance: 40,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -143,7 +140,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0109',
       postal_code: 'T2H 2L6',
       max_distance: 30,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -158,7 +155,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0110',
       postal_code: 'T3B 5N2',
       max_distance: 25,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -175,7 +172,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0111',
       postal_code: 'T2K 4B8',
       max_distance: 50,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee', 'Mentor'],
       is_white_whistle: false,
       is_available: true,
@@ -190,7 +187,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0112',
       postal_code: 'T2G 6C9',
       max_distance: 45,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee', 'Evaluator'],
       is_white_whistle: false,
       is_available: true,
@@ -205,7 +202,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0113', 
       postal_code: 'T2L 3D5',
       max_distance: 40,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee', 'Mentor', 'Evaluator'],
       is_white_whistle: false,
       is_available: true,
@@ -220,7 +217,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0114',
       postal_code: 'T2M 7E1',
       max_distance: 35,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee', 'Mentor'],
       is_white_whistle: false,
       is_available: true,
@@ -235,7 +232,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0115',
       postal_code: 'T3K 8F3',
       max_distance: 60,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee', 'Evaluator'],
       is_white_whistle: false,
       is_available: true,
@@ -252,7 +249,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0116',
       postal_code: 'T2P 9G4',
       max_distance: 15,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: false, // Currently unavailable
@@ -267,7 +264,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0117',
       postal_code: 'T2R 1H6',
       max_distance: 50,
-      level_id: seniorLevel.id,
+      level: REFEREE_LEVELS.SENIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -282,7 +279,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0118',
       postal_code: 'T2T 2J8',
       max_distance: 20,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -297,7 +294,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0119',
       postal_code: 'T2X 5K9',
       max_distance: 30,
-      level_id: juniorLevel.id,
+      level: REFEREE_LEVELS.JUNIOR,
       roles: ['Referee'],
       is_white_whistle: false,
       is_available: true,
@@ -312,7 +309,7 @@ exports.seed = async function(knex) {
       phone: '+1 (403) 555-0120',
       postal_code: 'T3M 3L7',
       max_distance: 25,
-      level_id: rookieLevel.id,
+      level: REFEREE_LEVELS.ROOKIE,
       roles: ['Referee'],
       is_white_whistle: true,
       is_available: true,
@@ -323,6 +320,13 @@ exports.seed = async function(knex) {
     }
   ];
 
+  // Get role IDs for assignment (referee type roles)
+  const ROLE_IDS = {
+    'Senior Referee': 'fb8520e8-7b59-47b8-b5b4-5cc4affc5ee3',
+    'Rookie Referee': 'c3b5ef05-329d-4ac1-968a-1015cece975e',
+    'Junior Referee': '1f3c989f-4bf6-44a8-9467-f3e7a51526fc'
+  };
+
   // Insert all enhanced referee users
   for (const referee of enhancedReferees) {
     try {
@@ -331,43 +335,89 @@ exports.seed = async function(knex) {
       
       let userId;
       if (existingUser) {
-        // Update existing user with enhanced data
+        // Update existing user with basic data only
         await knex('users').where('id', existingUser.id).update({
           name: referee.name,
           phone: referee.phone,
+          location: `${referee.quadrant}, Calgary, AB`,
           postal_code: referee.postal_code,
           max_distance: referee.max_distance,
-          referee_level_id: referee.level_id,
-          roles: referee.roles,
-          is_white_whistle: referee.is_white_whistle,
-          is_available: referee.is_available,
-          years_experience: referee.years_experience,
-          wage_per_game: referee.wage_per_game,
-          notes: referee.notes
+          is_available: referee.is_available
         });
         userId = existingUser.id;
-        console.log(`Updated existing referee: ${referee.name}`);
+        console.log(`Updated existing user: ${referee.name}`);
+
+        // Ensure appropriate referee type role is assigned
+        const refereeTypeRole = `${referee.level} Referee`;
+        
+        // First, remove any existing referee_type roles to avoid constraint violation
+        await knex('user_roles')
+          .whereIn('role_id', function() {
+            this.select('id').from('roles').where('category', 'referee_type');
+          })
+          .where('user_id', userId)
+          .del();
+          
+        // Now assign the correct referee type role
+        await knex('user_roles').insert({
+          user_id: userId,
+          role_id: ROLE_IDS[refereeTypeRole],
+          assigned_at: new Date(),
+          assigned_by: userId
+        });
+        console.log(`  Assigned ${refereeTypeRole} role to existing user ${referee.name}`);
       } else {
         // Create new user
         const [newUser] = await knex('users').insert({
           email: referee.email,
           password_hash: await bcrypt.hash('password', saltRounds),
-          role: 'referee',
           name: referee.name,
           phone: referee.phone,
+          location: `${referee.quadrant}, Calgary, AB`,
           postal_code: referee.postal_code,
           max_distance: referee.max_distance,
-          referee_level_id: referee.level_id,
-          roles: referee.roles,
-          is_white_whistle: referee.is_white_whistle,
-          is_available: referee.is_available,
-          years_experience: referee.years_experience,
-          wage_per_game: referee.wage_per_game,
-          notes: referee.notes
+          is_available: referee.is_available
         }).returning('*');
         userId = newUser.id;
-        console.log(`Created new referee: ${referee.name}`);
+        console.log(`Created new user: ${referee.name}`);
+
+        // Assign appropriate referee type role
+        const refereeTypeRole = `${referee.level} Referee`;
+        await knex('user_roles').insert({
+          user_id: userId,
+          role_id: ROLE_IDS[refereeTypeRole],
+          assigned_at: new Date(),
+          assigned_by: userId
+        });
+        console.log(`  Assigned ${refereeTypeRole} role to ${referee.name}`);
       }
+
+      // Create or update referee profile
+      const existingProfile = await knex('referee_profiles').where('user_id', userId).first();
+      
+      const profileData = {
+        user_id: userId,
+        wage_amount: referee.wage_per_game,
+        wage_currency: 'CAD',
+        payment_method: 'direct_deposit',
+        years_experience: referee.years_experience,
+        evaluation_score: referee.years_experience >= 8 ? 9.0 : referee.years_experience >= 3 ? 8.5 : 7.5,
+        certification_level: referee.level,
+        is_white_whistle: referee.level === REFEREE_LEVELS.JUNIOR && referee.is_white_whistle,
+        max_weekly_games: 10,
+        preferred_positions: JSON.stringify(referee.roles),
+        notes: referee.notes,
+        is_active: referee.is_available
+      };
+
+      if (existingProfile) {
+        await knex('referee_profiles').where('user_id', userId).update(profileData);
+        console.log(`  Updated referee profile for ${referee.name}`);
+      } else {
+        await knex('referee_profiles').insert(profileData);
+        console.log(`  Created referee profile for ${referee.name}`);
+      }
+
     } catch (error) {
       console.error(`Error processing referee ${referee.name}:`, error.message);
     }
@@ -375,9 +425,9 @@ exports.seed = async function(knex) {
 
   console.log(`\n✅ Enhanced referee seed data completed!`);
   console.log(`📊 Summary:`);
-  console.log(`   - ${enhancedReferees.filter(r => r.level_id === rookieLevel.id).length} Rookie level referees`);
-  console.log(`   - ${enhancedReferees.filter(r => r.level_id === juniorLevel.id).length} Junior level referees`);
-  console.log(`   - ${enhancedReferees.filter(r => r.level_id === seniorLevel.id).length} Senior level referees`);
+  console.log(`   - ${enhancedReferees.filter(r => r.level === REFEREE_LEVELS.ROOKIE).length} Rookie level referees`);
+  console.log(`   - ${enhancedReferees.filter(r => r.level === REFEREE_LEVELS.JUNIOR).length} Junior level referees`);
+  console.log(`   - ${enhancedReferees.filter(r => r.level === REFEREE_LEVELS.SENIOR).length} Senior level referees`);
   console.log(`   - ${enhancedReferees.filter(r => r.is_white_whistle).length} referees with white whistle status`);
   console.log(`   - ${enhancedReferees.filter(r => r.roles.includes('Mentor')).length} mentors available`);
   console.log(`   - ${enhancedReferees.filter(r => r.roles.includes('Evaluator')).length} evaluators available`);

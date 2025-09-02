@@ -35,21 +35,23 @@ import {
   Star,
   Award
 } from 'lucide-react'
+import { getYearsOfExperience } from '@/types/user'
 import { EditableWage } from '@/components/admin/referees/EditableWage'
 import { RefereeTypeManager } from '@/components/admin/referees/RefereeTypeManager'
+import { ScrollableRoleTabs } from '@/components/ui/scrollable-role-tabs'
 
 interface Role {
   id: string
   name: string
   description?: string
   category?: string
+  color?: string
   referee_config?: any
 }
 
 interface RefereeProfile {
   id: string
   wage_amount: number
-  years_experience: number
   evaluation_score?: number
   is_white_whistle: boolean
   show_white_whistle: boolean
@@ -75,6 +77,7 @@ interface User {
   is_active?: boolean  // Might not exist, treat as active if undefined
   is_referee?: boolean  // Enhanced field
   referee_profile?: RefereeProfile | null  // Enhanced field
+  year_started_refereeing?: number
   created_at: string
   updated_at?: string
 }
@@ -237,19 +240,10 @@ export function UserTable({
               </TableCell>
               <TableCell>
                 {user.roles && user.roles.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {user.roles.map(role => (
-                      <Badge key={role.id} variant={getRoleBadgeVariant(role)} className="flex items-center gap-1">
-                        {getRoleIcon(role)}
-                        {role.name}
-                        {/* White whistle indicator for referees */}
-                        {user.is_referee && user.referee_profile?.show_white_whistle && 
-                         role.category === 'referee_type' && (
-                          <Whistle className="h-3 w-3 ml-1" />
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
+                  <ScrollableRoleTabs 
+                    roles={user.roles} 
+                    className="max-w-xs"
+                  />
                 ) : (
                   <Badge variant="secondary">
                     <span className="flex items-center">
@@ -277,12 +271,19 @@ export function UserTable({
 
               {showRefereeColumns && (
                 <TableCell>
-                  {user.is_referee && user.referee_profile ? (
+                  {user.is_referee ? (
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {user.referee_profile.years_experience} years
-                      </span>
-                      {user.referee_profile.evaluation_score && (
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {getYearsOfExperience(user)} {getYearsOfExperience(user) === 1 ? 'year' : 'years'}
+                        </div>
+                        {user.year_started_refereeing && (
+                          <div className="text-xs text-muted-foreground">
+                            Since {user.year_started_refereeing}
+                          </div>
+                        )}
+                      </div>
+                      {user.referee_profile?.evaluation_score && (
                         <Badge variant="outline" className="text-xs">
                           {user.referee_profile.evaluation_score}%
                         </Badge>

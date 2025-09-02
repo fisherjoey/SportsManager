@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 // PUT /api/referee-levels/:refereeId/assign - Assign referee to a level (admin only)
 router.put('/:refereeId/assign', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
-    const { referee_level_id, years_experience, evaluation_score, notes } = req.body;
+    const { referee_level_id, year_started_refereeing, evaluation_score, notes } = req.body;
     
     // Validate referee level exists
     const level = await db('referee_levels').where('id', referee_level_id).first();
@@ -41,7 +41,7 @@ router.put('/:refereeId/assign', authenticateToken, requireRole('admin'), async 
       .update({
         referee_level_id,
         wage_per_game: level.wage_amount,
-        years_experience: years_experience || 0,
+        year_started_refereeing: year_started_refereeing,
         evaluation_score,
         notes,
         updated_at: new Date()

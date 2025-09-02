@@ -36,7 +36,7 @@ const registerSchema = Joi.object({
   }),
   max_distance: Joi.number().integer().min(1).max(200).default(25),
   referee_level_id: Joi.string().uuid().optional(),
-  years_experience: Joi.number().integer().min(0).max(50).optional(),
+  year_started_refereeing: Joi.number().integer().min(1970).max(new Date().getFullYear()).optional(),
   notes: Joi.string().optional()
 });
 
@@ -150,7 +150,7 @@ router.post('/login', authLimiter, sanitizeAll, asyncHandler(async (req, res) =>
     is_available: user.is_available,
     wage_per_game: user.wage_per_game,
     referee_level_id: user.referee_level_id,
-    years_experience: user.years_experience,
+    year_started_refereeing: user.year_started_refereeing,
     games_refereed_season: user.games_refereed_season,
     evaluation_score: user.evaluation_score,
     notes: user.notes,
@@ -198,7 +198,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
     postal_code, 
     max_distance,
     referee_level_id,
-    years_experience,
+    year_started_refereeing,
     notes
   } = value;
 
@@ -230,7 +230,7 @@ router.post('/register', registrationLimiter, sanitizeAll, asyncHandler(async (r
       userData.postal_code = postal_code;
       userData.max_distance = max_distance || 25;
       userData.referee_level_id = referee_level_id;
-      userData.years_experience = years_experience;
+      userData.year_started_refereeing = year_started_refereeing;
       userData.notes = notes;
       userData.is_available = true; // Default to available
       userData.games_refereed_season = 0; // Default to 0
@@ -386,7 +386,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       is_available: user.is_available,
       wage_per_game: user.wage_per_game,
       referee_level_id: user.referee_level_id,
-      years_experience: user.years_experience,
+      year_started_refereeing: user.year_started_refereeing,
       games_refereed_season: user.games_refereed_season,
       evaluation_score: user.evaluation_score,
       notes: user.notes,

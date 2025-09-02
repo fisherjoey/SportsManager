@@ -253,6 +253,41 @@ class Logger {
       assignmentFailures: 0
     };
   }
+
+  /**
+   * Standard info method (alias for logInfo)
+   */
+  info(message, context = {}) {
+    this.logInfo(message, context);
+  }
+
+  /**
+   * Standard error method (alias for logError)
+   */
+  error(message, context = {}, error = null) {
+    this.logError(message, context, error);
+  }
+
+  /**
+   * Standard warn method (alias for logWarning)
+   */
+  warn(message, context = {}) {
+    this.logWarning(message, context);
+  }
+
+  /**
+   * Standard debug method (alias for logDebug)
+   */
+  debug(message, context = {}) {
+    this.logDebug(message, context);
+  }
+
+  /**
+   * Success logging (using info level with success indicator)
+   */
+  success(message, context = {}) {
+    this.logInfo(message, { ...context, level: 'success' });
+  }
 }
 
 // Export singleton instance

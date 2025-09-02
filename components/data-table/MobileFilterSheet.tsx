@@ -97,16 +97,31 @@ export function MobileFilterSheet<TData>({
   const statusColumn = hasStatusColumn ? table.getColumn('status') : 
     hasIsAvailableColumn ? table.getColumn('isAvailable') : null
   const isRefereeTable = hasIsAvailableColumn
-  const statusFacets = statusColumn?.getFacetedUniqueValues()
+  
+  // Safely get faceted values with error handling
+  const statusFacets = React.useMemo(() => {
+    try {
+      return statusColumn?.getFacetedUniqueValues()
+    } catch (error) {
+      console.warn('Error getting faceted values for status column:', error)
+      return new Map()
+    }
+  }, [statusColumn])
+  
   const statusOptions = React.useMemo(() => {
-    return Array.from(statusFacets?.entries() || [])
-      .filter(([value]) => value != null && value !== undefined)
-      .sort(([a], [b]) => String(a).localeCompare(String(b)))
-      .map(([value, count], index) => ({
-        label: `${value} (${count})`,
-        value: String(value),
-        id: `status-${String(value)}-${index}`
-      }))
+    try {
+      return Array.from(statusFacets?.entries() || [])
+        .filter(([value]) => value != null && value !== undefined)
+        .sort(([a], [b]) => String(a).localeCompare(String(b)))
+        .map(([value, count], index) => ({
+          label: `${value} (${count})`,
+          value: String(value),
+          id: `status-${String(value)}-${index}`
+        }))
+    } catch (error) {
+      console.warn('Error processing status options:', error)
+      return []
+    }
   }, [statusFacets])
 
   return (

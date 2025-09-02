@@ -23,6 +23,7 @@ interface RoleEditorProps {
     id: string
     name: string
     description: string
+    color?: string
     is_active: boolean
   } | null
   open: boolean
@@ -35,6 +36,7 @@ export function RoleEditor({ role, open, onClose, onSuccess }: RoleEditorProps) 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    color: '#6B7280',
     is_active: true
   })
   const { toast } = useToast()
@@ -44,12 +46,14 @@ export function RoleEditor({ role, open, onClose, onSuccess }: RoleEditorProps) 
       setFormData({
         name: role.name,
         description: role.description || '',
+        color: role.color || '#6B7280',
         is_active: role.is_active
       })
     } else {
       setFormData({
         name: '',
         description: '',
+        color: '#6B7280',
         is_active: true
       })
     }
@@ -176,6 +180,36 @@ export function RoleEditor({ role, open, onClose, onSuccess }: RoleEditorProps) 
                   Adding a description helps other administrators understand this role's purpose
                 </p>
               )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="color">Role Color</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  id="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="h-10 w-20 rounded border border-input bg-background cursor-pointer disabled:cursor-not-allowed"
+                  disabled={loading}
+                />
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="h-6 w-6 rounded-full border border-border" 
+                    style={{ backgroundColor: formData.color }}
+                  />
+                  <Input
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    placeholder="#6B7280"
+                    className="w-24 font-mono text-sm"
+                    disabled={loading}
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This color will be used for role badges in user lists
+              </p>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="active">Active Status</Label>
