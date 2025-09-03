@@ -4,6 +4,7 @@
  * JWT tokens, and security-related functionality in the Sports Manager application.
  */
 
+import { Request } from 'express';
 import { UUID, Timestamp, UserRole } from './index';
 import { User, RoleEntity } from './database.types';
 
@@ -324,7 +325,13 @@ export interface PermissionGuardOptions {
 }
 
 // Request context extensions (for Express middleware)
-export interface AuthenticatedRequest {
+export interface AuthenticatedRequest<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any,
+  Locals extends Record<string, any> = Record<string, any>
+> extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
   user?: AuthenticatedUser;
   session?: UserSession;
   permissions?: string[];
