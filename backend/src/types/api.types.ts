@@ -56,20 +56,47 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: UserProfile;
   token: string;
-  refreshToken?: string;
-  expiresIn: number;
+  user: {
+    id: UUID;
+    email: string;
+    roles: string[];
+    permissions: Array<{
+      id: UUID;
+      name: string;
+      resource: string;
+      action: string;
+      code?: string;
+    }>;
+    name?: string;
+    phone?: string;
+    location?: string;
+    postal_code?: string;
+    max_distance?: number;
+    is_available?: boolean;
+    wage_per_game?: number;
+    referee_level_id?: UUID;
+    year_started_refereeing?: number;
+    games_refereed_season?: number;
+    evaluation_score?: number;
+    notes?: string;
+    created_at: Timestamp;
+    updated_at: Timestamp;
+  };
 }
 
 export interface RegisterRequest {
-  name: string;
   email: string;
   password: string;
-  role?: UserRole;
+  role: 'admin' | 'referee';
+  name?: string; // Required for referees
   phone?: string;
-  postal_code?: string;
+  location?: string;
+  postal_code?: string; // Required for referees
   max_distance?: number;
+  referee_level_id?: UUID;
+  year_started_refereeing?: number;
+  notes?: string;
 }
 
 export interface PasswordResetRequest {
@@ -84,6 +111,51 @@ export interface PasswordResetConfirmRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
+}
+
+// Profile endpoint response
+export interface ProfileResponse {
+  user: {
+    id: UUID;
+    email: string;
+    roles: string[];
+    permissions: Array<{
+      id: UUID;
+      name: string;
+      resource: string;
+      action: string;
+      code?: string;
+    }>;
+    name?: string;
+    phone?: string;
+    location?: string;
+    postal_code?: string;
+    max_distance?: number;
+    is_available?: boolean;
+    wage_per_game?: number;
+    referee_level_id?: UUID;
+    year_started_refereeing?: number;
+    games_refereed_season?: number;
+    evaluation_score?: number;
+    notes?: string;
+    created_at: Timestamp;
+    updated_at: Timestamp;
+  };
+}
+
+// Permissions refresh response
+export interface RefreshPermissionsResponse {
+  success: boolean;
+  data: {
+    permissions: Array<{
+      id: UUID;
+      name: string;
+      resource: string;
+      action: string;
+      code?: string;
+    }>;
+  };
+  message: string;
 }
 
 // User API types
