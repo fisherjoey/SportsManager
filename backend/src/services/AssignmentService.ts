@@ -1,24 +1,163 @@
 /**
- * AssignmentService - Assignment operations service (TypeScript Compatibility Bridge)
+ * AssignmentService - Assignment operations service
  * 
- * This file provides backward compatibility during the JavaScript to TypeScript migration.
- * The actual TypeScript implementation is in AssignmentService.ts
- * 
- * TODO: This file can be removed once the build system supports importing TypeScript files
- * and all calling code has been migrated to TypeScript.
+ * This service extends BaseService to provide specialized assignment management
+ * operations, including conflict checking, bulk operations, and game status updates.
+ * It integrates with the conflict detection service and wage calculation utilities.
  */
 
-const BaseService = require('./BaseService');
+import { BaseService, QueryOptions } from './BaseService';
+import { 
+  Database, 
+  UUID, 
+  Timestamp, 
+  AssignmentEntity, 
+  AssignmentStatus,
+  GameEntity,
+  User,
+  PositionEntity,
+  PaginatedResult
+} from '../types';
+
+// Import utility functions (will need typing later)
 const { checkAssignmentConflicts } = require('./conflictDetectionService');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { getOrganizationSettings } = require('../utils/organization-settings');
 
-/**
- * JavaScript implementation that mirrors the TypeScript version
- * This ensures compatibility during the migration period
- */
-class AssignmentService extends BaseService {
-  constructor(db) {
+// Extended types for AssignmentService specific operations
+export interface AssignmentWithDetails extends AssignmentEntity {
+  game_date: string;
+  game_time: string;
+  location: string;
+  level: string;
+  pay_rate: number;
+  wage_multiplier: number;
+  wage_multiplier_reason?: string;
+  home_team_name: string;
+  away_team_name: string;
+  referee_name: string;
+  referee_email: string;
+  position_name: string;
+  referee_level?: string;
+}
+
+export interface AssignmentCreationData {
+  game_id: UUID;
+  user_id: UUID;
+  position_id: UUID;
+  assigned_by?: UUID;
+}
+
+export interface AssignmentCreationResult {
+  assignment: AssignmentEntity;
+  wageBreakdown: WageBreakdown;
+  warnings: string[];
+}
+
+export interface WageBreakdown {
+  baseWage: number;
+  multiplier: number;
+  multiplierReason: string;
+  finalWage: number;
+  isMultiplied: boolean;
+  calculation: string;
+  paymentModel: 'INDIVIDUAL' | 'FLAT_RATE';
+  assignedRefereesCount?: number;
+}
+
+export interface BulkUpdateData {
+  assignment_id: UUID;
+  status: AssignmentStatus;
+  calculated_wage?: number;
+}
+
+export interface BulkUpdateResult {
+  updatedAssignments: AssignmentEntity[];
+  updateErrors: Array<{
+    assignmentId: UUID;
+    error: string;
+  }>;
+  summary: {
+    totalSubmitted: number;
+    successfulUpdates: number;
+    failedUpdates: number;
+  };
+}
+
+export interface BulkRemovalResult {
+  deletedCount: number;
+  affectedGames: number;
+  summary: {
+    totalRequested: number;
+    successfullyDeleted: number;
+    notFound: number;
+  };
+  warnings: string[];
+}
+
+export interface AvailableReferee extends User {
+  level_name?: string;
+  allowed_divisions?: string;
+  availability_status: 'available' | 'conflict' | 'error';
+  conflicts: ConflictDetails[];
+  warnings: string[];
+  is_qualified: boolean;
+  can_assign: boolean;
+}
+
+export interface ConflictDetails {
+  type: string;
+  gameId?: UUID;
+  gameTime?: string;
+  teams?: string;
+  location?: string;
+  message: string;
+}
+
+export interface ConflictAnalysis {
+  hasConflicts: boolean;
+  conflicts?: ConflictDetails[];
+  warnings?: string[];
+  errors?: string[];
+  isQualified?: boolean;
+}
+
+export interface AvailableRefereesResult {
+  game: {
+    id: UUID;
+    date: string;
+    time: string;
+    location: string;
+    level: string;
+  };
+  referees: AvailableReferee[];
+  summary: {
+    total: number;
+    available: number;
+    conflicts: number;
+    errors: number;
+  };
+}
+
+export interface AssignmentFilters {
+  game_id?: UUID;
+  user_id?: UUID;
+  status?: AssignmentStatus;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface OrganizationSettings {
+  id: UUID;
+  organization_name: string;
+  payment_model: 'INDIVIDUAL' | 'FLAT_RATE';
+  default_game_rate?: number;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export class AssignmentService extends BaseService<AssignmentEntity> {
+  constructor(db: Database) {
     super('game_assignments', db, {
       defaultOrderBy: 'created_at',
       defaultOrderDirection: 'desc',
@@ -28,12 +167,9 @@ class AssignmentService extends BaseService {
 
   /**
    * Create a new assignment with comprehensive conflict checking
-   * @param {Object} assignmentData - Assignment data
-   * @param {Object} options - Creation options
-   * @returns {Object} Created assignment with wage breakdown
    */
-  async createAssignment(assignmentData, options = {}) {
-    return await this.withTransaction(async (trx) => {
+  async createAssignment(assignmentData: AssignmentCreationData, options: QueryOptions = {}): Promise<AssignmentCreationResult> {
+    return await this.withTransaction(async (trx: Database.Transaction) => {
       try {
         const { game_id, user_id, position_id, assigned_by } = assignmentData;
 
@@ -49,7 +185,7 @@ class AssignmentService extends BaseService {
         }
 
         // Check if referee exists and is available
-        const referee = await trx('users')
+        const referee = await (trx as any)('users')
           .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
           .select(
             'users.*',
@@ -65,13 +201,13 @@ class AssignmentService extends BaseService {
         }
 
         // Check if position exists
-        const position = await trx('positions').where('id', position_id).first();
+        const position = await (trx as any)('positions').where('id', position_id).first();
         if (!position) {
           throw new Error('Position not found');
         }
 
         // Check for existing assignments
-        const existingPositionAssignment = await trx('game_assignments')
+        const existingPositionAssignment = await (trx as any)('game_assignments')
           .where('game_id', game_id)
           .where('position_id', position_id)
           .whereIn('status', ['pending', 'accepted'])
@@ -81,7 +217,7 @@ class AssignmentService extends BaseService {
           throw new Error('Position already filled for this game');
         }
 
-        const existingRefereeAssignment = await trx('game_assignments')
+        const existingRefereeAssignment = await (trx as any)('game_assignments')
           .where('game_id', game_id)
           .where('user_id', user_id)
           .whereIn('status', ['pending', 'accepted'])
@@ -92,26 +228,26 @@ class AssignmentService extends BaseService {
         }
 
         // Check if game has reached maximum referees
-        const currentAssignments = await trx('game_assignments')
+        const currentAssignments = await (trx as any)('game_assignments')
           .where('game_id', game_id)
           .whereIn('status', ['pending', 'accepted'])
           .count('* as count')
           .first();
 
-        if (parseInt(currentAssignments.count) >= game.refs_needed) {
+        if (parseInt((currentAssignments as any).count) >= game.refs_needed) {
           throw new Error('Game has reached maximum number of referees');
         }
 
         // Run comprehensive conflict detection
-        const conflictAnalysis = await checkAssignmentConflicts(assignmentData);
+        const conflictAnalysis: ConflictAnalysis = await checkAssignmentConflicts(assignmentData);
 
         if (conflictAnalysis.hasConflicts) {
-          throw new Error(`Assignment conflicts detected: ${conflictAnalysis.errors.join(', ')}`);
+          throw new Error(`Assignment conflicts detected: ${conflictAnalysis.errors?.join(', ')}`);
         }
 
         // Get organization settings for wage calculation
-        const orgSettings = await getOrganizationSettings();
-        const assignedRefereesCount = parseInt(currentAssignments.count) + 1;
+        const orgSettings: OrganizationSettings = await getOrganizationSettings();
+        const assignedRefereesCount = parseInt((currentAssignments as any).count) + 1;
 
         // Calculate final wage
         const finalWage = calculateFinalWage(
@@ -123,19 +259,19 @@ class AssignmentService extends BaseService {
         );
 
         // Create assignment
-        const assignmentRecord = {
+        const assignmentRecord: Partial<AssignmentEntity> = {
           game_id,
           user_id,
           position_id,
           assigned_by,
-          status: 'pending',
+          status: AssignmentStatus.PENDING,
           calculated_wage: finalWage
         };
 
         const assignment = await this.create(assignmentRecord, { transaction: trx });
 
         // Get wage breakdown for response
-        const wageBreakdown = getWageBreakdown(
+        const wageBreakdown: WageBreakdown = getWageBreakdown(
           referee.wage_per_game || game.pay_rate,
           game.wage_multiplier || 1.0,
           game.wage_multiplier_reason || '',
@@ -162,11 +298,8 @@ class AssignmentService extends BaseService {
 
   /**
    * Bulk update assignment statuses with game status updates
-   * @param {Array} updates - Array of update objects
-   * @param {Object} options - Update options
-   * @returns {Object} Update results
    */
-  async bulkUpdateAssignments(updates, options = {}) {
+  async bulkUpdateAssignments(updates: BulkUpdateData[], options: QueryOptions = {}): Promise<BulkUpdateResult> {
     if (!Array.isArray(updates) || updates.length === 0) {
       throw new Error('Updates array is required and cannot be empty');
     }
@@ -175,8 +308,8 @@ class AssignmentService extends BaseService {
       throw new Error('Maximum 100 assignments can be updated at once');
     }
 
-    return await this.withTransaction(async (trx) => {
-      const results = {
+    return await this.withTransaction(async (trx: Database.Transaction) => {
+      const results: BulkUpdateResult = {
         updatedAssignments: [],
         updateErrors: [],
         summary: {
@@ -186,7 +319,7 @@ class AssignmentService extends BaseService {
         }
       };
 
-      const affectedGameIds = new Set();
+      const affectedGameIds = new Set<UUID>();
 
       for (const updateData of updates) {
         try {
@@ -211,7 +344,7 @@ class AssignmentService extends BaseService {
           }
 
           // Check if assignment exists
-          const existingAssignment = await trx('game_assignments')
+          const existingAssignment = await (trx as any)('game_assignments')
             .where('id', assignment_id)
             .first();
 
@@ -224,7 +357,7 @@ class AssignmentService extends BaseService {
           }
 
           // Prepare update data
-          const updateFields = {
+          const updateFields: Partial<AssignmentEntity> = {
             status,
             updated_at: new Date()
           };
@@ -250,7 +383,7 @@ class AssignmentService extends BaseService {
           console.error(`Error updating assignment ${updateData.assignment_id}:`, error);
           results.updateErrors.push({
             assignmentId: updateData.assignment_id,
-            error: error.message
+            error: (error as Error).message
           });
           results.summary.failedUpdates++;
         }
@@ -276,29 +409,26 @@ class AssignmentService extends BaseService {
 
   /**
    * Update game status based on current assignment count
-   * @param {string} gameId - Game ID
-   * @param {Object} options - Update options
-   * @returns {Object} Updated game status
    */
-  async updateGameStatus(gameId, options = {}) {
+  async updateGameStatus(gameId: UUID, options: QueryOptions = {}): Promise<GameEntity> {
     const trx = options.transaction || this.db;
     return await this._updateGameStatus(gameId, trx);
   }
 
   /**
    * Get assignments with enhanced data (game, referee, position details)
-   * @param {Object} filters - Query filters 
-   * @param {number} page - Page number
-   * @param {number} limit - Records per page
-   * @param {Object} options - Query options
-   * @returns {Object} Paginated assignment results
    */
-  async getAssignmentsWithDetails(filters = {}, page = 1, limit = 50, options = {}) {
+  async getAssignmentsWithDetails(
+    filters: AssignmentFilters = {}, 
+    page: number = 1, 
+    limit: number = 50, 
+    options: QueryOptions = {}
+  ): Promise<PaginatedResult<AssignmentWithDetails>> {
     try {
       const offset = (page - 1) * limit;
 
       // Build query with all necessary joins
-      let query = this.db('game_assignments')
+      let query = (this.db as any)('game_assignments')
         .join('games', 'game_assignments.game_id', 'games.id')
         .join('users', 'game_assignments.user_id', 'users.id')
         .join('positions', 'game_assignments.position_id', 'positions.id')
@@ -353,14 +483,14 @@ class AssignmentService extends BaseService {
         countQuery
       ]);
 
-      const total = parseInt(countResult.total);
+      const total = parseInt((countResult as any).total);
       const totalPages = Math.ceil(total / limit);
 
       return {
-        data: assignments,
+        data: assignments as AssignmentWithDetails[],
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: parseInt(page.toString()),
+          limit: parseInt(limit.toString()),
           total,
           totalPages,
           hasNext: page < totalPages,
@@ -370,17 +500,14 @@ class AssignmentService extends BaseService {
 
     } catch (error) {
       console.error('Error getting assignments with details:', error);
-      throw new Error(`Failed to get assignments: ${error.message}`);
+      throw new Error(`Failed to get assignments: ${(error as Error).message}`);
     }
   }
 
   /**
    * Bulk remove assignments with game status updates
-   * @param {Array} assignmentIds - Array of assignment IDs
-   * @param {Object} options - Removal options
-   * @returns {Object} Removal results
    */
-  async bulkRemoveAssignments(assignmentIds, options = {}) {
+  async bulkRemoveAssignments(assignmentIds: UUID[], options: QueryOptions = {}): Promise<BulkRemovalResult> {
     if (!Array.isArray(assignmentIds) || assignmentIds.length === 0) {
       throw new Error('Assignment IDs array is required and cannot be empty');
     }
@@ -389,10 +516,10 @@ class AssignmentService extends BaseService {
       throw new Error('Maximum 100 assignments can be removed at once');
     }
 
-    return await this.withTransaction(async (trx) => {
+    return await this.withTransaction(async (trx: Database.Transaction) => {
       try {
         // Get assignments before deletion for game status updates
-        const assignmentsToDelete = await trx('game_assignments')
+        const assignmentsToDelete = await (trx as any)('game_assignments')
           .whereIn('id', assignmentIds)
           .select('id', 'game_id');
 
@@ -410,16 +537,16 @@ class AssignmentService extends BaseService {
         }
 
         // Get unique game IDs for status updates
-        const gameIds = [...new Set(assignmentsToDelete.map(a => a.game_id))];
+        const gameIds = [...new Set(assignmentsToDelete.map((a: any) => a.game_id as UUID))];
 
         // Delete assignments
-        const deletedCount = await trx('game_assignments')
+        const deletedCount = await (trx as any)('game_assignments')
           .whereIn('id', assignmentIds)
           .del();
 
         // Update game statuses for affected games
         for (const gameId of gameIds) {
-          await this._updateGameStatus(gameId, trx);
+          await this._updateGameStatus(gameId as UUID, trx);
         }
 
         const notFoundIds = assignmentIds.filter(id => 
@@ -446,11 +573,8 @@ class AssignmentService extends BaseService {
 
   /**
    * Get available referees for a specific game with conflict checking
-   * @param {string} gameId - Game ID
-   * @param {Object} options - Query options
-   * @returns {Array} Available referees with availability analysis
    */
-  async getAvailableRefereesForGame(gameId, options = {}) {
+  async getAvailableRefereesForGame(gameId: UUID, options: QueryOptions = {}): Promise<AvailableRefereesResult> {
     try {
       const game = await this.db('games').where('id', gameId).first();
       if (!game) {
@@ -458,7 +582,7 @@ class AssignmentService extends BaseService {
       }
 
       // Get potential referees
-      const potentialReferees = await this.db('users')
+      const potentialReferees = await (this.db as any)('users')
         .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
         .select(
           'users.*',
@@ -479,7 +603,7 @@ class AssignmentService extends BaseService {
         });
 
       // Analyze each referee for conflicts and qualifications
-      const analyzedReferees = [];
+      const analyzedReferees: AvailableReferee[] = [];
       
       for (const referee of potentialReferees) {
         try {
@@ -489,7 +613,7 @@ class AssignmentService extends BaseService {
             position_id: 'dummy' // We're just checking conflicts, not assigning
           };
 
-          const conflictAnalysis = await checkAssignmentConflicts(assignmentData);
+          const conflictAnalysis: ConflictAnalysis = await checkAssignmentConflicts(assignmentData);
 
           analyzedReferees.push({
             ...referee,
@@ -506,7 +630,7 @@ class AssignmentService extends BaseService {
             ...referee,
             availability_status: 'error',
             conflicts: [],
-            warnings: [`Analysis error: ${error.message}`],
+            warnings: [`Analysis error: ${(error as Error).message}`],
             is_qualified: false,
             can_assign: false
           });
@@ -532,31 +656,28 @@ class AssignmentService extends BaseService {
 
     } catch (error) {
       console.error(`Error getting available referees for game ${gameId}:`, error);
-      throw new Error(`Failed to get available referees: ${error.message}`);
+      throw new Error(`Failed to get available referees: ${(error as Error).message}`);
     }
   }
 
   /**
    * Internal method to update game status based on assignments
    * @private
-   * @param {string} gameId - Game ID
-   * @param {Object} trx - Transaction object
-   * @returns {Object} Updated game
    */
-  async _updateGameStatus(gameId, trx) {
+  private async _updateGameStatus(gameId: UUID, trx: Database.Transaction | Database): Promise<GameEntity> {
     try {
-      const game = await trx('games').where('id', gameId).first();
+      const game = await (trx as any)('games').where('id', gameId).first();
       if (!game) {
         throw new Error('Game not found');
       }
 
-      const activeAssignments = await trx('game_assignments')
+      const activeAssignments = await (trx as any)('game_assignments')
         .where('game_id', gameId)
         .whereIn('status', ['pending', 'accepted'])
         .count('* as count')
         .first();
 
-      const assignmentCount = parseInt(activeAssignments.count);
+      const assignmentCount = parseInt((activeAssignments as any).count);
       let gameStatus = 'unassigned';
 
       if (assignmentCount > 0 && assignmentCount < game.refs_needed) {
@@ -565,7 +686,7 @@ class AssignmentService extends BaseService {
         gameStatus = 'assigned'; // Fully assigned
       }
 
-      const [updatedGame] = await trx('games')
+      const [updatedGame] = await (trx as any)('games')
         .where('id', gameId)
         .update({ 
           status: gameStatus, 
@@ -573,7 +694,7 @@ class AssignmentService extends BaseService {
         })
         .returning('*');
 
-      return updatedGame;
+      return updatedGame as GameEntity;
 
     } catch (error) {
       console.error(`Error updating game status for game ${gameId}:`, error);
@@ -583,10 +704,8 @@ class AssignmentService extends BaseService {
 
   /**
    * Hook called after assignment creation
-   * @param {Object} assignment - Created assignment
-   * @param {Object} options - Creation options
    */
-  async afterCreate(assignment, options) {
+  protected async afterCreate(assignment: AssignmentEntity, options: QueryOptions): Promise<void> {
     if (this.options.enableAuditTrail) {
       console.log(`Assignment created: ${assignment.id} for game ${assignment.game_id}`);
     }
@@ -594,15 +713,10 @@ class AssignmentService extends BaseService {
 
   /**
    * Hook called after assignment update
-   * @param {Object} assignment - Updated assignment
-   * @param {Object} previousAssignment - Previous assignment state
-   * @param {Object} options - Update options
    */
-  async afterUpdate(assignment, previousAssignment, options) {
+  protected async afterUpdate(assignment: AssignmentEntity, previousAssignment: AssignmentEntity, options: QueryOptions): Promise<void> {
     if (this.options.enableAuditTrail && previousAssignment.status !== assignment.status) {
       console.log(`Assignment status changed: ${assignment.id} from ${previousAssignment.status} to ${assignment.status}`);
     }
   }
 }
-
-module.exports = AssignmentService;
