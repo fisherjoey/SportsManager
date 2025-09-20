@@ -21,6 +21,11 @@ module.exports = {
     '^.+\.ts$': 'ts-jest',
     '^.+\.js$': 'babel-jest'
   },
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json'
+    }
+  },
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
