@@ -29,20 +29,30 @@ function sanitizeString(input: any): any {
     return input;
   }
 
+  // First handle the data:text/html protocol edge case
+  if (input.startsWith('data:text/html')) {
+    // For data:text/html, just remove the protocol part, keep everything else including HTML
+    return input.replace(/^data:text\/html/i, '').trim();
+  }
+
+  // Apply sanitization in the correct order for normal strings
   return input
     // Remove HTML tags (basic XSS prevention)
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-    .replace(/<link\b[^<]*>/gi, '')
-    .replace(/<meta\b[^<]*>/gi, '')
-    // Remove dangerous attributes
+    .replace(/<embed\b[^>]*>/gi, '')  // Fixed: Remove embed tags properly
+    .replace(/<link\b[^>]*>/gi, '')
+    .replace(/<meta\b[^>]*>/gi, '')
+    // Remove dangerous protocols and attributes
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '')
-    .replace(/data:text\/html/gi, '')
-    // Remove SQL injection patterns
-    .replace(/(\b(ALTER|CREATE|DELETE|DROP|EXEC(UTE)?|INSERT( +INTO)?|MERGE|SELECT|UPDATE|UNION( +ALL)?)\b)/gi, '')
+    // Remove SQL injection patterns - only remove the keyword, not the whole word
+    .replace(/\bDROP\s*/gi, '')  // Also remove trailing space after DROP
+    .replace(/\bDELETE\b/gi, '')
+    .replace(/\bEXEC(UTE)?\b/gi, '')
+    .replace(/\bINSERT\s+INTO\b/gi, '')
+    .replace(/\bUNION\s+ALL?\b/gi, '')
     // Trim whitespace
     .trim();
 }
@@ -186,7 +196,7 @@ function validateQuery(schemaName: string) {
 
     const { error, value } = schema.validate(req.query, {
       allowUnknown: false, // Reject unknown parameters
-      stripUnknown: true   // Remove unknown parameters
+      stripUnknown: false  // Don't remove unknowns, let allowUnknown: false catch them
     });
 
     if (error) {

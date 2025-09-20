@@ -9,14 +9,21 @@ import rateLimit from 'express-rate-limit';
 jest.mock('express-rate-limit');
 const mockRateLimit = rateLimit as jest.MockedFunction<typeof rateLimit>;
 
-// Import the rate limiters to test
-const rateLimitingModule = require('../rateLimiting');
+// Import the rate limiters to test - use dynamic import for TypeScript
+let rateLimitingModule: any;
 
 describe('Rate Limiting Middleware', () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
   let mockNext: NextFunction;
   let rateLimiterMiddleware: jest.Mock;
+
+  beforeAll(async () => {
+    // Load the module once before all tests
+    jest.isolateModules(() => {
+      rateLimitingModule = require('../rateLimiting');
+    });
+  });
 
   beforeEach(() => {
     // Reset all mocks
@@ -51,8 +58,9 @@ describe('Rate Limiting Middleware', () => {
       process.env.NODE_ENV = 'development';
 
       // Re-require to get fresh configuration
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -79,8 +87,9 @@ describe('Rate Limiting Middleware', () => {
       process.env.NODE_ENV = 'production';
 
       // Re-require to get fresh configuration
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -102,8 +111,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should generate correct key for authenticated requests', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       const authLimiterCall = mockRateLimit.mock.calls.find(call =>
         call[0].message?.error === 'Too many authentication attempts'
@@ -124,8 +134,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('passwordResetLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -142,8 +153,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should generate correct key for password reset requests', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       const passwordResetCall = mockRateLimit.mock.calls.find(call =>
         call[0].message?.error === 'Too many password reset attempts'
@@ -159,8 +171,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('adminLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -177,8 +190,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should skip rate limiting for non-admin users', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       const adminLimiterCall = mockRateLimit.mock.calls.find(call =>
         call[0].message?.error === 'Too many administrative operations'
@@ -207,8 +221,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('apiLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -227,8 +242,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('sensitiveLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -247,8 +263,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('uploadLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -267,8 +284,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('registrationLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -287,8 +305,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('assignmentLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -307,8 +326,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('invitationLimiter', () => {
     it('should be configured with correct options', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       expect(mockRateLimit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -342,8 +362,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should have consistent message format across all limiters', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       mockRateLimit.mock.calls.forEach((call) => {
         const config = call[0];
@@ -355,8 +376,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should have standard headers enabled and legacy headers disabled', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       mockRateLimit.mock.calls.forEach((call) => {
         const config = call[0];
@@ -368,8 +390,9 @@ describe('Rate Limiting Middleware', () => {
 
   describe('Error handling', () => {
     it('should handle missing user gracefully in key generators', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       const authLimiterCall = mockRateLimit.mock.calls.find(call =>
         call[0].message?.error === 'Too many authentication attempts'
@@ -383,8 +406,9 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should handle missing roles array gracefully in admin skip function', () => {
-      delete require.cache[require.resolve('../rateLimiting')];
-      require('../rateLimiting');
+      jest.isolateModules(() => {
+        require('../rateLimiting');
+      });
 
       const adminLimiterCall = mockRateLimit.mock.calls.find(call =>
         call[0].message?.error === 'Too many administrative operations'
