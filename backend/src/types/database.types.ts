@@ -5,6 +5,11 @@
  */
 
 import { UUID, Timestamp, AuditTrail, UserRole, GameType, Gender, AssignmentStatus, AvailabilityStrategy } from './index';
+import { Knex } from 'knex';
+
+// Database connection type
+export type Database = Knex;
+export { Knex } from 'knex';
 
 // Base database entity with common fields
 export interface BaseEntity extends AuditTrail {

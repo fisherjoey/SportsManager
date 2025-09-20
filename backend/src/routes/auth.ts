@@ -18,7 +18,7 @@ import {
   RefreshPermissionsResponse,
   ApiResponse
 } from '../types/api.types';
-import { JWTPayload, AuthenticatedUser } from '../types/auth.types';
+import { JWTPayload, AuthenticatedUser, AuthenticatedRequest } from '../types/auth.types';
 import { UUID, Timestamp } from '../types';
 
 // Services and Database
@@ -34,17 +34,6 @@ import { createAuditLog, AUDIT_EVENTS } from '../middleware/auditTrail';
 // Services
 const LocationDataService = require('../services/LocationDataService');
 const { ProductionMonitor } = require('../utils/monitor');
-
-// Extended Request interface for authenticated routes
-export interface AuthenticatedRequest extends Request {
-  user: {
-    id: UUID;
-    userId: UUID;
-    email: string;
-    roles: string[];
-    permissions: string[];
-  };
-}
 
 // Validation schemas with enhanced security
 const loginSchema = Joi.object({
@@ -137,13 +126,7 @@ const login = async (
   }
 
   // Get user permissions with error handling
-  let permissions: Array<{
-    id: UUID;
-    name: string;
-    resource: string;
-    action: string;
-    code?: string;
-  }> = [];
+  let permissions: string[] = [];
   
   try {
     permissions = await getUserPermissions(user.id);
@@ -176,7 +159,7 @@ const login = async (
     userId: user.id, 
     email: user.email, 
     role: user.role, // Keep legacy role for backwards compatibility
-    permissions: permissions.map(p => p.code || p.name)
+    permissions: permissions
   };
 
   const token = jwt.sign(
@@ -314,13 +297,7 @@ const register = async (
     }
 
     // Get user permissions for new user
-    let permissions: Array<{
-      id: UUID;
-      name: string;
-      resource: string;
-      action: string;
-      code?: string;
-    }> = [];
+    let permissions: string[] = [];
     
     try {
       permissions = await getUserPermissions(user.id);
@@ -335,7 +312,7 @@ const register = async (
         email: user.email, 
         role: user.role,
         roles: [], // New users start with empty roles array
-        permissions: permissions.map(p => p.code || p.name)
+        permissions: permissions
       },
       process.env.JWT_SECRET as string,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -419,13 +396,7 @@ const getProfile = async (
   }
 
   // Get comprehensive user permissions
-  let permissions: Array<{
-    id: UUID;
-    name: string;
-    resource: string;
-    action: string;
-    code?: string;
-  }> = [];
+  let permissions: string[] = [];
   
   try {
     permissions = await getUserPermissions(user.id);

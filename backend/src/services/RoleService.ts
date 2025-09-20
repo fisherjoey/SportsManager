@@ -10,7 +10,7 @@
  */
 
 import { BaseService, QueryOptions } from './BaseService';
-import { Database, UUID, RoleEntity, PermissionEntity, UserRoleAssignment, PaginatedResult, User } from '../types';
+import { Database, UUID, RoleEntity, PermissionEntity, UserRoleAssignment, PaginatedResult, User, Knex } from '../types';
 
 // Role-specific interfaces extending base types
 export interface Role extends Omit<RoleEntity, 'permissions'> {
@@ -69,7 +69,7 @@ export interface RoleQueryOptions extends QueryOptions {
 }
 
 export interface RoleOperationOptions {
-  transaction?: Database.Transaction;
+  transaction?: Knex.Transaction;
   force?: boolean;
 }
 

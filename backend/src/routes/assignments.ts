@@ -35,7 +35,7 @@ const { assignmentLimiter } = require('../middleware/rateLimiting');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
 const AssignmentService = require('../services/AssignmentService');
 const { ResponseFormatter } = require('../utils/response-formatters');
-const { ErrorFactory, NotFoundError, ConflictError, ValidationError } = require('../utils/errors');
+import { ErrorFactory, NotFoundError, ConflictError, ValidationError } from '../utils/errors';
 const { AssignmentSchemas, IdParamSchema, FilterSchemas } = require('../utils/validation-schemas');
 const { ProductionMonitor } = require('../utils/monitor');
 

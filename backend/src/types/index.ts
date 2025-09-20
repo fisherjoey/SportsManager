@@ -7,6 +7,8 @@
 
 // Database entity types
 export * from './database.types';
+export type { Database } from './database.types';
+export { Knex } from './database.types';
 
 // API request/response types
 export * from './api.types';

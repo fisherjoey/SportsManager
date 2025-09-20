@@ -32,7 +32,7 @@ const { authenticateToken, requireRole, requirePermission, requireAnyPermission 
 const { validateQuery, validateIdParam } = require('../middleware/sanitization');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery: validateQuerySchema } = require('../middleware/validation');
-const { ErrorFactory } = require('../utils/errors');
+import { ErrorFactory } from '../utils/errors';
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { IdParamSchema } = require('../utils/validation-schemas');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');

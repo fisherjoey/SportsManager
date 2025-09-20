@@ -13,6 +13,7 @@ import {
   Timestamp, 
   AssignmentEntity, 
   AssignmentStatus,
+  Knex,
   GameEntity,
   User,
   PositionEntity,
@@ -169,7 +170,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
    * Create a new assignment with comprehensive conflict checking
    */
   async createAssignment(assignmentData: AssignmentCreationData, options: QueryOptions = {}): Promise<AssignmentCreationResult> {
-    return await this.withTransaction(async (trx: Database.Transaction) => {
+    return await this.withTransaction(async (trx: Knex.Transaction) => {
       try {
         const { game_id, user_id, position_id, assigned_by } = assignmentData;
 
@@ -308,7 +309,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       throw new Error('Maximum 100 assignments can be updated at once');
     }
 
-    return await this.withTransaction(async (trx: Database.Transaction) => {
+    return await this.withTransaction(async (trx: Knex.Transaction) => {
       const results: BulkUpdateResult = {
         updatedAssignments: [],
         updateErrors: [],
@@ -516,7 +517,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       throw new Error('Maximum 100 assignments can be removed at once');
     }
 
-    return await this.withTransaction(async (trx: Database.Transaction) => {
+    return await this.withTransaction(async (trx: Knex.Transaction) => {
       try {
         // Get assignments before deletion for game status updates
         const assignmentsToDelete = await (trx as any)('game_assignments')
@@ -664,7 +665,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
    * Internal method to update game status based on assignments
    * @private
    */
-  private async _updateGameStatus(gameId: UUID, trx: Database.Transaction | Database): Promise<GameEntity> {
+  private async _updateGameStatus(gameId: UUID, trx: Knex.Transaction | Database): Promise<GameEntity> {
     try {
       const game = await (trx as any)('games').where('id', gameId).first();
       if (!game) {

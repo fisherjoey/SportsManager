@@ -1,12 +1,13 @@
+/**
+ * Compatibility bridge for TypeScript migration
+ * This file maintains compatibility with existing JavaScript consumers
+ * while the project transitions to TypeScript
+ */
+
 const { createAuditLog, AUDIT_EVENTS, AUDIT_SEVERITY } = require('./auditTrail');
 
 /**
- * Enhanced error handling and logging middleware
- * Prevents information leakage while maintaining debugging capabilities
- */
-
-/**
- * Error types for categorization
+ * Error types for categorization - synchronized with TypeScript version
  */
 const ERROR_TYPES = {
   VALIDATION_ERROR: 'validation_error',
@@ -20,7 +21,7 @@ const ERROR_TYPES = {
 };
 
 /**
- * Error severity levels for logging
+ * Error severity levels - synchronized with TypeScript version
  */
 const ERROR_SEVERITY = {
   LOW: 'low',
@@ -30,11 +31,12 @@ const ERROR_SEVERITY = {
 };
 
 /**
- * Application Error class for structured error handling
+ * Application Error class - maintains compatibility with TypeScript version
  */
 class AppError extends Error {
   constructor(message, statusCode = 500, type = ERROR_TYPES.INTERNAL_ERROR, isOperational = true) {
     super(message);
+    this.name = this.constructor.name;
     this.statusCode = statusCode;
     this.type = type;
     this.isOperational = isOperational;
@@ -45,17 +47,25 @@ class AppError extends Error {
 }
 
 /**
- * Database Error class for database-specific errors
+ * Database Error class
  */
 class DatabaseError extends AppError {
   constructor(message, originalError = null) {
     super(message, 500, ERROR_TYPES.DATABASE_ERROR);
     this.originalError = originalError;
+    this.dbDetails = originalError ? {
+      code: originalError.code,
+      detail: originalError.detail,
+      constraint: originalError.constraint,
+      column: originalError.column,
+      table: originalError.table,
+      schema: originalError.schema
+    } : {};
   }
 }
 
 /**
- * Validation Error class for input validation errors
+ * Validation Error class
  */
 class ValidationError extends AppError {
   constructor(message, details = null) {
@@ -101,23 +111,53 @@ class RateLimitError extends AppError {
 }
 
 /**
- * Determine error severity based on error details
+ * External Service Error class
+ */
+class ExternalServiceError extends AppError {
+  constructor(message, service, statusCode = 502) {
+    super(message, statusCode, ERROR_TYPES.EXTERNAL_SERVICE_ERROR);
+    this.service = service;
+  }
+}
+
+/**
+ * Type guard functions
+ */
+function isAppError(error) {
+  return error instanceof AppError;
+}
+
+function isDatabaseError(error) {
+  return error instanceof DatabaseError;
+}
+
+function isValidationError(error) {
+  return error instanceof ValidationError;
+}
+
+/**
+ * Determine error severity
  */
 function determineErrorSeverity(error, req) {
+  const appError = isAppError(error) ? error : null;
+  
   // Critical: Authentication bypass attempts, security violations
-  if (error.type === ERROR_TYPES.AUTHENTICATION_ERROR && req.path.includes('/admin')) {
+  if (appError?.type === ERROR_TYPES.AUTHENTICATION_ERROR && 
+      req.path.includes('/admin')) {
     return ERROR_SEVERITY.CRITICAL;
   }
   
   // High: Database errors, internal server errors, security issues
-  if (error.type === ERROR_TYPES.DATABASE_ERROR || 
-      error.statusCode >= 500 ||
-      error.type === ERROR_TYPES.AUTHORIZATION_ERROR) {
+  if (appError?.type === ERROR_TYPES.DATABASE_ERROR || 
+      (appError?.statusCode && appError.statusCode >= 500) ||
+      appError?.type === ERROR_TYPES.AUTHORIZATION_ERROR) {
     return ERROR_SEVERITY.HIGH;
   }
   
   // Medium: Client errors, validation errors
-  if (error.statusCode >= 400 && error.statusCode < 500) {
+  if (appError?.statusCode && 
+      appError.statusCode >= 400 && 
+      appError.statusCode < 500) {
     return ERROR_SEVERITY.MEDIUM;
   }
   
@@ -130,6 +170,7 @@ function determineErrorSeverity(error, req) {
 function sanitizeError(error, req) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const isTest = process.env.NODE_ENV === 'test';
+  const appError = isAppError(error) ? error : null;
   
   // Base error response
   const errorResponse = {
@@ -140,47 +181,48 @@ function sanitizeError(error, req) {
   };
   
   // For operational errors, we can safely expose the message
-  if (error.isOperational) {
-    errorResponse.error = error.message;
-    errorResponse.type = error.type;
+  if (appError?.isOperational) {
+    errorResponse.error = appError.message;
+    errorResponse.type = appError.type;
     
     // Include validation details for validation errors
-    if (error instanceof ValidationError && error.details) {
-      errorResponse.details = error.details;
+    if (isValidationError(appError) && appError.details) {
+      errorResponse.details = appError.details;
     }
   }
   
   // In development/test, include more debugging information
   if (isDevelopment || isTest) {
     errorResponse.stack = error.stack;
-    errorResponse.originalError = error.originalError?.message;
+    if (appError?.originalError) {
+      errorResponse.originalError = appError.originalError.message;
+    }
   }
   
   // Specific error message customization
-  switch (error.type) {
-  case ERROR_TYPES.AUTHENTICATION_ERROR:
-    // Keep the original message for authentication errors (e.g., "Invalid credentials")
-    // Only override with generic message if it's not a specific error
-    if (error.message === 'Authentication required' || !error.message) {
-      errorResponse.error = 'Authentication required';
-    }
-    // Otherwise keep the specific error message (like "Invalid credentials")
-    break;
-  case ERROR_TYPES.AUTHORIZATION_ERROR:
-    errorResponse.error = 'Insufficient permissions';
-    break;
-  case ERROR_TYPES.NOT_FOUND_ERROR:
-    // Keep the original message for not found errors
-    break;
-  case ERROR_TYPES.RATE_LIMIT_ERROR:
-    errorResponse.error = 'Too many requests, please try again later';
-    break;
-  case ERROR_TYPES.DATABASE_ERROR:
-    errorResponse.error = 'Database operation failed';
-    break;
-  default:
-    if (!error.isOperational) {
-      errorResponse.error = 'Internal server error';
+  if (appError) {
+    switch (appError.type) {
+      case ERROR_TYPES.AUTHENTICATION_ERROR:
+        if (appError.message === 'Authentication required' || !appError.message) {
+          errorResponse.error = 'Authentication required';
+        }
+        break;
+      case ERROR_TYPES.AUTHORIZATION_ERROR:
+        errorResponse.error = 'Insufficient permissions';
+        break;
+      case ERROR_TYPES.NOT_FOUND_ERROR:
+        // Keep the original message for not found errors
+        break;
+      case ERROR_TYPES.RATE_LIMIT_ERROR:
+        errorResponse.error = 'Too many requests, please try again later';
+        break;
+      case ERROR_TYPES.DATABASE_ERROR:
+        errorResponse.error = 'Database operation failed';
+        break;
+      default:
+        if (!appError.isOperational) {
+          errorResponse.error = 'Internal server error';
+        }
     }
   }
   
@@ -188,10 +230,12 @@ function sanitizeError(error, req) {
 }
 
 /**
- * Log error details for debugging
+ * Log error details
  */
 async function logError(error, req, res) {
+  const appError = isAppError(error) ? error : null;
   const severity = determineErrorSeverity(error, req);
+  
   const clientIP = req.headers['x-forwarded-for'] || 
                   req.headers['x-real-ip'] || 
                   req.connection?.remoteAddress || 
@@ -201,51 +245,51 @@ async function logError(error, req, res) {
   // Console logging with severity-based formatting
   const logData = {
     timestamp: new Date().toISOString(),
-    severity: severity,
-    type: error.type || 'unknown',
+    severity,
+    type: appError?.type || 'unknown',
     message: error.message,
-    statusCode: error.statusCode || 500,
+    statusCode: appError?.statusCode || 500,
     path: req.path,
     method: req.method,
     ip: clientIP,
     userAgent: req.headers['user-agent'],
-    userId: req.user?.userId || null,
+    userId: req.user?.id || req.user?.userId || null,
     userEmail: req.user?.email || null,
     stack: error.stack
   };
   
   // Use different console methods based on severity
   switch (severity) {
-  case ERROR_SEVERITY.CRITICAL:
-    console.error('🚨 CRITICAL ERROR:', logData);
-    break;
-  case ERROR_SEVERITY.HIGH:
-    console.error('❗ HIGH SEVERITY ERROR:', logData);
-    break;
-  case ERROR_SEVERITY.MEDIUM:
-    console.warn('⚠️  MEDIUM SEVERITY ERROR:', logData);
-    break;
-  default:
-    console.log('ℹ️  LOW SEVERITY ERROR:', logData);
+    case ERROR_SEVERITY.CRITICAL:
+      console.error('🚨 CRITICAL ERROR:', logData);
+      break;
+    case ERROR_SEVERITY.HIGH:
+      console.error('❗ HIGH SEVERITY ERROR:', logData);
+      break;
+    case ERROR_SEVERITY.MEDIUM:
+      console.warn('⚠️  MEDIUM SEVERITY ERROR:', logData);
+      break;
+    default:
+      console.log('ℹ️  LOW SEVERITY ERROR:', logData);
   }
   
   // Create audit log entry
   try {
     await createAuditLog({
-      event_type: getAuditEventType(error),
-      user_id: req.user?.userId || null,
+      event_type: getAuditEventType(appError),
+      user_id: req.user?.id || req.user?.userId || null,
       user_email: req.user?.email || null,
       ip_address: clientIP,
       user_agent: req.headers['user-agent'],
       request_path: req.path,
       request_method: req.method,
       success: false,
-      severity: severity,
+      severity,
       error_message: error.message,
       additional_data: {
-        error_type: error.type,
-        status_code: error.statusCode || 500,
-        is_operational: error.isOperational || false,
+        error_type: appError?.type,
+        status_code: appError?.statusCode || 500,
+        is_operational: appError?.isOperational || false,
         query_params: req.query,
         body_params: sanitizeBodyForLogging(req.body)
       }
@@ -259,20 +303,24 @@ async function logError(error, req, res) {
  * Get appropriate audit event type for error
  */
 function getAuditEventType(error) {
-  switch (error.type) {
-  case ERROR_TYPES.AUTHENTICATION_ERROR:
-    return AUDIT_EVENTS.AUTH_LOGIN_FAILURE;
-  case ERROR_TYPES.AUTHORIZATION_ERROR:
-    return AUDIT_EVENTS.SECURITY_UNAUTHORIZED_ACCESS;
-  case ERROR_TYPES.RATE_LIMIT_ERROR:
-    return AUDIT_EVENTS.SECURITY_RATE_LIMIT_EXCEEDED;
-  default:
+  if (!error) {
     return AUDIT_EVENTS.SECURITY_SUSPICIOUS_ACTIVITY;
+  }
+  
+  switch (error.type) {
+    case ERROR_TYPES.AUTHENTICATION_ERROR:
+      return AUDIT_EVENTS.AUTH_LOGIN_FAILURE;
+    case ERROR_TYPES.AUTHORIZATION_ERROR:
+      return AUDIT_EVENTS.SECURITY_UNAUTHORIZED_ACCESS;
+    case ERROR_TYPES.RATE_LIMIT_ERROR:
+      return AUDIT_EVENTS.SECURITY_RATE_LIMIT_EXCEEDED;
+    default:
+      return AUDIT_EVENTS.SECURITY_SUSPICIOUS_ACTIVITY;
   }
 }
 
 /**
- * Sanitize request body for logging (remove sensitive data)
+ * Sanitize request body for logging
  */
 function sanitizeBodyForLogging(body) {
   if (!body || typeof body !== 'object') {
@@ -292,37 +340,37 @@ function sanitizeBodyForLogging(body) {
 }
 
 /**
- * Handle different types of database errors
+ * Handle database errors
  */
 function handleDatabaseError(error) {
   // PostgreSQL specific error codes
   switch (error.code) {
-  case '23505': // Unique constraint violation
-    return new ValidationError('Duplicate entry found', {
-      field: error.detail || 'unknown',
-      constraint: error.constraint || 'unique_constraint'
-    });
-  case '23503': // Foreign key constraint violation
-    return new ValidationError('Referenced record not found', {
-      field: error.detail || 'unknown',
-      constraint: error.constraint || 'foreign_key_constraint'
-    });
-  case '23502': // Not null constraint violation
-    return new ValidationError('Required field missing', {
-      field: error.column || 'unknown',
-      constraint: 'not_null_constraint'
-    });
-  case '23514': // Check constraint violation
-    return new ValidationError('Invalid field value', {
-      field: error.detail || 'unknown',
-      constraint: error.constraint || 'check_constraint'
-    });
-  case '42P01': // Undefined table
-    return new DatabaseError('Database table not found');
-  case '42703': // Undefined column
-    return new DatabaseError('Database column not found');
-  default:
-    return new DatabaseError('Database operation failed', error);
+    case '23505': // Unique constraint violation
+      return new ValidationError('Duplicate entry found', {
+        field: error.detail || 'unknown',
+        constraint: error.constraint || 'unique_constraint'
+      });
+    case '23503': // Foreign key constraint violation
+      return new ValidationError('Referenced record not found', {
+        field: error.detail || 'unknown',
+        constraint: error.constraint || 'foreign_key_constraint'
+      });
+    case '23502': // Not null constraint violation
+      return new ValidationError('Required field missing', {
+        field: error.column || 'unknown',
+        constraint: 'not_null_constraint'
+      });
+    case '23514': // Check constraint violation
+      return new ValidationError('Invalid field value', {
+        field: error.detail || 'unknown',
+        constraint: error.constraint || 'check_constraint'
+      });
+    case '42P01': // Undefined table
+      return new DatabaseError('Database table not found', error);
+    case '42703': // Undefined column
+      return new DatabaseError('Database column not found', error);
+    default:
+      return new DatabaseError('Database operation failed', error);
   }
 }
 
@@ -338,7 +386,7 @@ function errorHandler(error, req, res, next) {
   let processedError = error;
   
   // Convert known error types
-  if (error.name === 'ValidationError' && !error.isOperational) {
+  if (error.name === 'ValidationError' && !isAppError(error)) {
     processedError = new ValidationError(error.message, error.details);
   } else if (error.code && (error.code.startsWith('23') || error.code.startsWith('42'))) {
     processedError = handleDatabaseError(error);
@@ -348,7 +396,7 @@ function errorHandler(error, req, res, next) {
     processedError = new AuthenticationError('Token expired');
   } else if (error.name === 'CastError') {
     processedError = new ValidationError('Invalid ID format');
-  } else if (!error.isOperational) {
+  } else if (!isAppError(error)) {
     // Log the actual error before wrapping
     console.error('ACTUAL ERROR BEFORE WRAPPING:', error);
     console.error('Error stack:', error.stack);
@@ -358,7 +406,9 @@ function errorHandler(error, req, res, next) {
   }
   
   // Log the error
-  logError(processedError, req, res);
+  logError(processedError, req, res).catch(logErr => {
+    console.error('Failed to log error:', logErr);
+  });
   
   // Sanitize error for client response
   const sanitizedError = sanitizeError(processedError, req);
@@ -385,6 +435,15 @@ function asyncHandler(fn) {
 }
 
 /**
+ * Generic async handler for regular requests
+ */
+function asyncHandlerGeneric(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+/**
  * Validation error helper
  */
 function createValidationError(message, details = null) {
@@ -402,6 +461,37 @@ async function withDatabaseError(operation) {
   }
 }
 
+/**
+ * Performance monitoring wrapper for async operations
+ */
+async function withPerformanceMonitoring(operationName, operation, req) {
+  const startTime = Date.now();
+  
+  try {
+    const result = await operation();
+    const duration = Date.now() - startTime;
+    
+    if (duration > 1000) { // Log slow operations (>1s)
+      console.warn(`Slow operation detected: ${operationName} took ${duration}ms`, {
+        path: req?.path,
+        method: req?.method,
+        duration
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`Operation failed: ${operationName} after ${duration}ms`, {
+      path: req?.path,
+      method: req?.method,
+      duration,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
+  }
+}
+
 module.exports = {
   // Error classes
   AppError,
@@ -411,6 +501,7 @@ module.exports = {
   AuthorizationError,
   NotFoundError,
   RateLimitError,
+  ExternalServiceError,
   
   // Constants
   ERROR_TYPES,
@@ -420,10 +511,20 @@ module.exports = {
   errorHandler,
   notFoundHandler,
   asyncHandler,
+  asyncHandlerGeneric,
   
   // Utilities
   createValidationError,
   withDatabaseError,
   sanitizeBodyForLogging,
-  logError
+  logError,
+  sanitizeError,
+  determineErrorSeverity,
+  handleDatabaseError,
+  withPerformanceMonitoring,
+  
+  // Type guards (useful for JS consumers too)
+  isAppError,
+  isDatabaseError,
+  isValidationError
 };

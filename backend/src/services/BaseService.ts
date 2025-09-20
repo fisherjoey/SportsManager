@@ -6,7 +6,7 @@
  * It follows the Repository pattern and integrates with Knex.js for database operations.
  */
 
-import { Database, UUID, Timestamp, PaginatedResult } from '../types';
+import { Database, UUID, Timestamp, PaginatedResult, Knex } from '../types';
 
 // Service configuration options interface
 export interface ServiceOptions {
@@ -30,7 +30,7 @@ export interface QueryOptions {
   limit?: number;
   offset?: number;
   include?: JoinOptions[];
-  transaction?: Database.Transaction;
+  transaction?: Knex.Transaction;
 }
 
 // Join options for including related data
@@ -378,7 +378,7 @@ export abstract class BaseService<T extends BaseEntity = BaseEntity> {
   /**
    * Execute operations within a transaction
    */
-  async withTransaction<TResult>(callback: (trx: Database.Transaction) => Promise<TResult>): Promise<TResult> {
+  async withTransaction<TResult>(callback: (trx: Knex.Transaction) => Promise<TResult>): Promise<TResult> {
     const trx = await this.db.transaction();
 
     try {
@@ -396,7 +396,7 @@ export abstract class BaseService<T extends BaseEntity = BaseEntity> {
    * Apply filters to a query builder
    * @private
    */
-  private _applyFilters(query: Database.QueryBuilder, filters: Record<string, any>): Database.QueryBuilder {
+  private _applyFilters(query: Knex.QueryBuilder, filters: Record<string, any>): Knex.QueryBuilder {
     Object.keys(filters).forEach(key => {
       const value = filters[key];
       
@@ -419,7 +419,7 @@ export abstract class BaseService<T extends BaseEntity = BaseEntity> {
    * Apply joins to a query builder
    * @private
    */
-  private _applyIncludes(query: Database.QueryBuilder, includes: JoinOptions[]): Database.QueryBuilder {
+  private _applyIncludes(query: Knex.QueryBuilder, includes: JoinOptions[]): Knex.QueryBuilder {
     includes.forEach(include => {
       // Complex join with custom conditions
       const { table, as, on, type = 'left' } = include;

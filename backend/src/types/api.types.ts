@@ -61,13 +61,7 @@ export interface LoginResponse {
     id: UUID;
     email: string;
     roles: string[];
-    permissions: Array<{
-      id: UUID;
-      name: string;
-      resource: string;
-      action: string;
-      code?: string;
-    }>;
+    permissions: string[];
     name?: string;
     phone?: string;
     location?: string;
@@ -119,13 +113,7 @@ export interface ProfileResponse {
     id: UUID;
     email: string;
     roles: string[];
-    permissions: Array<{
-      id: UUID;
-      name: string;
-      resource: string;
-      action: string;
-      code?: string;
-    }>;
+    permissions: string[];
     name?: string;
     phone?: string;
     location?: string;
@@ -147,13 +135,7 @@ export interface ProfileResponse {
 export interface RefreshPermissionsResponse {
   success: boolean;
   data: {
-    permissions: Array<{
-      id: UUID;
-      name: string;
-      resource: string;
-      action: string;
-      code?: string;
-    }>;
+    permissions: string[];
   };
   message: string;
 }
