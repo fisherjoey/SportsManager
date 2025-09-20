@@ -1,82 +1,32 @@
-const Queue = require('bull');
+/**
+ * @fileoverview Queue Configuration Bridge
+ * @description JavaScript bridge for backward compatibility during TS migration
+ * This file re-exports the TypeScript queue configuration
+ */
 
-// In test environment, use a mock queue that doesn't require Redis
-class MockQueue {
-  constructor(name) {
-    this.name = name;
-    this.jobs = [];
-  }
+// Import TypeScript configuration
+const queue = require('./queue.ts');
 
-  async add(data, options = {}) {
-    const job = {
-      id: Date.now(),
-      data,
-      options,
-      processedOn: null,
-      finishedOn: null
-    };
-    this.jobs.push(job);
-    return job;
-  }
+// Re-export the createQueue function as default for JavaScript compatibility
+module.exports = queue.default;
 
-  async process(handler) {
-    // In tests, we don't actually process jobs
-    this.handler = handler;
-  }
+// Export all utilities for JavaScript compatibility
+module.exports.createQueue = queue.createQueue;
+module.exports.MockQueue = queue.MockQueue;
+module.exports.MockQueueClass = queue.MockQueueClass;
+module.exports.queueManager = queue.queueManager;
+module.exports.healthCheckQueues = queue.healthCheckQueues;
+module.exports.healthCheckQueue = queue.healthCheckQueue;
+module.exports.createTypedQueue = queue.createTypedQueue;
+module.exports.setupQueueEventHandlers = queue.setupQueueEventHandlers;
+module.exports.addJobWithPriority = queue.addJobWithPriority;
+module.exports.isBullQueue = queue.isBullQueue;
+module.exports.isMockQueue = queue.isMockQueue;
+module.exports.QUEUE_EVENTS = queue.QUEUE_EVENTS;
+module.exports.JOB_PRIORITIES = queue.JOB_PRIORITIES;
 
-  async close() {
-    // No-op for mock
-  }
+// Export Bull for direct access
+module.exports.Bull = queue.Bull;
 
-  async empty() {
-    this.jobs = [];
-  }
-
-  async getJobs() {
-    return this.jobs;
-  }
-
-  on() {
-    // No-op for mock - ignore event listeners
-    return this;
-  }
-}
-
-// Factory function to create appropriate queue based on environment
-function createQueue(name, options = {}) {
-  if (process.env.NODE_ENV === 'test' || process.env.DISABLE_REDIS === 'true') {
-    return new MockQueue(name);
-  }
-  
-  // Production queue with Redis
-  const defaultOptions = {
-    redis: {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD,
-      retryStrategy: (times) => {
-        if (times > 3) {
-          console.error(`Failed to connect to Redis after ${times} attempts`);
-          return null;
-        }
-        return Math.min(times * 100, 3000);
-      }
-    },
-    defaultJobOptions: {
-      removeOnComplete: true,
-      removeOnFail: false,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 2000
-      }
-    }
-  };
-
-  return new Queue(name, { ...defaultOptions, ...options });
-}
-
-module.exports = {
-  createQueue,
-  MockQueue
-};
+// Legacy compatibility aliases
+module.exports.QueueManager = queue.QueueManager;

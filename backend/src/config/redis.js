@@ -1,62 +1,31 @@
 /**
- * @fileoverview Redis Configuration
- * 
- * Configures Redis client for caching and queue management
- * Falls back gracefully when Redis is not available
+ * @fileoverview Redis Configuration Bridge
+ * @description JavaScript bridge for backward compatibility during TS migration
+ * This file re-exports the TypeScript Redis configuration
  */
 
-const redis = require('redis');
+// Import TypeScript configuration
+const redis = require('./redis.ts');
 
-let client = null;
+// Re-export the default client for JavaScript compatibility
+module.exports = redis.default;
 
-// Only initialize Redis if not disabled
-if (!process.env.DISABLE_REDIS) {
-  try {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-    
-    client = redis.createClient({
-      url: redisUrl,
-      socket: {
-        connectTimeout: 5000,
-        reconnectStrategy: (retries) => {
-          if (retries > 3) {
-            console.log('❌ Redis: Max reconnection attempts reached');
-            return false;
-          }
-          return Math.min(retries * 100, 3000);
-        }
-      }
-    });
+// Export all utility functions for JavaScript compatibility
+module.exports.getRedisClient = redis.getRedisClient;
+module.exports.isRedisAvailable = redis.isRedisAvailable;
+module.exports.getConnectionState = redis.getConnectionState;
+module.exports.healthCheck = redis.healthCheck;
+module.exports.closeRedisConnection = redis.closeRedisConnection;
+module.exports.getMetrics = redis.getMetrics;
+module.exports.flushAll = redis.flushAll;
 
-    client.on('error', (err) => {
-      console.error('Redis Client Error:', err.message);
-    });
+// Export client property for backward compatibility
+Object.defineProperty(module.exports, 'client', {
+  get: () => redis.default,
+  enumerable: true
+});
 
-    client.on('connect', () => {
-      console.log('✅ Redis: Connected');
-    });
-
-    client.on('ready', () => {
-      console.log('✅ Redis: Ready');
-      client.isReady = true;
-    });
-
-    client.on('end', () => {
-      console.log('❌ Redis: Disconnected');
-      client.isReady = false;
-    });
-
-    // Connect to Redis
-    client.connect().catch(err => {
-      console.error('❌ Redis: Failed to connect:', err.message);
-      client = null;
-    });
-  } catch (error) {
-    console.warn('⚠️ Redis: Initialization failed:', error.message);
-    client = null;
-  }
-} else {
-  console.log('ℹ️ Redis: Disabled by DISABLE_REDIS environment variable');
-}
-
-module.exports = client;
+Object.defineProperty(module.exports, 'redisClient', {
+  get: () => redis.default,
+  enumerable: true
+});
