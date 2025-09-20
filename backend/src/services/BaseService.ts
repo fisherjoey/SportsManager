@@ -31,6 +31,7 @@ export interface QueryOptions {
   offset?: number;
   include?: JoinOptions[];
   transaction?: Knex.Transaction;
+  auditUserId?: string; // For audit trail tracking
 }
 
 // Join options for including related data
