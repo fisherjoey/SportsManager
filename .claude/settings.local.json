@@ -12,7 +12,8 @@
       "Bash(test:*)",
       "Bash(xargs ls:*)",
       "Bash(npm run build:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx ts-node:*)"
     ],
     "deny": [],
     "ask": []
