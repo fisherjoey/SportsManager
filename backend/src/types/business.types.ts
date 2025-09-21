@@ -817,3 +817,168 @@ export interface RuleAction {
   type: string;
   config: Record<string, any>;
 }
+
+// Tournament system types
+export interface TournamentRequest {
+  name: string;
+  league_id: UUID;
+  tournament_type: TournamentType;
+  team_ids: UUID[];
+  start_date: Date;
+  venue?: string;
+  time_slots?: string[];
+  days_of_week?: number[];
+  games_per_day?: number;
+  rounds?: number; // For swiss system
+  group_size?: number; // For group stage playoffs
+  advance_per_group?: number; // For group stage playoffs
+  seeding_method?: SeedingMethod;
+}
+
+export enum TournamentType {
+  ROUND_ROBIN = 'round_robin',
+  SINGLE_ELIMINATION = 'single_elimination',
+  SWISS_SYSTEM = 'swiss_system',
+  GROUP_STAGE_PLAYOFFS = 'group_stage_playoffs'
+}
+
+export enum SeedingMethod {
+  RANDOM = 'random',
+  RANKED = 'ranked',
+  CUSTOM = 'custom'
+}
+
+export interface TournamentOptions {
+  venue: string;
+  startDate: Date;
+  timeSlots: string[];
+  daysOfWeek: number[];
+  gamesPerDay: number;
+  seedingMethod: SeedingMethod;
+  rounds?: number;
+  groupSize?: number;
+  advancePerGroup?: number;
+}
+
+export interface TournamentGame {
+  home_team_id: string;
+  away_team_id: string;
+  home_team_name: string;
+  away_team_name: string;
+  game_date: string;
+  game_time: string;
+  location: string;
+  venue?: string;
+  round: number;
+  round_name?: string;
+  tournament_type: TournamentType;
+  group_id?: number;
+  group_name?: string;
+  stage?: TournamentStage;
+  league_id?: UUID;
+  tournament_name?: string;
+  level?: string;
+  pay_rate?: number;
+  refs_needed?: number;
+  status?: string;
+  postal_code?: string;
+}
+
+export enum TournamentStage {
+  GROUP_STAGE = 'group_stage',
+  PLAYOFFS = 'playoffs',
+  FINALS = 'finals'
+}
+
+export interface TournamentRound {
+  round: number;
+  round_name?: string;
+  stage?: TournamentStage;
+  games: TournamentGame[];
+  group_id?: number;
+  group_name?: string;
+}
+
+export interface TournamentGroup {
+  id: number;
+  name: string;
+  teams: TeamEntity[];
+}
+
+export interface TournamentResult {
+  type: TournamentType;
+  total_games: number;
+  total_rounds: number;
+  games: TournamentGame[];
+  rounds: TournamentRound[];
+  groups?: TournamentGroup[];
+  summary: TournamentSummary;
+}
+
+export interface TournamentSummary {
+  teams_count: number;
+  format: string;
+  estimated_duration_days: number;
+  games_per_team?: number;
+  byes_added?: number;
+  max_games_per_team?: number;
+  groups_count?: number;
+  teams_per_group?: number;
+  advancing_per_group?: number;
+  group_stage_games?: number;
+  playoff_games?: number;
+  rounds?: number;
+}
+
+export interface TournamentFormat {
+  id: TournamentType;
+  name: string;
+  description: string;
+  min_teams: number;
+  max_teams: number;
+  pros: string[];
+  cons: string[];
+  games_formula: string;
+  suitable_for: string;
+}
+
+export interface TournamentEstimate {
+  tournament_type: TournamentType;
+  team_count: number;
+  estimate: {
+    total_games: number;
+    estimated_days: number;
+    rounds: number;
+    games_per_team?: number;
+    max_games_per_team?: number;
+    byes_needed?: number;
+    groups?: number;
+    advancing_teams?: number;
+    group_stage_games?: number;
+    playoff_games?: number;
+  };
+}
+
+export interface TournamentCreateRequest {
+  games: TournamentGame[];
+  tournament_name?: string;
+}
+
+export interface TournamentCreateResult {
+  created: any[];
+  summary: {
+    requested: number;
+    created: number;
+    skipped: number;
+  };
+}
+
+export interface TournamentTeam extends Omit<TeamEntity, 'rank'> {
+  rank?: number;
+  is_bye?: boolean;
+  is_placeholder?: boolean;
+  source_game?: TournamentGame;
+  wins?: number;
+  losses?: number;
+  opponents?: string[];
+}
