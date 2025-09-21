@@ -1,13 +1,44 @@
-const db = require('../config/database');
-const crypto = require('crypto');
-
 /**
- * Enhanced Approval Workflow Service
- * 
- * Handles multi-stage approval routing based on expense amount, payment method, and category.
- * Supports auto-approval, escalation handling, delegation, and comprehensive audit trails.
+ * @fileoverview Bridge compatibility layer for ApprovalWorkflowService
+ * Provides backward compatibility while migrating to TypeScript
+ *
+ * @deprecated Use ApprovalWorkflowService.ts instead
+ * @author Claude Assistant
+ * @date 2025-01-23
  */
-class ApprovalWorkflowService {
+
+try {
+  // Import the TypeScript implementation
+  const { ApprovalWorkflowService: TypeScriptApprovalWorkflowService, approvalWorkflowService } = require('./ApprovalWorkflowService.ts');
+
+  /**
+   * @deprecated Use the TypeScript version instead
+   * Bridge class for backward compatibility
+   */
+  class ApprovalWorkflowService extends TypeScriptApprovalWorkflowService {
+    constructor() {
+      console.warn('approvalWorkflowService.js is deprecated. Please migrate to ApprovalWorkflowService.ts');
+      super();
+    }
+  }
+
+  // Export for CommonJS compatibility
+  module.exports = new ApprovalWorkflowService();
+  module.exports.ApprovalWorkflowService = ApprovalWorkflowService;
+  module.exports.approvalWorkflowService = approvalWorkflowService;
+  module.exports.default = ApprovalWorkflowService;
+
+} catch (error) {
+  console.error('Failed to load TypeScript ApprovalWorkflowService, falling back to original implementation');
+
+  // Fallback to original implementation if TypeScript version fails
+  const db = require('../config/database');
+  const crypto = require('crypto');
+
+  /**
+   * Legacy implementation for fallback compatibility
+   */
+  class ApprovalWorkflowService {
   constructor() {
     this.ESCALATION_TIMEOUT_HOURS = 48;
     this.REMINDER_FREQUENCY_HOURS = 24;
@@ -780,4 +811,8 @@ class ApprovalWorkflowService {
   }
 }
 
-module.exports = new ApprovalWorkflowService();
+  // Export for CommonJS compatibility
+  module.exports = new ApprovalWorkflowService();
+  module.exports.ApprovalWorkflowService = ApprovalWorkflowService;
+  module.exports.default = ApprovalWorkflowService;
+}
