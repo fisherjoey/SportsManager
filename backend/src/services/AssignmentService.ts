@@ -21,7 +21,7 @@ import {
 } from '../types';
 
 // Import utility functions (will need typing later)
-const { checkAssignmentConflicts } = require('./conflictDetectionService');
+import { checkAssignmentConflicts } from './conflictDetectionService';
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { getOrganizationSettings } = require('../utils/organization-settings');
 

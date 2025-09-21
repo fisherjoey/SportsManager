@@ -36,7 +36,7 @@ import { ErrorFactory } from '../utils/errors';
 const { ResponseFormatter } = require('../utils/response-formatters');
 const { IdParamSchema } = require('../utils/validation-schemas');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
-const { checkGameSchedulingConflicts } = require('../services/conflictDetectionService');
+import { checkGameSchedulingConflicts } from '../services/conflictDetectionService';
 const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
 const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 

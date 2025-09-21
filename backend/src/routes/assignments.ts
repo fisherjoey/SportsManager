@@ -27,7 +27,7 @@ const Joi = require('joi');
 const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
-const { checkAssignmentConflicts } = require('../services/conflictDetectionService');
+import { checkAssignmentConflicts } from '../services/conflictDetectionService';
 const { getOrganizationSettings } = require('../utils/organization-settings');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
