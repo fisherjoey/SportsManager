@@ -17,7 +17,7 @@ describe('Rate Limiting Middleware - Integration Tests', () => {
 
     // Restore environment
     process.env.NODE_ENV = originalEnv;
-  });
+  });``
 
   describe('Module exports and imports', () => {
     it('should export all required rate limiters from TypeScript file', () => {
