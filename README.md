@@ -5,16 +5,20 @@ A comprehensive sports management system for organizing leagues, teams, games, a
 ## Project Structure
 
 ```
-├── backend/           # Node.js/Express backend API
-├── app/              # Next.js frontend application
-├── components/       # Shared React components
+├── frontend/         # Next.js frontend application
+│   ├── app/         # Next.js App Router pages
+│   ├── components/  # React components
+│   ├── hooks/       # Custom React hooks
+│   ├── lib/         # Utilities and helpers
+│   ├── types/       # TypeScript type definitions
+│   └── public/      # Static assets
+├── backend/          # Node.js/Express backend API (TypeScript)
+│   ├── src/         # Source code
+│   ├── dist/        # Compiled JavaScript
+│   └── migrations/  # Database migrations
 ├── docs/            # Project documentation
 │   ├── architecture/ # System architecture docs
-│   ├── permissions/ # RBAC and permissions documentation
-│   ├── development/ # Development guides and instructions
-│   ├── testing/     # Testing documentation
 │   └── guides/      # User and admin guides
-├── config/          # Configuration files
 ├── scripts/         # Build and utility scripts
 └── .github/         # GitHub workflows and templates
 ```
@@ -29,10 +33,15 @@ A comprehensive sports management system for organizing leagues, teams, games, a
 ### Installation
 
 1. Clone the repository
-2. Install dependencies:
+2. Install all dependencies:
+   ```bash
+   npm run install:all
+   ```
+   Or manually:
    ```bash
    npm install
-   cd backend && npm install
+   cd frontend && npm install
+   cd ../backend && npm install
    ```
 
 3. Set up environment variables:
@@ -48,16 +57,23 @@ A comprehensive sports management system for organizing leagues, teams, games, a
 
 ### Development
 
-Start the backend server:
-```bash
-cd backend && npm start
-# Or with Redis disabled:
-DISABLE_REDIS=true npm start
-```
-
-Start the frontend:
+Start both frontend and backend concurrently:
 ```bash
 npm run dev
+```
+
+Or start them separately:
+
+**Backend:**
+```bash
+cd backend && npm run dev
+# Or with Redis disabled:
+cd backend && DISABLE_REDIS=true npm start
+```
+
+**Frontend:**
+```bash
+cd frontend && npm run dev
 ```
 
 ## Documentation
