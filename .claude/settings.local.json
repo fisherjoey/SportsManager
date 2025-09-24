@@ -43,7 +43,12 @@
       "Bash(npm start)",
       "Bash(for file in src/services/*.ts)",
       "Bash(do if ! grep -q \"^export default\" \"$file\")",
-      "Bash(then echo \"$file needs default export\")"
+      "Bash(then echo \"$file needs default export\")",
+      "Bash(DISABLE_REDIS=true npm start)",
+      "Bash(npx cross-env:*)",
+      "Bash(for file in compliance.ts performance.ts resources.ts workflows.ts)",
+      "Bash(do sed -i \"/require.*\\.orig/d\" \"$file\")",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

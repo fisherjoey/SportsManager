@@ -28,12 +28,12 @@ const { authenticateToken, requireRole, requirePermission, requireAnyPermission 
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 import { checkAssignmentConflicts } from '../services/conflictDetectionService';
+import AssignmentService from '../services/AssignmentService';
 const { getOrganizationSettings } = require('../utils/organization-settings');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
 const { assignmentLimiter } = require('../middleware/rateLimiting');
 const { createAuditLog, AUDIT_EVENTS } = require('../middleware/auditTrail');
-const AssignmentService = require('../services/AssignmentService');
 const { ResponseFormatter } = require('../utils/response-formatters');
 import { ErrorFactory, NotFoundError, ConflictError, ValidationError } from '../utils/errors';
 const { AssignmentSchemas, IdParamSchema, FilterSchemas } = require('../utils/validation-schemas');

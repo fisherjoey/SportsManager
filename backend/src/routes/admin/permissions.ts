@@ -15,8 +15,7 @@ import Joi from 'joi';
 import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../../middleware/auth';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
-// Import PermissionService (still JavaScript for now)
-const PermissionService = require('../../services/PermissionService');
+import PermissionService from '../../services/PermissionService';
 
 // Initialize router
 const router = express.Router();

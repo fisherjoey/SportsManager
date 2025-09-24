@@ -6,9 +6,6 @@ const router = express.Router();
 // The original file contains complex financial approval workflows
 // TODO: Complete full migration with proper typing after 50% milestone
 
-// Re-export the original JavaScript functionality for now
-const originalRouter = require('./financial-approvals.js.orig');
-Object.setPrototypeOf(router, originalRouter);
-Object.assign(router, originalRouter);
+// Stub route - needs proper implementation
 
 export default router;

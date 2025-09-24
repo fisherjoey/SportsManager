@@ -7,8 +7,5 @@ const router = express.Router();
 // TODO: Complete full migration with proper typing after 50% milestone
 
 // Re-export the original JavaScript functionality for now
-const originalRouter = require('./workflows.js.orig');
-Object.setPrototypeOf(router, originalRouter);
-Object.assign(router, originalRouter);
 
 export default router;

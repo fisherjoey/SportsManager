@@ -30,7 +30,7 @@ import type {
   IPermissionService
 } from '../types/permission';
 
-const db: DatabaseConnection = require('../../config/database');
+const db: DatabaseConnection = require('../config/database');
 
 class PermissionService extends BaseService implements IPermissionService {
   public userPermissionsCache: Map<string, CacheEntry<Permission[]>>;

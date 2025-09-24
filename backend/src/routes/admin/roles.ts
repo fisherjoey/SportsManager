@@ -12,15 +12,14 @@ import express, { Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { authenticateToken, requirePermission, requireRole, requireAnyPermission } from '../../middleware/auth';
 import { AuthenticatedRequest } from '../../types/auth.types';
-
-// Import RoleService (still JavaScript for now)
-const RoleService = require('../../services/RoleService');
+import RoleService from '../../services/RoleService';
+const db = require('../../config/database');
 
 // Initialize router
 const router = express.Router();
 
 // Initialize services
-const roleService = new RoleService();
+const roleService = new RoleService(db);
 
 // Type definitions for role management
 interface RoleCreateData {
