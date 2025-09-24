@@ -9,7 +9,7 @@ import fs from 'fs-extra';
 import sharp from 'sharp';
 import pdf2pic from 'pdf2pic';
 import path from 'path';
-import { logger } from '../utils/logger';
+const logger = require('../utils/logger');
 import aiConfig from '../config/aiConfig';
 
 // Import security functions from JS until migrated

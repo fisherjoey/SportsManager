@@ -48,7 +48,8 @@
       "Bash(npx cross-env:*)",
       "Bash(for file in compliance.ts performance.ts resources.ts workflows.ts)",
       "Bash(do sed -i \"/require.*\\.orig/d\" \"$file\")",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
