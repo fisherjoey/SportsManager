@@ -757,21 +757,8 @@ export const ValidationSchemas = {
   IdParamSchema
 } as const;
 
-// Export types for external use
+// Export types for external use (already exported above)
 export type {
-  UserRole,
-  GameGender,
-  GameType,
-  AssignmentStatus,
-  GameStatus,
-  RefereeLevel,
-  AvailabilityStrategy,
-  SortOrder,
-  MentorshipStatus,
-  NoteType,
-  DocumentType,
-  AnalyticsGroupBy,
-  MenteeGameSortBy,
   TeamData,
   UserCreateData,
   UserUpdateData,

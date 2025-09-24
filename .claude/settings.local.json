@@ -1,4 +1,5 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Read(//c/Users/School/Desktop/SportsManager-js-to-ts/backend/**)",
@@ -51,7 +52,9 @@
       "Bash(echo:*)",
       "Bash(curl:*)",
       "Bash(git mv:*)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(npm run build:frontend:*)",
+      "Bash(npx jest:*)"
     ],
     "deny": [],
     "ask": []
