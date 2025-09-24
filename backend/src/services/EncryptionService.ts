@@ -661,3 +661,4 @@ export { EncryptionError, EncryptionErrorType } from './types/encryption';
 
 // Create and export singleton instance
 export const encryptionService = new EncryptionService();
+export default EncryptionService;

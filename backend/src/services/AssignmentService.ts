@@ -721,3 +721,4 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
     }
   }
 }
+export default AssignmentService;

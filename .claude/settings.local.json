@@ -35,7 +35,15 @@
       "Bash(pkill:*)",
       "Bash(mv:*)",
       "Bash(DISABLE_REDIS=true node dist/server.js)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(while read jsfile)",
+      "Bash(do tsfile=\"$jsfile%.js.ts\")",
+      "Bash(if [ -f \"$tsfile\" ])",
+      "Bash(then echo \"Duplicate: $jsfile (has .ts version)\")",
+      "Bash(npm start)",
+      "Bash(for file in src/services/*.ts)",
+      "Bash(do if ! grep -q \"^export default\" \"$file\")",
+      "Bash(then echo \"$file needs default export\")"
     ],
     "deny": [],
     "ask": []

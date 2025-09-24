@@ -1029,3 +1029,4 @@ export { WorkflowError, WorkflowErrorType } from './types/approvalWorkflow';
 
 // Create and export singleton instance
 export const approvalWorkflowService = new ApprovalWorkflowService();
+export default ApprovalWorkflowService;

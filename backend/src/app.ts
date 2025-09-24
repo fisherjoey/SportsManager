@@ -82,6 +82,8 @@ import adminPermissionRoutes from './routes/admin/permissions';
 import adminMaintenanceRoutes from './routes/admin/maintenance';
 import testRoleRoutes from './routes/admin/test-roles';
 import adminRBACRegistryRoutes from './routes/admin/rbac-registry';
+import adminAccessRoutes from './routes/admin/access';
+import adminUsersRoutes from './routes/admin/users';
 
 const app = express();
 
@@ -219,8 +221,8 @@ app.use('/api/mentees', menteeGamesRoutes);
 app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/permissions', adminPermissionRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
-app.use('/api/admin/access', require('./routes/admin/access'));
-app.use('/api/admin/users', require('./routes/admin/users'));
+app.use('/api/admin/access', adminAccessRoutes);
+app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/admin/rbac-registry', adminRBACRegistryRoutes);
 app.use('/api/test-roles', testRoleRoutes);
 

@@ -723,3 +723,4 @@ export class UserService extends BaseService<User> {
     return changes;
   }
 }
+export default UserService;

@@ -755,3 +755,4 @@ export class CommunicationService {
     };
   }
 }
+export default CommunicationService;
