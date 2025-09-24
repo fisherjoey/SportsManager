@@ -49,7 +49,9 @@
       "Bash(for file in compliance.ts performance.ts resources.ts workflows.ts)",
       "Bash(do sed -i \"/require.*\\.orig/d\" \"$file\")",
       "Bash(echo:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git mv:*)",
+      "Bash(tasklist)"
     ],
     "deny": [],
     "ask": []
