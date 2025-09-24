@@ -33,7 +33,9 @@
       "Bash(fi)",
       "Bash(mkdir:*)",
       "Bash(pkill:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(DISABLE_REDIS=true node dist/server.js)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

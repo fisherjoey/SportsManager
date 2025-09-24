@@ -12,8 +12,9 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "noEmit": false,
+    "noEmitOnError": false,
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": false,
@@ -24,7 +25,8 @@
     "noImplicitReturns": false,
     "noImplicitThis": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "checkJs": false
   },
   "include": [
     "src/**/*.ts"

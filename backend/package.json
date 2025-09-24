@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "npx cross-env DISABLE_REDIS=true ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "npx cross-env DISABLE_REDIS=true nodemon --exec ts-node --transpile-only src/server.ts",
     "build": "npx tsc",
     "build:watch": "npx tsc --watch",
     "type-check": "npx tsc --noEmit",

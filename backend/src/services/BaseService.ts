@@ -446,3 +446,6 @@ export abstract class BaseService<T extends BaseEntity = BaseEntity> {
   protected async beforeDelete?(record: T, options: QueryOptions): Promise<void>;
   protected async afterDelete?(record: T, options: QueryOptions): Promise<void>;
 }
+
+// Default export for backward compatibility
+export default BaseService;
