@@ -9,15 +9,14 @@
 import db from '../config/database';
 
 // Import the compiled TypeScript module
-let refereesRouter;
+import refereesRouterTS from './referees';
+
+let refereesRouter = refereesRouterTS;
 
 try {
-  // Try to load the compiled TypeScript version
-  import { default: compiledRouter, initializeRoutes  } from '../../dist/routes/referees.js';
-
-  if (initializeRoutes) {
-    // Initialize with database connection
-    refereesRouter = initializeRoutes(db);
+  // Use the TypeScript version directly
+  if (refereesRouterTS) {
+    refereesRouter = refereesRouterTS;
   } else {
     refereesRouter = compiledRouter;
   }

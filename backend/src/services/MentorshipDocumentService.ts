@@ -19,7 +19,7 @@
 
 import BaseService from './BaseService';
 import path from 'path';
-import fs from 'fs'.promises;
+import fs from 'fs';
 
 class MentorshipDocumentService extends BaseService {
   /**

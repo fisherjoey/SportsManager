@@ -7,7 +7,7 @@ import Joi from 'joi';
 import { authenticateToken, requireRole  } from '../middleware/auth';
 import { receiptUploader  } from '../middleware/fileUpload';
 import path from 'path';
-import fs from 'fs'.promises;
+import fs from 'fs';
 
 // Using shared file upload configuration from middleware
 

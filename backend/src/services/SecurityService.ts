@@ -3,7 +3,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { v4: uuidv4  } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import knex from '../config/database';
 import EncryptionService from './EncryptionService';
 import AuditService from './AuditService';

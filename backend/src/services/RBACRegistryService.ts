@@ -7,9 +7,9 @@
  * Handles scanning, registration, and synchronization of permissions.
  */
 
-import fs from 'fs'.promises
-import path from 'path'
-import logger from '../utils/logger'
+import fs from 'fs';
+import path from 'path';
+import logger from '../utils/logger';
 
 class RBACRegistryService {
   constructor(dbService) {

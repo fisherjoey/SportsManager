@@ -92,7 +92,7 @@ router.post('/gc', enhancedAsyncHandler(async (req, res) => {
  */
 router.get('/logs/size', enhancedAsyncHandler(async (req, res) => {
   try {
-    import fs from 'fs'.promises;
+    import fs from 'fs';
     import path from 'path';
     
     const logInfo = {

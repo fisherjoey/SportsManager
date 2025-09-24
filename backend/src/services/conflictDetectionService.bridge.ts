@@ -10,15 +10,13 @@
 
 import conflictDetectionService from './conflictDetectionService';
 
-export {
-  checkRefereeDoubleBooking: conflictDetectionService.checkRefereeDoubleBooking,
-  checkVenueConflict: conflictDetectionService.checkVenueConflict,
-  validateRefereeQualifications: conflictDetectionService.validateRefereeQualifications,
-  checkAssignmentConflicts: conflictDetectionService.checkAssignmentConflicts,
-  checkGameSchedulingConflicts: conflictDetectionService.checkGameSchedulingConflicts,
-  calculateEndTime: conflictDetectionService.calculateEndTime,
-  addMinutes: conflictDetectionService.addMinutes,
-  subtractMinutes: conflictDetectionService.subtractMinutes,
-  checkTravelTimeConflict: conflictDetectionService.checkTravelTimeConflict,
-  getMinutesBetween: conflictDetectionService.getMinutesBetween
-};
+export const checkRefereeDoubleBooking = conflictDetectionService.checkRefereeDoubleBooking;
+export const checkVenueConflict = conflictDetectionService.checkVenueConflict;
+export const validateRefereeQualifications = conflictDetectionService.validateRefereeQualifications;
+export const checkAssignmentConflicts = conflictDetectionService.checkAssignmentConflicts;
+export const checkGameSchedulingConflicts = conflictDetectionService.checkGameSchedulingConflicts;
+export const calculateEndTime = conflictDetectionService.calculateEndTime;
+export const addMinutes = conflictDetectionService.addMinutes;
+export const subtractMinutes = conflictDetectionService.subtractMinutes;
+export const checkTravelTimeConflict = conflictDetectionService.checkTravelTimeConflict;
+export const getMinutesBetween = conflictDetectionService.getMinutesBetween;
