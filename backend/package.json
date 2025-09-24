@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "npx cross-env DISABLE_REDIS=true nodemon src/server.js",
+    "dev": "npx cross-env DISABLE_REDIS=true ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "npx tsc",
     "build:watch": "npx tsc --watch",
     "type-check": "npx tsc --noEmit",
@@ -100,7 +100,8 @@
     "rimraf": "^6.0.1",
     "supertest": "^6.3.3",
     "ts-jest": "^29.4.4",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
   },
   "keywords": [
     "sports",

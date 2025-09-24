@@ -59,7 +59,7 @@ receiptUploader.array = jest.fn().mockImplementation((fieldName: string, maxCoun
   }
 );
 
-import communicationsRouter from '../communications.ts';
+import communicationsRouter from '../communications';
 
 const app = express();
 app.use(express.json());

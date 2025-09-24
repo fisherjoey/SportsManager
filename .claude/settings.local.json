@@ -19,7 +19,21 @@
       "Bash(for file in validation-schemas availability query-cache aiServices financialAIService budgetCalculationService)",
       "Bash(do echo \"=== $file ===\")",
       "Bash(ls:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(bash:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(while read file)",
+      "Bash(do ts_file=\"$file%.js.ts\")",
+      "Bash(if [ -f \"$ts_file\" ])",
+      "Bash(then echo \"Removing duplicate: $file\")",
+      "Bash(fi)",
+      "Bash(mkdir:*)",
+      "Bash(pkill:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []
