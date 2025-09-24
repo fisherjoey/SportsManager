@@ -10,12 +10,15 @@
  */
 
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 const router = express.Router();
 import { authenticateToken, requireRole  } from '../../middleware/auth';
-import { createCleanupRoutes  } from '../../jobs/auditLogCleanup';
+import { createCleanupRoutes, auditCleanupJob  } from '../../jobs/auditLogCleanup';
 import { enhancedAsyncHandler  } from '../../middleware/enhanced-error-handling';
 import { ResponseFormatter  } from '../../utils/response-formatters';
 import logger from '../../utils/logger';
+const db = require('../../config/database');
 
 // Apply admin authentication to all routes
 router.use(authenticateToken);
@@ -27,7 +30,6 @@ router.use(requireRole('admin'));
  */
 router.get('/status', enhancedAsyncHandler(async (req, res) => {
   try {
-    import { auditCleanupJob  } from '../../jobs/auditLogCleanup';
     
     const maintenanceStatus = {
       timestamp: new Date().toISOString(),
@@ -92,8 +94,6 @@ router.post('/gc', enhancedAsyncHandler(async (req, res) => {
  */
 router.get('/logs/size', enhancedAsyncHandler(async (req, res) => {
   try {
-    import fs from 'fs';
-    import path from 'path';
     
     const logInfo = {
       timestamp: new Date().toISOString(),
@@ -168,7 +168,6 @@ router.post('/logs/rotate', enhancedAsyncHandler(async (req, res) => {
  */
 router.get('/database/stats', enhancedAsyncHandler(async (req, res) => {
   try {
-    import db from '../../config/database';
     
     // Get table row counts (sample of important tables)
     const tables = [
@@ -247,7 +246,6 @@ router.get('/health', enhancedAsyncHandler(async (req, res) => {
 
     // Database connectivity check
     try {
-      import db from '../../config/database';
       await db.raw('SELECT 1');
       healthData.checks.database = {
         status: 'ok',
@@ -263,7 +261,6 @@ router.get('/health', enhancedAsyncHandler(async (req, res) => {
 
     // Audit cleanup job status
     try {
-      import { auditCleanupJob  } from '../../jobs/auditLogCleanup';
       const jobStatus = auditCleanupJob.getStatus();
       healthData.checks.auditCleanup = {
         status: jobStatus.isRunning ? 'running' : 'idle',

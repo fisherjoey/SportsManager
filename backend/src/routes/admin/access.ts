@@ -14,10 +14,11 @@ import { authenticateToken, requirePermission } from '../../middleware/auth';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
 // Import services and middleware (still JavaScript for now)
+import RoleServiceClass from '../../services/RoleService';
+const db = require('../../config/database');
 const { asyncHandler } = require('../../middleware/errorHandling');
 const RoleAccessService = require('../../services/RoleAccessService');
-const RoleServiceClass = require('../../services/RoleService');
-const RoleService = new RoleServiceClass();
+const RoleService = new RoleServiceClass(db);
 
 // Initialize router
 const router = express.Router();
