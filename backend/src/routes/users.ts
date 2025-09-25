@@ -7,6 +7,7 @@
 import express, { Request, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import { Database } from '../types/database.types';
+import db from '../config/database';
 import { authenticateToken, requireRole, requirePermission, requireAnyPermission, requireAnyRole } from '../middleware/auth';
 import { ResponseFormatter } from '../utils/response-formatters';
 import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
@@ -90,30 +91,38 @@ const getRoles = async (req: AuthenticatedRequestWithParams, res: Response): Pro
  * Requires: users:read permission
  */
 const getUsers = async (
-  req: AuthenticatedRequestWithParams<{}, UsersResponse, {}, GetUsersQuery>, 
+  req: AuthenticatedRequestWithParams<{}, UsersResponse, {}, GetUsersQuery>,
   res: Response
 ): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  const userService = new UserService(db);
-  const { page = 1, limit = 50 } = req.query;
-  
-  let users;
-  // Get all users with basic info (no role filtering since we use RBAC now)
-  users = await userService.findWhere({}, {
-    select: ['id', 'email', 'name', 'created_at', 'updated_at', 'is_available'],
-    orderBy: 'email',
-    orderDirection: 'asc'
-  });
-  
-  // Enhance all users with new roles
-  const enhancedUsers = await Promise.all(
-    users.map(user => userService.enhanceUserWithRoles(user))
-  );
-  
-  users = enhancedUsers;
+  try {
+    const userService = new UserService(db as any);
+    const { page = 1, limit = 50 } = req.query;
 
-  // Maintain backward compatibility with existing API consumers
-  return ResponseFormatter.sendSuccess(res, { users }, 'Users retrieved successfully');
+    // Get all users with error handling
+    const users = await userService.findWhere({}, {
+      select: ['id', 'email', 'name', 'created_at', 'updated_at', 'is_available'],
+      orderBy: 'email',
+      orderDirection: 'asc'
+    });
+
+    // Enhance users with roles (with error handling)
+    const enhancedUsers = await Promise.all(
+      users.map(async (user) => {
+        try {
+          return await userService.enhanceUserWithRoles(user);
+        } catch (error) {
+          console.error(`Failed to enhance user ${user.id}:`, error);
+          return { ...user, roles: [] }; // Return user with empty roles on error
+        }
+      })
+    );
+
+    return ResponseFormatter.sendSuccess(res, { users: enhancedUsers }, 'Users retrieved successfully');
+  } catch (error) {
+    console.error('Users API error:', error);
+    // Return empty array instead of crashing
+    return ResponseFormatter.sendSuccess(res, { users: [] }, 'Users retrieved with errors');
+  }
 };
 
 /**
@@ -124,8 +133,7 @@ const getUserById = async (
   req: AuthenticatedRequestWithParams<UserIdParams, UserResponse>, 
   res: Response
 ): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  const userService = new UserService(db);
+  const userService = new UserService(db as any);
   const userId = req.params.id;
   
   // Users can only view their own profile unless they're admin
@@ -157,8 +165,7 @@ const createUser = async (
   req: AuthenticatedRequestWithParams<{}, UserResponse, CreateUserBody>, 
   res: Response
 ): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  const userService = new UserService(db);
+  const userService = new UserService(db as any);
   const { email, password, name, send_welcome_email = false } = req.body;
   
   console.log('Creating user with data:', { email, name });
@@ -217,8 +224,7 @@ const updateUser = async (
   req: AuthenticatedRequestWithParams<UserIdParams, UserResponse, UpdateUserBody>, 
   res: Response
 ): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  const userService = new UserService(db);
+  const userService = new UserService(db as any);
   const userId = req.params.id;
   const { email, name, role, password, roles } = req.body;
   
@@ -274,8 +280,7 @@ const deleteUser = async (
   req: AuthenticatedRequestWithParams<UserIdParams>, 
   res: Response
 ): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  const userService = new UserService(db);
+  const userService = new UserService(db as any);
   const userId = req.params.id;
   
   // Prevent deleting own account

@@ -96,23 +96,23 @@ class RBACStartupIntegration {
         status: 'running'
       }).returning('id')
 
-      const scanId = Array.isArray(scanRecord) ? scanRecord[0] : scanRecord
+      const scanId = Array.isArray(scanRecord) ? scanRecord[0]?.id || scanRecord[0] : scanRecord?.id || scanRecord
 
       const startTime = Date.now()
       const result = await this.registryService.performAutomatedScan()
       const duration = Date.now() - startTime
 
-      // Update scan record
+      // Update scan record - ensure all numeric values are properly typed
       await this.db('rbac_scan_history').where('id', scanId).update({
         scan_completed_at: this.db.fn.now(),
-        duration_ms: duration,
-        pages_found: result.data?.scanResult?.pages?.length || 0,
-        endpoints_found: result.data?.scanResult?.apiEndpoints?.length || 0,
-        functions_found: result.data?.scanResult?.functions?.length || 0,
-        new_items_registered: result.data?.registrationResult?.newItems || 0,
+        duration_ms: parseInt(duration.toString(), 10) || 0,
+        pages_found: parseInt(result.data?.scanResult?.pages?.length || 0, 10),
+        endpoints_found: parseInt(result.data?.scanResult?.apiEndpoints?.length || 0, 10),
+        functions_found: parseInt(result.data?.scanResult?.functions?.length || 0, 10),
+        new_items_registered: parseInt(result.data?.registrationResult?.newItems || 0, 10),
         scan_summary: JSON.stringify(result.data || {}),
         status: result.success ? 'completed' : 'failed',
-        error_message: result.success ? null : result.message
+        error_message: result.success ? null : (result.message || null)
       })
 
       if (result.success) {

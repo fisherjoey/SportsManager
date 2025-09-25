@@ -13,7 +13,7 @@ import Joi from 'joi';
 import { authenticateToken, requirePermission, requireRole, requireAnyPermission } from '../../middleware/auth';
 import { AuthenticatedRequest } from '../../types/auth.types';
 import RoleService from '../../services/RoleService';
-const db = require('../../config/database');
+import db from '../../config/database';
 
 // Initialize router
 const router = express.Router();

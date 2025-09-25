@@ -4,6 +4,7 @@
  */
 
 import knex, { Knex } from 'knex';
+import { Pool } from 'pg';
 import { Database } from '../types/database.types';
 
 // Import knexfile configuration
@@ -78,21 +79,71 @@ const connectionState: DatabaseConnectionState = {
   isConnected: false
 };
 
-// Create Knex instance with proper typing and enhanced error handling
-const db: Knex<Database> = knex({
-  ...config,
-  pool: {
-    min: 2,
-    max: 10,
-    createTimeoutMillis: 3000,
-    acquireTimeoutMillis: 60000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 100,
-    ...config.pool
-  },
-  acquireConnectionTimeout: 60000
-});
+// Singleton Database Connection Class
+class DatabaseConnection {
+  private static instance: DatabaseConnection;
+  private pool: Pool;
+  private knexInstance: Knex<Database>;
+
+  private constructor() {
+    // Create shared pool
+    this.pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+
+    // Create shared Knex instance with proper typing and enhanced error handling
+    this.knexInstance = knex({
+      ...config,
+      pool: {
+        min: 2,
+        max: 10,
+        createTimeoutMillis: 3000,
+        acquireTimeoutMillis: 60000,
+        idleTimeoutMillis: 30000,
+        reapIntervalMillis: 1000,
+        createRetryIntervalMillis: 100,
+        ...config.pool
+      },
+      acquireConnectionTimeout: 60000
+    });
+
+    // Log connection status
+    this.pool.on('connect', () => {
+      console.log('Database pool: client connected');
+    });
+
+    this.pool.on('error', (err) => {
+      console.error('Database pool error:', err);
+    });
+  }
+
+  public static getInstance(): DatabaseConnection {
+    if (!DatabaseConnection.instance) {
+      DatabaseConnection.instance = new DatabaseConnection();
+    }
+    return DatabaseConnection.instance;
+  }
+
+  public getPool(): Pool {
+    return this.pool;
+  }
+
+  public getKnex(): Knex<Database> {
+    return this.knexInstance;
+  }
+
+  // Helper method for services
+  public getDb(): Knex<Database> {
+    return this.knexInstance;
+  }
+}
+
+// Create singleton instance
+const dbConnection = DatabaseConnection.getInstance();
+const db: Knex<Database> = dbConnection.getKnex();
 
 // Enhanced connection validation with detailed error reporting
 const validateConnection = async (): Promise<boolean> => {
@@ -201,10 +252,14 @@ const validateSchema = async (): Promise<{
   }
 };
 
-// Export database instance and utilities
+// Export the knex instance as default for compatibility
+const knexDb = dbConnection.getKnex();
+export default knexDb;
+
+// Also export named exports for flexibility
+export const db = knexDb;
+export const pool = dbConnection.getPool();
 export {
-  db as default,
-  db as pool, // Alias for compatibility
   validateConnection,
   getConnectionState,
   healthCheck,
