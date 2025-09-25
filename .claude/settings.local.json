@@ -6,7 +6,12 @@
       "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" --version)",
       "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"ALTER USER postgres WITH PASSWORD ''postgres123'';\")",
       "mcp__ide__getDiagnostics",
-      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"SELECT 1;\")"
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"SELECT 1;\")",
+      "Bash(cat:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
