@@ -27,7 +27,7 @@ import { RoleManagementDashboard } from '../rbac/RoleManagementDashboard'
 import { PermissionManagementDashboard } from '../rbac/PermissionManagementDashboard'
 import { RolePageAccessManager } from '../rbac/RolePageAccessManager'
 import { PermissionConfigurationDashboard } from '../rbac/PermissionConfigurationDashboard'
-import { MentorshipManagement } from '../mentorship/MentorshipManagement'
+import { MentorshipManagementEnhanced as MentorshipManagement } from '../mentorship/MentorshipManagementEnhanced'
 
 interface TabInfo {
   id: string

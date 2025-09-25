@@ -38,10 +38,10 @@ interface MenteeeSelectorProps {
   variant?: 'default' | 'outline' | 'ghost'
 }
 
-export function MenteeSelector({ 
-  mentorId, 
-  selectedMenteeId, 
-  onMenteeSelect, 
+export function MenteeSelector({
+  mentorId,
+  selectedMenteeId,
+  onMenteeSelect,
   className = '',
   showAllOption = true,
   placeholder = 'Select mentee...',
@@ -57,20 +57,31 @@ export function MenteeSelector({
   }, [mentorId])
 
   const fetchMentees = async () => {
+    if (!mentorId) {
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const response = await apiClient.get(`/mentors/${mentorId}/mentees`)
-      
+
       if (response.data) {
-        setMentees(response.data)
+        // Ensure response is always an array
+        setMentees(Array.isArray(response.data) ? response.data : [])
+      } else {
+        setMentees([])
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load mentees'
+      console.error('Failed to fetch mentees:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unable to load mentees'
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
       })
+      // Set empty array to prevent crashes
+      setMentees([])
     } finally {
       setLoading(false)
     }
@@ -85,12 +96,15 @@ export function MenteeSelector({
     setOpen(false)
   }
 
-  const activeMentees = mentees.filter(m =>
-    m.mentorship_assignments?.some(a => a.status === 'active')
-  )
-  const inactiveMentees = mentees.filter(m =>
-    !m.mentorship_assignments?.some(a => a.status === 'active')
-  )
+  // Safe filtering with optional chaining
+  const activeMentees = mentees.filter(m => {
+    const assignments = m.mentorship_assignments || []
+    return assignments.some(a => a?.status === 'active')
+  })
+  const inactiveMentees = mentees.filter(m => {
+    const assignments = m.mentorship_assignments || []
+    return !assignments.some(a => a?.status === 'active')
+  })
 
   return (
     <div className={className}>
@@ -161,7 +175,9 @@ export function MenteeSelector({
                   <CommandGroup heading="Active Mentees">
                     {activeMentees.map((mentee) => {
                       const progress = getMenteeProgress(mentee)
-                      const assignment = mentee.mentorship_assignments?.[0]
+                      // Safe access to assignments with fallback
+                      const assignments = mentee.mentorship_assignments || []
+                      const assignment = assignments[0]
                       
                       return (
                         <CommandItem
@@ -229,7 +245,9 @@ export function MenteeSelector({
                   <CommandGroup heading="Inactive Mentees">
                     {inactiveMentees.map((mentee) => {
                       const progress = getMenteeProgress(mentee)
-                      const assignment = mentee.mentorship_assignments?.[0]
+                      // Safe access to assignments with fallback
+                      const assignments = mentee.mentorship_assignments || []
+                      const assignment = assignments[0]
                       
                       return (
                         <CommandItem
@@ -329,20 +347,31 @@ export function SimpleMenteeSelector({
   }, [mentorId])
 
   const fetchMentees = async () => {
+    if (!mentorId) {
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const response = await apiClient.get(`/mentors/${mentorId}/mentees`)
-      
+
       if (response.data) {
-        setMentees(response.data)
+        // Ensure response is always an array
+        setMentees(Array.isArray(response.data) ? response.data : [])
+      } else {
+        setMentees([])
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load mentees'
+      console.error('Failed to fetch mentees (simple):', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unable to load mentees'
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
       })
+      // Set empty array to prevent crashes
+      setMentees([])
     } finally {
       setLoading(false)
     }
@@ -395,7 +424,9 @@ export function SimpleMenteeSelector({
             </DropdownMenuItem>
           ) : (
             mentees.map((mentee) => {
-              const assignment = mentee.mentorship_assignments?.[0]
+              // Safe access to assignments
+              const assignments = mentee.mentorship_assignments || []
+              const assignment = assignments[0]
               
               return (
                 <DropdownMenuItem 

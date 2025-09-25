@@ -141,25 +141,47 @@ router.get('/',
     const userId = req.user.id;
 
     try {
-      // Check if user can be a mentor
-      const canBeMentor = await mentorshipService.canUserBeMentor(userId);
-      
       let mentorships;
       let userRole = 'mentee'; // default
-      
-      if (canBeMentor) {
-        // User is a mentor - get their mentees
-        mentorships = await mentorshipService.getMentorshipsByMentor(userId, {
+
+      // Check if user has admin/manage permissions directly from database
+      const hasManagePermission = await db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .join('role_permissions', 'roles.id', 'role_permissions.role_id')
+        .join('permissions', 'role_permissions.permission_id', 'permissions.id')
+        .where('user_roles.user_id', userId)
+        .where('user_roles.is_active', true)
+        .where('permissions.name', 'mentorships:manage')
+        .first();
+
+      console.log(`User ${userId} has manage permission:`, !!hasManagePermission);
+      const isAdmin = !!hasManagePermission;
+
+      if (isAdmin) {
+        // Admin - get ALL mentorships
+        mentorships = await mentorshipService.getAllMentorships({
           status,
           includeDetails: true
         });
-        userRole = 'mentor';
+        userRole = 'admin';
       } else {
-        // User is a mentee - get their mentors
-        mentorships = await mentorshipService.getMentorshipsByMentee(userId, {
-          status,
-          includeDetails: true
-        });
+        // Check if user can be a mentor
+        const canBeMentor = await mentorshipService.canUserBeMentor(userId);
+
+        if (canBeMentor) {
+          // User is a mentor - get their mentees
+          mentorships = await mentorshipService.getMentorshipsByMentor(userId, {
+            status,
+            includeDetails: true
+          });
+          userRole = 'mentor';
+        } else {
+          // User is a mentee - get their mentors
+          mentorships = await mentorshipService.getMentorshipsByMentee(userId, {
+            status,
+            includeDetails: true
+          });
+        }
       }
 
       // Apply pagination if needed
@@ -179,7 +201,7 @@ router.get('/',
         },
         meta: {
           userRole,
-          canBeMentor
+          canBeMentor: userRole === 'admin' ? true : await mentorshipService.canUserBeMentor(userId)
         }
       };
 
@@ -268,13 +290,16 @@ router.post('/',
  */
 router.put('/:id',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireAnyPermission(['mentorships:create', 'mentorships:manage']),
   validateParams(IdParamSchema),
   validateBody(MentorshipSchemas.update),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipId = req.params.id;
     const updateData = req.body;
-    const userId = req.user.id;
+
+    console.log('[Mentorship Route] User object:', req.user);
+    const userId = req.user.id || req.user.userId;
+    console.log('[Mentorship Route] Extracted userId:', userId);
 
     try {
       // For status updates, use the specialized method

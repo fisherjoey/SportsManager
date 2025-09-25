@@ -84,35 +84,37 @@ interface RoleHierarchy {
 // Validation schemas
 const createRoleSchema = Joi.object({
   name: Joi.string().min(2).max(50).required(),
-  description: Joi.string().min(5).max(500),
-  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
-  category: Joi.string().min(2).max(30),
-  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).default('#6B7280'),
+  description: Joi.string().min(5).max(500).allow('', null),
+  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/).allow('', null),
+  category: Joi.string().min(2).max(30).allow('', null),
+  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).default('#6B7280').allow('', null),
   is_system: Joi.boolean().default(false),
   is_active: Joi.boolean().default(true),
-  permissions: Joi.array().items(Joi.string().uuid())
+  permissions: Joi.array().items(Joi.string()).allow(null) // Allow permission names or UUIDs
 });
 
 const updateRoleSchema = Joi.object({
-  name: Joi.string().min(2).max(50),
-  description: Joi.string().min(5).max(500),
-  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/),
-  category: Joi.string().min(2).max(30),
-  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/),
+  name: Joi.string().min(2).max(50).allow('', null),
+  description: Joi.string().min(5).max(500).allow('', null),
+  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/).allow('', null),
+  category: Joi.string().min(2).max(30).allow('', null),
+  color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
   is_active: Joi.boolean(),
-  permissions: Joi.array().items(Joi.string().uuid())
+  permissions: Joi.array().items(Joi.string()).allow(null) // Allow permission names or UUIDs
 });
 
 const assignPermissionsSchema = Joi.object({
-  permission_ids: Joi.array().items(Joi.string().uuid()).required().min(1)
-});
+  permission_ids: Joi.array().items(Joi.string()).required().min(1), // Allow permission names or UUIDs
+  permissions: Joi.array().items(Joi.string()) // Also accept 'permissions' field
+}).or('permission_ids', 'permissions');
 
 const removePermissionsSchema = Joi.object({
-  permission_ids: Joi.array().items(Joi.string().uuid()).required().min(1)
-});
+  permission_ids: Joi.array().items(Joi.string()).required().min(1), // Allow permission names or UUIDs
+  permissions: Joi.array().items(Joi.string()) // Also accept 'permissions' field
+}).or('permission_ids', 'permissions');
 
 const assignUserRoleSchema = Joi.object({
-  user_ids: Joi.array().items(Joi.string().uuid()).required().min(1)
+  user_ids: Joi.array().items(Joi.string()).required().min(1) // Allow any string format for user IDs
 });
 
 /**

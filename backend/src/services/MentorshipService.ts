@@ -249,6 +249,47 @@ class MentorshipService extends BaseService {
   }
 
   /**
+   * Get ALL mentorships (admin only)
+   * @param options - Query options
+   * @returns Array of all mentorship records
+   */
+  async getAllMentorships(
+    options: MentorshipQueryOptions = {}
+  ): Promise<any[]> {
+    try {
+      const { status, includeDetails = true } = options;
+
+      let query = this.db('mentorships');
+
+      if (status) {
+        query = query.where('status', status);
+      }
+
+      if (includeDetails) {
+        query = query
+          .select(
+            'mentorships.*',
+            'mentor.name as mentor_name',
+            'mentor.email as mentor_email',
+            'mentor.phone as mentor_phone',
+            'mentee.name as mentee_name',
+            'mentee.email as mentee_email',
+            'mentee.phone as mentee_phone'
+          )
+          .leftJoin('users as mentor', 'mentorships.mentor_id', 'mentor.id')
+          .leftJoin('users as mentee', 'mentorships.mentee_id', 'mentee.id');
+      }
+
+      const mentorships = await query.orderBy('mentorships.created_at', 'desc');
+
+      return mentorships;
+    } catch (error: any) {
+      console.error('Error getting all mentorships:', error);
+      throw new Error(`Failed to get all mentorships: ${error.message}`);
+    }
+  }
+
+  /**
    * Get a specific mentorship with full details
    * @param mentorshipId - Mentorship ID
    * @param requestingUserId - ID of user requesting access
@@ -295,9 +336,10 @@ class MentorshipService extends BaseService {
 
   /**
    * Update mentorship status
+   * Only users with mentorship management permissions can update status
    * @param mentorshipId - Mentorship ID
    * @param newStatus - New status (active, paused, completed, terminated)
-   * @param mentorId - Mentor ID (for authorization)
+   * @param userId - User ID performing the update (for authorization)
    * @param options - Update options
    * @returns Updated mentorship record
    * @throws Error if status transition is invalid or user lacks permission
@@ -305,7 +347,7 @@ class MentorshipService extends BaseService {
   async updateMentorshipStatus(
     mentorshipId: string,
     newStatus: MentorshipStatus,
-    mentorId: string,
+    userId: string,
     options: UpdateMentorshipOptions = {}
   ): Promise<MentorshipRecord> {
     try {
@@ -315,10 +357,52 @@ class MentorshipService extends BaseService {
         throw new Error(`Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(', ')}`);
       }
 
-      // Get current mentorship and verify mentor ownership
+      // Get current mentorship
       const mentorship = await this.findById(mentorshipId) as MentorshipRecord;
-      if (mentorship.mentor_id !== mentorId) {
-        throw new Error('Access denied: Only the mentor can update mentorship status');
+
+      console.log(`[MentorshipService] Checking permissions for user ${userId} to update mentorship ${mentorshipId}`);
+
+      // First, let's see what roles this user has
+      const userRoles = await this.db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .select('roles.name', 'user_roles.is_active');
+
+      console.log(`[MentorshipService] User roles:`, userRoles);
+
+      // Check if user has admin/manage permissions
+      // First check if user is Super Admin (has automatic bypass)
+      const isSuperAdmin = await this.db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .where('roles.name', 'Super Admin')
+        .first();
+
+      console.log(`[MentorshipService] Is Super Admin:`, !!isSuperAdmin);
+
+      // Then check for specific mentorship management permissions
+      let hasSpecificPermission = false;
+      if (!isSuperAdmin) {
+        hasSpecificPermission = await this.db('user_roles')
+          .join('roles', 'user_roles.role_id', 'roles.id')
+          .join('role_permissions', 'roles.id', 'role_permissions.role_id')
+          .join('permissions', 'role_permissions.permission_id', 'permissions.id')
+          .where('user_roles.user_id', userId)
+          .where('user_roles.is_active', true)
+          .whereIn('permissions.name', ['mentorships:manage', 'mentorships:update', 'system:admin'])
+          .first();
+      }
+
+      console.log(`[MentorshipService] Has specific permission:`, !!hasSpecificPermission);
+
+      const hasManagePermission = isSuperAdmin || hasSpecificPermission;
+
+      console.log(`[MentorshipService] Final permission check result:`, !!hasManagePermission);
+
+      // Only users with proper permissions can update mentorship status
+      if (!hasManagePermission) {
+        console.error(`[MentorshipService] Access denied for user ${userId}`);
+        throw new Error('Access denied: You need mentorship management permissions to update mentorship status');
       }
 
       // Prepare update data

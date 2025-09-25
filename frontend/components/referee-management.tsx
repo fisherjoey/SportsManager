@@ -28,10 +28,22 @@ import { StatsGrid } from '@/components/ui/stats-grid'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
 import { AvailabilityCalendar } from '@/components/availability-calendar'
 import { Referee } from '@/components/data-table/types'
+import {
+  isReferee,
+  getRefereeLevel,
+  getRefereeLevelBadgeClass,
+  getRefereeDisplayName,
+  canMentor,
+  canEvaluate,
+  hasWhiteWhistle,
+  isRefereeAvailable
+} from '@/utils/refereeHelpers'
+import { User } from '@/types/user'
 
 export function RefereeManagement() {
   const [referees, setReferees] = useState<Referee[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [selectedReferee, setSelectedReferee] = useState<Referee | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -62,62 +74,63 @@ export function RefereeManagement() {
     const fetchReferees = async () => {
       try {
         setIsLoading(true)
+        setError(null)
+
         // Use the same approach as User Management for consistency
         const response = await api.request('/users', {
-          method: 'GET', 
-          query: { 
+          method: 'GET',
+          query: {
             limit: 100,
             role: 'referee' // Filter for referee role like User Management does
           }
         })
-        console.log('Users API response:', response) // Debug log
-        
-        // Extract referees from users response
-        let referees = []
-        if (response.data?.users) {
-          referees = response.data.users.filter(user => {
-            // Check if user has any referee-related roles
-            const hasRefereeRole = user.roles?.some(role => {
-              const roleName = typeof role === 'object' ? role.name : role
-              return roleName === 'Referee' || 
-                     roleName === 'Senior Referee' || 
-                     roleName === 'Junior Referee' || 
-                     roleName === 'Rookie Referee' ||
-                     (typeof role === 'object' && role.category === 'referee_type')
-            }) || user.role === 'referee' || user.is_referee === true
-            return hasRefereeRole
-          })
-        } else if (response.data?.data) {
-          referees = response.data.data.filter(user => {
-            // Check if user has any referee-related roles
-            const hasRefereeRole = user.roles?.some(role => {
-              const roleName = typeof role === 'object' ? role.name : role
-              return roleName === 'Referee' || 
-                     roleName === 'Senior Referee' || 
-                     roleName === 'Junior Referee' || 
-                     roleName === 'Rookie Referee' ||
-                     (typeof role === 'object' && role.category === 'referee_type')
-            }) || user.role === 'referee' || user.is_referee === true
-            return hasRefereeRole
-          })
+
+        // Handle server errors gracefully
+        if (response.status >= 500) {
+          console.error('Server error fetching referees:', response.status)
+          setReferees([])
+          setError('Unable to load referees. Server error occurred.')
+          return
         }
-        
-        console.log('Filtered referees:', referees)
-        // Debug: Log role structures
-        referees.forEach((ref, i) => {
+
+        console.log('Users API response:', response) // Debug log
+
+        // Extract referees from users response using helper function
+        let users = []
+        if (response.data?.users) {
+          users = response.data.users
+        } else if (response.data?.data) {
+          users = response.data.data
+        } else {
+          users = []
+        }
+
+        // Filter to only referees using helper function
+        const filteredReferees = users.filter((user: User) => isReferee(user))
+
+        console.log('Filtered referees:', filteredReferees)
+        // Debug: Log role structures for first 2 referees
+        filteredReferees.forEach((ref, i) => {
           if (i < 2) { // Only log first 2 to avoid spam
             console.log(`Referee ${i} roles:`, ref.roles)
-            console.log(`Referee ${i} role_names:`, ref.role_names)
+            console.log(`Referee ${i} level:`, getRefereeLevel(ref))
           }
         })
-        setReferees(referees)
+
+        setReferees(filteredReferees)
       } catch (error) {
         console.error('Failed to fetch referees:', error)
-        toast({
-          title: 'Error',
-          description: 'Failed to load referees. Please try again.',
-          variant: 'destructive'
-        })
+        setError('Failed to load referees. Please try again.')
+        setReferees([]) // Set empty array to prevent crashes
+
+        // Only show toast for non-404 errors
+        if (!(error instanceof Error && error.message.includes('404'))) {
+          toast({
+            title: 'Error',
+            description: 'Failed to load referees. Please try again.',
+            variant: 'destructive'
+          })
+        }
       } finally {
         setIsLoading(false)
       }
@@ -255,8 +268,8 @@ export function RefereeManagement() {
       filterType: 'search',
       accessor: (referee) => (
         <div>
-          <div className="font-medium text-sm truncate">{referee.name}</div>
-          {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
+          <div className="font-medium text-sm truncate">{getRefereeDisplayName(referee)}</div>
+          {hasWhiteWhistle(referee) && (
             <div className="flex items-center text-xs text-muted-foreground truncate mt-1">
               <Whistle className="h-3 w-3 text-white fill-current mr-1" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
               White Whistle
@@ -295,31 +308,29 @@ export function RefereeManagement() {
         { value: 'Expert', label: 'Expert' }
       ],
       accessor: (referee) => {
-        // Prefer new level system, fallback to legacy
-        const level = referee.new_referee_level || referee.level
-        const levelColors = {
-          // New levels
-          'Rookie': 'bg-green-100 text-green-800 border-green-200',
-          'Junior': 'bg-blue-100 text-blue-800 border-blue-200',
-          'Senior': 'bg-purple-100 text-purple-800 border-purple-200',
-          // Legacy levels
-          'Learning': 'bg-green-100 text-green-800 border-green-200',
-          'Learning+': 'bg-blue-100 text-blue-800 border-blue-200',
-          'Growing': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          'Growing+': 'bg-orange-100 text-orange-800 border-orange-200',
-          'Teaching': 'bg-purple-100 text-purple-800 border-purple-200',
-          'Expert': 'bg-red-100 text-red-800 border-red-200'
+        const level = getRefereeLevel(referee) || referee.new_referee_level || referee.level || 'Referee'
+        const badgeClass = getRefereeLevelBadgeClass(level)
+
+        // Convert badge classes to Tailwind classes for compatibility
+        const tailwindClasses = {
+          'badge-referee-head': 'bg-red-100 text-red-800 border-red-200',
+          'badge-referee-senior': 'bg-purple-100 text-purple-800 border-purple-200',
+          'badge-referee-junior': 'bg-blue-100 text-blue-800 border-blue-200',
+          'badge-referee-rookie': 'bg-green-100 text-green-800 border-green-200',
+          'badge-referee-coach': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+          'badge-referee-base': 'bg-gray-100 text-gray-800 border-gray-200',
+          'badge-default': 'bg-secondary text-secondary-foreground'
         }
-        
+
         return (
           <div className="flex items-center space-x-2">
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${levelColors[level as keyof typeof levelColors] || ''}`}
+            <Badge
+              variant="outline"
+              className={`text-xs ${tailwindClasses[badgeClass as keyof typeof tailwindClasses] || tailwindClasses['badge-default']}`}
             >
               {level}
             </Badge>
-            {(referee.should_display_white_whistle || referee.isWhiteWhistle) && (
+            {hasWhiteWhistle(referee) && (
               <Whistle className="h-3 w-3 text-white fill-current" style={{ filter: 'drop-shadow(0 0 1px #374151)' }} />
             )}
           </div>
@@ -446,10 +457,10 @@ export function RefereeManagement() {
         { value: 'false', label: 'Unavailable' }
       ],
       accessor: (referee) => {
-        const isAvailable = referee.isAvailable
-        
+        const isAvailable = isRefereeAvailable(referee)
+
         return (
-          <Badge 
+          <Badge
             variant={isAvailable ? 'default' : 'secondary'}
             className={`text-xs ${isAvailable ? 'bg-success/10 text-success border-success/20 hover:bg-success/20' : 'bg-muted text-muted-foreground border-border'}`}
           >
@@ -509,18 +520,27 @@ export function RefereeManagement() {
           <CardDescription>Manage referee profiles and availability</CardDescription>
         </CardHeader>
         <CardContent>
-          <FilterableTable 
-            columns={columns}
-            data={referees} 
-            loading={isLoading}
-            mobileCardType="referee"
-            enableViewToggle={true}
-            enableCSV={true}
-            searchKey="name"
-            emptyMessage="No referees found. Try adjusting your filters."
-            onEditReferee={handleEditReferee}
-            onViewProfile={handleViewProfile}
-          />
+          {error && !isLoading ? (
+            <div className="text-center py-8">
+              <div className="text-red-600 mb-4">{error}</div>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <FilterableTable
+              columns={columns}
+              data={referees}
+              loading={isLoading}
+              mobileCardType="referee"
+              enableViewToggle={true}
+              enableCSV={true}
+              searchKey="name"
+              emptyMessage="No referees found. Try adjusting your filters."
+              onEditReferee={handleEditReferee}
+              onViewProfile={handleViewProfile}
+            />
+          )}
         </CardContent>
       </Card>
 

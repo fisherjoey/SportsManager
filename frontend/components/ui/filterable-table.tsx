@@ -485,6 +485,11 @@ export function FilterableTable<T extends Record<string, any>>({
     return columns.map((col) => ({
       id: col.id,
       accessorKey: typeof col.accessor === 'string' ? col.accessor : col.id,
+      accessorFn: typeof col.accessor === 'function'
+        ? (row: T) => row
+        : typeof col.accessor === 'string'
+        ? (row: T) => (row as any)[col.accessor as string]
+        : (row: T) => (row as any)[col.id],
       header: ({ column: tanstackColumn }) => (
         <FilterableHeader column={col} tanstackColumn={tanstackColumn} />
       ),
@@ -495,7 +500,7 @@ export function FilterableTable<T extends Record<string, any>>({
         return row.getValue(col.id)
       },
       enableSorting: true,
-      enableHiding: col.filterType !== 'none',
+      enableHiding: col.id !== 'actions' && col.filterType !== 'none',
       filterFn: (row, columnId, filterValue) => {
         const colDef = columns.find(c => c.id === columnId)
         if (!colDef || !filterValue) return true

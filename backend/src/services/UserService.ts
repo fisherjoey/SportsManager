@@ -25,6 +25,7 @@ export interface EnhancedUser extends User {
   legacy_role: string;
   referee_profile?: any;
   is_referee?: boolean;
+  referee_level?: string | null;
   should_display_white_whistle?: boolean;
   referee_roles?: RefereeRole[];
   role_names?: string[];
@@ -164,13 +165,13 @@ export class UserService extends BaseService<User> {
         .where('user_roles.user_id', userId)
         .where('user_roles.is_active', true)
         .select(
-          'roles.id', 
-          'roles.name', 
+          'roles.id',
+          'roles.name',
           'roles.description',
           'roles.category',
           'roles.referee_config'
         );
-      
+
       return roles as RoleEntity[];
     } catch (error) {
       console.error(`Error getting roles for user ${userId}:`, error);
@@ -179,52 +180,252 @@ export class UserService extends BaseService<User> {
   }
 
   /**
-   * Enhance user data with new roles and referee profile
+   * Check if a user has the base Referee role
+   * @param userId - The user ID to check
+   * @returns True if user has Referee role
    */
-  async enhanceUserWithRoles(user: User): Promise<AuthenticatedUser> {
-    if (!user) return user as unknown as AuthenticatedUser;
-    
-    const roles = await this.getUserRoles(user.id);
-    const isReferee = roles.some(r => (r as any).category === 'referee_type');
+  async isReferee(userId: UUID): Promise<boolean> {
+    try {
+      const result = await (this.db('user_roles') as any)
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .where('roles.name', 'Referee')
+        .where('user_roles.is_active', true)
+        .first();
 
-    let refereeData: Partial<EnhancedUser> = {};
-    if (isReferee) {
-      // Lazy load referee service to avoid circular dependency
-      if (!this._refereeService) {
-        const RefereeService = require('./RefereeService');
-        this._refereeService = new RefereeService(this.db);
-      }
-
-      try {
-        const profile = await this._refereeService.getRefereeProfile(user.id);
-        refereeData = {
-          referee_profile: profile,
-          is_referee: true
-        };
-      } catch (error) {
-        console.warn(`Failed to get referee profile for user ${user.id}:`, (error as Error).message);
-        refereeData = {
-          referee_profile: null,
-          is_referee: true
-        };
-      }
+      return !!result;
+    } catch (error) {
+      console.error(`Error checking if user ${userId} is referee:`, error);
+      return false;
     }
+  }
 
-    return {
-      ...user,
-      roles: roles.map(r => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        category: (r as any).category,
-        referee_config: (r as any).referee_config
-      } as any)),
-      // Keep legacy role for backward compatibility
-      legacy_role: user.role,
-      permissions: [], // Will be populated by auth middleware
-      resource_permissions: {},
-      ...refereeData
-    } as unknown as AuthenticatedUser;
+  /**
+   * Get the referee specialization level for a user
+   * @param userId - The user ID to check
+   * @returns The referee level name or null if not a specialized referee
+   */
+  async getRefereeLevel(userId: UUID): Promise<string | null> {
+    try {
+      const result = await (this.db('user_roles') as any)
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', userId)
+        .where('user_roles.is_active', true)
+        .whereIn('roles.name', [
+          'Head Referee',
+          'Senior Referee',
+          'Junior Referee',
+          'Rookie Referee',
+          'Referee Coach'
+        ])
+        .select('roles.name')
+        .orderByRaw(`
+          CASE roles.name
+            WHEN 'Head Referee' THEN 1
+            WHEN 'Senior Referee' THEN 2
+            WHEN 'Junior Referee' THEN 3
+            WHEN 'Rookie Referee' THEN 4
+            WHEN 'Referee Coach' THEN 5
+            ELSE 6
+          END
+        `)
+        .first();
+
+      return result?.name || null;
+    } catch (error) {
+      console.error(`Error getting referee level for user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all users who are referees
+   * @param includeInactive - Whether to include inactive users
+   * @returns Array of referee users with their roles
+   */
+  async getAllReferees(includeInactive: boolean = false): Promise<EnhancedUser[]> {
+    try {
+      let query = (this.db('users as u') as any)
+        .join('user_roles as ur', 'u.id', 'ur.user_id')
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .where('r.name', 'Referee')
+        .where('ur.is_active', true)
+        .distinct('u.*');
+
+      if (!includeInactive) {
+        query = query.where('u.is_active', true);
+      }
+
+      const referees = await query;
+
+      // Enhance each referee with all their roles
+      return Promise.all(
+        referees.map((ref: User) => this.enhanceUserWithRoles(ref))
+      );
+    } catch (error) {
+      console.error('Error getting all referees:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get referee roles for a user (replaces user_referee_roles query)
+   * @param userId - The user ID
+   * @returns Array of referee-related roles
+   */
+  async getUserRefereeRoles(userId: UUID): Promise<RefereeRole[]> {
+    try {
+      // This replaces queries to the non-existent user_referee_roles table
+      const roles = await (this.db('user_roles as ur') as any)
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .leftJoin('role_permissions as rp', 'r.id', 'rp.role_id')
+        .leftJoin('permissions as p', 'rp.permission_id', 'p.id')
+        .where('ur.user_id', userId)
+        .where('ur.is_active', true)
+        .where('r.name', 'LIKE', '%Referee%')
+        .select(
+          'r.id',
+          'r.name',
+          'r.description',
+          'ur.assigned_at',
+          (this.db.raw('COALESCE(ur.is_active, true) as is_active') as any),
+          (this.db.raw('json_agg(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL) as permissions') as any)
+        )
+        .groupBy('r.id', 'r.name', 'r.description', 'ur.assigned_at', 'ur.is_active');
+
+      // Transform permissions from array to object format
+      return roles.map((role: any) => ({
+        ...role,
+        permissions: (role.permissions || []).reduce((acc: any, perm: string) => {
+          acc[perm] = true;
+          return acc;
+        }, {})
+      }));
+    } catch (error) {
+      console.error(`Error getting referee roles for user ${userId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if a user can mentor other referees
+   * @param userId - The user ID to check
+   * @returns True if user can mentor
+   */
+  async canMentor(userId: UUID): Promise<boolean> {
+    try {
+      const result = await (this.db('user_roles as ur') as any)
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .join('role_permissions as rp', 'r.id', 'rp.role_id')
+        .join('permissions as p', 'rp.permission_id', 'p.id')
+        .where('ur.user_id', userId)
+        .where('ur.is_active', true)
+        .where('p.name', 'mentorship.provide')
+        .first();
+
+      return !!result;
+    } catch (error) {
+      console.error(`Error checking if user ${userId} can mentor:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a user can evaluate other referees
+   * @param userId - The user ID to check
+   * @returns True if user can evaluate
+   */
+  async canEvaluate(userId: UUID): Promise<boolean> {
+    try {
+      const result = await (this.db('user_roles as ur') as any)
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .join('role_permissions as rp', 'r.id', 'rp.role_id')
+        .join('permissions as p', 'rp.permission_id', 'p.id')
+        .where('ur.user_id', userId)
+        .where('ur.is_active', true)
+        .where('p.name', 'evaluations.create')
+        .first();
+
+      return !!result;
+    } catch (error) {
+      console.error(`Error checking if user ${userId} can evaluate:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Enhance a user object with their roles and referee information
+   * @param user - The base user object
+   * @returns Enhanced user with roles and computed properties
+   */
+  async enhanceUserWithRoles(user: User): Promise<EnhancedUser> {
+    if (!user) return user as unknown as EnhancedUser;
+
+    try {
+      // Get all roles for the user
+      const roles = await this.getUserRoles(user.id);
+
+      // Compute is_referee from roles (not stored in database)
+      const isReferee = roles.some(r => r.name === 'Referee');
+
+      // Get referee level if applicable
+      const refereeLevel = isReferee ? await this.getRefereeLevel(user.id) : null;
+
+      // Get referee-specific roles if applicable
+      const refereeRoles = isReferee ? await this.getUserRefereeRoles(user.id) : [];
+
+      // Check special capabilities
+      const canMentorUser = isReferee ? await this.canMentor(user.id) : false;
+      const canEvaluateUser = isReferee ? await this.canEvaluate(user.id) : false;
+
+      // Build enhanced user object
+      const enhancedUser: EnhancedUser = {
+        ...user,
+        roles,
+        legacy_role: user.role || 'user', // Keep for backward compatibility
+        is_referee: isReferee, // Computed property
+        referee_level: refereeLevel,
+        referee_roles: refereeRoles,
+        role_names: roles.map(r => r.name),
+        can_mentor: canMentorUser,
+        can_evaluate: canEvaluateUser,
+        // Keep white_whistle for UI display if needed
+        should_display_white_whistle: refereeLevel === 'Senior Referee' ||
+                                      refereeLevel === 'Head Referee'
+      };
+
+      // Add referee profile data if user is a referee
+      if (isReferee) {
+        // Check if referees table exists
+        try {
+          const refereeProfile = await (this.db('referees') as any)
+            .where('user_id', user.id)
+            .first();
+
+          if (refereeProfile) {
+            enhancedUser.referee_profile = refereeProfile;
+          }
+        } catch (error) {
+          // Table might not exist, continue without profile
+          console.warn(`Referees table not found or error accessing it for user ${user.id}`);
+        }
+      }
+
+      return enhancedUser;
+    } catch (error) {
+      console.error(`Error enhancing user ${user.id}:`, error);
+      // Return user with minimal enhancement on error
+      return {
+        ...user,
+        roles: [],
+        legacy_role: user.role || 'user',
+        is_referee: false,
+        role_names: [],
+        referee_roles: [],
+        can_mentor: false,
+        can_evaluate: false
+      } as EnhancedUser;
+    }
   }
 
   /**
@@ -414,6 +615,100 @@ export class UserService extends BaseService<User> {
   }
 
   /**
+   * Get all referees with filtering and pagination
+   * @param filters - Optional filters for the query
+   * @returns Paginated referee results
+   */
+  async getReferees(filters?: {
+    level?: string;
+    available?: boolean;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: EnhancedUser[], total: number }> {
+    try {
+      const page = filters?.page || 1;
+      const limit = filters?.limit || 50;
+      const offset = (page - 1) * limit;
+
+      // Start with base query for all referees
+      let query = (this.db('users as u') as any)
+        .join('user_roles as ur', 'u.id', 'ur.user_id')
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .where('r.name', 'Referee')
+        .where('ur.is_active', true);
+
+      // Count query (before pagination)
+      let countQuery = (this.db('users as u') as any)
+        .join('user_roles as ur', 'u.id', 'ur.user_id')
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .where('r.name', 'Referee')
+        .where('ur.is_active', true);
+
+      // Apply filters
+      if (filters?.available !== undefined) {
+        query = query.where('u.is_available', filters.available);
+        countQuery = countQuery.where('u.is_available', filters.available);
+      }
+
+      if (filters?.search) {
+        const searchTerm = `%${filters.search}%`;
+        query = query.where(function() {
+          this.where('u.name', 'ILIKE', searchTerm)
+            .orWhere('u.email', 'ILIKE', searchTerm);
+        });
+        countQuery = countQuery.where(function() {
+          this.where('u.name', 'ILIKE', searchTerm)
+            .orWhere('u.email', 'ILIKE', searchTerm);
+        });
+      }
+
+      // Filter by referee level if specified
+      if (filters?.level) {
+        // Need to join again to check for specialization role
+        query = query
+          .join('user_roles as ur2', 'u.id', 'ur2.user_id')
+          .join('roles as r2', 'ur2.role_id', 'r2.id')
+          .where('ur2.is_active', true)
+          .where('r2.name', filters.level);
+
+        countQuery = countQuery
+          .join('user_roles as ur2', 'u.id', 'ur2.user_id')
+          .join('roles as r2', 'ur2.role_id', 'r2.id')
+          .where('ur2.is_active', true)
+          .where('r2.name', filters.level);
+      }
+
+      // Get total count
+      const [{ count }] = await countQuery
+        .countDistinct('u.id as count');
+
+      // Get paginated results
+      const referees = await query
+        .distinct('u.*')
+        .orderBy('u.name', 'asc')
+        .limit(limit)
+        .offset(offset);
+
+      // Enhance all referees with their roles
+      const enhancedReferees = await Promise.all(
+        referees.map((ref: User) => this.enhanceUserWithRoles(ref))
+      );
+
+      return {
+        data: enhancedReferees,
+        total: parseInt(count as string, 10)
+      };
+    } catch (error) {
+      console.error('Error getting referees with filters:', error);
+      return {
+        data: [],
+        total: 0
+      };
+    }
+  }
+
+  /**
    * Find available referees for a specific date/time
    */
   async findAvailableReferees(
@@ -477,41 +772,15 @@ export class UserService extends BaseService<User> {
         (user as any).is_white_whistle
       );
 
-      // Get referee roles for this user
-      const refereeRoles = await (this.db('user_referee_roles') as any)
-        .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
-        .select(
-          'referee_roles.name',
-          'referee_roles.description',
-          'referee_roles.permissions',
-          'user_referee_roles.assigned_at',
-          'user_referee_roles.is_active'
-        )
-        .where('user_referee_roles.user_id', user.id)
-        .where('user_referee_roles.is_active', true)
-        .where('referee_roles.is_active', true);
+      // Use the new getUserRefereeRoles method instead of direct table query
+      const refereeRoles = await this.getUserRefereeRoles(user.id);
 
-      user.referee_roles = refereeRoles.map(role => ({
-        ...role,
-        permissions: typeof role.permissions === 'string' 
-          ? JSON.parse(role.permissions) 
-          : role.permissions
-      })) as RefereeRole[];
-      
+      user.referee_roles = refereeRoles;
+
       // Add computed fields for easier access
       user.role_names = refereeRoles.map(role => role.name);
-      user.can_evaluate = refereeRoles.some(role => {
-        const permissions = typeof role.permissions === 'string' 
-          ? JSON.parse(role.permissions) 
-          : role.permissions;
-        return permissions.can_evaluate;
-      });
-      user.can_mentor = refereeRoles.some(role => {
-        const permissions = typeof role.permissions === 'string' 
-          ? JSON.parse(role.permissions) 
-          : role.permissions;
-        return permissions.can_mentor;
-      });
+      user.can_evaluate = await this.canEvaluate(user.id);
+      user.can_mentor = await this.canMentor(user.id);
 
       return user;
     } catch (error) {
@@ -601,48 +870,71 @@ export class UserService extends BaseService<User> {
   }
 
   /**
-   * Assign role to referee
+   * Assign a referee role to a user
+   * @param userId - The user to assign role to
+   * @param roleName - The referee role name
+   * @param assignedBy - The user making the assignment
    */
-  async assignRefereeRole(userId: UUID, roleName: string, assignedBy: UUID | null): Promise<any> {
+  async assignRefereeRole(
+    userId: UUID,
+    roleName: 'Rookie Referee' | 'Junior Referee' | 'Senior Referee' | 'Head Referee' | 'Referee Coach',
+    assignedBy: UUID
+  ): Promise<void> {
     try {
-      // Verify user is a referee
-      const user = await this.findById(userId, { select: ['id', 'role'] });
-      if (!user || user.role !== 'referee') {
-        throw new Error('User is not a referee');
+      // First ensure user has base Referee role
+      const hasBaseRole = await this.isReferee(userId);
+      if (!hasBaseRole) {
+        const refereeRole = await (this.db('roles') as any)
+          .where('name', 'Referee')
+          .first();
+
+        if (refereeRole) {
+          await (this.db('user_roles') as any).insert({
+            user_id: userId,
+            role_id: refereeRole.id,
+            assigned_at: (this.db.fn.now() as any),
+            assigned_by: assignedBy,
+            is_active: true
+          }).onConflict(['user_id', 'role_id']).ignore();
+        }
       }
 
-      // Get the role
-      const role = await this.db('referee_roles')
+      // Get the specialization role
+      const role = await (this.db('roles') as any)
         .where('name', roleName)
-        .where('is_active', true)
         .first();
 
       if (!role) {
-        throw new Error(`Role '${roleName}' not found or inactive`);
+        throw new Error(`Role ${roleName} not found`);
       }
 
-      // Check if already assigned
-      const existingAssignment = await this.db('user_referee_roles')
-        .where('user_id', userId)
-        .where('referee_role_id', role.id)
-        .where('is_active', true)
-        .first();
+      // Remove other referee specialization roles (user can only have one)
+      const otherRefereeRoles = await (this.db('roles') as any)
+        .whereIn('name', [
+          'Rookie Referee',
+          'Junior Referee',
+          'Senior Referee',
+          'Head Referee',
+          'Referee Coach'
+        ])
+        .where('name', '!=', roleName)
+        .select('id');
 
-      if (existingAssignment) {
-        throw new Error(`User already has role '${roleName}'`);
+      if (otherRefereeRoles.length > 0) {
+        await (this.db('user_roles') as any)
+          .where('user_id', userId)
+          .whereIn('role_id', otherRefereeRoles.map(r => r.id))
+          .delete();
       }
 
-      // Assign role
-      const assignment = await this.db('user_referee_roles').insert({
-        id: this.db.raw('gen_random_uuid()'),
+      // Assign the new specialization role
+      await (this.db('user_roles') as any).insert({
         user_id: userId,
-        referee_role_id: role.id,
+        role_id: role.id,
+        assigned_at: (this.db.fn.now() as any),
         assigned_by: assignedBy,
-        assigned_at: new Date(),
         is_active: true
-      }).returning('*');
-
-      return assignment[0];
+      }).onConflict(['user_id', 'role_id']).ignore();
     } catch (error) {
       console.error(`Error assigning role ${roleName} to user ${userId}:`, error);
       throw new Error(`Failed to assign role: ${(error as Error).message}`);
@@ -650,12 +942,49 @@ export class UserService extends BaseService<User> {
   }
 
   /**
-   * Remove role from referee
+   * Promote a referee to the next level
+   * @param userId - The referee to promote
+   * @param promotedBy - The user making the promotion
+   */
+  async promoteReferee(userId: UUID, promotedBy: UUID): Promise<string> {
+    try {
+      const currentLevel = await this.getRefereeLevel(userId);
+
+      let newLevel: string;
+      switch (currentLevel) {
+        case 'Rookie Referee':
+          newLevel = 'Junior Referee';
+          break;
+        case 'Junior Referee':
+          newLevel = 'Senior Referee';
+          break;
+        case 'Senior Referee':
+          newLevel = 'Head Referee';
+          break;
+        default:
+          throw new Error('Cannot promote from current level');
+      }
+
+      await this.assignRefereeRole(
+        userId,
+        newLevel as any,
+        promotedBy
+      );
+
+      return newLevel;
+    } catch (error) {
+      console.error(`Error promoting referee ${userId}:`, error);
+      throw new Error(`Failed to promote referee: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Remove role from referee (legacy method - updated to use new role system)
    */
   async removeRefereeRole(userId: UUID, roleName: string): Promise<boolean> {
     try {
       // Get the role
-      const role = await this.db('referee_roles')
+      const role = await (this.db('roles') as any)
         .where('name', roleName)
         .first();
 
@@ -663,16 +992,75 @@ export class UserService extends BaseService<User> {
         throw new Error(`Role '${roleName}' not found`);
       }
 
-      // Deactivate assignment
-      const result = await this.db('user_referee_roles')
+      // Remove assignment
+      const result = await (this.db('user_roles') as any)
         .where('user_id', userId)
-        .where('referee_role_id', role.id)
-        .update({ is_active: false });
+        .where('role_id', role.id)
+        .delete();
 
       return result > 0;
     } catch (error) {
       console.error(`Error removing role ${roleName} from user ${userId}:`, error);
       throw new Error(`Failed to remove role: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Get eligible referees for a game assignment
+   * @param gameId - The game ID
+   * @returns Array of eligible referees
+   */
+  async getEligibleRefereesForGame(gameId: UUID): Promise<EnhancedUser[]> {
+    try {
+      // Instead of querying user_referee_roles table
+      const referees = await (this.db('users as u') as any)
+        .join('user_roles as ur', 'u.id', 'ur.user_id')
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .leftJoin('game_assignments as ga', function() {
+          this.on('u.id', 'ga.referee_id')
+            .andOn('ga.game_id', (this as any).db.raw('?', [gameId]));
+        })
+        .where('r.name', 'Referee')
+        .where('ur.is_active', true)
+        .where('u.is_available', true)
+        .whereNull('ga.id') // Not already assigned to this game
+        .distinct('u.*');
+
+      return Promise.all(
+        referees.map((ref: User) => this.enhanceUserWithRoles(ref))
+      );
+    } catch (error) {
+      console.error(`Error getting eligible referees for game ${gameId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get mentees for a mentor
+   * @param mentorId - The mentor's user ID
+   * @returns Array of mentee users
+   */
+  async getMentees(mentorId: UUID): Promise<EnhancedUser[]> {
+    try {
+      // Check if user can mentor
+      const canMentorUser = await this.canMentor(mentorId);
+      if (!canMentorUser) {
+        return [];
+      }
+
+      // Get mentees from mentorship relationships
+      const mentees = await (this.db('mentorships as m') as any)
+        .join('users as u', 'm.mentee_id', 'u.id')
+        .where('m.mentor_id', mentorId)
+        .where('m.is_active', true)
+        .select('u.*');
+
+      return Promise.all(
+        mentees.map((mentee: User) => this.enhanceUserWithRoles(mentee))
+      );
+    } catch (error) {
+      console.error(`Error getting mentees for mentor ${mentorId}:`, error);
+      return [];
     }
   }
 
@@ -683,13 +1071,29 @@ export class UserService extends BaseService<User> {
     if (this.options.enableAuditTrail) {
       console.log(`User created: ${user.id} (${user.role})`);
     }
-    
-    // If creating a referee, assign default role
+
+    // If creating a referee, assign base Referee role and default specialization
     if (user.role === 'referee') {
       try {
-        await this.assignRefereeRole(user.id, 'Referee', null);
+        // Assign base Referee role first
+        const refereeRole = await (this.db('roles') as any)
+          .where('name', 'Referee')
+          .first();
+
+        if (refereeRole) {
+          await (this.db('user_roles') as any).insert({
+            user_id: user.id,
+            role_id: refereeRole.id,
+            assigned_at: (this.db.fn.now() as any),
+            assigned_by: null,
+            is_active: true
+          }).onConflict(['user_id', 'role_id']).ignore();
+
+          // Assign default rookie level
+          await this.assignRefereeRole(user.id, 'Rookie Referee', user.id);
+        }
       } catch (error) {
-        console.warn(`Failed to assign default role to new referee ${user.id}:`, (error as Error).message);
+        console.warn(`Failed to assign default roles to new referee ${user.id}:`, (error as Error).message);
       }
     }
   }

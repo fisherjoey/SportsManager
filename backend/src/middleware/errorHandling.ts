@@ -146,9 +146,9 @@ export class DatabaseError extends AppError {
  * Validation Error class for input validation errors
  */
 export class ValidationError extends AppError {
-  public readonly details: ValidationErrorDetails | null;
+  public readonly details: ValidationErrorDetails | Record<string, any> | null;
 
-  constructor(message: string, details: ValidationErrorDetails | null = null) {
+  constructor(message: string, details: ValidationErrorDetails | Record<string, any> | null = null) {
     super(message, 400, ERROR_TYPES.VALIDATION_ERROR);
     this.details = details;
   }

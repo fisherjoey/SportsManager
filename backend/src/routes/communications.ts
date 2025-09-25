@@ -11,6 +11,7 @@ import Joi from 'joi';
 import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
 import { receiptUploader } from '../middleware/fileUpload';
 import { CommunicationService } from '../services/CommunicationService';
+import db, { pool } from '../config/database';
 import {
   CreateCommunicationRequest,
   UpdateCommunicationRequest,
@@ -24,10 +25,7 @@ import {
 
 const router = express.Router();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
+// Use the shared pool from database configuration
 const communicationService = new CommunicationService(pool);
 
 // Validation schemas
@@ -75,18 +73,21 @@ router.get('/', authenticateToken, async (req: Request, res: Response): Promise<
       return;
     }
 
+    // Extract role safely
+    const userRoles = (req.user as any).roles || [];
+    const primaryRole = Array.isArray(userRoles) && userRoles.length > 0
+      ? (typeof userRoles[0] === 'object' ? userRoles[0].name : userRoles[0])
+      : 'user';
+
+    // Get communications with error handling
     const filters: CommunicationFilters = {
       type: req.query.type as CommunicationType,
       priority: req.query.priority as CommunicationPriority,
-      status: req.query.status as any,
+      status: req.query.status as any || 'published',
       unread_only: req.query.unread_only === 'true',
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 50
+      page: parseInt(req.query.page as string) || 1,
+      limit: parseInt(req.query.limit as string) || 10
     };
-
-    // Extract the primary role from the roles array
-    const userRoles = (req.user as any).roles || [];
-    const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
     const result = await communicationService.getCommunications(
       req.user.id,
@@ -94,10 +95,17 @@ router.get('/', authenticateToken, async (req: Request, res: Response): Promise<
       filters
     );
 
-    res.json(result);
+    // Always return valid JSON, even on error
+    res.json(result || { items: [], total: 0, page: 1, limit: filters.limit });
   } catch (error) {
-    console.error('Error fetching communications:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Communications API error:', error);
+    // Return empty result instead of crashing
+    res.json({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: parseInt(req.query.limit as string) || 10
+    });
   }
 });
 

@@ -379,11 +379,18 @@ class RoleAccessService {
         .where('user_id', userId)
         .join('roles', 'user_roles.role_id', 'roles.id')
         .where('roles.is_active', true)
-        .select('roles.id');
+        .select('roles.id', 'roles.name');
 
       if (!userRoles || userRoles.length === 0) {
         await CacheService.set(cacheKey, false, this.cacheTTL);
         return false;
+      }
+
+      // Check if user is Super Admin - they have access to everything
+      const isSuperAdmin = userRoles.some(role => role.name === 'Super Admin');
+      if (isSuperAdmin) {
+        await CacheService.set(cacheKey, true, this.cacheTTL);
+        return true;
       }
 
       // Check if any of the user's roles have this feature enabled

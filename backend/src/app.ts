@@ -8,6 +8,7 @@ import { Sentry, ProductionMonitor  } from './utils/monitor';
 // Import security middleware
 import { getCorsConfig, requestSizeLimit, validateEnvironment  } from './middleware/security';
 import { errorHandler, notFoundHandler  } from './middleware/errorHandling';
+import { validationFix, validationErrorHandler } from './middleware/validation-fix';
 
 // Import audit middleware
 import { createResourceAuditMiddleware, 
@@ -119,6 +120,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Security monitoring and sanitization
 // app.use(securityMonitoring); // TEMPORARILY DISABLED
 // app.use(sanitizeAll); // TEMPORARILY DISABLED
+
+// Validation fix middleware - Apply before any routes
+app.use(validationFix);
 
 // Request processing middleware
 app.use(performanceMonitor({
@@ -243,6 +247,8 @@ if (process.env.SENTRY_DSN) {
   // app.use(Sentry.Handlers.errorHandler());
 }
 
+// Add validation error handler before general error handler
+app.use(validationErrorHandler);
 app.use(errorHandler);
 
 export default app;

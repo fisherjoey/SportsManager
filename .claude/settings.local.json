@@ -21,7 +21,12 @@
       "Bash(start chrome:*)",
       "Bash(tasklist)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(./chrome-devtools-mcp.exe connect --url http://localhost:3000/?view=dashboard)",
+      "Bash(npm run dev:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(cmd /c:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

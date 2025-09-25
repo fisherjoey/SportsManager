@@ -74,6 +74,7 @@ export function MentorshipManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [updatingMentorships, setUpdatingMentorships] = useState<Set<string>>(new Set())
   const { toast } = useToast()
 
   // Form state for new mentorship
@@ -94,7 +95,15 @@ export function MentorshipManagement() {
 
       // Load existing mentorships
       const mentorshipsResponse = await apiClient.get('/mentorships')
-      setMentorships(mentorshipsResponse.data?.mentorships || [])
+      console.log('Mentorships API Response:', mentorshipsResponse)
+
+      // The backend returns data nested under data.data.data based on the debug info
+      const mentorshipsList = mentorshipsResponse.data?.data?.data ||
+                              mentorshipsResponse.data?.data ||
+                              mentorshipsResponse.mentorships ||
+                              []
+      console.log('Extracted mentorships:', mentorshipsList)
+      setMentorships(mentorshipsList)
 
       // Load users to select from
       const usersResponse = await apiClient.get('/users')
@@ -160,9 +169,27 @@ export function MentorshipManagement() {
 
     } catch (error: any) {
       console.error('Failed to create mentorship:', error)
+
+      // Check for specific error types
+      let errorMessage = 'Failed to create mentorship'
+      let errorTitle = 'Error'
+
+      if (error.response?.status === 409 || error.response?.data?.error?.includes('already exists')) {
+        errorTitle = 'Mentorship Already Exists'
+        errorMessage = 'This mentorship relationship already exists. Each mentor-mentee pair can only have one active mentorship.'
+      } else if (error.response?.status === 400) {
+        errorTitle = 'Validation Error'
+        errorMessage = error.response?.data?.error || 'Please check your input and try again'
+      } else if (error.response?.status === 404) {
+        errorTitle = 'User Not Found'
+        errorMessage = 'One or more selected users could not be found'
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      }
+
       toast({
-        title: 'Error',
-        description: error.response?.data?.error || 'Failed to create mentorship',
+        title: errorTitle,
+        description: errorMessage,
         variant: 'destructive'
       })
     }
@@ -170,20 +197,50 @@ export function MentorshipManagement() {
 
   const updateMentorshipStatus = async (mentorshipId: string, status: string) => {
     try {
-      await apiClient.put(`/mentorships/${mentorshipId}`, { status })
+      // Add mentorship to updating set for loading state
+      setUpdatingMentorships(prev => new Set(prev).add(mentorshipId))
+
+      const response = await apiClient.put(`/mentorships/${mentorshipId}`, { status })
+      console.log('Update mentorship response:', response)
 
       toast({
         title: 'Success',
         description: `Mentorship status updated to ${status}`,
       })
 
+      // Reload data to reflect changes
       await loadData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update mentorship:', error)
+
+      // Provide more specific error messages
+      let errorMessage = 'Failed to update mentorship status'
+      let errorTitle = 'Error'
+
+      if (error.response?.status === 404) {
+        errorTitle = 'Mentorship Not Found'
+        errorMessage = 'The mentorship could not be found. It may have been deleted.'
+      } else if (error.response?.status === 400) {
+        errorTitle = 'Invalid Status'
+        errorMessage = error.response?.data?.error || 'The provided status is not valid'
+      } else if (error.response?.status === 403) {
+        errorTitle = 'Permission Denied'
+        errorMessage = 'You do not have permission to update this mentorship'
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      }
+
       toast({
-        title: 'Error',
-        description: 'Failed to update mentorship status',
+        title: errorTitle,
+        description: errorMessage,
         variant: 'destructive'
+      })
+    } finally {
+      // Remove mentorship from updating set
+      setUpdatingMentorships(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(mentorshipId)
+        return newSet
       })
     }
   }
@@ -292,16 +349,39 @@ export function MentorshipManagement() {
                         <SelectValue placeholder="Choose a mentee..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {mentees.map(mentee => (
-                          <SelectItem key={mentee.id} value={mentee.id}>
-                            <div className="flex items-center gap-2">
-                              <span>{mentee.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {mentee.roles?.[0]?.name || 'Referee'}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {(() => {
+                          const availableMentees = mentees.filter(mentee => {
+                            // Filter out mentees who already have an active mentorship with the selected mentor
+                            if (!newMentorship.mentor_id) return true
+                            const hasExistingMentorship = mentorships.some(m =>
+                              m.mentor_id === newMentorship.mentor_id &&
+                              m.mentee_id === mentee.id &&
+                              m.status === 'active'
+                            )
+                            return !hasExistingMentorship
+                          })
+
+                          if (availableMentees.length === 0) {
+                            return (
+                              <div className="p-2 text-sm text-muted-foreground text-center">
+                                {!newMentorship.mentor_id
+                                  ? 'Please select a mentor first'
+                                  : 'All mentees are already assigned to this mentor'}
+                              </div>
+                            )
+                          }
+
+                          return availableMentees.map(mentee => (
+                            <SelectItem key={mentee.id} value={mentee.id}>
+                              <div className="flex items-center gap-2">
+                                <span>{mentee.name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {mentee.roles?.[0]?.name || 'Referee'}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
@@ -445,8 +525,13 @@ export function MentorshipManagement() {
                             size="sm"
                             variant="outline"
                             onClick={() => updateMentorshipStatus(mentorship.id, 'paused')}
+                            disabled={updatingMentorships.has(mentorship.id)}
                           >
-                            <Pause className="h-4 w-4" />
+                            {updatingMentorships.has(mentorship.id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            ) : (
+                              <Pause className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                         {mentorship.status === 'paused' && (
@@ -454,8 +539,13 @@ export function MentorshipManagement() {
                             size="sm"
                             variant="outline"
                             onClick={() => updateMentorshipStatus(mentorship.id, 'active')}
+                            disabled={updatingMentorships.has(mentorship.id)}
                           >
-                            <Play className="h-4 w-4" />
+                            {updatingMentorships.has(mentorship.id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                         {(mentorship.status === 'active' || mentorship.status === 'paused') && (
@@ -463,8 +553,13 @@ export function MentorshipManagement() {
                             size="sm"
                             variant="outline"
                             onClick={() => updateMentorshipStatus(mentorship.id, 'completed')}
+                            disabled={updatingMentorships.has(mentorship.id)}
                           >
-                            <Check className="h-4 w-4" />
+                            {updatingMentorships.has(mentorship.id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </div>

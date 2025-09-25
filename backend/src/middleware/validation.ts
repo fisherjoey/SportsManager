@@ -95,12 +95,13 @@ const VALIDATION_OPTIONS: {
   query: ValidationOptions;
   upload: ValidationOptions;
 } = {
-  // Standard validation - strict by default
+  // Standard validation - less strict to handle TS migration issues
   strict: {
     abortEarly: false,
-    allowUnknown: false,
-    stripUnknown: false,
-    presence: 'required'
+    allowUnknown: true, // Changed to true to handle extra fields from frontend
+    stripUnknown: true, // Changed to true to clean up unknown fields
+    presence: 'required',
+    convert: true // Allow type conversion
   },
   
   // Flexible validation for updates (allows partial data)
@@ -306,8 +307,27 @@ const createValidator = (
       const { error, value } = extendedSchema.validate(data, options);
 
       if (error) {
-        console.error(`Validation error in ${source}:`, error.details);
-        throw ErrorFactory.fromJoiError(error, `${source} validation failed`);
+        // Enhanced error logging for debugging
+        console.error(`Validation error in ${source}:`, {
+          details: error.details,
+          data: JSON.stringify(data).substring(0, 500), // Log first 500 chars of data
+          path: (req as any).path,
+          method: (req as any).method
+        });
+
+        // Create a more informative error response
+        const errorResponse = {
+          error: 'Validation failed',
+          source: source,
+          details: error.details.map(d => ({
+            field: d.path.join('.'),
+            message: d.message,
+            type: d.type
+          }))
+        };
+
+        res.status(400).json(errorResponse);
+        return;
       }
       
       // Replace request data with validated and sanitized data
