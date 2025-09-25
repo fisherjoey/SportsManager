@@ -380,67 +380,85 @@ const register = async (
  * Get current user profile with comprehensive data
  */
 const getProfile = async (
-  req: AuthenticatedRequest, 
+  req: AuthenticatedRequest,
   res: Response<ProfileResponse>
 ): Promise<void> => {
-  const user = await db('users')
-    .select('*')
-    .where('id', req.user.id)
-    .first();
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      console.error('getProfile: No user in request', req.user);
+      res.status(401).json({
+        error: 'Not authenticated',
+        user: {} as ProfileResponse['user']
+      });
+      return;
+    }
 
-  if (!user) {
-    res.status(404).json({ 
-      user: {} as ProfileResponse['user'] 
+    const user = await db('users')
+      .select('*')
+      .where('id', req.user.id)
+      .first();
+
+    if (!user) {
+      res.status(404).json({
+        user: {} as ProfileResponse['user']
+      });
+      return;
+    }
+
+    // Get comprehensive user permissions
+    let permissions: string[] = [];
+
+    try {
+      permissions = await getUserPermissions(user.id);
+    } catch (error) {
+      console.warn('Failed to get user permissions for profile:', (error as Error).message);
+    }
+
+    // Get current user roles
+    let userRoles: string[] = [];
+    try {
+      const roleRecords = await db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', user.id)
+        .where('roles.is_active', true)
+        .select('roles.name', 'roles.id');
+
+      userRoles = roleRecords.map((r: any) => r.name);
+    } catch (error) {
+      console.warn('Failed to get user roles for profile:', (error as Error).message);
+      userRoles = [];
+    }
+
+    const userData: ProfileResponse['user'] = {
+      id: user.id,
+      email: user.email,
+      roles: userRoles,
+      permissions: permissions,
+      name: user.name,
+      phone: user.phone,
+      location: user.location,
+      postal_code: user.postal_code,
+      max_distance: user.max_distance,
+      is_available: user.is_available,
+      wage_per_game: user.wage_per_game,
+      referee_level_id: user.referee_level_id,
+      year_started_refereeing: user.year_started_refereeing,
+      games_refereed_season: user.games_refereed_season,
+      evaluation_score: user.evaluation_score,
+      notes: user.notes,
+      created_at: user.created_at as Timestamp,
+      updated_at: user.updated_at as Timestamp
+    };
+
+    res.json({ user: userData });
+  } catch (error) {
+    console.error('Error in getProfile:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      user: {} as ProfileResponse['user']
     });
-    return;
   }
-
-  // Get comprehensive user permissions
-  let permissions: string[] = [];
-  
-  try {
-    permissions = await getUserPermissions(user.id);
-  } catch (error) {
-    console.warn('Failed to get user permissions for profile:', (error as Error).message);
-  }
-
-  // Get current user roles
-  let userRoles: string[] = [];
-  try {
-    const roleRecords = await db('user_roles')
-      .join('roles', 'user_roles.role_id', 'roles.id')
-      .where('user_roles.user_id', user.id)
-      .where('roles.is_active', true)
-      .select('roles.name', 'roles.id');
-    
-    userRoles = roleRecords.map((r: any) => r.name);
-  } catch (error) {
-    console.warn('Failed to get user roles for profile:', (error as Error).message);
-    userRoles = [];
-  }
-
-  const userData: ProfileResponse['user'] = {
-    id: user.id,
-    email: user.email,
-    roles: userRoles,
-    permissions: permissions,
-    name: user.name,
-    phone: user.phone,
-    location: user.location,
-    postal_code: user.postal_code,
-    max_distance: user.max_distance,
-    is_available: user.is_available,
-    wage_per_game: user.wage_per_game,
-    referee_level_id: user.referee_level_id,
-    year_started_refereeing: user.year_started_refereeing,
-    games_refereed_season: user.games_refereed_season,
-    evaluation_score: user.evaluation_score,
-    notes: user.notes,
-    created_at: user.created_at as Timestamp,
-    updated_at: user.updated_at as Timestamp
-  };
-
-  res.json({ user: userData });
 };
 
 /**
