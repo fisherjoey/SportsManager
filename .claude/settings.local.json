@@ -61,7 +61,9 @@
       "Bash(python:*)",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Read(//c/Users/School/OneDrive/Desktop/**)"
+      "Read(//c/Users/School/OneDrive/Desktop/**)",
+      "Bash(npm run migrate:*)",
+      "Bash(npx knex migrate:rollback:*)"
     ],
     "deny": [],
     "ask": []
