@@ -1,11 +1,18 @@
 require('dotenv').config();
+import { createServer } from 'http';
 import app from './app';
 import db from './config/database';
 import { initializeRBACScanner  } from './startup/rbac-scanner-init';
 
 const PORT = process.env.PORT || 3001;
 
-const server = app.listen(PORT, () => {
+// Create server with increased header size limit to prevent 431 errors
+// Default is 16KB, we're increasing to 64KB for large JWT tokens
+const server = createServer({
+  maxHeaderSize: 64 * 1024 // 64KB
+}, app);
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Server listening on http://localhost:${PORT}`);

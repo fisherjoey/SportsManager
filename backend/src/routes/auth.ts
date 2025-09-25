@@ -154,18 +154,18 @@ const login = async (
     console.warn(`User ${user.email} has no roles assigned`);
   }
 
-  // Generate JWT token with comprehensive payload
-  const jwtPayload: Omit<JWTPayload, 'iat' | 'exp'> = { 
-    userId: user.id, 
-    email: user.email, 
-    role: user.role, // Keep legacy role for backwards compatibility
-    permissions: permissions
+  // Generate JWT token with minimal payload to prevent 431 errors
+  // Permissions should be fetched separately, not stored in token
+  const jwtPayload: Omit<JWTPayload, 'iat' | 'exp' | 'permissions'> = {
+    userId: user.id,
+    email: user.email,
+    role: user.role // Keep legacy role for backwards compatibility
   };
 
   const token = jwt.sign(
     {
       ...jwtPayload,
-      roles: userRoles, // New RBAC roles array
+      roles: userRoles.slice(0, 5) // Limit roles in token to prevent size issues
     },
     process.env.JWT_SECRET as string,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
