@@ -40,9 +40,19 @@ export function MenteeSelector({
       try {
         setLoading(true)
         apiClient.initializeToken()
-        const response = await apiClient.getMenteesByMentor(undefined, {
-          status: 'active',
-          includeDetails: true
+        // Get current user as mentor, then fetch mentees
+        const userResponse = await apiClient.get('/auth/me')
+        const mentorId = userResponse.data?.id
+
+        if (!mentorId) {
+          throw new Error('Unable to identify current user')
+        }
+
+        const response = await apiClient.get(`/mentors/${mentorId}/mentees`, {
+          params: {
+            status: 'active',
+            includeDetails: true
+          }
         })
         
         if (response.data) {

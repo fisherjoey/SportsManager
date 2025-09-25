@@ -84,9 +84,13 @@ router.get('/', authenticateToken, async (req: Request, res: Response): Promise<
       limit: req.query.limit ? parseInt(req.query.limit as string) : 50
     };
 
+    // Extract the primary role from the roles array
+    const userRoles = (req.user as any).roles || [];
+    const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
     const result = await communicationService.getCommunications(
       req.user.id,
-      req.user.role,
+      primaryRole,
       filters
     );
 
@@ -107,10 +111,14 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response): Promi
       return;
     }
 
+    // Extract the primary role from the roles array
+    const userRoles = (req.user as any).roles || [];
+    const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
     const communication = await communicationService.getCommunicationById(
       req.params.id,
       req.user.id,
-      req.user.role
+      primaryRole
     );
 
     if (!communication) {
@@ -205,11 +213,15 @@ router.put(
         return;
       }
 
+      // Extract the primary role from the roles array
+      const userRoles = (req.user as any).roles || [];
+      const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
       const communication = await communicationService.updateCommunication(
         req.params.id,
         updateData,
         req.user.id,
-        req.user.role
+        primaryRole
       );
 
       if (!communication) {
@@ -243,10 +255,14 @@ router.post(
         return;
       }
 
+      // Extract the primary role from the roles array
+      const userRoles = (req.user as any).roles || [];
+      const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
       const communication = await communicationService.publishCommunication(
         req.params.id,
         req.user.id,
-        req.user.role
+        primaryRole
       );
 
       res.json(communication);
@@ -275,10 +291,14 @@ router.post(
         return;
       }
 
+      // Extract the primary role from the roles array
+      const userRoles = (req.user as any).roles || [];
+      const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
       const communication = await communicationService.archiveCommunication(
         req.params.id,
         req.user.id,
-        req.user.role
+        primaryRole
       );
 
       if (!communication) {
@@ -344,10 +364,14 @@ router.get(
         return;
       }
 
+      // Extract the primary role from the roles array
+      const userRoles = (req.user as any).roles || [];
+      const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
+
       const recipients = await communicationService.getCommunicationRecipients(
         req.params.id,
         req.user.id,
-        req.user.role
+        primaryRole
       );
 
       if (!recipients) {

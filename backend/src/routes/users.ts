@@ -300,10 +300,10 @@ const deleteUser = async (
 // Route definitions with proper middleware and handlers
 router.get('/roles', authenticateToken as any, enhancedAsyncHandler(getRoles as any));
 
-router.get('/', 
-  authenticateToken as any, 
-  requirePermission('users:read') as any, 
-  validateQuery(FilterSchemas.referees) as any, 
+router.get('/',
+  authenticateToken as any,
+  requireAnyRole('admin', 'hr', 'manager', 'referee') as any,
+  validateQuery(FilterSchemas.referees) as any,
   enhancedAsyncHandler(getUsers as any)
 );
 

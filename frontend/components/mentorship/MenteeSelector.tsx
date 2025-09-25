@@ -12,13 +12,14 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
-import { 
+import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
+  CommandSeparator
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, ChevronsUpDown, Users, UserCheck, Search } from 'lucide-react'
@@ -84,11 +85,11 @@ export function MenteeSelector({
     setOpen(false)
   }
 
-  const activeMentees = mentees.filter(m => 
-    m.mentorship_assignments.some(a => a.status === 'active')
+  const activeMentees = mentees.filter(m =>
+    m.mentorship_assignments?.some(a => a.status === 'active')
   )
-  const inactiveMentees = mentees.filter(m => 
-    !m.mentorship_assignments.some(a => a.status === 'active')
+  const inactiveMentees = mentees.filter(m =>
+    !m.mentorship_assignments?.some(a => a.status === 'active')
   )
 
   return (
@@ -112,13 +113,13 @@ export function MenteeSelector({
                 <span className="truncate">
                   {selectedMentee.first_name} {selectedMentee.last_name}
                 </span>
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className={`text-xs ml-auto ${getMenteeStatusColor(
-                    selectedMentee.mentorship_assignments[0]?.status || 'active'
+                    selectedMentee.mentorship_assignments?.[0]?.status || 'active'
                   )}`}
                 >
-                  {selectedMentee.mentorship_assignments[0]?.status || 'active'}
+                  {selectedMentee.mentorship_assignments?.[0]?.status || 'active'}
                 </Badge>
               </div>
             ) : (
@@ -160,7 +161,7 @@ export function MenteeSelector({
                   <CommandGroup heading="Active Mentees">
                     {activeMentees.map((mentee) => {
                       const progress = getMenteeProgress(mentee)
-                      const assignment = mentee.mentorship_assignments[0]
+                      const assignment = mentee.mentorship_assignments?.[0]
                       
                       return (
                         <CommandItem
@@ -189,9 +190,9 @@ export function MenteeSelector({
                                 </p>
                                 <Badge 
                                   variant="outline" 
-                                  className={`text-xs ${getMenteeStatusColor(assignment.status)}`}
+                                  className={`text-xs ${getMenteeStatusColor(assignment?.status || 'active')}`}
                                 >
-                                  {assignment.status}
+                                  {assignment?.status || 'active'}
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-2 mt-1">
@@ -228,7 +229,7 @@ export function MenteeSelector({
                   <CommandGroup heading="Inactive Mentees">
                     {inactiveMentees.map((mentee) => {
                       const progress = getMenteeProgress(mentee)
-                      const assignment = mentee.mentorship_assignments[0]
+                      const assignment = mentee.mentorship_assignments?.[0]
                       
                       return (
                         <CommandItem
@@ -257,9 +258,9 @@ export function MenteeSelector({
                                 </p>
                                 <Badge 
                                   variant="outline" 
-                                  className={`text-xs ${getMenteeStatusColor(assignment.status)}`}
+                                  className={`text-xs ${getMenteeStatusColor(assignment?.status || 'active')}`}
                                 >
-                                  {assignment.status}
+                                  {assignment?.status || 'active'}
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-2 mt-1">
@@ -394,7 +395,7 @@ export function SimpleMenteeSelector({
             </DropdownMenuItem>
           ) : (
             mentees.map((mentee) => {
-              const assignment = mentee.mentorship_assignments[0]
+              const assignment = mentee.mentorship_assignments?.[0]
               
               return (
                 <DropdownMenuItem 
