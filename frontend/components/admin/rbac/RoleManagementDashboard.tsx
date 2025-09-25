@@ -307,9 +307,13 @@ export function RoleManagementDashboard() {
         <UserRoleManager
           role={selectedRole}
           open={showUsers}
-          onClose={() => setShowUsers(false)}
+          onClose={() => {
+            setShowUsers(false)
+            setSelectedRole(null) // Clear selected role when closing
+          }}
           onSuccess={() => {
             setShowUsers(false)
+            setSelectedRole(null) // Clear selected role after success
             fetchRoles()
           }}
         />

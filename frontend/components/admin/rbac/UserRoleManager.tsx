@@ -50,9 +50,17 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
 
   useEffect(() => {
     if (open && role) {
+      // Reset state when dialog opens
+      setSelectedUsers(new Set())
+      setCurrentRoleUsers(new Set())
+      setUsers([])
+      setFilteredUsers([])
+      setSearchTerm('')
+
+      // Then fetch fresh data
       fetchUsersAndRoleMembers()
     }
-  }, [open, role])
+  }, [open, role?.id]) // Add role.id as dependency to refetch when role changes
 
   useEffect(() => {
     // Filter users based on search term
@@ -74,19 +82,43 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
       const usersResponse = await apiClient.getUsers()
       const allUsers = usersResponse.data?.users || []
 
-      // Fetch users with this role
-      const roleUsersResponse = await apiClient.getRoleUsers(role.id)
-      const roleUsers = roleUsersResponse.data?.data || []
-      
+      // Two ways to determine if a user has the role:
+      // 1. Check if the role is in the user's roles array (preferred, as it's already in the user data)
+      // 2. Fetch from the getRoleUsers endpoint (as backup)
+
       // Create a set of user IDs that have this role
-      const roleUserIds = new Set(roleUsers.map((u: any) => u.id))
-      
+      const roleUserIds = new Set<string>()
+
+      // Check each user's roles array
+      allUsers.forEach((user: any) => {
+        if (user.roles && Array.isArray(user.roles)) {
+          const hasRole = user.roles.some((r: any) => r.id === role.id)
+          if (hasRole) {
+            roleUserIds.add(user.id)
+          }
+        }
+      })
+
+      // Also fetch from the role endpoint as backup
+      try {
+        const roleUsersResponse = await apiClient.getRoleUsers(role.id)
+        const roleUsersData = roleUsersResponse.data?.data || []
+
+        // Add any users from the endpoint that weren't already found
+        roleUsersData.forEach((u: any) => {
+          roleUserIds.add(u.id)
+        })
+      } catch (error) {
+        console.warn('Could not fetch role users from endpoint, using user roles data instead', error)
+      }
+
       // Mark users that already have this role
       const usersWithRoleInfo = allUsers.map((user: any) => ({
         ...user,
         hasRole: roleUserIds.has(user.id)
       }))
-      
+
+
       setUsers(usersWithRoleInfo)
       setCurrentRoleUsers(roleUserIds)
       setSelectedUsers(new Set(roleUserIds))
@@ -192,13 +224,14 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
         })
         
         onSuccess()
+        onClose() // Close dialog after successful save
       } else {
         toast({
           title: 'No Changes',
           description: 'No changes were made to user assignments',
         })
       }
-      
+
     } catch (error) {
       console.error('Error updating user roles:', error)
       toast({
@@ -266,6 +299,11 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>
                   {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+                  {currentRoleUsers.size > 0 && (
+                    <span className="ml-2">
+                      ({currentRoleUsers.size} current member{currentRoleUsers.size !== 1 ? 's' : ''})
+                    </span>
+                  )}
                 </span>
                 {hasChanges() && (
                   <Badge variant="outline" className="text-xs">
@@ -287,7 +325,9 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                     <div
                       key={user.id}
                       className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
-                        selectedUsers.has(user.id)
+                        currentRoleUsers.has(user.id)
+                          ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                          : selectedUsers.has(user.id)
                           ? 'bg-accent border-accent-foreground/20'
                           : 'hover:bg-muted/50'
                       }`}
@@ -309,9 +349,9 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                           <Mail className="h-3 w-3" />
                           {user.email || 'No email'}
                         </div>
-                        {user.role && (
+                        {user.roles && user.roles.length > 0 && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            Legacy role: {user.role}
+                            Roles: {user.roles.map((r: any) => r.name).join(', ')}
                           </div>
                         )}
                       </div>
@@ -326,6 +366,11 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                           <Badge variant="destructive" className="text-xs">
                             <UserMinus className="h-3 w-3 mr-1" />
                             To remove
+                          </Badge>
+                        )}
+                        {selectedUsers.has(user.id) && currentRoleUsers.has(user.id) && (
+                          <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400">
+                            ✓ Has role
                           </Badge>
                         )}
                       </div>
