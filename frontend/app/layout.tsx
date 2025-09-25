@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   description: 'Modern sports league and referee management platform',
   generator: 'v0.dev',
   icons: {
-    icon: '/sportsync-icon.png',
-    shortcut: '/favicon.ico',
-    apple: '/sportsync-icon.png'
+    icon: '/sportsync-icon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/sportsync-icon.svg'
   }
 }
 

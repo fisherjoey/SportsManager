@@ -295,8 +295,8 @@ function validateContentType(allowedTypes: string[] = ['application/json']) {
   };
 }
 
-// Export using CommonJS for Node.js compatibility
-module.exports = {
+// Export functions for ES modules
+export {
   sanitizeString,
   sanitizeObject,
   sanitizeBody,

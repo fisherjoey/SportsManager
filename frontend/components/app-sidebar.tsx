@@ -431,9 +431,9 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       <SidebarHeader className="border-b border-sidebar-border flex-shrink-0">
         <div className="flex items-center gap-3 px-6 py-6 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
           <div className="flex items-center gap-3 flex-shrink-0">
-            <img 
-              src="/sportsync-icon.png" 
-              alt="SyncedSport Icon" 
+            <img
+              src="/sportsync-icon.svg"
+              alt="SyncedSport Icon"
               className="h-7 w-7 object-contain transition-all duration-150 group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6"
             />
             <div className="group-data-[collapsible=icon]:hidden overflow-hidden transition-all duration-150">

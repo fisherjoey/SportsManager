@@ -2,7 +2,10 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(npx knex seed:run:*)"
+      "Bash(npx knex seed:run:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Read(//c/Users/School/OneDrive/Desktop/**)"
     ],
     "deny": [],
     "ask": []

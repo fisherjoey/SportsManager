@@ -344,7 +344,6 @@ export class Logger {
 // Create and export singleton instance
 const logger = new Logger();
 
-// CommonJS compatibility
-module.exports = logger;
-(module.exports as any).Logger = Logger;
-(module.exports as any).default = logger;
+// Export both named and default
+export { logger, Logger };
+export default logger;

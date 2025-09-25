@@ -47,7 +47,7 @@ export function LoginForm() {
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 relative">
               <Image
-                src="/sportsync-icon.png"
+                src="/sportsync-icon.svg"
                 alt="SyncedSport Logo"
                 fill
                 className="object-contain"

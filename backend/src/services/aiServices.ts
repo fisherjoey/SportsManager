@@ -9,11 +9,10 @@ import fs from 'fs-extra';
 import sharp from 'sharp';
 import pdf2pic from 'pdf2pic';
 import path from 'path';
-const logger = require('../utils/logger');
+import { logger } from '../utils/logger';
 import aiConfig from '../config/aiConfig';
 
-// Import security functions from JS until migrated
-const { sanitizePromptInput, sanitizeObjectFields, generateRequestId } = require('../utils/security');
+import { sanitizePromptInput, sanitizeObjectFields, generateRequestId } from '../utils/security';
 
 /**
  * AI Provider types
@@ -340,11 +339,12 @@ export class AIServices {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
-      logger.logError('OCR processing failed', {
+      logger.error('OCR processing failed', {
         component: 'aiServices',
         operation: 'performOCR',
-        imagePath
-      }, error as Error);
+        imagePath,
+        error
+      });
 
       // Try fallback OCR
       try {
@@ -542,10 +542,11 @@ export class AIServices {
 
       this.initialized = true;
     } catch (error) {
-      logger.logError('Error initializing AI services', {
+      logger.error('Error initializing AI services', {
         component: 'aiServices',
-        operation: 'initialization'
-      }, error as Error);
+        operation: 'initialization',
+        error
+      });
     }
   }
 

@@ -15,6 +15,7 @@ import { UserSchemas, RefereeSchemas, FilterSchemas, IdParamSchema } from '../ut
 import { ErrorFactory } from '../utils/errors';
 import { UserService } from '../services/UserService';
 import RefereeService from '../services/RefereeService';
+import db from '../config/database';
 
 const router = express.Router();
 
@@ -103,18 +104,12 @@ interface ProfileUpdateBody {
   is_active?: boolean;
 }
 
-// Initialize database connection (will be injected)
-let db: Database;
+// Initialize services
+const userService = new UserService(db);
+const refereeService = new RefereeService(db);
 
-// Service instances (will be initialized)
-let userService: UserService;
-let refereeService: RefereeService;
-
-// Route initialization function
+// Route initialization function (kept for backwards compatibility)
 export function initializeRoutes(database: Database): express.Router {
-  db = database;
-  userService = new UserService(db);
-  refereeService = new RefereeService(db);
   return router;
 }
 

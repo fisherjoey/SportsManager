@@ -109,7 +109,8 @@ class ResponseCache {
         res.set('X-Cache', 'HIT');
         res.set('X-Cache-Key', key);
 
-        return res.status(cached.statusCode).json(cached.data);
+        res.status(cached.statusCode).json(cached.data);
+        return;
       }
 
       this.stats.misses++;

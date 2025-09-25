@@ -182,7 +182,7 @@ const invitationLimiterConfig: RateLimitConfig = {
 
 const invitationLimiter: RateLimitRequestHandler = rateLimit(invitationLimiterConfig);
 
-module.exports = {
+export {
   authLimiter,
   passwordResetLimiter,
   adminLimiter,
@@ -191,6 +191,5 @@ module.exports = {
   uploadLimiter,
   registrationLimiter,
   assignmentLimiter,
-  invitationLimiter,
-  
+  invitationLimiter
 };

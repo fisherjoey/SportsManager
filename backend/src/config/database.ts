@@ -204,6 +204,7 @@ const validateSchema = async (): Promise<{
 // Export database instance and utilities
 export {
   db as default,
+  db as pool, // Alias for compatibility
   validateConnection,
   getConnectionState,
   healthCheck,
