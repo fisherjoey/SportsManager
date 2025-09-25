@@ -11,7 +11,17 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install:*)",
+      "Bash(chrome-devtools-mcp:*)",
+      "Bash(chrome-devtools-mcp.exe connect:*)",
+      "Bash(./chrome-devtools-mcp.exe connect --url http://localhost:3000)",
+      "Bash(node:*)",
+      "Bash(start chrome:*)",
+      "Bash(tasklist)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

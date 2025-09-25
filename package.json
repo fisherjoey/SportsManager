@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.3",
+    "puppeteer": "^24.22.3"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "timestamp": "2025-09-25T18:17:59.271Z",
+  "credentials": {
+    "email": "admin@cmba.ca"
+  },
+  "pages": [
+    "/?view=dashboard",
+    "/?view=games",
+    "/?view=referees",
+    "/?view=assignors",
+    "/?view=mentorships",
+    "/?view=my-mentees",
+    "/?view=settings",
+    "/?view=receipt-upload",
+    "/?view=analytics",
+    "/?view=reporting",
+    "/?view=audit-logs"
+  ],
+  "logs": {
+    "http://localhost:3002/login": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "API Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Error fetching announcements: JSHandle@error",
+        "API Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Error fetching announcements: JSHandle@error"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 500 - http://localhost:3002/api/communications?status=published&limit=10",
+        "HTTP 500 - http://localhost:3002/api/communications?status=published&limit=10"
+      ]
+    },
+    "http://localhost:3002/?view=dashboard": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "API Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Error fetching announcements: JSHandle@error",
+        "API Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications?status=published&limit=10: JSHandle@object",
+        "Error fetching announcements: JSHandle@error"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 500 - http://localhost:3002/api/communications?status=published&limit=10",
+        "HTTP 500 - http://localhost:3002/api/communications?status=published&limit=10"
+      ]
+    },
+    "http://localhost:3002/?view=games": {
+      "errors": [
+        "Failed to fetch mentees: JSHandle@error",
+        "Failed to fetch mentees: JSHandle@error"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=referees": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "API Error [GET] /api/users: JSHandle@object",
+        "Network/Parse Error [GET] /api/users: JSHandle@object",
+        "Failed to fetch referees: JSHandle@error",
+        "API Error [GET] /api/users: JSHandle@object",
+        "Network/Parse Error [GET] /api/users: JSHandle@object",
+        "Failed to fetch referees: JSHandle@error"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 500 - http://localhost:3002/api/users",
+        "HTTP 500 - http://localhost:3002/api/users"
+      ]
+    },
+    "http://localhost:3002/?view=assignors": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=mentorships": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=my-mentees": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=settings": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=receipt-upload": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=analytics": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=reporting": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3002/?view=audit-logs": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    }
+  },
+  "summary": {
+    "totalPages": 11,
+    "pagesWithIssues": 4,
+    "totalErrors": 26,
+    "totalWarnings": 0,
+    "totalNetwork": 6
+  }
+}
