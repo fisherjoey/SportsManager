@@ -2,10 +2,11 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(npx knex seed:run:*)",
-      "Bash(git stash:*)",
-      "Bash(ls:*)",
-      "Read(//c/Users/School/OneDrive/Desktop/**)"
+      "Read(//c/Program Files/PostgreSQL//**)",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" --version)",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"ALTER USER postgres WITH PASSWORD ''postgres123'';\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"SELECT 1;\")"
     ],
     "deny": [],
     "ask": []

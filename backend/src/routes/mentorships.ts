@@ -74,11 +74,61 @@ const DocumentIdParamSchema = Joi.object({
 // ===== MAIN MENTORSHIP ROUTES =====
 
 /**
+ * GET /api/mentorships/my-mentees
+ * Get mentor's assigned mentees
+ * Query params: status, include_details
+ */
+router.get('/my-mentees',
+  authenticateToken,
+  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  validateQuery(Joi.object({
+    status: Joi.string().valid('active', 'paused', 'completed', 'terminated').optional(),
+    include_details: Joi.boolean().default(true)
+  })),
+  enhancedAsyncHandler(async (req, res) => {
+    const { status, include_details } = req.query;
+    const userId = req.user.id;
+
+    try {
+      // Check if user can be a mentor
+      const canBeMentor = await mentorshipService.canUserBeMentor(userId);
+
+      if (!canBeMentor) {
+        return ResponseFormatter.sendSuccess(res, { data: [] }, 'No mentees found');
+      }
+
+      // User is a mentor - get their mentees
+      const mentorships = await mentorshipService.getMentorshipsByMentor(userId, {
+        status,
+        includeDetails: include_details
+      });
+
+      // Transform to mentee format for frontend
+      const mentees = mentorships.map(m => ({
+        id: m.mentee_id,
+        name: m.mentee_name || 'Unknown',
+        email: m.mentee_email || '',
+        status: m.status || 'active',
+        level: m.mentee_level || null,
+        experience_years: m.mentee_experience || null,
+        mentorship_id: m.id
+      }));
+
+      return ResponseFormatter.sendSuccess(res, { data: mentees }, 'Mentees retrieved successfully');
+
+    } catch (error) {
+      console.error('Error getting mentees:', error);
+      throw ErrorFactory.internalServer('Failed to retrieve mentees');
+    }
+  })
+);
+
+/**
  * GET /api/mentorships
  * Get mentor's assigned mentees or mentee's mentors based on user role
  * Query params: status, page, limit
  */
-router.get('/', 
+router.get('/',
   authenticateToken,
   requireAnyPermission(['mentorships:read', 'mentorships:manage']),
   validateQuery(Joi.object({
