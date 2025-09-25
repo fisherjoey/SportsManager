@@ -1,0 +1,667 @@
+const express = require('express');
+const router = express.Router();
+const Joi = require('joi');
+const db = require('../config/database');
+const { authenticateToken, requireRole, requireAnyRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
+const { auditMiddleware } = require('../middleware/auditTrail');
+
+// Validation schemas
+const transactionSchema = Joi.object({
+  budget_id: Joi.string().uuid().optional(),
+  expense_data_id: Joi.string().uuid().optional(),
+  payroll_assignment_id: Joi.string().uuid().optional(),
+  transaction_type: Joi.string().valid(
+    'expense',
+    'revenue', 
+    'payroll',
+    'transfer',
+    'adjustment',
+    'refund'
+  ).required(),
+  amount: Joi.number().min(0).required(),
+  description: Joi.string().min(1).max(500).required(),
+  transaction_date: Joi.date().required(),
+  reference_number: Joi.string().max(100).optional(),
+  vendor_id: Joi.string().uuid().optional(),
+  debit_account_id: Joi.string().uuid().optional(),
+  credit_account_id: Joi.string().uuid().optional(),
+  metadata: Joi.object().optional()
+});
+
+const vendorSchema = Joi.object({
+  name: Joi.string().min(1).max(200).required(),
+  contact_name: Joi.string().max(100).optional(),
+  email: Joi.string().email().optional(),
+  phone: Joi.string().max(20).optional(),
+  address: Joi.string().max(500).optional(),
+  tax_id: Joi.string().max(50).optional(),
+  payment_terms: Joi.string().max(100).optional(),
+  payment_methods: Joi.array().items(Joi.string()).optional(),
+  metadata: Joi.object().optional()
+});
+
+const querySchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  transaction_type: Joi.string().valid('expense', 'revenue', 'payroll', 'transfer', 'adjustment', 'refund').optional(),
+  status: Joi.string().valid('draft', 'pending_approval', 'approved', 'posted', 'cancelled', 'voided').optional(),
+  budget_id: Joi.string().uuid().optional(),
+  vendor_id: Joi.string().uuid().optional(),
+  date_from: Joi.date().optional(),
+  date_to: Joi.date().optional(),
+  min_amount: Joi.number().min(0).optional(),
+  max_amount: Joi.number().min(0).optional(),
+  search: Joi.string().max(100).optional()
+});
+
+/**
+ * Generate unique transaction number
+ */
+async function generateTransactionNumber(organizationId, transactionType) {
+  const year = new Date().getFullYear();
+  const prefix = {
+    expense: 'EXP',
+    revenue: 'REV',
+    payroll: 'PAY',
+    transfer: 'TRF',
+    adjustment: 'ADJ',
+    refund: 'REF'
+  }[transactionType] || 'TXN';
+
+  const lastTransaction = await db('financial_transactions')
+    .where('organization_id', organizationId)
+    .where('transaction_number', 'like', `${prefix}-${year}-%`)
+    .orderBy('transaction_number', 'desc')
+    .first();
+
+  let sequence = 1;
+  if (lastTransaction) {
+    const lastNumber = lastTransaction.transaction_number.split('-')[2];
+    sequence = parseInt(lastNumber) + 1;
+  }
+
+  return `${prefix}-${year}-${sequence.toString().padStart(6, '0')}`;
+}
+
+/**
+ * GET /api/financial/transactions
+ * List financial transactions with filtering
+ * Requires: finance:read permission
+ */
+router.get('/transactions', authenticateToken, requirePermission('finance:read'), async (req, res) => {
+  try {
+    const { error, value } = querySchema.validate(req.query);
+    if (error) {
+      return res.status(400).json({
+        error: 'Invalid query parameters',
+        details: error.details[0].message
+      });
+    }
+
+    const organizationId = req.user.organization_id || req.user.id;
+    const { 
+      page, limit, transaction_type, status, budget_id, vendor_id,
+      date_from, date_to, min_amount, max_amount, search
+    } = value;
+
+    let query = db('financial_transactions as ft')
+      .leftJoin('budgets as b', 'ft.budget_id', 'b.id')
+      .leftJoin('budget_categories as bc', 'b.category_id', 'bc.id')
+      .leftJoin('vendors as v', 'ft.vendor_id', 'v.id')
+      .leftJoin('users as creator', 'ft.created_by', 'creator.id')
+      .where('ft.organization_id', organizationId)
+      .select(
+        'ft.*',
+        'b.name as budget_name',
+        'bc.name as category_name',
+        'bc.color_code as category_color',
+        'v.name as vendor_name',
+        db.raw('creator.first_name || \' \' || creator.last_name as created_by_name')
+      );
+
+    // Apply filters
+    if (transaction_type) {
+      query = query.where('ft.transaction_type', transaction_type);
+    }
+    if (status) {
+      query = query.where('ft.status', status);
+    }
+    if (budget_id) {
+      query = query.where('ft.budget_id', budget_id);
+    }
+    if (vendor_id) {
+      query = query.where('ft.vendor_id', vendor_id);
+    }
+    if (date_from) {
+      query = query.where('ft.transaction_date', '>=', date_from);
+    }
+    if (date_to) {
+      query = query.where('ft.transaction_date', '<=', date_to);
+    }
+    if (min_amount) {
+      query = query.where('ft.amount', '>=', min_amount);
+    }
+    if (max_amount) {
+      query = query.where('ft.amount', '<=', max_amount);
+    }
+
+    if (search) {
+      query = query.where(function() {
+        this.where('ft.description', 'ilike', `%${search}%`)
+          .orWhere('ft.transaction_number', 'ilike', `%${search}%`)
+          .orWhere('ft.reference_number', 'ilike', `%${search}%`)
+          .orWhere('v.name', 'ilike', `%${search}%`);
+      });
+    }
+
+    const offset = (page - 1) * limit;
+    const [transactions, [{ total }]] = await Promise.all([
+      query.clone().orderBy('ft.transaction_date', 'desc').limit(limit).offset(offset),
+      query.clone().count('ft.id as total')
+    ]);
+
+    // Get summary statistics
+    const summary = await db('financial_transactions')
+      .where('organization_id', organizationId)
+      .modify(qb => {
+        if (transaction_type) {
+          qb.where('transaction_type', transaction_type);
+        }
+        if (status) {
+          qb.where('status', status);
+        }
+        if (budget_id) {
+          qb.where('budget_id', budget_id);
+        }
+        if (vendor_id) {
+          qb.where('vendor_id', vendor_id);
+        }
+        if (date_from) {
+          qb.where('transaction_date', '>=', date_from);
+        }
+        if (date_to) {
+          qb.where('transaction_date', '<=', date_to);
+        }
+      })
+      .select([
+        db.raw('COUNT(*) as total_transactions'),
+        db.raw('SUM(CASE WHEN transaction_type IN (\'revenue\') THEN amount ELSE 0 END) as total_revenue'),
+        db.raw('SUM(CASE WHEN transaction_type IN (\'expense\', \'payroll\') THEN amount ELSE 0 END) as total_expenses'),
+        db.raw('SUM(CASE WHEN status = \'posted\' THEN amount ELSE 0 END) as posted_amount'),
+        db.raw('SUM(CASE WHEN status IN (\'draft\', \'pending_approval\') THEN amount ELSE 0 END) as pending_amount')
+      ])
+      .first();
+
+    res.json({
+      transactions,
+      summary,
+      pagination: {
+        page,
+        limit,
+        total: parseInt(total),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Financial transactions list error:', error);
+    res.status(500).json({ error: 'Failed to retrieve transactions' });
+  }
+});
+
+/**
+ * POST /api/financial/transactions
+ * Create a new financial transaction
+ * Requires: finance:manage permission
+ */
+router.post('/transactions',
+  authenticateToken,
+  requirePermission('finance:manage'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const { error, value } = transactionSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.details[0].message
+        });
+      }
+
+      const organizationId = req.user.organization_id || req.user.id;
+
+      // Generate transaction number
+      const transactionNumber = await generateTransactionNumber(organizationId, value.transaction_type);
+
+      // Validate budget exists if provided
+      if (value.budget_id) {
+        const budget = await db('budgets')
+          .where('id', value.budget_id)
+          .where('organization_id', organizationId)
+          .first();
+
+        if (!budget) {
+          return res.status(404).json({ error: 'Budget not found' });
+        }
+
+        // Check if budget has sufficient available funds for expenses
+        if (value.transaction_type === 'expense') {
+          const availableAmount = budget.allocated_amount - budget.committed_amount - budget.actual_spent - budget.reserved_amount;
+          if (value.amount > availableAmount) {
+            return res.status(400).json({
+              error: 'Insufficient budget',
+              message: `Transaction amount ($${value.amount}) exceeds available budget ($${availableAmount})`
+            });
+          }
+        }
+      }
+
+      // Validate vendor exists if provided
+      if (value.vendor_id) {
+        const vendor = await db('vendors')
+          .where('id', value.vendor_id)
+          .where('organization_id', organizationId)
+          .first();
+
+        if (!vendor) {
+          return res.status(404).json({ error: 'Vendor not found' });
+        }
+      }
+
+      const [transaction] = await db('financial_transactions')
+        .insert({
+          ...value,
+          organization_id: organizationId,
+          transaction_number: transactionNumber,
+          created_by: req.user.id
+        })
+        .returning('*');
+
+      // Update budget committed amount if this is an expense
+      if (value.budget_id && value.transaction_type === 'expense') {
+        await db('budgets')
+          .where('id', value.budget_id)
+          .increment('committed_amount', value.amount);
+      }
+
+      // Get the complete transaction with relationships
+      const fullTransaction = await db('financial_transactions as ft')
+        .leftJoin('budgets as b', 'ft.budget_id', 'b.id')
+        .leftJoin('budget_categories as bc', 'b.category_id', 'bc.id')
+        .leftJoin('vendors as v', 'ft.vendor_id', 'v.id')
+        .where('ft.id', transaction.id)
+        .select(
+          'ft.*',
+          'b.name as budget_name',
+          'bc.name as category_name',
+          'v.name as vendor_name'
+        )
+        .first();
+
+      res.status(201).json({
+        message: 'Financial transaction created successfully',
+        transaction: fullTransaction
+      });
+    } catch (error) {
+      console.error('Financial transaction creation error:', error);
+      res.status(500).json({ error: 'Failed to create transaction' });
+    }
+  }
+);
+
+/**
+ * GET /api/financial/transactions/:id
+ * Get detailed transaction information
+ * Requires: finance:read permission
+ */
+router.get('/transactions/:id', authenticateToken, requirePermission('finance:read'), async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+    const organizationId = req.user.organization_id || req.user.id;
+
+    const transaction = await db('financial_transactions as ft')
+      .leftJoin('budgets as b', 'ft.budget_id', 'b.id')
+      .leftJoin('budget_categories as bc', 'b.category_id', 'bc.id')
+      .leftJoin('vendors as v', 'ft.vendor_id', 'v.id')
+      .leftJoin('users as creator', 'ft.created_by', 'creator.id')
+      .leftJoin('expense_data as ed', 'ft.expense_data_id', 'ed.id')
+      .leftJoin('game_assignments as ga', 'ft.payroll_assignment_id', 'ga.id')
+      .leftJoin('chart_of_accounts as debit_acc', 'ft.debit_account_id', 'debit_acc.id')
+      .leftJoin('chart_of_accounts as credit_acc', 'ft.credit_account_id', 'credit_acc.id')
+      .where('ft.id', transactionId)
+      .where('ft.organization_id', organizationId)
+      .select(
+        'ft.*',
+        'b.name as budget_name',
+        'bc.name as category_name',
+        'bc.color_code as category_color',
+        'v.name as vendor_name',
+        'v.contact_name as vendor_contact',
+        db.raw('creator.first_name || \' \' || creator.last_name as created_by_name'),
+        'ed.vendor_name as expense_vendor',
+        'ga.calculated_wage as payroll_amount',
+        'debit_acc.account_name as debit_account_name',
+        'credit_acc.account_name as credit_account_name'
+      )
+      .first();
+
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    // Get related journal entries if any
+    const journalEntries = await db('journal_entries')
+      .where('transaction_id', transactionId)
+      .orderBy('created_at', 'desc');
+
+    res.json({
+      transaction,
+      journal_entries: journalEntries
+    });
+  } catch (error) {
+    console.error('Transaction detail error:', error);
+    res.status(500).json({ error: 'Failed to retrieve transaction details' });
+  }
+});
+
+/**
+ * PUT /api/financial/transactions/:id/status
+ * Update transaction status
+ * Requires: finance:approve permission
+ */
+router.put('/transactions/:id/status',
+  authenticateToken,
+  requirePermission('finance:approve'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const transactionId = req.params.id;
+      const organizationId = req.user.organization_id || req.user.id;
+      const { status, notes } = req.body;
+
+      const validStatuses = ['draft', 'pending_approval', 'approved', 'posted', 'cancelled', 'voided'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          error: 'Invalid status',
+          valid: validStatuses
+        });
+      }
+
+      const transaction = await db('financial_transactions')
+        .where('id', transactionId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!transaction) {
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+
+      // Business logic for status transitions
+      const currentStatus = transaction.status;
+      const allowedTransitions = {
+        'draft': ['pending_approval', 'cancelled'],
+        'pending_approval': ['approved', 'cancelled'],
+        'approved': ['posted', 'cancelled'],
+        'posted': ['voided'],
+        'cancelled': [],
+        'voided': []
+      };
+
+      if (!allowedTransitions[currentStatus].includes(status)) {
+        return res.status(400).json({
+          error: 'Invalid status transition',
+          message: `Cannot change status from ${currentStatus} to ${status}`
+        });
+      }
+
+      const updateData = { 
+        status,
+        updated_at: db.fn.now()
+      };
+
+      if (status === 'posted') {
+        updateData.posted_at = db.fn.now();
+        
+        // Move from committed to actual spent for expenses
+        if (transaction.budget_id && transaction.transaction_type === 'expense') {
+          await db('budgets')
+            .where('id', transaction.budget_id)
+            .increment('actual_spent', transaction.amount)
+            .decrement('committed_amount', transaction.amount);
+        }
+      }
+
+      if (status === 'cancelled' || status === 'voided') {
+        // Remove from budget commitments
+        if (transaction.budget_id && transaction.transaction_type === 'expense') {
+          if (currentStatus === 'posted') {
+            await db('budgets')
+              .where('id', transaction.budget_id)
+              .decrement('actual_spent', transaction.amount);
+          } else {
+            await db('budgets')
+              .where('id', transaction.budget_id)
+              .decrement('committed_amount', transaction.amount);
+          }
+        }
+      }
+
+      const [updatedTransaction] = await db('financial_transactions')
+        .where('id', transactionId)
+        .update(updateData)
+        .returning('*');
+
+      res.json({
+        message: `Transaction ${status} successfully`,
+        transaction: updatedTransaction
+      });
+    } catch (error) {
+      console.error('Transaction status update error:', error);
+      res.status(500).json({ error: 'Failed to update transaction status' });
+    }
+  }
+);
+
+/**
+ * GET /api/financial/vendors
+ * List vendors
+ * Requires: finance:read permission
+ */
+router.get('/vendors', authenticateToken, requirePermission('finance:read'), async (req, res) => {
+  try {
+    const organizationId = req.user.organization_id || req.user.id;
+    const { active = true, search, page = 1, limit = 20 } = req.query;
+
+    let query = db('vendors')
+      .where('organization_id', organizationId)
+      .orderBy('name');
+
+    if (active !== undefined) {
+      query = query.where('active', active === 'true');
+    }
+
+    if (search) {
+      query = query.where(function() {
+        this.where('name', 'ilike', `%${search}%`)
+          .orWhere('contact_name', 'ilike', `%${search}%`)
+          .orWhere('email', 'ilike', `%${search}%`);
+      });
+    }
+
+    const offset = (page - 1) * limit;
+    const [vendors, [{ total }]] = await Promise.all([
+      query.clone().limit(limit).offset(offset),
+      query.clone().count('id as total')
+    ]);
+
+    res.json({
+      vendors,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Vendors list error:', error);
+    res.status(500).json({ error: 'Failed to retrieve vendors' });
+  }
+});
+
+/**
+ * POST /api/financial/vendors
+ * Create a new vendor
+ * Requires: finance:manage permission
+ */
+router.post('/vendors',
+  authenticateToken,
+  requirePermission('finance:manage'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const { error, value } = vendorSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.details[0].message
+        });
+      }
+
+      const organizationId = req.user.organization_id || req.user.id;
+
+      // Check for duplicate vendor name
+      const existing = await db('vendors')
+        .where('organization_id', organizationId)
+        .where('name', value.name)
+        .first();
+
+      if (existing) {
+        return res.status(409).json({
+          error: 'Duplicate vendor name',
+          message: 'A vendor with this name already exists'
+        });
+      }
+
+      const [vendor] = await db('vendors')
+        .insert({
+          ...value,
+          organization_id: organizationId
+        })
+        .returning('*');
+
+      res.status(201).json({
+        message: 'Vendor created successfully',
+        vendor
+      });
+    } catch (error) {
+      console.error('Vendor creation error:', error);
+      res.status(500).json({ error: 'Failed to create vendor' });
+    }
+  }
+);
+
+/**
+ * GET /api/financial/dashboard
+ * Get financial dashboard data
+ * Requires: finance:read permission
+ */
+router.get('/dashboard', authenticateToken, requirePermission('finance:read'), async (req, res) => {
+  try {
+    const organizationId = req.user.organization_id || req.user.id;
+    const { period = '30' } = req.query; // Days to look back
+
+    const dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() - parseInt(period));
+
+    // Get transaction summary
+    const transactionSummary = await db('financial_transactions')
+      .where('organization_id', organizationId)
+      .where('transaction_date', '>=', dateFrom)
+      .select([
+        db.raw('COUNT(*) as total_transactions'),
+        db.raw('SUM(CASE WHEN transaction_type = \'revenue\' AND status = \'posted\' THEN amount ELSE 0 END) as total_revenue'),
+        db.raw('SUM(CASE WHEN transaction_type IN (\'expense\', \'payroll\') AND status = \'posted\' THEN amount ELSE 0 END) as total_expenses'),
+        db.raw('COUNT(CASE WHEN status = \'pending_approval\' THEN 1 END) as pending_approvals'),
+        db.raw('SUM(CASE WHEN status IN (\'draft\', \'pending_approval\') THEN amount ELSE 0 END) as pending_amount')
+      ])
+      .first();
+
+    // Get budget summary
+    const budgetSummary = await db('budgets')
+      .join('budget_periods', 'budgets.budget_period_id', 'budget_periods.id')
+      .where('budgets.organization_id', organizationId)
+      .where('budget_periods.status', 'active')
+      .select([
+        db.raw('COUNT(*) as total_budgets'),
+        db.raw('SUM(allocated_amount) as total_allocated'),
+        db.raw('SUM(actual_spent) as total_spent'),
+        db.raw('SUM(committed_amount) as total_committed'),
+        db.raw('SUM(allocated_amount - actual_spent - committed_amount - reserved_amount) as total_available')
+      ])
+      .first();
+
+    // Get recent transactions
+    const recentTransactions = await db('financial_transactions as ft')
+      .leftJoin('budgets as b', 'ft.budget_id', 'b.id')
+      .leftJoin('vendors as v', 'ft.vendor_id', 'v.id')
+      .where('ft.organization_id', organizationId)
+      .select(
+        'ft.id',
+        'ft.transaction_number',
+        'ft.transaction_type',
+        'ft.amount',
+        'ft.description',
+        'ft.transaction_date',
+        'ft.status',
+        'b.name as budget_name',
+        'v.name as vendor_name'
+      )
+      .orderBy('ft.created_at', 'desc')
+      .limit(10);
+
+    // Get top expense categories
+    const topCategories = await db('financial_transactions as ft')
+      .join('budgets as b', 'ft.budget_id', 'b.id')
+      .join('budget_categories as bc', 'b.category_id', 'bc.id')
+      .where('ft.organization_id', organizationId)
+      .where('ft.transaction_type', 'expense')
+      .where('ft.status', 'posted')
+      .where('ft.transaction_date', '>=', dateFrom)
+      .groupBy('bc.id', 'bc.name', 'bc.color_code')
+      .select(
+        'bc.name as category_name',
+        'bc.color_code as color',
+        db.raw('SUM(ft.amount) as total_amount'),
+        db.raw('COUNT(*) as transaction_count')
+      )
+      .orderBy('total_amount', 'desc')
+      .limit(5);
+
+    // Get cash flow trend (daily for last 30 days)
+    const cashFlowTrend = await db('financial_transactions')
+      .where('organization_id', organizationId)
+      .where('status', 'posted')
+      .where('transaction_date', '>=', dateFrom)
+      .select(
+        'transaction_date',
+        db.raw('SUM(CASE WHEN transaction_type = \'revenue\' THEN amount ELSE 0 END) as revenue'),
+        db.raw('SUM(CASE WHEN transaction_type IN (\'expense\', \'payroll\') THEN amount ELSE 0 END) as expenses')
+      )
+      .groupBy('transaction_date')
+      .orderBy('transaction_date');
+
+    res.json({
+      transaction_summary: transactionSummary,
+      budget_summary: budgetSummary,
+      recent_transactions: recentTransactions,
+      top_categories: topCategories,
+      cash_flow_trend: cashFlowTrend,
+      period_days: parseInt(period)
+    });
+  } catch (error) {
+    console.error('Financial dashboard error:', error);
+    res.status(500).json({ error: 'Failed to retrieve dashboard data' });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,108 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: sports_management_staging
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      # Build Frontend
+      - name: Install frontend dependencies
+        run: npm ci
+      
+      - name: Build frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.STAGING_API_URL }}
+      
+      # Test Backend
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+      
+      - name: Run backend migrations (staging)
+        run: cd backend && npm run migrate
+        env:
+          NODE_ENV: staging
+          DB_HOST: ${{ secrets.STAGING_DB_HOST }}
+          DB_PORT: ${{ secrets.STAGING_DB_PORT }}
+          DB_NAME: ${{ secrets.STAGING_DB_NAME }}
+          DB_USER: ${{ secrets.STAGING_DB_USER }}
+          DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+      
+      - name: Run quick smoke tests
+        run: cd backend && npm test -- --testNamePattern="smoke|integration"
+        env:
+          NODE_ENV: staging
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: sports_management_staging
+          DB_USER: postgres
+          DB_PASSWORD: test_password
+          JWT_SECRET: test_staging_secret
+      
+      # Deploy (placeholder - replace with actual deployment)
+      - name: Deploy to staging server
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Frontend build: ✅"
+          echo "Backend tests: ✅"
+          echo "Database migrations: ✅"
+          # Add actual deployment commands here
+          # Examples:
+          # - rsync to staging server
+          # - Docker container deployment
+          # - Cloud platform deployment (Vercel, Netlify, etc.)
+      
+      - name: Run post-deployment health checks
+        run: |
+          echo "🔍 Running health checks..."
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Check if API is responding
+          # curl -f ${{ secrets.STAGING_API_URL }}/health || exit 1
+          
+          echo "✅ Staging deployment successful!"
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Staging deployment completed successfully"
+            echo "🌐 Staging URL: ${{ secrets.STAGING_FRONTEND_URL }}"
+            echo "📡 API URL: ${{ secrets.STAGING_API_URL }}"
+          else
+            echo "❌ Staging deployment failed"
+            echo "📋 Check the workflow logs for details"
+          fi

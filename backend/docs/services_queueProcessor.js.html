@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/queueProcessor.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/queueProcessor.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const Queue = require('bull');
+const receiptProcessingService = require('./receiptProcessingService');
+
+class QueueProcessor {
+  constructor() {
+    this.queues = new Map();
+    this.initializeQueues();
+  }
+
+  initializeQueues() {
+    const redisConfig = {
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: process.env.REDIS_PORT || 6379,
+        password: process.env.REDIS_PASSWORD,
+        maxRetriesPerRequest: 3,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxLoadingTimeout: 0,
+        lazyConnect: true
+      },
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000
+        }
+      }
+    };
+
+    // Receipt processing queue
+    const receiptQueue = new Queue('receipt processing', redisConfig);
+    
+    // Process receipt jobs
+    receiptQueue.process('process-receipt', 5, async (job) => {
+      const { receiptId, metadata, manualTrigger } = job.data;
+      
+      try {
+        console.log(`Processing receipt job: ${receiptId} (Manual: ${manualTrigger || false})`);
+        
+        // Update job progress
+        await job.progress(10);
+        
+        const results = await receiptProcessingService.processReceipt(receiptId);
+        
+        await job.progress(100);
+        
+        console.log(`Receipt processing completed: ${receiptId}`);
+        return {
+          receiptId,
+          status: 'completed',
+          results,
+          processedAt: new Date()
+        };
+      } catch (error) {
+        console.error(`Receipt processing failed: ${receiptId}`, error);
+        
+        // Log additional context for debugging
+        await this.logJobFailure(receiptId, error, job.attemptsMade, job.opts.attempts);
+        
+        throw error;
+      }
+    });
+
+    // Email notification queue
+    const emailQueue = new Queue('email notifications', redisConfig);
+    
+    emailQueue.process('send-accounting-notification', 10, async (job) => {
+      const { receiptId, userId, expenseData } = job.data;
+      
+      try {
+        console.log(`Sending accounting notification for receipt: ${receiptId}`);
+        
+        // This would be handled by the receipt processing service
+        // Just log for now
+        console.log(`Accounting notification sent for receipt: ${receiptId}`);
+        
+        return {
+          receiptId,
+          notificationSent: true,
+          sentAt: new Date()
+        };
+      } catch (error) {
+        console.error(`Email notification failed: ${receiptId}`, error);
+        throw error;
+      }
+    });
+
+    // Store queues for access
+    this.queues.set('receipts', receiptQueue);
+    this.queues.set('emails', emailQueue);
+
+    // Set up queue event listeners
+    this.setupEventListeners();
+
+    console.log('Queue processor initialized with Redis connection');
+  }
+
+  setupEventListeners() {
+    for (const [name, queue] of this.queues) {
+      // Job completed
+      queue.on('completed', (job, result) => {
+        console.log(`Job completed [${name}]: ${job.id}`);
+      });
+
+      // Job failed
+      queue.on('failed', (job, err) => {
+        console.error(`Job failed [${name}]: ${job.id} - ${err.message}`);
+      });
+
+      // Job stalled
+      queue.on('stalled', (job) => {
+        console.warn(`Job stalled [${name}]: ${job.id}`);
+      });
+
+      // Queue error
+      queue.on('error', (error) => {
+        console.error(`Queue error [${name}]:`, error);
+      });
+
+      // Connection events
+      queue.on('ready', () => {
+        console.log(`Queue ready [${name}]`);
+      });
+
+      queue.on('close', () => {
+        console.log(`Queue closed [${name}]`);
+      });
+    }
+  }
+
+  /**
+   * Add job to receipt processing queue
+   */
+  async addReceiptProcessingJob(receiptId, options = {}) {
+    const queue = this.queues.get('receipts');
+    if (!queue) {
+      throw new Error('Receipt processing queue not available');
+    }
+
+    const jobData = {
+      receiptId,
+      ...options
+    };
+
+    const jobOptions = {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000
+      },
+      removeOnComplete: 50,
+      removeOnFail: 25,
+      ...options.jobOptions
+    };
+
+    const job = await queue.add('process-receipt', jobData, jobOptions);
+    console.log(`Receipt processing job added: ${job.id} for receipt: ${receiptId}`);
+    
+    return job;
+  }
+
+  /**
+   * Add email notification job
+   */
+  async addEmailNotificationJob(data, options = {}) {
+    const queue = this.queues.get('emails');
+    if (!queue) {
+      throw new Error('Email queue not available');
+    }
+
+    const job = await queue.add('send-accounting-notification', data, options);
+    console.log(`Email notification job added: ${job.id}`);
+    
+    return job;
+  }
+
+  /**
+   * Get queue statistics
+   */
+  async getQueueStats() {
+    const stats = {};
+    
+    for (const [name, queue] of this.queues) {
+      try {
+        const [waiting, active, completed, failed, delayed] = await Promise.all([
+          queue.getWaiting(),
+          queue.getActive(),
+          queue.getCompleted(),
+          queue.getFailed(),
+          queue.getDelayed()
+        ]);
+
+        stats[name] = {
+          waiting: waiting.length,
+          active: active.length,
+          completed: completed.length,
+          failed: failed.length,
+          delayed: delayed.length
+        };
+      } catch (error) {
+        console.error(`Error getting stats for queue ${name}:`, error);
+        stats[name] = { error: error.message };
+      }
+    }
+    
+    return stats;
+  }
+
+  /**
+   * Clean old jobs from queues
+   */
+  async cleanQueues() {
+    for (const [name, queue] of this.queues) {
+      try {
+        // Clean completed jobs older than 24 hours
+        await queue.clean(24 * 60 * 60 * 1000, 'completed');
+        
+        // Clean failed jobs older than 7 days
+        await queue.clean(7 * 24 * 60 * 60 * 1000, 'failed');
+        
+        console.log(`Cleaned old jobs from queue: ${name}`);
+      } catch (error) {
+        console.error(`Error cleaning queue ${name}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Log job failure for debugging
+   * @private
+   */
+  async logJobFailure(receiptId, error, attemptsMade, maxAttempts) {
+    try {
+      const db = require('../config/database');
+      
+      await db('ai_processing_logs').insert({
+        receipt_id: receiptId,
+        service_type: 'job_processing',
+        service_provider: 'bull_queue',
+        status: 'failed',
+        error_message: error.message,
+        usage_metadata: JSON.stringify({
+          attemptsMade,
+          maxAttempts,
+          timestamp: new Date(),
+          errorStack: error.stack
+        }),
+        started_at: new Date(),
+        completed_at: new Date()
+      });
+    } catch (logError) {
+      console.error('Failed to log job failure:', logError);
+    }
+  }
+
+  /**
+   * Gracefully close all queues
+   */
+  async close() {
+    console.log('Closing queue processor...');
+    
+    const closePromises = Array.from(this.queues.values()).map(queue => 
+      queue.close().catch(error => 
+        console.error('Error closing queue:', error)
+      )
+    );
+    
+    await Promise.all(closePromises);
+    console.log('Queue processor closed');
+  }
+
+  /**
+   * Get specific queue by name
+   */
+  getQueue(name) {
+    return this.queues.get(name);
+  }
+
+  /**
+   * Pause all queues
+   */
+  async pauseAll() {
+    for (const [name, queue] of this.queues) {
+      await queue.pause();
+      console.log(`Queue paused: ${name}`);
+    }
+  }
+
+  /**
+   * Resume all queues
+   */
+  async resumeAll() {
+    for (const [name, queue] of this.queues) {
+      await queue.resume();
+      console.log(`Queue resumed: ${name}`);
+    }
+  }
+}
+
+// Create singleton instance
+const queueProcessor = new QueueProcessor();
+
+// Graceful shutdown handling
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, closing queue processor...');
+  await queueProcessor.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, closing queue processor...');
+  await queueProcessor.close();
+  process.exit(0);
+});
+
+module.exports = queueProcessor;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

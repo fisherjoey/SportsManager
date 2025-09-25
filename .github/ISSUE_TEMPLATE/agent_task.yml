@@ -1,0 +1,193 @@
+name: Agent Task
+description: Task assignment for Claude Code agents working on the Sports Management App
+title: "[AGENT] "
+labels: ["agent-task", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🤖 Agent Task Assignment
+        Use this template to create structured tasks for Claude Code agents.
+
+  - type: textarea
+    id: task_description
+    attributes:
+      label: Task Description
+      description: Clear, specific description of what needs to be implemented
+      placeholder: |
+        Implement [feature/fix/enhancement] that allows users to...
+        
+        The task should include:
+        - Specific functionality required
+        - Expected behavior
+        - Integration points
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task_type
+    attributes:
+      label: Task Type
+      description: What type of work is this?
+      options:
+        - New Feature Implementation
+        - Bug Fix
+        - Code Refactoring
+        - Performance Optimization
+        - Testing Implementation
+        - Documentation Update
+        - Security Enhancement
+        - Database Migration
+        - API Enhancement
+        - UI/UX Improvement
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Complexity Level
+      description: How complex is this task?
+      options:
+        - Simple (1-2 hours, straightforward implementation)
+        - Medium (4-8 hours, some complexity or integration)
+        - Complex (1-2 days, significant changes or multiple systems)
+        - Advanced (3+ days, architectural changes or extensive testing)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Specific, testable requirements that must be met
+      placeholder: |
+        - [ ] User can perform [action] successfully
+        - [ ] System validates [input] correctly
+        - [ ] Error handling works for [scenario]
+        - [ ] All tests pass (unit, integration, E2E)
+        - [ ] Code follows project standards
+        - [ ] Documentation is updated
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_requirements
+    attributes:
+      label: Technical Requirements
+      description: Specific technical implementation details
+      placeholder: |
+        Backend:
+        - API endpoints to implement
+        - Database schema changes
+        - Validation rules
+        
+        Frontend:
+        - Components to create/modify
+        - State management changes
+        - UI/UX requirements
+        
+        Testing:
+        - Unit tests required
+        - Integration test scenarios
+        - E2E test coverage
+
+  - type: textarea
+    id: files_to_modify
+    attributes:
+      label: Files Likely to be Modified
+      description: List files/directories that will probably need changes
+      placeholder: |
+        Backend:
+        - backend/src/routes/[route].js
+        - backend/migrations/[timestamp]_[description].js
+        
+        Frontend:
+        - components/[component].tsx
+        - app/[page]/page.tsx
+        
+        Tests:
+        - backend/tests/routes/[route].test.js
+        - __tests__/[component].test.tsx
+
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: Related Issues/PRs
+      description: Link any related issues, PRs, or documentation
+      placeholder: |
+        Related to #123
+        Depends on #456
+        Blocks #789
+        
+        Documentation: [link]
+        Design: [link]
+
+  - type: checkboxes
+    id: agent_requirements
+    attributes:
+      label: Agent Requirements Checklist
+      description: Requirements the agent must follow
+      options:
+        - label: Must write tests first (TDD approach)
+          required: true
+        - label: Must follow coding standards and linting rules
+          required: true
+        - label: Must update documentation if needed
+          required: true
+        - label: Must ensure backward compatibility
+          required: false
+        - label: Must consider mobile responsiveness
+          required: false
+        - label: Must implement error handling
+          required: true
+        - label: Must add logging for debugging
+          required: false
+        - label: Must consider performance implications
+          required: false
+        - label: Must validate with security best practices
+          required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this task?
+      options:
+        - Low (can wait for next sprint)
+        - Medium (should be done this sprint)
+        - High (needed soon for other work)
+        - Critical (blocking other work or users)
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional information the agent should know
+      placeholder: |
+        Background information:
+        - Why this task is needed
+        - User feedback or business requirements
+        - Technical constraints or considerations
+        - Previous attempts or related work
+
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of Done
+      description: How will we know this task is complete?
+      placeholder: |
+        Task is complete when:
+        - [ ] All acceptance criteria are met
+        - [ ] Code passes all quality gates
+        - [ ] Tests are written and passing
+        - [ ] Code review is approved
+        - [ ] Documentation is updated
+        - [ ] Feature is deployed to staging
+        - [ ] Manual testing is completed
+    validations:
+      required: true

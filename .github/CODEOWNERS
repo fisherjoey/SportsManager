@@ -1,0 +1,90 @@
+# Code Owners for Sports Management App
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - these users will be requested for review on all PRs
+* @team-lead @senior-developer
+
+# QA and Testing Infrastructure
+QA-QC-PLAN.md @qa-lead @team-lead
+docs/TESTING-STANDARDS.md @qa-lead @team-lead
+AGENT-GUIDELINES.md @qa-lead @team-lead
+jest.config.js @qa-lead
+.github/workflows/ @devops-lead @team-lead
+
+# Database and Backend Architecture
+backend/migrations/ @database-admin @backend-lead @team-lead
+backend/seeds/ @database-admin @backend-lead
+backend/src/config/ @backend-lead @team-lead
+backend/src/middleware/ @backend-lead @security-lead
+backend/knexfile.js @database-admin @backend-lead
+database-schema.sql @database-admin @backend-lead
+
+# Backend API Routes
+backend/src/routes/ @backend-lead
+backend/src/routes/auth.js @backend-lead @security-lead
+backend/src/routes/games.js @backend-lead @game-feature-owner
+backend/src/routes/referees.js @backend-lead @referee-feature-owner
+backend/src/routes/assignments.js @backend-lead @assignment-feature-owner
+
+# Frontend Architecture
+app/ @frontend-lead
+components/ @frontend-lead
+components/ui/ @frontend-lead @design-system-owner
+lib/ @frontend-lead
+hooks/ @frontend-lead
+
+# Core Business Logic Components
+components/game-management.tsx @frontend-lead @game-feature-owner
+components/referee-management.tsx @frontend-lead @referee-feature-owner
+components/admin-dashboard.tsx @frontend-lead @dashboard-owner
+components/data-table/ @frontend-lead @table-component-owner
+
+# Authentication and Security
+backend/src/middleware/auth.js @security-lead @backend-lead
+components/auth-provider.tsx @security-lead @frontend-lead
+components/login-form.tsx @security-lead @frontend-lead
+
+# Configuration Files
+package.json @team-lead @devops-lead
+backend/package.json @team-lead @backend-lead
+next.config.mjs @frontend-lead @devops-lead
+tailwind.config.ts @frontend-lead @design-system-owner
+tsconfig.json @frontend-lead @team-lead
+
+# CI/CD and DevOps
+.github/ @devops-lead @team-lead
+.eslintrc.js @qa-lead @team-lead
+backend/.eslintrc.js @qa-lead @backend-lead
+Dockerfile* @devops-lead
+docker-compose* @devops-lead
+
+# Documentation
+README.md @team-lead
+backend/README.md @backend-lead @team-lead
+GITHUB-INTEGRATION-GUIDE.md @devops-lead @team-lead
+CLAUDE.md @team-lead @product-owner
+
+# Sensitive Configuration (require extra scrutiny)
+.env* @security-lead @devops-lead @team-lead
+**/secrets* @security-lead @devops-lead
+**/*secret* @security-lead @devops-lead
+
+# Testing Files (require QA approval)
+**/*.test.* @qa-lead
+**/*.spec.* @qa-lead
+**/tests/ @qa-lead
+__tests__/ @qa-lead
+backend/tests/ @qa-lead @backend-lead
+
+# Mobile and Responsive Design
+**/*mobile* @frontend-lead @mobile-specialist
+**/*responsive* @frontend-lead @mobile-specialist
+
+# Performance Critical Files
+**/*performance* @performance-specialist @team-lead
+**/*optimization* @performance-specialist
+lib/utils.ts @frontend-lead @performance-specialist
+
+# External Integrations
+**/integrations/ @integration-specialist @backend-lead
+**/webhooks/ @integration-specialist @security-lead

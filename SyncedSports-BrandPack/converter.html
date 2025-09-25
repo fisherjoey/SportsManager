@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synced Sports - Asset Converter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            background: #f6f7fb;
+        }
+        h1 { color: #111; margin-bottom: 10px; }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .converter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .asset-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .asset-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        canvas {
+            border: 1px solid #e0e0e0;
+            margin-bottom: 10px;
+            display: block;
+            margin: 10px auto;
+        }
+        button {
+            background: linear-gradient(to right, #0B66FF, #FF6A00);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 12px;
+        }
+        button:hover { opacity: 0.9; }
+        .size-buttons { margin-top: 10px; }
+        #status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 6px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Synced Sports Brand Asset Converter</h1>
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>This page will help you generate PNG versions of the SVG logos</li>
+            <li>Click any size button to download that size as PNG</li>
+            <li>The "Download All Sizes" button will download all preset sizes for that logo</li>
+            <li>All PNGs maintain transparency and high quality</li>
+        </ol>
+    </div>
+
+    <div id="status">Downloaded!</div>
+
+    <div class="converter-grid" id="converterGrid"></div>
+
+    <script>
+        const logos = [
+            { name: 'Primary', file: 'Logos/SVG/synced-sports-primary.svg', width: 300, height: 260 },
+            { name: 'Horizontal', file: 'Logos/SVG/synced-sports-horizontal.svg', width: 500, height: 160 },
+            { name: 'Icon', file: 'Logos/SVG/synced-sports-icon.svg', width: 200, height: 160 },
+            { name: 'Waves Only', file: 'Logos/SVG/synced-sports-waves-only.svg', width: 200, height: 160 },
+            { name: 'Black', file: 'Logos/SVG/synced-sports-black.svg', width: 300, height: 260 },
+            { name: 'White', file: 'Logos/SVG/synced-sports-white.svg', width: 300, height: 260, bgColor: '#333' },
+            { name: 'Wordmark', file: 'Logos/SVG/synced-sports-wordmark.svg', width: 400, height: 80 }
+        ];
+
+        const sizes = [32, 64, 128, 256, 512, 1024];
+
+        function loadSVGToCanvas(svgPath, canvas, targetSize, bgColor = null) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const ctx = canvas.getContext('2d');
+
+                img.onload = function() {
+                    const aspectRatio = img.width / img.height;
+                    let width = targetSize;
+                    let height = targetSize;
+
+                    if (aspectRatio > 1) {
+                        height = targetSize / aspectRatio;
+                    } else {
+                        width = targetSize * aspectRatio;
+                    }
+
+                    canvas.width = targetSize;
+                    canvas.height = targetSize;
+
+                    if (bgColor) {
+                        ctx.fillStyle = bgColor;
+                        ctx.fillRect(0, 0, targetSize, targetSize);
+                    }
+
+                    const x = (targetSize - width) / 2;
+                    const y = (targetSize - height) / 2;
+
+                    ctx.drawImage(img, x, y, width, height);
+                    resolve();
+                };
+
+                img.src = svgPath;
+            });
+        }
+
+        function downloadCanvas(canvas, filename) {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                // Show status
+                const status = document.getElementById('status');
+                status.style.display = 'block';
+                setTimeout(() => { status.style.display = 'none'; }, 1500);
+            }, 'image/png');
+        }
+
+        async function downloadAllSizes(logo) {
+            for (const size of sizes) {
+                const canvas = document.createElement('canvas');
+                await loadSVGToCanvas(logo.file, canvas, size, logo.bgColor);
+                const filename = `synced-sports-${logo.name.toLowerCase().replace(/\s+/g, '-')}-${size}.png`;
+                downloadCanvas(canvas, filename);
+                await new Promise(resolve => setTimeout(resolve, 200)); // Small delay between downloads
+            }
+        }
+
+        function createLogoCard(logo) {
+            const card = document.createElement('div');
+            card.className = 'asset-card';
+
+            const title = document.createElement('h3');
+            title.textContent = logo.name;
+            card.appendChild(title);
+
+            // Preview canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            card.appendChild(canvas);
+
+            // Load preview
+            loadSVGToCanvas(logo.file, canvas, 200, logo.bgColor);
+
+            // Size buttons container
+            const sizeButtons = document.createElement('div');
+            sizeButtons.className = 'size-buttons';
+
+            // Individual size buttons
+            sizes.forEach(size => {
+                const btn = document.createElement('button');
+                btn.textContent = `${size}px`;
+                btn.onclick = async () => {
+                    const tempCanvas = document.createElement('canvas');
+                    await loadSVGToCanvas(logo.file, tempCanvas, size, logo.bgColor);
+                    const filename = `synced-sports-${logo.name.toLowerCase().replace(/\s+/g, '-')}-${size}.png`;
+                    downloadCanvas(tempCanvas, filename);
+                };
+                sizeButtons.appendChild(btn);
+            });
+
+            card.appendChild(sizeButtons);
+
+            // Download all button
+            const downloadAllBtn = document.createElement('button');
+            downloadAllBtn.textContent = 'Download All Sizes';
+            downloadAllBtn.style.width = '100%';
+            downloadAllBtn.style.marginTop = '10px';
+            downloadAllBtn.onclick = () => downloadAllSizes(logo);
+            card.appendChild(downloadAllBtn);
+
+            return card;
+        }
+
+        // Initialize converter grid
+        window.onload = function() {
+            const grid = document.getElementById('converterGrid');
+            logos.forEach(logo => {
+                grid.appendChild(createLogoCard(logo));
+            });
+        };
+    </script>
+</body>
+</html>

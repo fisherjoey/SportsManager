@@ -1,0 +1,1075 @@
+'use client'
+
+import type React from 'react'
+import { useState, useEffect } from 'react'
+import { Plus, Users, MapPin, Clock, Eye, Edit, Trash2, Trophy, DollarSign, Calendar } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { useToast } from '@/components/ui/use-toast'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { type Game } from '@/lib/types/games'
+import { type Referee } from '@/lib/types/referees'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
+import { LocationSelector } from '@/components/ui/location-selector'
+
+interface GameManagementProps {
+  initialDateFilter?: string
+}
+
+// Comprehensive error handling functions as specified in the implementation plan
+const displayTeamName = (team: any) => {
+  if (!team) return 'TBD Team'
+  return formatTeamName(team) || `${team.organization || 'Unknown'} Team`
+}
+
+const displayGameType = (gameType: string | undefined) => {
+  return gameType || 'Standard Game'
+}
+
+const displayWageInfo = (payRate: number, multiplier: number = 1.0) => {
+  const calculatedWage = payRate * multiplier
+  return `$${calculatedWage.toFixed(2)}${multiplier !== 1.0 ? ` (${multiplier}x)` : ''}`
+}
+
+// GameTypeBadge component for consistent display
+function GameTypeBadge({ gameType }: { gameType: string }) {
+  const getGameTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+    case 'tournament':
+      return 'bg-purple-100 text-purple-800 border-purple-200'
+    case 'private tournament':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    case 'club':
+      return 'bg-blue-100 text-blue-800 border-blue-200'
+    case 'community':
+      return 'bg-green-100 text-green-800 border-green-200'
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+  
+  return (
+    <Badge className={getGameTypeColor(gameType)}>
+      {displayGameType(gameType)}
+    </Badge>
+  )
+}
+
+export function GameManagement({ initialDateFilter }: GameManagementProps = {}) {
+  const [games, setGames] = useState<Game[]>([])
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const [gameToAssign, setGameToAssign] = useState<Game | null>(null)
+  const [gameToEdit, setGameToEdit] = useState<Game | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    ageGroups: [],
+    genders: [],
+    divisions: [],
+    zones: [],
+    levels: [],
+    statuses: []
+  })
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || 'all')
+
+  // Update date filter when initialDateFilter prop changes
+  useEffect(() => {
+    if (initialDateFilter) {
+      setSelectedDate(initialDateFilter)
+    }
+  }, [initialDateFilter])
+  const { toast } = useToast()
+
+  // Load games from API
+  useEffect(() => {
+    const loadGames = async () => {
+      try {
+        // This component needs to be connected to the API
+        // For now, show an error that it needs implementation
+        throw new Error('This component needs to be connected to the games API. Use the games-management-page component instead.')
+      } catch (error) {
+        console.error('Error loading games:', error)
+        toast({
+          title: 'Component Not Connected',
+          description: 'This component needs to be connected to the games API. Please use the games-management-page component for production use.',
+          variant: 'destructive'
+        })
+        setGames([]) // Set empty array instead of undefined
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadGames()
+  }, [toast])
+
+  const handleCreateGame = (gameData: any) => {
+    const newGame = {
+      id: (games.length + 1).toString(),
+      ...gameData,
+      status: 'unassigned' as const,
+      assignedReferees: []
+    }
+    setGames([...games, newGame])
+    setIsCreateDialogOpen(false)
+    toast({
+      title: 'Game created',
+      description: 'New game has been added successfully.'
+    })
+  }
+
+  const handleAssignReferee = async (gameId: string, refereeId: string) => {
+    console.log('Assigning referee:', refereeId, 'to game:', gameId)
+    
+    // Find the game and check referee limits
+    const targetGame = games.find(g => g.id === gameId)
+    if (!targetGame) {
+      toast({
+        title: 'Error',
+        description: 'Game not found.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    const currentReferees = targetGame.assignedReferees || []
+    const refsNeeded = targetGame.refsNeeded || targetGame.refs_needed || 2
+    
+    // Check if game is already full
+    if (currentReferees.length >= refsNeeded) {
+      toast({
+        title: 'Error',
+        description: `Game already has the maximum number of referees (${refsNeeded}).`,
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    // This function needs API integration
+    toast({
+      title: 'Not Implemented',
+      description: 'Referee assignment requires API integration. Use the games-management-page component.',
+      variant: 'destructive'
+    })
+    return
+
+    setGames(
+      games.map((game) => {
+        if (game.id === gameId) {
+          // Check if referee is already assigned to avoid duplicates
+          if (currentReferees.includes(referee.name)) {
+            return game // Return unchanged if already assigned
+          }
+          const updatedReferees = [...currentReferees, referee.name]
+          const newRefsNeeded = game.refsNeeded || game.refs_needed || 2
+          return {
+            ...game,
+            assignedReferees: updatedReferees,
+            status: updatedReferees.length >= newRefsNeeded ? 'assigned' : 'partial' as const
+          }
+        }
+        return game
+      }),
+    )
+
+    toast({
+      title: 'Referee assigned',
+      description: `${referee.name} has been assigned to the game.`
+    })
+    
+    // Close the assign dialog
+    setGameToAssign(null)
+  }
+
+  const handleEditGame = (gameId: string, field: string, value: any) => {
+    setGames(games.map((game) => {
+      if (game.id === gameId) {
+        return { ...game, [field]: value }
+      }
+      return game
+    }))
+    
+    toast({
+      title: 'Game updated',
+      description: `${field} has been updated successfully.`
+    })
+  }
+
+  // Apply filters to games
+  const baseFilteredGames = applyGameFilters(games, activeFilters)
+  const filteredGames = selectedDate === 'all' 
+    ? baseFilteredGames 
+    : baseFilteredGames.filter(game => game.date === selectedDate)
+
+  // Stats for the games overview (based on filtered games)
+  const stats = [
+    {
+      title: selectedDate !== 'all' ? 'Games This Day' : 'Total Games',
+      value: filteredGames.length,
+      icon: Calendar,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Unassigned',
+      value: filteredGames.filter((g) => g.status === 'unassigned').length,
+      icon: Clock,
+      color: 'text-red-600'
+    },
+    {
+      title: 'Assigned',
+      value: filteredGames.filter((g) => g.status === 'assigned').length,
+      icon: Users,
+      color: 'text-green-600'
+    },
+    {
+      title: selectedDate !== 'all' ? 'Up for Grabs' : 'This Week',
+      value: selectedDate !== 'all' 
+        ? filteredGames.filter((g) => g.status === 'up-for-grabs').length
+        : filteredGames.filter((g) => {
+          const gameDate = new Date(g.date)
+          const now = new Date()
+          const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+          return gameDate >= now && gameDate <= weekFromNow
+        }).length,
+      icon: Calendar,
+      color: selectedDate !== 'all' ? 'text-orange-600' : 'text-purple-600'
+    }
+  ]
+
+  // Enhanced column definitions with all required columns from Phase 1.2
+  const columns: ColumnDef<Game>[] = [
+    {
+      id: 'id',
+      title: 'Game ID',
+      filterType: 'search',
+      accessor: (game) => (
+        <span className="font-mono text-sm font-medium">{game.id}</span>
+      )
+    },
+    {
+      id: 'homeTeam',
+      title: 'Home Team',
+      filterType: 'search',
+      accessor: (game) => {
+        return <span className="text-sm font-medium">{displayTeamName(game.homeTeam)}</span>
+      }
+    },
+    {
+      id: 'awayTeam',
+      title: 'Away Team',
+      filterType: 'search',
+      accessor: (game) => {
+        return <span className="text-sm font-medium">{displayTeamName(game.awayTeam)}</span>
+      }
+    },
+    {
+      id: 'gameType',
+      title: 'Game Type',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Types' },
+        { value: 'Community', label: 'Community' },
+        { value: 'Club', label: 'Club' },
+        { value: 'Tournament', label: 'Tournament' },
+        { value: 'Private Tournament', label: 'Private Tournament' }
+      ],
+      accessor: (game) => (
+        <GameTypeBadge gameType={game.gameType} />
+      )
+    },
+    {
+      id: 'datetime',
+      title: 'Date & Time',
+      filterType: 'date',
+      accessor: (game) => {
+        const gameDate = new Date(game.date)
+        const startTime = game.startTime || game.time
+        const endTime = game.endTime
+        
+        // Format date as "Jan 14" 
+        const dateStr = gameDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        })
+        
+        // Format time range as "10:00-11:30" with proper error handling
+        const timeStr = startTime && endTime 
+          ? `${startTime}-${endTime}`
+          : startTime || 'TBD'
+        
+        return (
+          <div>
+            <p className="text-sm font-medium">{dateStr}</p>
+            <p className="text-xs text-muted-foreground">{timeStr}</p>
+          </div>
+        )
+      }
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      filterType: 'search',
+      accessor: (game) => {
+        // Enhanced location display with capacity if available
+        const locationData = game.locationData || {}
+        const capacity = locationData.capacity || 0
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm">{game.location || 'TBD Location'}</span>
+            </div>
+            {capacity > 0 && (
+              <span className="text-xs text-muted-foreground ml-5">
+                Capacity: {capacity}
+              </span>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'assignments',
+      title: 'Referees',
+      filterType: 'none',
+      accessor: (game) => {
+        const assignments = game.assignedReferees || []
+        const refsNeeded = game.refsNeeded || game.refs_needed || 2
+        const assignedCount = assignments.length
+        
+        return (
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {assignedCount}/{refsNeeded}
+              </span>
+              <Badge 
+                variant={assignedCount >= refsNeeded ? 'default' : assignedCount > 0 ? 'secondary' : 'destructive'}
+                className="text-xs"
+              >
+                {assignedCount >= refsNeeded ? 'Full' : assignedCount > 0 ? 'Partial' : 'Empty'}
+              </Badge>
+            </div>
+            {assignments.length > 0 && (
+              <div className="text-xs text-muted-foreground ml-6">
+                {assignments.slice(0, 2).join(', ')}
+                {assignments.length > 2 && ` +${assignments.length - 2} more`}
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'wages',
+      title: 'Wages',
+      filterType: 'none',
+      accessor: (game) => {
+        const payRate = parseFloat(game.payRate || '0')
+        const multiplier = parseFloat(game.wageMultiplier || '1.0')
+        const multiplierReason = game.wageMultiplierReason
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center space-x-1">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {displayWageInfo(payRate, multiplier)}
+              </span>
+            </div>
+            {multiplierReason && multiplier !== 1.0 && (
+              <span className="text-xs text-muted-foreground ml-5">
+                {multiplierReason}
+              </span>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'level',
+      title: 'Level',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All Levels' },
+        { value: 'Recreational', label: 'Recreational' },
+        { value: 'Competitive', label: 'Competitive' },
+        { value: 'Elite', label: 'Elite' }
+      ],
+      accessor: (game) => (
+        <Badge variant={game.level?.includes('Division') ? 'default' : 'secondary'}>
+          {game.level || game.division || 'TBD'}
+        </Badge>
+      )
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      filterType: 'none',
+      accessor: (game) => (
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="sm">
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setGameToEdit(game)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setGameToAssign(game)}>
+            <Users className="h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+  ]
+
+  return (
+    <PageLayout>
+      {/* Deprecation Notice */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+        <div className="flex">
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>⚠️ This component is deprecated and not connected to the API.</strong> 
+              Please use the <code className="font-mono text-xs">games-management-page</code> component for production use.
+              This component will be removed in a future update.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <PageHeader
+        title="Game Management (Deprecated)"
+        description={
+          selectedDate !== 'all' 
+            ? `Games for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}`
+            : 'Manage all games and assignments'
+        }
+      >
+        {selectedDate !== 'all' && (
+          <>
+            <Badge variant="outline" className="text-blue-600 border-blue-600">
+              <Calendar className="h-3 w-3 mr-1" />
+              Filtered by Date
+            </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedDate('all')}
+              className="text-gray-600"
+            >
+              Clear Date Filter
+            </Button>
+          </>
+        )}
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Game
+        </Button>
+      </PageHeader>
+
+      <StatsGrid stats={stats} />
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Games Directory</CardTitle>
+              <CardDescription>Search and manage games across all divisions</CardDescription>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Input
+                  type="date"
+                  placeholder="Filter by date"
+                  value={selectedDate === 'all' ? '' : selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value || 'all')}
+                  className={`w-[180px] ${
+                    selectedDate !== 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
+                  }`}
+                />
+                {selectedDate !== 'all' && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
+                  >
+                    Active
+                  </Badge>
+                )}
+              </div>
+              <GameFilters 
+                games={games}
+                activeFilters={activeFilters}
+                onFiltersChange={setActiveFilters}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <FilterableTable 
+            data={filteredGames} 
+            columns={columns} 
+            loading={loading}
+            emptyMessage="No games found. Try adjusting your filters."
+            enableViewToggle={true}
+            enableCSV={true}
+            mobileCardType="game"
+            searchKey="homeTeam"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Create Game Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogTrigger asChild>
+          <div></div>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Game</DialogTitle>
+            <DialogDescription>Add a new game to the system.</DialogDescription>
+          </DialogHeader>
+          <GameForm onSubmit={handleCreateGame} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Referee Dialog */}
+      {gameToAssign && (
+        <AssignRefereeDialog 
+          game={gameToAssign}
+          onAssign={handleAssignReferee}
+          allGames={games}
+          onClose={() => setGameToAssign(null)}
+        />
+      )}
+
+      {/* Edit Game Dialog */}
+      {gameToEdit && (
+        <EditGameDialog 
+          game={gameToEdit}
+          onSave={(updatedGame) => {
+            setGames(games.map((game) => game.id === updatedGame.id ? updatedGame : game))
+            setGameToEdit(null)
+            toast({
+              title: 'Game updated',
+              description: 'Game details have been updated successfully.'
+            })
+          }}
+          onClose={() => setGameToEdit(null)}
+        />
+      )}
+    </PageLayout>
+  )
+}
+
+function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+  const { toast } = useToast()
+  const [formData, setFormData] = useState({
+    homeTeam: '',
+    awayTeam: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    location: '',
+    postalCode: '',
+    level: '',
+    gameType: 'Competitive',
+    payRate: '',
+    locationCost: ''
+  })
+  const [selectedLocation, setSelectedLocation] = useState<any>(null)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Validate that end time is after start time
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      toast({
+        title: 'Invalid Time Range',
+        description: 'End time must be after start time.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // Validate that a location is selected
+    if (!selectedLocation) {
+      toast({
+        title: 'Location Required',
+        description: 'Please select a location for the game.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    onSubmit({
+      ...formData,
+      time: formData.startTime, // Map startTime to time for compatibility
+      payRate: Number.parseFloat(formData.payRate),
+      location: selectedLocation ? selectedLocation.name : formData.location,
+      postalCode: selectedLocation ? selectedLocation.postal_code : formData.postalCode,
+      locationId: selectedLocation?.id,
+      locationData: selectedLocation,
+      locationCost: formData.locationCost ? Number.parseFloat(formData.locationCost) : null
+    })
+    setFormData({
+      homeTeam: '',
+      awayTeam: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      postalCode: '',
+      level: '',
+      gameType: 'Competitive',
+      payRate: '',
+      locationCost: ''
+    })
+    setSelectedLocation(null)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="homeTeam">Home Team</Label>
+          <Input
+            id="homeTeam"
+            value={formData.homeTeam}
+            onChange={(e) => setFormData({ ...formData, homeTeam: e.target.value })}
+            placeholder="e.g., Okotoks U13B"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="awayTeam">Away Team</Label>
+          <Input
+            id="awayTeam"
+            value={formData.awayTeam}
+            onChange={(e) => setFormData({ ...formData, awayTeam: e.target.value })}
+            placeholder="e.g., Calgary U13B"
+            required
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="date">Date</Label>
+          <Input
+            id="date"
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="startTime">Start Time</Label>
+          <Input
+            id="startTime"
+            type="time"
+            value={formData.startTime}
+            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="endTime">End Time</Label>
+          <Input
+            id="endTime"
+            type="time"
+            value={formData.endTime}
+            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+            required
+          />
+        </div>
+      </div>
+      <LocationSelector
+        value={selectedLocation?.id}
+        onLocationSelect={(location) => setSelectedLocation(location)}
+        placeholder="Search and select a location..."
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="level">Level</Label>
+          <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Recreational">Recreational</SelectItem>
+              <SelectItem value="Competitive">Competitive</SelectItem>
+              <SelectItem value="Elite">Elite</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="gameType">Game Type</Label>
+          <Select value={formData.gameType} onValueChange={(value) => setFormData({ ...formData, gameType: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select game type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Competitive">Competitive</SelectItem>
+              <SelectItem value="Community">Community</SelectItem>
+              <SelectItem value="Club">Club</SelectItem>
+              <SelectItem value="Tournament">Tournament</SelectItem>
+              <SelectItem value="Private Tournament">Private Tournament</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="payRate">Pay Rate ($)</Label>
+        <Input
+          id="payRate"
+          type="number"
+          step="0.01"
+          value={formData.payRate}
+          onChange={(e) => setFormData({ ...formData, payRate: e.target.value })}
+          placeholder="e.g., 75.00"
+          required
+        />
+      </div>
+      <Button type="submit" className="w-full">
+        Create Game
+      </Button>
+    </form>
+  )
+}
+
+function AssignRefereeDialog({ game, onAssign, allGames, onClose }: { 
+  game: any; 
+  onAssign: (gameId: string, refereeId: string) => void; 
+  allGames: any[];
+  onClose?: () => void;
+}) {
+  const [selectedReferee, setSelectedReferee] = useState('')
+  const [availableReferees, setAvailableReferees] = useState<Referee[]>([])
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (game.id) {
+      fetchAvailableReferees()
+    }
+  }, [game.id])
+
+  const fetchAvailableReferees = async () => {
+    setLoading(true)
+    
+    // This needs API integration - return empty array for now
+    const filteredReferees: Referee[] = []
+    
+    // Original filter logic commented for reference when implementing API
+    /* filteredReferees = referees.filter(referee => {
+      // Only show available referees
+      if (!referee.isAvailable) return false
+      
+      // Check if referee is already assigned to this specific game
+      const currentAssignments = game.assignedReferees || []
+      if (currentAssignments.includes(referee.name)) return false
+      
+      // Check if referee is already assigned to a game at the same time
+      const gameDate = game.date || game.game_date
+      const gameTime = game.time || game.game_time
+      
+      const conflictingGame = allGames.find(g => {
+        const gDate = g.date || g.game_date
+        const gTime = g.time || g.game_time
+        
+        return g.id !== game.id && 
+               gDate === gameDate && 
+               gTime === gameTime &&
+               (g.assignedReferees?.includes(referee.name) || 
+                g.assignments?.some(a => a.referee_name === referee.name))
+      })
+      
+      return !conflictingGame
+    }) */
+    
+    setAvailableReferees(filteredReferees)
+    setLoading(false)
+  }
+
+  const handleAssign = () => {
+    if (selectedReferee) {
+      onAssign(game.id, selectedReferee)
+      setSelectedReferee('')
+      onClose?.()
+    }
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Assign Referee</DialogTitle>
+          <DialogDescription>
+            Select an available referee for {formatGameMatchup(game.homeTeam, game.awayTeam)} on {new Date(game.date || game.game_date).toLocaleDateString()} at {game.time || game.game_time}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={selectedReferee} onValueChange={setSelectedReferee} disabled={loading}>
+            <SelectTrigger>
+              <SelectValue placeholder={loading ? 'Loading referees...' : 'Select a referee'} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableReferees.length > 0 ? (
+                availableReferees.map((referee) => (
+                  <SelectItem key={referee.id} value={referee.id}>
+                    {referee.name} - {referee.certificationLevel} ({referee.location || 'No location'})
+                  </SelectItem>
+                ))
+              ) : (
+                !loading && (
+                  <SelectItem value="all" disabled>
+                    No available referees for this time slot
+                  </SelectItem>
+                )
+              )}
+            </SelectContent>
+          </Select>
+          <Button onClick={handleAssign} disabled={!selectedReferee || loading} className="w-full">
+            {loading ? 'Loading...' : 'Assign Referee'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditGameDialog({ game, onSave, onClose }: { 
+  game: Game; 
+  onSave: (updatedGame: Game) => void; 
+  onClose?: () => void;
+}) {
+  const { toast } = useToast()
+  const [selectedLocation, setSelectedLocation] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    homeTeam: displayTeamName(game.homeTeam),
+    awayTeam: displayTeamName(game.awayTeam),
+    date: game.date ? new Date(game.date).toISOString().split('T')[0] : '',
+    startTime: game.startTime || game.time || '',
+    endTime: game.endTime || '',
+    location: game.location || '',
+    postalCode: game.postalCode || '',
+    level: game.level || '',
+    gameType: game.gameType || 'Competitive',
+    refsNeeded: (game.refsNeeded || game.refs_needed || 2).toString(),
+    locationCost: ''
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const updatedGame: Game = {
+      ...game,
+      homeTeam: formData.homeTeam,
+      awayTeam: formData.awayTeam,
+      date: formData.date,
+      time: formData.startTime, // Map startTime to time for compatibility
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      postalCode: formData.postalCode,
+      level: formData.level,
+      gameType: formData.gameType,
+      refsNeeded: parseInt(formData.refsNeeded),
+      refs_needed: parseInt(formData.refsNeeded) // Keep both for compatibility
+    }
+    
+    onSave(updatedGame)
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Game</DialogTitle>
+          <DialogDescription>
+            Update game details for #{game.id.slice(-8).toUpperCase()}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="homeTeam">Home Team</Label>
+              <Input
+                id="homeTeam"
+                value={formData.homeTeam}
+                onChange={(e) => setFormData({ ...formData, homeTeam: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="awayTeam">Away Team</Label>
+              <Input
+                id="awayTeam"
+                value={formData.awayTeam}
+                onChange={(e) => setFormData({ ...formData, awayTeam: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Start Time</Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <LocationSelector
+            value={selectedLocation?.id}
+            onLocationSelect={(location) => {
+              setSelectedLocation(location)
+              setFormData({ 
+                ...formData, 
+                location: location.name,
+                postalCode: location.postal_code 
+              })
+            }}
+            placeholder="Select game location..."
+          />
+
+          {selectedLocation && (selectedLocation.hourly_rate || selectedLocation.game_rate) && (
+            <div className="space-y-2">
+              <Label htmlFor="locationCost">Location Cost Override (optional)</Label>
+              <Input
+                id="locationCost"
+                type="number"
+                step="0.01"
+                value={formData.locationCost || ''}
+                onChange={(e) => setFormData({ ...formData, locationCost: e.target.value })}
+                placeholder={
+                  selectedLocation.game_rate ? 
+                    `Default: $${selectedLocation.game_rate}` : 
+                    `Default: $${selectedLocation.hourly_rate}/hr`
+                }
+              />
+              <p className="text-sm text-muted-foreground">
+                Leave blank to use location default: {
+                  selectedLocation.game_rate ? 
+                    `$${selectedLocation.game_rate} per game` : 
+                    `$${selectedLocation.hourly_rate} per hour`
+                }
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="level">Level</Label>
+              <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Recreational">Recreational</SelectItem>
+                  <SelectItem value="Competitive">Competitive</SelectItem>
+                  <SelectItem value="Elite">Elite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gameType">Game Type</Label>
+              <Select value={formData.gameType} onValueChange={(value) => setFormData({ ...formData, gameType: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select game type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Community">Community</SelectItem>
+                  <SelectItem value="Club">Club</SelectItem>
+                  <SelectItem value="Tournament">Tournament</SelectItem>
+                  <SelectItem value="Private Tournament">Private Tournament</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="refsNeeded">Referees Needed</Label>
+            <Select 
+              value={formData.refsNeeded} 
+              onValueChange={(value) => setFormData({ ...formData, refsNeeded: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Referee</SelectItem>
+                <SelectItem value="2">2 Referees</SelectItem>
+                <SelectItem value="3">3 Referees</SelectItem>
+                <SelectItem value="4">4 Referees</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

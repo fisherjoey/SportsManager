@@ -1,0 +1,35 @@
+{
+  "source": {
+    "include": [
+      "./components/",
+      "./lib/",
+      "./hooks/",
+      "./app/"
+    ],
+    "includePattern": "\\.(js|jsx)$",
+    "exclude": [
+      "./node_modules/",
+      "./test-results/",
+      "./playwright-report/",
+      "./docs/",
+      "./.next/"
+    ],
+    "excludePattern": "(test|spec)\\.(js|jsx)$"
+  },
+  "opts": {
+    "destination": "./docs/frontend/",
+    "recurse": true,
+    "private": false
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "metadata": {
+    "title": "Sports Management Frontend Documentation",
+    "description": "Complete documentation for the Sports Management frontend components and utilities"
+  }
+}

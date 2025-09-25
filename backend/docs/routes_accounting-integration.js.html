@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: routes/accounting-integration.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: routes/accounting-integration.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const express = require('express');
+const router = express.Router();
+const Joi = require('joi');
+const db = require('../config/database');
+const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+const { auditMiddleware } = require('../middleware/auditTrail');
+
+// Validation schemas
+const accountSchema = Joi.object({
+  account_number: Joi.string().min(1).max(20).required(),
+  account_name: Joi.string().min(1).max(100).required(),
+  account_type: Joi.string().valid(
+    'asset',
+    'liability',
+    'equity',
+    'revenue',
+    'expense',
+    'cost_of_goods_sold'
+  ).required(),
+  account_subtype: Joi.string().valid(
+    'current_asset',
+    'fixed_asset',
+    'current_liability',
+    'long_term_liability',
+    'equity',
+    'operating_revenue',
+    'other_revenue',
+    'operating_expense',
+    'other_expense',
+    'cost_of_goods_sold'
+  ).required(),
+  parent_account_id: Joi.string().uuid().optional(),
+  description: Joi.string().max(500).optional(),
+  external_id: Joi.string().max(50).optional(),
+  mapping_rules: Joi.object().optional()
+});
+
+const integrationSchema = Joi.object({
+  provider: Joi.string().valid(
+    'quickbooks_online',
+    'quickbooks_desktop',
+    'xero',
+    'sage',
+    'freshbooks',
+    'wave',
+    'manual'
+  ).required(),
+  provider_name: Joi.string().min(1).max(100).required(),
+  connection_config: Joi.object().required(),
+  sync_settings: Joi.object().required(),
+  auto_sync: Joi.boolean().default(false),
+  sync_frequency_hours: Joi.number().integer().min(1).max(168).default(24)
+});
+
+const journalEntrySchema = Joi.object({
+  transaction_id: Joi.string().uuid().optional(),
+  entry_date: Joi.date().required(),
+  reference: Joi.string().min(1).max(100).required(),
+  description: Joi.string().min(1).max(500).required(),
+  journal_lines: Joi.array().items(
+    Joi.object({
+      account_id: Joi.string().uuid().required(),
+      description: Joi.string().max(500).optional(),
+      debit_amount: Joi.number().min(0).default(0),
+      credit_amount: Joi.number().min(0).default(0),
+      reference: Joi.string().max(100).optional(),
+      dimensions: Joi.object().optional()
+    })
+  ).min(2).required()
+});
+
+/**
+ * GET /api/accounting/chart-of-accounts
+ * List chart of accounts
+ */
+router.get('/chart-of-accounts', authenticateToken, async (req, res) => {
+  try {
+    const organizationId = req.user.organization_id || req.user.id;
+    const { 
+      account_type, 
+      active = true, 
+      include_inactive = false,
+      hierarchy = false 
+    } = req.query;
+
+    let query = db('chart_of_accounts')
+      .where('organization_id', organizationId)
+      .orderBy('account_number');
+
+    if (!include_inactive) {
+      query = query.where('is_active', true);
+    }
+
+    if (account_type) {
+      query = query.where('account_type', account_type);
+    }
+
+    const accounts = await query;
+
+    // If hierarchy requested, organize into parent-child structure
+    if (hierarchy === 'true') {
+      const accountMap = {};
+      const rootAccounts = [];
+
+      // First pass: create map and identify root accounts
+      accounts.forEach(account => {
+        accountMap[account.id] = { ...account, children: [] };
+        if (!account.parent_account_id) {
+          rootAccounts.push(accountMap[account.id]);
+        }
+      });
+
+      // Second pass: build hierarchy
+      accounts.forEach(account => {
+        if (account.parent_account_id &amp;&amp; accountMap[account.parent_account_id]) {
+          accountMap[account.parent_account_id].children.push(accountMap[account.id]);
+        }
+      });
+
+      return res.json({ accounts: rootAccounts });
+    }
+
+    res.json({ accounts });
+  } catch (error) {
+    console.error('Chart of accounts list error:', error);
+    res.status(500).json({ error: 'Failed to retrieve chart of accounts' });
+  }
+});
+
+/**
+ * POST /api/accounting/chart-of-accounts
+ * Create a new account
+ */
+router.post('/chart-of-accounts',
+  authenticateToken,
+  requireAnyRole('admin', 'manager'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const { error, value } = accountSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.details[0].message
+        });
+      }
+
+      const organizationId = req.user.organization_id || req.user.id;
+
+      // Check for duplicate account number
+      const existing = await db('chart_of_accounts')
+        .where('organization_id', organizationId)
+        .where('account_number', value.account_number)
+        .first();
+
+      if (existing) {
+        return res.status(409).json({
+          error: 'Duplicate account number',
+          message: 'An account with this number already exists'
+        });
+      }
+
+      // Validate parent account exists if provided
+      if (value.parent_account_id) {
+        const parent = await db('chart_of_accounts')
+          .where('id', value.parent_account_id)
+          .where('organization_id', organizationId)
+          .first();
+
+        if (!parent) {
+          return res.status(404).json({
+            error: 'Parent account not found'
+          });
+        }
+
+        // Validate parent is same account type
+        if (parent.account_type !== value.account_type) {
+          return res.status(400).json({
+            error: 'Invalid parent account',
+            message: 'Parent account must be of the same account type'
+          });
+        }
+      }
+
+      const [account] = await db('chart_of_accounts')
+        .insert({
+          ...value,
+          organization_id: organizationId
+        })
+        .returning('*');
+
+      res.status(201).json({
+        message: 'Account created successfully',
+        account
+      });
+    } catch (error) {
+      console.error('Account creation error:', error);
+      res.status(500).json({ error: 'Failed to create account' });
+    }
+  }
+);
+
+/**
+ * GET /api/accounting/integrations
+ * List accounting integrations
+ */
+router.get('/integrations', 
+  authenticateToken, 
+  requireAnyRole('admin', 'manager'), 
+  async (req, res) => {
+    try {
+      const organizationId = req.user.organization_id || req.user.id;
+
+      const integrations = await db('accounting_integrations')
+        .where('organization_id', organizationId)
+        .where('is_active', true)
+        .select(
+          'id',
+          'provider',
+          'provider_name',
+          'sync_status',
+          'last_sync_at',
+          'last_sync_error',
+          'auto_sync',
+          'sync_frequency_hours',
+          'created_at',
+          'updated_at'
+          // Exclude sensitive connection_config
+        )
+        .orderBy('created_at', 'desc');
+
+      res.json({ integrations });
+    } catch (error) {
+      console.error('Integrations list error:', error);
+      res.status(500).json({ error: 'Failed to retrieve integrations' });
+    }
+  }
+);
+
+/**
+ * POST /api/accounting/integrations
+ * Create a new accounting integration
+ */
+router.post('/integrations',
+  authenticateToken,
+  requireRole('admin'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const { error, value } = integrationSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.details[0].message
+        });
+      }
+
+      const organizationId = req.user.organization_id || req.user.id;
+
+      // Check for existing integration with same provider
+      const existing = await db('accounting_integrations')
+        .where('organization_id', organizationId)
+        .where('provider', value.provider)
+        .where('is_active', true)
+        .first();
+
+      if (existing) {
+        return res.status(409).json({
+          error: 'Integration already exists',
+          message: `An active ${value.provider} integration already exists`
+        });
+      }
+
+      // TODO: Encrypt connection_config before storing
+      const [integration] = await db('accounting_integrations')
+        .insert({
+          ...value,
+          organization_id: organizationId,
+          sync_status: 'disconnected'
+        })
+        .returning(['id', 'provider', 'provider_name', 'sync_status', 'created_at']);
+
+      res.status(201).json({
+        message: 'Integration created successfully',
+        integration
+      });
+    } catch (error) {
+      console.error('Integration creation error:', error);
+      res.status(500).json({ error: 'Failed to create integration' });
+    }
+  }
+);
+
+/**
+ * POST /api/accounting/integrations/:id/test
+ * Test accounting integration connection
+ */
+router.post('/integrations/:id/test',
+  authenticateToken,
+  requireRole('admin'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const integrationId = req.params.id;
+      const organizationId = req.user.organization_id || req.user.id;
+
+      const integration = await db('accounting_integrations')
+        .where('id', integrationId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!integration) {
+        return res.status(404).json({ error: 'Integration not found' });
+      }
+
+      // TODO: Implement actual connection testing based on provider
+      // For now, simulate a test
+      const testResult = await testIntegrationConnection(integration);
+
+      // Update integration status based on test result
+      await db('accounting_integrations')
+        .where('id', integrationId)
+        .update({
+          sync_status: testResult.success ? 'connected' : 'error',
+          last_sync_error: testResult.success ? null : testResult.error,
+          updated_at: db.fn.now()
+        });
+
+      res.json({
+        success: testResult.success,
+        message: testResult.message,
+        details: testResult.details
+      });
+    } catch (error) {
+      console.error('Integration test error:', error);
+      res.status(500).json({ error: 'Failed to test integration' });
+    }
+  }
+);
+
+/**
+ * GET /api/accounting/journal-entries
+ * List journal entries
+ */
+router.get('/journal-entries', authenticateToken, async (req, res) => {
+  try {
+    const organizationId = req.user.organization_id || req.user.id;
+    const { 
+      status, 
+      date_from, 
+      date_to,
+      page = 1, 
+      limit = 20,
+      include_lines = false 
+    } = req.query;
+
+    let query = db('journal_entries as je')
+      .leftJoin('users as creator', 'je.created_by', 'creator.id')
+      .leftJoin('users as approver', 'je.approved_by', 'approver.id')
+      .leftJoin('financial_transactions as ft', 'je.transaction_id', 'ft.id')
+      .where('je.organization_id', organizationId)
+      .select(
+        'je.*',
+        db.raw("creator.first_name || ' ' || creator.last_name as created_by_name"),
+        db.raw("COALESCE(approver.first_name || ' ' || approver.last_name, 'Not approved') as approved_by_name"),
+        'ft.transaction_number'
+      );
+
+    // Apply filters
+    if (status) query = query.where('je.status', status);
+    if (date_from) query = query.where('je.entry_date', '>=', date_from);
+    if (date_to) query = query.where('je.entry_date', '&lt;=', date_to);
+
+    const offset = (page - 1) * limit;
+    const [entries, [{ total }]] = await Promise.all([
+      query.clone().orderBy('je.entry_date', 'desc').limit(limit).offset(offset),
+      query.clone().count('je.id as total')
+    ]);
+
+    // Include journal entry lines if requested
+    if (include_lines === 'true' &amp;&amp; entries.length > 0) {
+      const entryIds = entries.map(e => e.id);
+      const lines = await db('journal_entry_lines as jel')
+        .join('chart_of_accounts as coa', 'jel.account_id', 'coa.id')
+        .whereIn('jel.journal_entry_id', entryIds)
+        .select(
+          'jel.*',
+          'coa.account_number',
+          'coa.account_name',
+          'coa.account_type'
+        )
+        .orderBy('jel.journal_entry_id')
+        .orderBy('jel.line_number');
+
+      const linesMap = {};
+      lines.forEach(line => {
+        if (!linesMap[line.journal_entry_id]) {
+          linesMap[line.journal_entry_id] = [];
+        }
+        linesMap[line.journal_entry_id].push(line);
+      });
+
+      entries.forEach(entry => {
+        entry.lines = linesMap[entry.id] || [];
+      });
+    }
+
+    res.json({
+      journal_entries: entries,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Journal entries list error:', error);
+    res.status(500).json({ error: 'Failed to retrieve journal entries' });
+  }
+});
+
+/**
+ * POST /api/accounting/journal-entries
+ * Create a new journal entry
+ */
+router.post('/journal-entries',
+  authenticateToken,
+  requireAnyRole('admin', 'manager'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const { error, value } = journalEntrySchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.details[0].message
+        });
+      }
+
+      const organizationId = req.user.organization_id || req.user.id;
+
+      // Validate that debits equal credits
+      const totalDebits = value.journal_lines.reduce((sum, line) => sum + line.debit_amount, 0);
+      const totalCredits = value.journal_lines.reduce((sum, line) => sum + line.credit_amount, 0);
+
+      if (Math.abs(totalDebits - totalCredits) > 0.01) {
+        return res.status(400).json({
+          error: 'Unbalanced journal entry',
+          message: `Total debits ($${totalDebits}) must equal total credits ($${totalCredits})`
+        });
+      }
+
+      // Validate all accounts exist
+      const accountIds = value.journal_lines.map(line => line.account_id);
+      const accounts = await db('chart_of_accounts')
+        .whereIn('id', accountIds)
+        .where('organization_id', organizationId)
+        .where('is_active', true);
+
+      if (accounts.length !== accountIds.length) {
+        return res.status(404).json({
+          error: 'Invalid accounts',
+          message: 'One or more accounts not found or inactive'
+        });
+      }
+
+      // Generate entry number
+      const year = new Date(value.entry_date).getFullYear();
+      const lastEntry = await db('journal_entries')
+        .where('organization_id', organizationId)
+        .where('entry_number', 'like', `JE-${year}-%`)
+        .orderBy('entry_number', 'desc')
+        .first();
+
+      let sequence = 1;
+      if (lastEntry) {
+        const lastNumber = lastEntry.entry_number.split('-')[2];
+        sequence = parseInt(lastNumber) + 1;
+      }
+
+      const entryNumber = `JE-${year}-${sequence.toString().padStart(6, '0')}`;
+
+      // Create journal entry
+      const [journalEntry] = await db('journal_entries')
+        .insert({
+          organization_id: organizationId,
+          transaction_id: value.transaction_id,
+          entry_number: entryNumber,
+          entry_date: value.entry_date,
+          reference: value.reference,
+          description: value.description,
+          total_debits: totalDebits,
+          total_credits: totalCredits,
+          created_by: req.user.id
+        })
+        .returning('*');
+
+      // Create journal entry lines
+      const lines = value.journal_lines.map((line, index) => ({
+        journal_entry_id: journalEntry.id,
+        account_id: line.account_id,
+        description: line.description,
+        debit_amount: line.debit_amount,
+        credit_amount: line.credit_amount,
+        reference: line.reference,
+        dimensions: line.dimensions ? JSON.stringify(line.dimensions) : null,
+        line_number: index + 1
+      }));
+
+      await db('journal_entry_lines').insert(lines);
+
+      // Get complete journal entry with lines
+      const completeEntry = await db('journal_entries as je')
+        .leftJoin('users as creator', 'je.created_by', 'creator.id')
+        .where('je.id', journalEntry.id)
+        .select(
+          'je.*',
+          db.raw("creator.first_name || ' ' || creator.last_name as created_by_name")
+        )
+        .first();
+
+      const entryLines = await db('journal_entry_lines as jel')
+        .join('chart_of_accounts as coa', 'jel.account_id', 'coa.id')
+        .where('jel.journal_entry_id', journalEntry.id)
+        .select(
+          'jel.*',
+          'coa.account_number',
+          'coa.account_name'
+        )
+        .orderBy('jel.line_number');
+
+      res.status(201).json({
+        message: 'Journal entry created successfully',
+        journal_entry: {
+          ...completeEntry,
+          lines: entryLines
+        }
+      });
+    } catch (error) {
+      console.error('Journal entry creation error:', error);
+      res.status(500).json({ error: 'Failed to create journal entry' });
+    }
+  }
+);
+
+/**
+ * POST /api/accounting/journal-entries/:id/approve
+ * Approve a journal entry
+ */
+router.post('/journal-entries/:id/approve',
+  authenticateToken,
+  requireAnyRole('admin', 'manager'),
+  auditMiddleware({ logAllRequests: true }),
+  async (req, res) => {
+    try {
+      const entryId = req.params.id;
+      const organizationId = req.user.organization_id || req.user.id;
+
+      const entry = await db('journal_entries')
+        .where('id', entryId)
+        .where('organization_id', organizationId)
+        .first();
+
+      if (!entry) {
+        return res.status(404).json({ error: 'Journal entry not found' });
+      }
+
+      if (entry.status !== 'draft' &amp;&amp; entry.status !== 'pending_review') {
+        return res.status(400).json({
+          error: 'Invalid status',
+          message: 'Only draft or pending review entries can be approved'
+        });
+      }
+
+      await db('journal_entries')
+        .where('id', entryId)
+        .update({
+          status: 'approved',
+          approved_by: req.user.id,
+          approved_at: db.fn.now(),
+          updated_at: db.fn.now()
+        });
+
+      res.json({
+        message: 'Journal entry approved successfully'
+      });
+    } catch (error) {
+      console.error('Journal entry approval error:', error);
+      res.status(500).json({ error: 'Failed to approve journal entry' });
+    }
+  }
+);
+
+/**
+ * GET /api/accounting/sync-logs
+ * List synchronization logs
+ */
+router.get('/sync-logs',
+  authenticateToken,
+  requireAnyRole('admin', 'manager'),
+  async (req, res) => {
+    try {
+      const organizationId = req.user.organization_id || req.user.id;
+      const { integration_id, status, page = 1, limit = 20 } = req.query;
+
+      let query = db('accounting_sync_logs as asl')
+        .join('accounting_integrations as ai', 'asl.integration_id', 'ai.id')
+        .where('asl.organization_id', organizationId)
+        .select(
+          'asl.*',
+          'ai.provider',
+          'ai.provider_name'
+        );
+
+      if (integration_id) query = query.where('asl.integration_id', integration_id);
+      if (status) query = query.where('asl.status', status);
+
+      const offset = (page - 1) * limit;
+      const [logs, [{ total }]] = await Promise.all([
+        query.clone().orderBy('asl.started_at', 'desc').limit(limit).offset(offset),
+        query.clone().count('asl.id as total')
+      ]);
+
+      res.json({
+        sync_logs: logs,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: parseInt(total),
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Sync logs list error:', error);
+      res.status(500).json({ error: 'Failed to retrieve sync logs' });
+    }
+  }
+);
+
+/**
+ * Mock function to test integration connection
+ * TODO: Replace with actual integration logic
+ */
+async function testIntegrationConnection(integration) {
+  try {
+    // Simulate connection test based on provider
+    switch (integration.provider) {
+      case 'quickbooks_online':
+        // TODO: Implement QuickBooks Online connection test
+        return {
+          success: true,
+          message: 'Successfully connected to QuickBooks Online',
+          details: { company_name: 'Test Company', last_sync: new Date() }
+        };
+      
+      case 'xero':
+        // TODO: Implement Xero connection test
+        return {
+          success: true,
+          message: 'Successfully connected to Xero',
+          details: { organization_name: 'Test Organization', last_sync: new Date() }
+        };
+      
+      case 'manual':
+        return {
+          success: true,
+          message: 'Manual integration configured',
+          details: { mode: 'manual', requires_manual_sync: true }
+        };
+      
+      default:
+        return {
+          success: false,
+          message: 'Integration provider not yet implemented',
+          error: `Provider ${integration.provider} is not yet supported`
+        };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Connection test failed',
+      error: error.message
+    };
+  }
+}
+
+module.exports = router;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_assignments.html">routes/assignments</a></li><li><a href="module-routes_games.html">routes/games</a></li></ul><h3>Classes</h3><ul><li><a href="AdvancedPerformanceMetrics.html">AdvancedPerformanceMetrics</a></li><li><a href="ApiError.html">ApiError</a></li><li><a href="AppError.html">AppError</a></li><li><a href="ApprovalWorkflowService.html">ApprovalWorkflowService</a></li><li><a href="AuthenticationError.html">AuthenticationError</a></li><li><a href="AuthorizationError.html">AuthorizationError</a></li><li><a href="global.html#BaseService">BaseService</a></li><li><a href="BudgetCalculationService.html">BudgetCalculationService</a></li><li><a href="BusinessLogicError.html">BusinessLogicError</a></li><li><a href="ConfigurationError.html">ConfigurationError</a></li><li><a href="ConflictError.html">ConflictError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="DistanceCalculationService.html">DistanceCalculationService</a></li><li><a href="EncryptionService.html">EncryptionService</a></li><li><a href="ErrorFactory.html">ErrorFactory</a></li><li><a href="ErrorLogger.html">ErrorLogger</a></li><li><a href="ErrorMetrics.html">ErrorMetrics</a></li><li><a href="ErrorUtils.html">ErrorUtils</a></li><li><a href="ExternalServiceError.html">ExternalServiceError</a></li><li><a href="FileProcessingError.html">FileProcessingError</a></li><li><a href="FinancialAIService.html">FinancialAIService</a></li><li><a href="LocationDataService.html">LocationDataService</a></li><li><a href="MetricsCollector.html">MetricsCollector</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="PaymentMethodService.html">PaymentMethodService</a></li><li><a href="QueryBuilder.html">QueryBuilder</a></li><li><a href="QueryCache.html">QueryCache</a></li><li><a href="QueryPerformanceAnalyzer.html">QueryPerformanceAnalyzer</a></li><li><a href="RateLimitError.html">RateLimitError</a></li><li><a href="ResponseFormatter.html">ResponseFormatter</a></li><li><a href="SecurityService.html">SecurityService</a></li><li><a href="ServiceFactory.html">ServiceFactory</a></li><li><a href="TimeoutError.html">TimeoutError</a></li><li><a href="UnprocessableEntityError.html">UnprocessableEntityError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AUDIT_EVENTS">AUDIT_EVENTS</a></li><li><a href="global.html#AUDIT_SEVERITY">AUDIT_SEVERITY</a></li><li><a href="global.html#AssignmentSchemas">AssignmentSchemas</a></li><li><a href="global.html#AuthSchemas">AuthSchemas</a></li><li><a href="global.html#AvailabilitySchemas">AvailabilitySchemas</a></li><li><a href="global.html#BaseSchemas">BaseSchemas</a></li><li><a href="global.html#BudgetSchemas">BudgetSchemas</a></li><li><a href="global.html#COMMON_PATTERNS">COMMON_PATTERNS</a></li><li><a href="global.html#CUSTOM_VALIDATORS">CUSTOM_VALIDATORS</a></li><li><a href="global.html#CacheHelpers">CacheHelpers</a></li><li><a href="global.html#CacheInvalidation">CacheInvalidation</a></li><li><a href="global.html#ERROR_MESSAGES">ERROR_MESSAGES</a></li><li><a href="global.html#ERROR_SEVERITY">ERROR_SEVERITY</a></li><li><a href="global.html#ERROR_TYPES">ERROR_TYPES</a></li><li><a href="global.html#FileSchemas">FileSchemas</a></li><li><a href="global.html#FilterSchemas">FilterSchemas</a></li><li><a href="global.html#GameSchemas">GameSchemas</a></li><li><a href="global.html#HTTP_STATUS">HTTP_STATUS</a></li><li><a href="global.html#IdParamSchema">IdParamSchema</a></li><li><a href="global.html#NodeCache">NodeCache</a></li><li><a href="global.html#PaginationSchema">PaginationSchema</a></li><li><a href="global.html#QueryHelpers">QueryHelpers</a></li><li><a href="global.html#SCHEMA_REGISTRY">SCHEMA_REGISTRY</a></li><li><a href="global.html#UserSchemas">UserSchemas</a></li><li><a href="global.html#VALIDATION_OPTIONS">VALIDATION_OPTIONS</a></li><li><a href="global.html#addMinutes">addMinutes</a></li><li><a href="global.html#advancedPerformanceMonitor">advancedPerformanceMonitor</a></li><li><a href="global.html#asyncHandler">asyncHandler</a></li><li><a href="global.html#auditMiddleware">auditMiddleware</a></li><li><a href="global.html#authLimiter">authLimiter</a></li><li><a href="global.html#autoValidate">autoValidate</a></li><li><a href="global.html#calculateAvailabilityScore">calculateAvailabilityScore</a></li><li><a href="global.html#calculateDatabaseHealthScore">calculateDatabaseHealthScore</a></li><li><a href="global.html#calculateEndTime">calculateEndTime</a></li><li><a href="global.html#calculateFinalWage">calculateFinalWage</a></li><li><a href="global.html#checkAssignmentConflicts">checkAssignmentConflicts</a></li><li><a href="global.html#checkGameSchedulingConflicts">checkGameSchedulingConflicts</a></li><li><a href="global.html#checkRefereeDoubleBooking">checkRefereeDoubleBooking</a></li><li><a href="global.html#checkServiceHealth">checkServiceHealth</a></li><li><a href="global.html#checkTimeOverlap">checkTimeOverlap</a></li><li><a href="global.html#checkTravelTimeConflict">checkTravelTimeConflict</a></li><li><a href="global.html#checkVenueConflict">checkVenueConflict</a></li><li><a href="global.html#clearSettingsCache">clearSettingsCache</a></li><li><a href="global.html#conditionalValidation">conditionalValidation</a></li><li><a href="global.html#createAuditLog">createAuditLog</a></li><li><a href="global.html#createAuditLogsTable">createAuditLogsTable</a></li><li><a href="global.html#createPerformanceRoute">createPerformanceRoute</a></li><li><a href="global.html#createSecurityMiddleware">createSecurityMiddleware</a></li><li><a href="global.html#createTableService">createTableService</a></li><li><a href="global.html#createValidationError">createValidationError</a></li><li><a href="global.html#createValidator">createValidator</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#determineErrorSeverity">determineErrorSeverity</a></li><li><a href="global.html#determineEventType">determineEventType</a></li><li><a href="global.html#determineHealthStatus">determineHealthStatus</a></li><li><a href="global.html#determineIfShouldLog">determineIfShouldLog</a></li><li><a href="global.html#determineSeverity">determineSeverity</a></li><li><a href="global.html#enforceHTTPS">enforceHTTPS</a></li><li><a href="global.html#enhancedAsyncHandler">enhancedAsyncHandler</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#errorHealthCheck">errorHealthCheck</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#findAvailableReferees">findAvailableReferees</a></li><li><a href="global.html#formatAvailabilityResponse">formatAvailabilityResponse</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#generateAdvancedRecommendations">generateAdvancedRecommendations</a></li><li><a href="global.html#generateCacheRecommendations">generateCacheRecommendations</a></li><li><a href="global.html#generateDatabaseInsights">generateDatabaseInsights</a></li><li><a href="global.html#generateGroupStagePlayoffs">generateGroupStagePlayoffs</a></li><li><a href="global.html#generateHealthRecommendations">generateHealthRecommendations</a></li><li><a href="global.html#generateRecommendations">generateRecommendations</a></li><li><a href="global.html#generateRoundRobin">generateRoundRobin</a></li><li><a href="global.html#generateSingleElimination">generateSingleElimination</a></li><li><a href="global.html#generateSwissSystem">generateSwissSystem</a></li><li><a href="global.html#generateTransactionNumber">generateTransactionNumber</a></li><li><a href="global.html#getAdvancedMetrics">getAdvancedMetrics</a></li><li><a href="global.html#getAggregatedMetrics">getAggregatedMetrics</a></li><li><a href="global.html#getAuditEventType">getAuditEventType</a></li><li><a href="global.html#getClientIP">getClientIP</a></li><li><a href="global.html#getCorsConfig">getCorsConfig</a></li><li><a href="global.html#getErrorMessage">getErrorMessage</a></li><li><a href="global.html#getMetricsCollector">getMetricsCollector</a></li><li><a href="global.html#getMetricsEvents">getMetricsEvents</a></li><li><a href="global.html#getMetricsSummary">getMetricsSummary</a></li><li><a href="global.html#getMinutesBetween">getMinutesBetween</a></li><li><a href="global.html#getOrganizationSettings">getOrganizationSettings</a></li><li><a href="global.html#getPerformanceEvents">getPerformanceEvents</a></li><li><a href="global.html#getPerformanceStats">getPerformanceStats</a></li><li><a href="global.html#getQueryPerformanceEvents">getQueryPerformanceEvents</a></li><li><a href="global.html#getQueryPerformanceStats">getQueryPerformanceStats</a></li><li><a href="global.html#getSecurityConfig">getSecurityConfig</a></li><li><a href="global.html#getService">getService</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSlowQueriesSummary">getSlowQueriesSummary</a></li><li><a href="global.html#getWageBreakdown">getWageBreakdown</a></li><li><a href="global.html#handleApprovedRequest">handleApprovedRequest</a></li><li><a href="global.html#handleDatabaseError">handleDatabaseError</a></li><li><a href="global.html#hasSchedulingConflict">hasSchedulingConflict</a></li><li><a href="global.html#initializeServices">initializeServices</a></li><li><a href="global.html#knex">knex</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#logSuspiciousActivity">logSuspiciousActivity</a></li><li><a href="global.html#logUnauthorizedCorsAttempt">logUnauthorizedCorsAttempt</a></li><li><a href="global.html#metricsEvents">metricsEvents</a></li><li><a href="global.html#notFoundHandler">notFoundHandler</a></li><li><a href="global.html#parseSize">parseSize</a></li><li><a href="global.html#parseSqlQuery">parseSqlQuery</a></li><li><a href="global.html#performanceEvents">performanceEvents</a></li><li><a href="global.html#performanceMonitor">performanceMonitor</a></li><li><a href="global.html#queryAuditLogs">queryAuditLogs</a></li><li><a href="global.html#queryCache">queryCache</a></li><li><a href="global.html#queryPerformanceEvents">queryPerformanceEvents</a></li><li><a href="global.html#queryValidationSchemas">queryValidationSchemas</a></li><li><a href="global.html#requestContextMiddleware">requestContextMiddleware</a></li><li><a href="global.html#requestContexts">requestContexts</a></li><li><a href="global.html#requestSizeLimit">requestSizeLimit</a></li><li><a href="global.html#resetAdvancedMetrics">resetAdvancedMetrics</a></li><li><a href="global.html#resetAllMetrics">resetAllMetrics</a></li><li><a href="global.html#resetPerformanceStats">resetPerformanceStats</a></li><li><a href="global.html#resetQueryPerformanceStats">resetQueryPerformanceStats</a></li><li><a href="global.html#sanitizeAll">sanitizeAll</a></li><li><a href="global.html#sanitizeBody">sanitizeBody</a></li><li><a href="global.html#sanitizeBodyForLogging">sanitizeBodyForLogging</a></li><li><a href="global.html#sanitizeError">sanitizeError</a></li><li><a href="global.html#sanitizeHeaders">sanitizeHeaders</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#sanitizeObject">sanitizeObject</a></li><li><a href="global.html#sanitizeParams">sanitizeParams</a></li><li><a href="global.html#sanitizeQuery">sanitizeQuery</a></li><li><a href="global.html#sanitizeString">sanitizeString</a></li><li><a href="global.html#securityConfig">securityConfig</a></li><li><a href="global.html#securityMonitoring">securityMonitoring</a></li><li><a href="global.html#sendAlertToWebhook">sendAlertToWebhook</a></li><li><a href="global.html#setupAlertHandlers">setupAlertHandlers</a></li><li><a href="global.html#setupGlobalErrorHandlers">setupGlobalErrorHandlers</a></li><li><a href="global.html#subtractMinutes">subtractMinutes</a></li><li><a href="global.html#testIntegrationConnection">testIntegrationConnection</a></li><li><a href="global.html#trackCacheOperation">trackCacheOperation</a></li><li><a href="global.html#trackDbQuery">trackDbQuery</a></li><li><a href="global.html#updateMetricsConfig">updateMetricsConfig</a></li><li><a href="global.html#validateAvailabilityWindow">validateAvailabilityWindow</a></li><li><a href="global.html#validateBody">validateBody</a></li><li><a href="global.html#validateContentType">validateContentType</a></li><li><a href="global.html#validateEnvironment">validateEnvironment</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#validateIdParam">validateIdParam</a></li><li><a href="global.html#validateParams">validateParams</a></li><li><a href="global.html#validateQuery">validateQuery</a></li><li><a href="global.html#validateRefereeQualifications">validateRefereeQualifications</a></li><li><a href="global.html#validateRequest">validateRequest</a></li><li><a href="global.html#validateUuidParam">validateUuidParam</a></li><li><a href="global.html#validationSummary">validationSummary</a></li><li><a href="global.html#withDatabaseError">withDatabaseError</a></li><li><a href="global.html#withErrorBoundary">withErrorBoundary</a></li><li><a href="global.html#withServiceTransaction">withServiceTransaction</a></li><li><a href="global.html#wrapDatabaseConnection">wrapDatabaseConnection</a></li><li><a href="global.html#wrapDatabaseQuery">wrapDatabaseQuery</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 16:15:52 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

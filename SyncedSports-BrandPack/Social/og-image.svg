@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B66FF;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#FF6A00;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Subtle pattern overlay -->
+  <g opacity="0.1">
+    <path d="M0 200 Q300 100 600 200 T1200 200" fill="none" stroke="white" stroke-width="2"/>
+    <path d="M0 250 Q300 350 600 250 T1200 250" fill="none" stroke="white" stroke-width="2"/>
+    <path d="M0 400 Q300 300 600 400 T1200 400" fill="none" stroke="white" stroke-width="2"/>
+    <path d="M0 450 Q300 550 600 450 T1200 450" fill="none" stroke="white" stroke-width="2"/>
+  </g>
+
+  <!-- Main logo -->
+  <g transform="translate(400, 180)">
+    <!-- Icon -->
+    <g transform="scale(2, 2)">
+      <path d="M20 80 Q60 30 100 80 T180 80" fill="none" stroke="white" stroke-width="16" stroke-linecap="round"/>
+      <path d="M20 90 Q60 130 100 90 T180 90" fill="none" stroke="white" stroke-width="16" stroke-linecap="round" opacity="0.8"/>
+    </g>
+    <!-- Wordmark -->
+    <text x="200" y="280" font-family="Helvetica Neue Condensed Bold, Arial Narrow, sans-serif" font-size="72" font-weight="800" text-anchor="middle" fill="white" letter-spacing="2">
+      SYNCED SPORTS
+    </text>
+    <!-- Tagline -->
+    <text x="200" y="330" font-family="system-ui, sans-serif" font-size="24" font-weight="400" text-anchor="middle" fill="white" opacity="0.9">
+      Connecting Teams, Officials, and Leagues
+    </text>
+  </g>
+</svg>

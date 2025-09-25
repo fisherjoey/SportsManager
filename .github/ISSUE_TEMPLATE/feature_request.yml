@@ -1,0 +1,160 @@
+name: Feature Request
+description: Suggest a new feature for the Sports Management App
+title: "[FEATURE] "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Feature Request
+        Help us understand what new functionality you'd like to see in the Sports Management App.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? Use user story format if possible.
+      placeholder: |
+        As a [user type], I want [goal] so that [benefit].
+        
+        Currently, users face the problem of...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution in detail
+      placeholder: |
+        I would like to see...
+        This could work by...
+        The user interface should...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: Other approaches that might work...
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component Area
+      description: Which part of the application would this affect?
+      options:
+        - Game Management
+        - Referee Management
+        - Assignment System
+        - Calendar/Scheduling
+        - Authentication/Authorization
+        - Dashboard/Reports
+        - Mobile Interface
+        - API/Backend
+        - Database
+        - User Interface
+        - Integration (external services)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature?
+      options:
+        - Low (nice to have)
+        - Medium (would improve workflow)
+        - High (important for daily operations)
+        - Critical (blocking current workflows)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user_type
+    attributes:
+      label: User Type
+      description: Who would primarily benefit from this feature?
+      options:
+        - Admin/Assignor
+        - Referee
+        - Both Admin and Referee
+        - System Administrator
+        - Organization Manager
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What specific requirements must be met for this feature to be considered complete?
+      placeholder: |
+        - [ ] User can...
+        - [ ] System should...
+        - [ ] Feature must handle...
+        - [ ] Error cases are handled...
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/Wireframes
+      description: If you have any visual mockups, wireframes, or examples, please share them
+      placeholder: Drag and drop images or provide links to mockups...
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: How would this feature improve the user experience or system functionality?
+      placeholder: |
+        This feature would:
+        - Reduce time spent on...
+        - Improve accuracy of...
+        - Enable users to...
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Technical Requirements
+      description: Select any technical considerations for this feature
+      options:
+        - label: Requires database schema changes
+        - label: Requires API changes
+        - label: Requires UI/UX design
+        - label: Requires mobile compatibility
+        - label: Requires external service integration
+        - label: Requires performance optimization
+        - label: Requires security considerations
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context, references, or research about the feature request
+      placeholder: |
+        Related features in other systems...
+        Research or user feedback that supports this...
+        Links to relevant documentation...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify these items before submitting
+      options:
+        - label: I have searched existing features and issues to avoid duplicates
+          required: true
+        - label: I have clearly described the problem this feature solves
+          required: true
+        - label: I have provided specific acceptance criteria
+          required: false
+        - label: I have considered the impact on different user types
+          required: false
