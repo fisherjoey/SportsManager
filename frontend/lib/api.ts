@@ -139,18 +139,24 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config)
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`
-        console.error(`API Error [${method}] ${url}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorMessage,
-          errorData: errorData,
-          headers: Object.fromEntries(response.headers.entries()),
-          body: config.body
-        })
+
+        // Only log non-authentication errors to console
+        // 401 errors are expected when user is not logged in
+        if (response.status !== 401) {
+          console.error(`API Error [${method}] ${url}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorMessage,
+            errorData: errorData,
+            headers: Object.fromEntries(response.headers.entries()),
+            body: config.body
+          })
+        }
+
         throw new Error(errorMessage)
       }
 

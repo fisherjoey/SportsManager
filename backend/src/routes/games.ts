@@ -40,7 +40,7 @@ import { checkGameSchedulingConflicts } from '../services/conflictDetectionServi
 const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
 const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
 
-const db = require('../config/database');
+import db from '../config/database';
 
 const router: Router = express.Router();
 

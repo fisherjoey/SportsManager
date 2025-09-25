@@ -55,6 +55,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const hoverIntentRef = useRef<boolean>(false)
   const lastClickTime = useRef<number>(0)
   const hoveredItemRef = useRef<HTMLElement | null>(null)
+  const mouseYRef = useRef<number>(0)
 
   // Load saved preferences from localStorage
   useEffect(() => {

@@ -1,4 +1,4 @@
-O{
+{
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -57,7 +57,11 @@ O{
       "Bash(npx jest:*)",
       "Bash(while read test)",
       "Bash(do npx jest \"$test\" --no-coverage)",
-      "Read(//c/Users/School/OneDrive/Desktop/SportsManager/.git/**)"
+      "Read(//c/Users/School/OneDrive/Desktop/SportsManager/.git/**)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Read(//c/Users/School/OneDrive/Desktop/**)"
     ],
     "deny": [],
     "ask": []

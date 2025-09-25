@@ -15,7 +15,7 @@ import { AuthenticatedRequest } from '../../types/auth.types';
 
 // Import services and middleware (still JavaScript for now)
 import RoleServiceClass from '../../services/RoleService';
-const db = require('../../config/database');
+import db from '../../config/database';
 const { asyncHandler } = require('../../middleware/errorHandling');
 const RoleAccessService = require('../../services/RoleAccessService');
 const RoleService = new RoleServiceClass(db);

@@ -22,7 +22,7 @@ import { JWTPayload, AuthenticatedUser, AuthenticatedRequest } from '../types/au
 import { UUID, Timestamp } from '../types';
 
 // Services and Database
-const db: Knex = require('../config/database');
+import db from '../config/database';
 
 // Middleware imports
 import { authenticateToken, getUserPermissions } from '../middleware/auth';

@@ -14,13 +14,12 @@ interface ExtendedJWTPayload extends JWTPayload {
   roles?: string[]; // For backward compatibility with role array
 }
 
-// Import PermissionService as JavaScript module (for now)
-// We'll declare it as any to avoid TypeScript compilation issues during transition
-let PermissionService: any;
-let permissionService: any;
+// Import PermissionService
+import PermissionService from '../services/PermissionService';
+
+let permissionService: PermissionService;
 
 try {
-  PermissionService = require('../services/PermissionService');
   permissionService = new PermissionService();
 } catch (error) {
   console.error('Could not load PermissionService:', error.message);
@@ -30,7 +29,7 @@ try {
     hasAnyPermission: () => Promise.resolve(false),
     hasAllPermissions: () => Promise.resolve(false),
     getUserPermissions: () => Promise.resolve([])
-  };
+  } as any;
 }
 
 /**
