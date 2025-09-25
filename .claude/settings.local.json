@@ -1,4 +1,4 @@
-{
+O{
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -54,7 +54,10 @@
       "Bash(git mv:*)",
       "Bash(tasklist)",
       "Bash(npm run build:frontend:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(while read test)",
+      "Bash(do npx jest \"$test\" --no-coverage)",
+      "Read(//c/Users/School/OneDrive/Desktop/SportsManager/.git/**)"
     ],
     "deny": [],
     "ask": []
