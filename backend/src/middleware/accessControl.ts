@@ -2,13 +2,14 @@
 
 /**
  * @fileoverview Access Control Middleware
- * 
+ *
  * Database-driven access control middleware that replaces hardcoded permissions
  * Checks page and API access from the database tables
  */
 
 import RoleAccessService from '../services/RoleAccessService';
 import { createAuditLog, AUDIT_EVENTS  } from './auditTrail';
+import db from '../config/database';
 
 /**
  * Middleware to check page access from database
@@ -161,7 +162,6 @@ const checkFeature = (featureCode) => {
 const getUserAccessiblePages = async (userId) => {
   try {
     // Get user's roles
-    import db from '../config/database';
     const userRoles = await db('user_roles')
       .where('user_id', userId)
       .join('roles', 'user_roles.role_id', 'roles.id')
@@ -194,7 +194,6 @@ const getUserAccessiblePages = async (userId) => {
 const getUserAccessibleApis = async (userId) => {
   try {
     // Get user's roles
-    import db from '../config/database';
     const userRoles = await db('user_roles')
       .where('user_id', userId)
       .join('roles', 'user_roles.role_id', 'roles.id')
