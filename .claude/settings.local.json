@@ -66,7 +66,8 @@
       "Bash(npx knex migrate:rollback:*)",
       "Bash(npx knex migrate:status:*)",
       "Bash(DISABLE_REDIS=true DISABLE_RBAC_SCANNER=true npx ts-node src/server.ts)",
-      "Bash(DISABLE_REDIS=true DISABLE_RBAC_SCANNER=true node dist/server.js)"
+      "Bash(DISABLE_REDIS=true DISABLE_RBAC_SCANNER=true node dist/server.js)",
+      "Bash(npm run migrate:status:*)"
     ],
     "deny": [],
     "ask": []
