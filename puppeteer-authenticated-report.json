@@ -1,0 +1,189 @@
+{
+  "timestamp": "2025-09-25T18:03:13.859Z",
+  "credentials": {
+    "email": "admin@cmba.ca"
+  },
+  "pages": [
+    "/dashboard",
+    "/games",
+    "/referees",
+    "/assignors",
+    "/mentorships",
+    "/my-mentees",
+    "/settings",
+    "/receipt-upload",
+    "/analytics",
+    "/reporting",
+    "/audit-logs"
+  ],
+  "logs": {
+    "http://localhost:3000/login": {
+      "errors": [],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3000/": {
+      "errors": [
+        "Network/Parse Error [GET] /api/admin/access/my-pages: JSHandle@object",
+        "Network/Parse Error [GET] /api/admin/access/my-pages: JSHandle@object",
+        "Network/Parse Error [GET] /api/admin/access/my-pages: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications/unread/count: JSHandle@object",
+        "Network/Parse Error [GET] /api/games: JSHandle@object",
+        "Network/Parse Error [GET] /api/referees: JSHandle@object",
+        "Network/Parse Error [GET] /api/admin/access/my-pages: JSHandle@object",
+        "Network/Parse Error [GET] /api/auth/me: JSHandle@object",
+        "Network/Parse Error [GET] /api/referees: JSHandle@object",
+        "Network/Parse Error [GET] /api/communications/unread/count: JSHandle@object",
+        "Network/Parse Error [GET] /api/games: JSHandle@object",
+        "Network/Parse Error [GET] /api/auth/me: JSHandle@object",
+        "Failed to fetch accessible pages: JSHandle@error",
+        "Failed to fetch accessible pages: JSHandle@error",
+        "Failed to fetch accessible pages: JSHandle@error",
+        "Error fetching unread count: JSHandle@error",
+        "Games API error: JSHandle@error",
+        "Referees API error: JSHandle@error",
+        "Failed to fetch accessible pages: JSHandle@error",
+        "Profile API error: JSHandle@error",
+        "Referees API error: JSHandle@error",
+        "Error fetching unread count: JSHandle@error",
+        "Games API error: JSHandle@error",
+        "Profile API error: JSHandle@error"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/dashboard",
+        "Failed to load http://localhost:3000/api/admin/access/my-pages - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/admin/access/my-pages - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/admin/access/my-pages - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/communications/unread/count - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/games - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/referees - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/admin/access/my-pages - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/auth/me - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/referees - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/communications/unread/count - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/games - net::ERR_ABORTED",
+        "Failed to load http://localhost:3000/api/auth/me - net::ERR_ABORTED"
+      ]
+    },
+    "http://localhost:3000/dashboard": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3000/games": {
+      "errors": [
+        "%o\n\n%s JSHandle@error The above error occurred in the <MenteeSelector> component. It was handled by the <ErrorBoundary> error boundary.",
+        "Error caught by boundary: JSHandle@error",
+        "Error info: JSHandle@object",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/referees"
+      ]
+    },
+    "http://localhost:3000/referees": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/assignors"
+      ]
+    },
+    "http://localhost:3000/assignors": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/mentorships"
+      ]
+    },
+    "http://localhost:3000/mentorships": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/my-mentees"
+      ]
+    },
+    "http://localhost:3000/my-mentees": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/settings"
+      ]
+    },
+    "http://localhost:3000/settings": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: page.waitForTimeout is not a function"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": [
+        "HTTP 404 - http://localhost:3000/receipt-upload"
+      ]
+    },
+    "http://localhost:3000/receipt-upload": {
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Navigation failed: Navigating frame was detached"
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3000/analytics": {
+      "errors": [
+        "Navigation failed: Attempted to use detached Frame '89709D3C00A4DB3C3998D2030FE1BC46'."
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3000/reporting": {
+      "errors": [
+        "Navigation failed: Attempted to use detached Frame '89709D3C00A4DB3C3998D2030FE1BC46'."
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    },
+    "http://localhost:3000/audit-logs": {
+      "errors": [
+        "Navigation failed: Attempted to use detached Frame '89709D3C00A4DB3C3998D2030FE1BC46'."
+      ],
+      "warnings": [],
+      "logs": [],
+      "network": []
+    }
+  },
+  "summary": {
+    "totalPages": 11,
+    "pagesWithIssues": 12,
+    "totalErrors": 45,
+    "totalWarnings": 0,
+    "totalNetwork": 19
+  }
+}

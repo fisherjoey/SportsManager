@@ -1,71 +1,47 @@
-const knex = require('knex');
-const config = require('../knexfile');
+/**
+ * Jest setup file
+ * This file is run before each test suite
+ */
 
-// Use test environment configuration
-const testDb = knex(config.test);
+// Set test environment variables
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'postgres://test:test@localhost:5432/test_db';
+process.env.JWT_SECRET = 'test-secret-key';
+process.env.REDIS_URL = 'redis://localhost:6379';
 
-let migrationCompleted = false;
+// Mock console methods to reduce noise in tests
+global.console = {
+  ...console,
+  // Keep console.log for debugging but suppress warnings/errors during tests
+  warn: jest.fn(),
+  error: jest.fn(),
+};
 
-// Setup test database before all tests
-beforeAll(async () => {
-  try {
-    if (!migrationCompleted) {
-      // Check if migrations table exists
-      const hasTable = await testDb.schema.hasTable('knex_migrations');
-      if (!hasTable) {
-        // Run migrations only if table doesn't exist
-        await testDb.migrate.latest();
-      }
-      
-      // Check if we have any data, if not run seeds
-      const userCount = await testDb('users').count('id as count').first();
-      if (parseInt(userCount.count) === 0) {
-        await testDb.seed.run({ directory: './seeds/test' });
-      }
-      
-      migrationCompleted = true;
-    }
-  } catch (error) {
-    console.error('Test setup failed:', error);
-    throw error;
-  }
-}, 30000); // 30 second timeout
+// Global test utilities
+global.testUtils = {
+  createMockReq: (overrides = {}) => ({
+    ip: '127.0.0.1',
+    method: 'GET',
+    path: '/test',
+    body: {},
+    query: {},
+    params: {},
+    headers: {},
+    user: undefined,
+    ...overrides
+  }),
 
-// Clean up after all tests
-afterAll(async () => {
-  try {
-    await testDb.destroy();
-  } catch (error) {
-    console.error('Test cleanup failed:', error);
-  }
-});
+  createMockRes: () => ({
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    cookie: jest.fn().mockReturnThis(),
+    clearCookie: jest.fn().mockReturnThis()
+  }),
 
-// Clean up between tests by truncating tables
-beforeEach(async () => {
-  try {
-    // Disable foreign key constraints temporarily
-    await testDb.raw('SET session_replication_role = replica;');
-    
-    // Get all table names except migrations
-    const tables = await testDb.raw(`
-      SELECT tablename FROM pg_tables 
-      WHERE schemaname = 'public' 
-      AND tablename != 'knex_migrations'
-    `);
-    
-    // Truncate all tables
-    for (const table of tables.rows) {
-      await testDb.raw(`TRUNCATE TABLE "${table.tablename}" RESTART IDENTITY CASCADE;`);
-    }
-    
-    // Re-enable foreign key constraints
-    await testDb.raw('SET session_replication_role = DEFAULT;');
-    
-    // Re-run test seeds to get fresh test data
-    await testDb.seed.run({ directory: './seeds/test' });
-  } catch (error) {
-    console.error('Test cleanup between tests failed:', error);
-  }
-});
+  createMockNext: () => jest.fn()
+};
 
-module.exports = testDb;
+// Setup for async tests
+jest.setTimeout(10000);

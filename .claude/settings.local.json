@@ -1,0 +1,34 @@
+{
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/PostgreSQL//**)",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" --version)",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"ALTER USER postgres WITH PASSWORD ''postgres123'';\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -c \"SELECT 1;\")",
+      "Bash(cat:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install:*)",
+      "Bash(chrome-devtools-mcp:*)",
+      "Bash(chrome-devtools-mcp.exe connect:*)",
+      "Bash(./chrome-devtools-mcp.exe connect --url http://localhost:3000)",
+      "Bash(node:*)",
+      "Bash(start chrome:*)",
+      "Bash(tasklist)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./chrome-devtools-mcp.exe connect --url http://localhost:3000/?view=dashboard)",
+      "Bash(npm run dev:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(cmd /c:*)",
+      "Bash(python:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

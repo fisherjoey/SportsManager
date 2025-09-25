@@ -1,9 +1,6 @@
 module.exports = {
   ignorePatterns: ['backend/**/*', 'node_modules/**/*'],
-  extends: [
-    'next/core-web-vitals',
-    'next/typescript'
-  ],
+  extends: ['next/core-web-vitals', 'next/typescript', 'plugin:storybook/recommended'],
   rules: {
     // Quality Rules for Agents - Temporarily relaxed for production
     'no-console': 'warn', // Discourage console.log in production

@@ -75,3 +75,5 @@ temp/
 # Logs
 logs
 *.log
+*storybook.log
+storybook-static
