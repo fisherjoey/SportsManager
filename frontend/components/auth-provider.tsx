@@ -104,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Verify token by fetching user profile and permissions
       apiClient.getProfile()
         .then(async (response) => {
+          console.log('[AuthProvider] Profile response:', response)
           if (response.user) {
             setUser(response.user)
             setIsAuthenticated(true)
@@ -111,7 +112,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await fetchUserPermissions(response.user.id)
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('[AuthProvider] Failed to get profile:', error)
           // Token invalid, clear storage
           localStorage.removeItem('auth_token')
           apiClient.removeToken()
@@ -124,21 +126,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('[AuthProvider] Attempting login for:', email)
       const response = await apiClient.login(email, password)
-      
+      console.log('[AuthProvider] Login response:', response)
+
       if (response.token && response.user) {
+        console.log('[AuthProvider] Setting token and user')
         apiClient.setToken(response.token)
         setUser(response.user)
         setIsAuthenticated(true)
-        
+
         // Fetch user permissions after successful login
+        console.log('[AuthProvider] Fetching permissions for user:', response.user.id)
         await fetchUserPermissions(response.user.id)
-        
+
         return true
       }
       return false
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error('[AuthProvider] Login failed:', error)
       toast({
         variant: 'destructive',
         title: 'Login Failed',
