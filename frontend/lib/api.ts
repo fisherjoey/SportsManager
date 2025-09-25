@@ -46,31 +46,25 @@ class ApiClient {
     if (typeof window === 'undefined') {
       return 'http://localhost:3001/api'
     }
-    
-    // For client-side, use Next.js proxy to avoid CORS issues
+
+    // For client-side, check if we're on localhost and use proxy
     const host = window.location.hostname
-    const protocol = window.location.protocol
-    
-    console.log('[API Client] Current host:', host)
-    console.log('[API Client] Current protocol:', protocol)
-    
-    // If we have an environment variable set and it's not localhost, use it
-    if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
-      console.log('[API Client] Using env API URL:', process.env.NEXT_PUBLIC_API_URL)
-      return process.env.NEXT_PUBLIC_API_URL
-    }
-    
-    // For localhost development, use Next.js proxy (no port 3001, no /api suffix)
+
     if (host === 'localhost' || host === '127.0.0.1') {
-      const url = '/api'  // Use Next.js proxy instead of direct backend URL
-      console.log('[API Client] Using Next.js proxy URL:', url)
-      return url
+      // Use Next.js proxy path (no port, just /api)
+      console.log('[API Client] Using Next.js proxy: /api')
+      return '/api'
     }
-    
-    // Otherwise, use the same host but on port 3001 (backend port)
-    const url = `${protocol}//${host}:3001/api`
-    console.log('[API Client] Using network URL:', url)
-    return url
+
+    // For non-localhost, use the environment variable if set
+    if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+      console.log('[API Client] Using env API URL:', process.env.NEXT_PUBLIC_API_BASE_URL)
+      return process.env.NEXT_PUBLIC_API_BASE_URL
+    }
+
+    // Fallback to direct backend URL
+    console.log('[API Client] Using fallback URL: http://localhost:3001/api')
+    return 'http://localhost:3001/api'
   }
 
   setToken(token: string) {
