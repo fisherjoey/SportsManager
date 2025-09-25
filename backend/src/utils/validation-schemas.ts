@@ -101,7 +101,7 @@ export const BaseSchemas = {
   currency: Joi.number().precision(2).min(0).required(),
   optionalCurrency: Joi.number().precision(2).min(0).optional(),
   description: Joi.string().max(500).optional(),
-  notes: Joi.string().max(1000).optional()
+  notes: Joi.string().max(1000).allow('', null).optional()
 } as const;
 
 /**
@@ -633,7 +633,7 @@ export const MentorshipSchemas = {
   create: Joi.object({
     mentor_id: BaseSchemas.id,
     mentee_id: BaseSchemas.id,
-    start_date: BaseSchemas.date,
+    start_date: Joi.date().iso().required(),
     notes: BaseSchemas.notes
   }),
 

@@ -13,11 +13,11 @@ import Joi from 'joi';
 import { authenticateToken, requirePermission } from '../../middleware/auth';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
-// Import services and middleware (still JavaScript for now)
+// Import services and middleware
 import RoleServiceClass from '../../services/RoleService';
+import RoleAccessService from '../../services/RoleAccessService';
 import db from '../../config/database';
 const { asyncHandler } = require('../../middleware/errorHandling');
-const RoleAccessService = require('../../services/RoleAccessService');
 const RoleService = new RoleServiceClass(db);
 
 // Initialize router

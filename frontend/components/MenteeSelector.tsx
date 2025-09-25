@@ -14,6 +14,11 @@ interface Mentee {
   status: 'active' | 'inactive' | 'completed';
   level?: string;
   experience_years?: number;
+  mentorship_assignments?: Array<{
+    id: string;
+    status: string;
+    game_id?: string;
+  }>;
 }
 
 interface MenteeSelectorProps {
@@ -33,43 +38,63 @@ export function MenteeSelector({
 }: MenteeSelectorProps) {
   const [mentees, setMentees] = useState<Mentee[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchMentees = async () => {
-      try {
-        setLoading(true)
-        apiClient.initializeToken()
-        // Get current user as mentor, then fetch mentees
-        const userResponse = await apiClient.get('/auth/me')
-        const mentorId = userResponse.data?.id
+  const fetchMentees = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      apiClient.initializeToken()
 
-        if (!mentorId) {
-          throw new Error('Unable to identify current user')
-        }
+      // Get current user as mentor, then fetch mentees
+      const userResponse = await apiClient.get('/auth/me')
+      const mentorId = userResponse.data?.user?.id
 
-        const response = await apiClient.get(`/mentors/${mentorId}/mentees`, {
-          params: {
-            status: 'active',
-            includeDetails: true
-          }
-        })
-        
-        if (response.data) {
-          setMentees(response.data)
+      if (!mentorId) {
+        // This is not an error - user might have permissions but no mentees
+        console.log('User context not available for mentee selection')
+        setMentees([])
+        setError(null) // Don't show error, just show empty state
+        return
+      }
+
+      const response = await apiClient.get(`/mentors/${mentorId}/mentees`, {
+        params: {
+          status: 'active',
+          includeDetails: true
         }
-      } catch (error) {
-        console.error('Failed to fetch mentees:', error)
+      })
+
+      if (response.data) {
+        // Ensure response is always an array
+        setMentees(Array.isArray(response.data) ? response.data : [])
+      } else {
+        setMentees([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch mentees:', error)
+      // Set empty array to prevent crashes
+      setMentees([])
+
+      // Set error state for retry functionality
+      const errorMessage = 'Unable to load mentees'
+      setError(errorMessage)
+
+      // Only show toast for non-404 errors
+      if (error instanceof Error && !error.message.includes('404')) {
         toast({
           title: 'Error',
-          description: 'Failed to load mentees. Please try again.',
+          description: errorMessage,
           variant: 'destructive'
         })
-      } finally {
-        setLoading(false)
       }
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchMentees()
   }, [toast])
 
@@ -81,7 +106,27 @@ export function MenteeSelector({
     }
   }
 
-  const selectedMentee = mentees.find(m => m.id === selectedMenteeId)
+  // Safe access to selected mentee
+  const selectedMentee = selectedMenteeId ? mentees.find(m => m.id === selectedMenteeId) : null
+
+  // Show error state if there's an error
+  if (error && !loading) {
+    return (
+      <div className={`flex items-center space-x-2 ${className}`}>
+        <div className="flex items-center space-x-2 text-red-600">
+          <Users className="h-4 w-4" />
+          <span className="text-sm">{error}</span>
+          <button
+            onClick={fetchMentees}
+            className="text-xs underline hover:no-underline"
+            disabled={loading}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
@@ -110,18 +155,26 @@ export function MenteeSelector({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>All Mentees</span>
-              {mentees.length > 0 && (
-                <Badge variant="outline" className="ml-2">
-                  {mentees.length}
-                </Badge>
-              )}
+          {mentees.length === 0 ? (
+            <div className="p-4 text-center">
+              <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No mentees assigned</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                You have mentor permissions but no active mentees
+              </p>
             </div>
-          </SelectItem>
-          {mentees.map((mentee) => (
+          ) : (
+            <>
+              <SelectItem value="all">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>All Mentees</span>
+                  <Badge variant="outline" className="ml-2">
+                    {mentees.length}
+                  </Badge>
+                </div>
+              </SelectItem>
+              {mentees.map((mentee) => (
             <SelectItem key={mentee.id} value={mentee.id}>
               <div className="flex items-center justify-between w-full">
                 <div className="flex flex-col">
@@ -144,10 +197,7 @@ export function MenteeSelector({
               </div>
             </SelectItem>
           ))}
-          {mentees.length === 0 && !loading && (
-            <SelectItem value="none" disabled>
-              <span className="text-muted-foreground">No mentees found</span>
-            </SelectItem>
+            </>
           )}
         </SelectContent>
       </Select>

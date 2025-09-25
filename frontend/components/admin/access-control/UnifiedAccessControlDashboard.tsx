@@ -6,18 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Users, 
-  Shield, 
-  Lock, 
-  Layout, 
+import {
+  Users,
+  Shield,
+  Lock,
+  Layout,
   Globe,
   Settings,
   Info,
   ChevronRight,
   ShieldCheck,
   UserCog,
-  Key
+  Key,
+  GraduationCap
 } from 'lucide-react'
 
 // Import existing components
@@ -26,6 +27,7 @@ import { RoleManagementDashboard } from '../rbac/RoleManagementDashboard'
 import { PermissionManagementDashboard } from '../rbac/PermissionManagementDashboard'
 import { RolePageAccessManager } from '../rbac/RolePageAccessManager'
 import { PermissionConfigurationDashboard } from '../rbac/PermissionConfigurationDashboard'
+import { MentorshipManagement } from '../mentorship/MentorshipManagement'
 
 interface TabInfo {
   id: string
@@ -90,6 +92,12 @@ export function UnifiedAccessControlDashboard() {
       label: 'API Access',
       icon: <Globe className="h-4 w-4" />,
       description: 'Manage API endpoint permissions and rate limits'
+    },
+    {
+      id: 'mentorships',
+      label: 'Mentorships',
+      icon: <GraduationCap className="h-4 w-4" />,
+      description: 'Manage mentor-mentee relationships and assignments'
     },
     {
       id: 'configuration',
@@ -183,7 +191,7 @@ export function UnifiedAccessControlDashboard() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           {tabs.map(tab => (
             <TabsTrigger 
               key={tab.id} 
@@ -254,6 +262,10 @@ export function UnifiedAccessControlDashboard() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mentorships" className="space-y-4">
+          <MentorshipManagement />
         </TabsContent>
 
         <TabsContent value="configuration" className="space-y-4">

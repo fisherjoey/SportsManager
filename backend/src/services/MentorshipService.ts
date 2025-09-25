@@ -424,13 +424,15 @@ class MentorshipService extends BaseService {
         return; // User has proper RBAC role
       }
 
-      // Fallback: Check if user has "Mentor" referee role capability
-      const hasMentorRole = await this.db('user_referee_roles')
-        .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
-        .where('user_referee_roles.user_id', userId)
-        .where('referee_roles.name', 'Mentor')
-        .where('user_referee_roles.is_active', true)
-        .where('referee_roles.is_active', true)
+      // Check if user has mentoring permission through RBAC
+      // Check for either mentorships:manage or mentorships:create permissions
+      const hasMentorRole = await this.db('user_roles as ur')
+        .join('roles as r', 'ur.role_id', 'r.id')
+        .join('role_permissions as rp', 'r.id', 'rp.role_id')
+        .join('permissions as p', 'rp.permission_id', 'p.id')
+        .where('ur.user_id', userId)
+        .whereIn('p.name', ['mentorships:manage', 'mentorships:create', 'mentorship.provide'])
+        .where('ur.is_active', true)
         .first();
 
       if (!hasMentorRole) {
@@ -549,15 +551,16 @@ class MentorshipService extends BaseService {
               .where('user_roles.is_active', true)
               .where('roles.is_active', true);
           })
-          // OR users with Mentor referee role capability
+          // OR users with mentorship permission through RBAC
           .orWhereExists(function() {
             this.select('*')
-              .from('user_referee_roles')
-              .join('referee_roles', 'user_referee_roles.referee_role_id', 'referee_roles.id')
-              .whereRaw('user_referee_roles.user_id = users.id')
-              .where('referee_roles.name', 'Mentor')
-              .where('user_referee_roles.is_active', true)
-              .where('referee_roles.is_active', true);
+              .from('user_roles as ur')
+              .join('roles as r', 'ur.role_id', 'r.id')
+              .join('role_permissions as rp', 'r.id', 'rp.role_id')
+              .join('permissions as p', 'rp.permission_id', 'p.id')
+              .whereRaw('ur.user_id = users.id')
+              .where('p.name', 'mentorship.provide')
+              .where('ur.is_active', true);
           });
         })
         .whereNotExists(function() {

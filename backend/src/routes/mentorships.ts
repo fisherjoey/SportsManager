@@ -232,19 +232,22 @@ router.post('/',
   validateBody(MentorshipSchemas.create),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipData = req.body;
+    console.log('Creating mentorship with data:', mentorshipData);
 
     try {
       const mentorship = await mentorshipService.createMentorship(mentorshipData);
-      
+      console.log('Mentorship created successfully:', mentorship);
+
       return ResponseFormatter.sendCreated(
-        res, 
-        { mentorship }, 
+        res,
+        { mentorship },
         'Mentorship created successfully',
         `/api/mentorships/${mentorship.id}`
       );
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating mentorship:', error);
+      console.error('Error stack:', error.stack);
       if (error.message.includes('already exists')) {
         throw ErrorFactory.conflict('Mentorship relationship already exists');
       }

@@ -304,8 +304,9 @@ const createValidator = (
       const extendedSchema = schema.messages(ERROR_MESSAGES);
       
       const { error, value } = extendedSchema.validate(data, options);
-      
+
       if (error) {
+        console.error(`Validation error in ${source}:`, error.details);
         throw ErrorFactory.fromJoiError(error, `${source} validation failed`);
       }
       
