@@ -63,7 +63,8 @@
       "Bash(netstat:*)",
       "Read(//c/Users/School/OneDrive/Desktop/**)",
       "Bash(npm run migrate:*)",
-      "Bash(npx knex migrate:rollback:*)"
+      "Bash(npx knex migrate:rollback:*)",
+      "Bash(npx knex migrate:status:*)"
     ],
     "deny": [],
     "ask": []

@@ -89,6 +89,9 @@ export function LoginForm() {
             <p className="text-sm font-medium mb-2">Demo Accounts:</p>
             <div className="text-xs space-y-1">
               <p>
+                <strong>Admin:</strong> admin@test.com
+              </p>
+              <p>
                 <strong>CMBA Admin:</strong> admin@cmba.ca
               </p>
               <p>
@@ -98,7 +101,10 @@ export function LoginForm() {
                 <strong>Test Referee:</strong> referee@test.com
               </p>
               <p>
-                <strong>Password:</strong> password
+                <strong>Password (all accounts):</strong> password
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 mt-2">
+                Note: We also have admin@test.com with password: admin123
               </p>
             </div>
           </div>
