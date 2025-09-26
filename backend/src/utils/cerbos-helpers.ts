@@ -11,9 +11,17 @@ export function toPrincipal(
   primaryRegionId?: string,
   regionIds: string[] = []
 ): CerbosPrincipal {
-  const roles = user.roles && user.roles.length > 0
-    ? Array.from(new Set(user.roles.map((r) => r.name)))
-    : [user.role];
+  let roles: string[] = [];
+
+  if (user.roles && user.roles.length > 0) {
+    roles = Array.from(new Set(user.roles.map((r) => r.name).filter(Boolean)));
+  } else if (user.role) {
+    roles = [user.role];
+  }
+
+  if (roles.length === 0) {
+    roles = ['guest'];
+  }
 
   return {
     id: user.id,
