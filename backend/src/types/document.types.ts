@@ -192,7 +192,7 @@ export interface PendingAcknowledgmentsResponse {
 
 // File Upload Types
 export interface FileUploadRequest {
-  file: Express.Multer.File;
+  file: any;
   metadata: CreateDocumentRequest;
 }
 

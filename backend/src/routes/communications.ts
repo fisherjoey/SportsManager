@@ -53,7 +53,7 @@ interface AuthenticatedRequest extends Request {
     role: string;
     name: string;
   };
-  files?: Express.Multer.File[];
+  files?: any[];
 }
 
 // Type guard for authenticated requests
@@ -172,7 +172,7 @@ router.post(
       // Handle file attachments
       let attachments: CommunicationAttachment[] = [];
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        attachments = req.files.map((file: Express.Multer.File) => ({
+        attachments = req.files.map((file: any) => ({
           filename: file.originalname,
           path: file.path,
           size: file.size,

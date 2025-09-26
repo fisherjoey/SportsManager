@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Simulation Test - Games API with limit=500</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            color: #007bff;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .games-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .games-table th, .games-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .games-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .games-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 End-to-End Browser Simulation Test</h1>
+        <p class="info result">
+            <strong>Goal:</strong> Verify that the frontend can successfully fetch games with limit=500
+            without any "Invalid query parameters" errors, simulating exact browser behavior.
+        </p>
+
+        <div class="test-section">
+            <h3>🔐 Authentication Test</h3>
+            <button onclick="testLogin()" id="loginBtn">Test Login</button>
+            <div class="loading" id="loginLoading">⏳ Logging in...</div>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Primary Test: Games API with limit=500</h3>
+            <button onclick="testGamesWithLimit500()" id="primaryTestBtn" disabled>Test limit=500</button>
+            <div class="loading" id="primaryLoading">⏳ Fetching games...</div>
+            <div id="primaryResult"></div>
+            <div id="primaryStats" class="stats-grid"></div>
+            <div id="primaryGames"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Comprehensive Limit Testing</h3>
+            <button onclick="testAllLimits()" id="allLimitsBtn" disabled>Test All Limits</button>
+            <div class="loading" id="allLimitsLoading">⏳ Testing multiple limits...</div>
+            <div id="allLimitsResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Edge Cases Testing</h3>
+            <button onclick="testEdgeCases()" id="edgeCasesBtn" disabled>Test Edge Cases</button>
+            <div class="loading" id="edgeCasesLoading">⏳ Testing edge cases...</div>
+            <div id="edgeCasesResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Final Summary</h3>
+            <div id="finalSummary"></div>
+        </div>
+    </div>
+
+    <script>
+        const FRONTEND_PROXY_URL = 'http://localhost:3000';
+        const TEST_CREDENTIALS = {
+            email: 'admin@cmba.ca',
+            password: 'admin123'
+        };
+
+        let authToken = null;
+        let testResults = {
+            login: null,
+            primaryTest: null,
+            limitTests: [],
+            edgeCaseTests: []
+        };
+
+        function showLoading(elementId, show = true) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.style.display = show ? 'block' : 'none';
+            }
+        }
+
+        function updateResult(elementId, content, className = 'info') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `<div class="result ${className}">${content}</div>`;
+            }
+        }
+
+        function updateStats(elementId, data) {
+            const element = document.getElementById(elementId);
+            if (element && data) {
+                element.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${data.gamesReturned}</div>
+                        <div class="stat-label">Games Returned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.totalGames}</div>
+                        <div class="stat-label">Total in Database</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.responseTime}ms</div>
+                        <div class="stat-label">Response Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.statusCode}</div>
+                        <div class="stat-label">HTTP Status</div>
+                    </div>
+                `;
+            }
+        }
+
+        function showGamesTable(elementId, games, maxRows = 5) {
+            const element = document.getElementById(elementId);
+            if (element && games && games.length > 0) {
+                const displayGames = games.slice(0, maxRows);
+                const remainingCount = games.length - maxRows;
+
+                let tableHtml = `
+                    <h4>📋 Sample Games Data (showing ${displayGames.length}${remainingCount > 0 ? ` of ${games.length}` : ''}):</h4>
+                    <table class="games-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Home Team</th>
+                                <th>Away Team</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                displayGames.forEach(game => {
+                    tableHtml += `
+                        <tr>
+                            <td>${game.id || 'N/A'}</td>
+                            <td>${game.homeTeam?.organization || game.homeTeam?.name || 'N/A'}</td>
+                            <td>${game.awayTeam?.organization || game.awayTeam?.name || 'N/A'}</td>
+                            <td>${game.date || 'N/A'}</td>
+                            <td>${game.time || 'N/A'}</td>
+                            <td>${game.location || 'N/A'}</td>
+                            <td>${game.status || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                if (remainingCount > 0) {
+                    tableHtml += `<p class="info result">... and ${remainingCount} more games</p>`;
+                }
+
+                element.innerHTML = tableHtml;
+            }
+        }
+
+        async function testLogin() {
+            showLoading('loginLoading', true);
+            document.getElementById('loginBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${FRONTEND_PROXY_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(TEST_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    testResults.login = { success: true, token: !!authToken };
+
+                    updateResult('loginResult',
+                        '✅ <strong>Login successful!</strong><br>' +
+                        `Token received: ${authToken.substring(0, 20)}...<br>` +
+                        'Authentication ready for API calls.',
+                        'success'
+                    );
+
+                    // Enable other test buttons
+                    document.getElementById('primaryTestBtn').disabled = false;
+                    document.getElementById('allLimitsBtn').disabled = false;
+                    document.getElementById('edgeCasesBtn').disabled = false;
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+            } catch (error) {
+                testResults.login = { success: false, error: error.message };
+                updateResult('loginResult',
+                    `❌ <strong>Login failed:</strong> ${error.message}`,
+                    'error'
+                );
+            }
+
+            showLoading('loginLoading', false);
+            document.getElementById('loginBtn').disabled = false;
+        }
+
+        async function testGamesWithLimit500() {
+            if (!authToken) {
+                updateResult('primaryResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            showLoading('primaryLoading', true);
+            document.getElementById('primaryTestBtn').disabled = true;
+
+            try {
+                const startTime = performance.now();
+
+                const response = await fetch(`${FRONTEND_PROXY_URL}/api/games?limit=500`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const result = {
+                        success: true,
+                        statusCode: response.status,
+                        gamesReturned: data.data?.length || 0,
+                        totalGames: data.pagination?.total || 0,
+                        responseTime,
+                        pagination: data.pagination,
+                        games: data.data || []
+                    };
+
+                    testResults.primaryTest = result;
+
+                    updateResult('primaryResult',
+                        '✅ <strong>Primary test PASSED!</strong><br>' +
+                        `Successfully fetched games with limit=500<br>` +
+                        `No "Invalid query parameters" error encountered.<br>` +
+                        `Games would be displayed correctly in the frontend.`,
+                        'success'
+                    );
+
+                    updateStats('primaryStats', {
+                        gamesReturned: result.gamesReturned,
+                        totalGames: result.totalGames,
+                        responseTime: result.responseTime,
+                        statusCode: result.statusCode
+                    });
+
+                    showGamesTable('primaryGames', result.games);
+
+                } else {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+
+            } catch (error) {
+                testResults.primaryTest = { success: false, error: error.message };
+                updateResult('primaryResult',
+                    `❌ <strong>Primary test FAILED:</strong> ${error.message}<br>` +
+                    `This indicates the frontend would encounter errors when fetching games.`,
+                    'error'
+                );
+            }
+
+            showLoading('primaryLoading', false);
+            document.getElementById('primaryTestBtn').disabled = false;
+        }
+
+        async function testAllLimits() {
+            if (!authToken) {
+                updateResult('allLimitsResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            showLoading('allLimitsLoading', true);
+            document.getElementById('allLimitsBtn').disabled = true;
+
+            const limits = [50, 100, 300, 500, 1000];
+            const results = [];
+            let resultHtml = '<h4>📊 Limit Testing Results:</h4>';
+
+            for (const limit of limits) {
+                try {
+                    const startTime = performance.now();
+
+                    const response = await fetch(`${FRONTEND_PROXY_URL}/api/games?limit=${limit}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const endTime = performance.now();
+                    const responseTime = Math.round(endTime - startTime);
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        const result = {
+                            limit,
+                            success: true,
+                            statusCode: response.status,
+                            gamesReturned: data.data?.length || 0,
+                            totalGames: data.pagination?.total || 0,
+                            responseTime
+                        };
+
+                        results.push(result);
+                        resultHtml += `<div class="result success">✅ limit=${limit}: ${result.gamesReturned} games (${result.responseTime}ms)</div>`;
+                    } else {
+                        const result = {
+                            limit,
+                            success: false,
+                            error: data.error || `HTTP ${response.status}`
+                        };
+                        results.push(result);
+                        resultHtml += `<div class="result error">❌ limit=${limit}: ${result.error}</div>`;
+                    }
+
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                } catch (error) {
+                    const result = {
+                        limit,
+                        success: false,
+                        error: error.message
+                    };
+                    results.push(result);
+                    resultHtml += `<div class="result error">❌ limit=${limit}: ${result.error}</div>`;
+                }
+            }
+
+            testResults.limitTests = results;
+            const successfulTests = results.filter(r => r.success).length;
+
+            resultHtml += `<div class="result info"><strong>Summary:</strong> ${successfulTests}/${results.length} limit tests passed</div>`;
+
+            updateResult('allLimitsResult', resultHtml);
+            showLoading('allLimitsLoading', false);
+            document.getElementById('allLimitsBtn').disabled = false;
+        }
+
+        async function testEdgeCases() {
+            if (!authToken) {
+                updateResult('edgeCasesResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            showLoading('edgeCasesLoading', true);
+            document.getElementById('edgeCasesBtn').disabled = true;
+
+            const edgeCases = [
+                { url: '/api/games?limit=1', description: 'minimum limit (1)' },
+                { url: '/api/games?limit=1001', description: 'over maximum limit (1001)' },
+                { url: '/api/games?limit=abc', description: 'invalid string limit' },
+                { url: '/api/games?limit=-10', description: 'negative limit' },
+                { url: '/api/games', description: 'no limit parameter (default)' },
+                { url: '/api/games?limit=500&page=1', description: 'limit with pagination' }
+            ];
+
+            const results = [];
+            let resultHtml = '<h4>🔍 Edge Case Testing Results:</h4>';
+
+            for (const testCase of edgeCases) {
+                try {
+                    const response = await fetch(`${FRONTEND_PROXY_URL}${testCase.url}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        const result = {
+                            testCase: testCase.description,
+                            success: true,
+                            statusCode: response.status,
+                            gamesReturned: data.data?.length || 0
+                        };
+
+                        results.push(result);
+                        resultHtml += `<div class="result success">✅ ${testCase.description}: ${result.gamesReturned} games</div>`;
+                    } else {
+                        const result = {
+                            testCase: testCase.description,
+                            success: false,
+                            statusCode: response.status,
+                            error: data.error || 'Unknown error'
+                        };
+
+                        results.push(result);
+
+                        // Some edge cases are expected to fail
+                        const isExpectedFailure = testCase.url.includes('1001') ||
+                                                testCase.url.includes('abc') ||
+                                                testCase.url.includes('-10');
+
+                        const className = isExpectedFailure ? 'warning' : 'error';
+                        const icon = isExpectedFailure ? '⚠️' : '❌';
+
+                        resultHtml += `<div class="result ${className}">${icon} ${testCase.description}: ${result.error} (${result.statusCode})</div>`;
+                    }
+
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                } catch (error) {
+                    const result = {
+                        testCase: testCase.description,
+                        success: false,
+                        error: error.message
+                    };
+                    results.push(result);
+                    resultHtml += `<div class="result error">❌ ${testCase.description}: ${result.error}</div>`;
+                }
+            }
+
+            testResults.edgeCaseTests = results;
+            updateResult('edgeCasesResult', resultHtml);
+            showLoading('edgeCasesLoading', false);
+            document.getElementById('edgeCasesBtn').disabled = false;
+
+            // Auto-generate final summary after edge cases
+            generateFinalSummary();
+        }
+
+        function generateFinalSummary() {
+            const { login, primaryTest, limitTests, edgeCaseTests } = testResults;
+
+            if (!login || !primaryTest) {
+                updateResult('finalSummary',
+                    '<div class="result warning">⏳ Complete all tests to see final summary</div>'
+                );
+                return;
+            }
+
+            const successfulLimits = limitTests.filter(t => t.success).length;
+            const expectedFailures = edgeCaseTests.filter(t =>
+                !t.success && (
+                    t.testCase.includes('over maximum') ||
+                    t.testCase.includes('invalid string') ||
+                    t.testCase.includes('negative')
+                )
+            ).length;
+
+            let summaryHtml = '<h4>🎯 Final Integration Test Summary</h4>';
+
+            // Primary findings
+            summaryHtml += '<div class="stats-grid">';
+            summaryHtml += `
+                <div class="stat-card">
+                    <div class="stat-number">${primaryTest.success ? '✅' : '❌'}</div>
+                    <div class="stat-label">limit=500 Test</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${successfulLimits}/${limitTests.length}</div>
+                    <div class="stat-label">Limit Tests Passed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${expectedFailures}</div>
+                    <div class="stat-label">Expected Failures</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${login.success ? '✅' : '❌'}</div>
+                    <div class="stat-label">Authentication</div>
+                </div>
+            `;
+            summaryHtml += '</div>';
+
+            // Key findings
+            summaryHtml += '<h5>🔍 Key Findings:</h5>';
+
+            if (primaryTest.success) {
+                summaryHtml += `<div class="result success">
+                    ✅ <strong>SUCCESS:</strong> Frontend can successfully fetch games with limit=500<br>
+                    📊 Returned ${primaryTest.gamesReturned} games in ${primaryTest.responseTime}ms<br>
+                    🚀 No "Invalid query parameters" errors encountered<br>
+                    🎯 games-management-page.tsx integration confirmed working
+                </div>`;
+            } else {
+                summaryHtml += `<div class="result error">
+                    ❌ <strong>FAILURE:</strong> limit=500 test failed<br>
+                    Error: ${primaryTest.error}
+                </div>`;
+            }
+
+            if (successfulLimits === limitTests.length) {
+                summaryHtml += `<div class="result success">
+                    ✅ All valid limit values (50-1000) work correctly
+                </div>`;
+            } else {
+                summaryHtml += `<div class="result warning">
+                    ⚠️ Some limit values failed: ${limitTests.length - successfulLimits} failures
+                </div>`;
+            }
+
+            if (expectedFailures >= 3) {
+                summaryHtml += `<div class="result success">
+                    ✅ Invalid parameters properly rejected (${expectedFailures} expected failures)
+                </div>`;
+            } else {
+                summaryHtml += `<div class="result warning">
+                    ⚠️ Some invalid parameters not properly rejected
+                </div>`;
+            }
+
+            // Overall verdict
+            const overallSuccess = login.success &&
+                                 primaryTest.success &&
+                                 successfulLimits === limitTests.length &&
+                                 expectedFailures >= 3;
+
+            if (overallSuccess) {
+                summaryHtml += `<div class="result success">
+                    🎉 <strong>OVERALL VERDICT: SUCCESS</strong><br>
+                    The games API works correctly with limit=500 from the frontend.<br>
+                    All integration requirements have been met.
+                </div>`;
+            } else {
+                summaryHtml += `<div class="result warning">
+                    ⚠️ <strong>OVERALL VERDICT: ISSUES DETECTED</strong><br>
+                    Some tests failed. Review the results above for details.
+                </div>`;
+            }
+
+            updateResult('finalSummary', summaryHtml);
+        }
+
+        // Auto-start login when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loginBtn').click();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

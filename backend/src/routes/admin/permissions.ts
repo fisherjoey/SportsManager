@@ -142,7 +142,7 @@ const assignPermissionsSchema = Joi.object({
  */
 router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { active_only = 'true', use_cache = 'true' } = req.query as {
+    const { active_only = 'true', use_cache = 'true' } = (req as any).query as {
       active_only?: string;
       use_cache?: string;
     };
@@ -184,7 +184,7 @@ router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'sy
  */
 router.post('/', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = createPermissionSchema.validate(req.body);
+    const { error, value } = createPermissionSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -223,7 +223,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: Authentica
  */
 router.get('/categories', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { active_only = 'true' } = req.query as { active_only?: string };
+    const { active_only = 'true' } = (req as any).query as { active_only?: string };
 
     const query = permissionService.db('permissions')
       .distinct('category')
@@ -255,7 +255,7 @@ router.get('/categories', authenticateToken, requireAnyPermission(['permissions:
  */
 router.post('/search', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = searchSchema.validate(req.body);
+    const { error, value } = searchSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -319,7 +319,7 @@ router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req: 
  */
 router.delete('/cache', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { user_id } = req.query as { user_id?: string };
+    const { user_id } = (req as any).query as { user_id?: string };
 
     if (user_id) {
       permissionService.invalidateUserCache(user_id);
@@ -347,7 +347,7 @@ router.delete('/cache', authenticateToken, requireRole('admin'), async (req: Aut
  */
 router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = userPermissionsSchema.validate(req.body);
+    const { error, value } = userPermissionsSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -357,7 +357,7 @@ router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async 
     }
 
     const { user_ids } = value;
-    const { permission } = req.query as { permission?: string };
+    const { permission } = (req as any).query as { permission?: string };
 
     if (!permission) {
       res.status(400).json({
@@ -400,8 +400,8 @@ router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async 
  */
 router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { category } = req.params;
-    const { active_only = 'true' } = req.query as { active_only?: string };
+    const { category } = (req as any).params;
+    const { active_only = 'true' } = (req as any).query as { active_only?: string };
 
     const permissions = await permissionService.findWhere(
       { category },
@@ -438,8 +438,8 @@ router.get('/category/:category', authenticateToken, requireAnyPermission(['perm
  */
 router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.params;
-    const { by_category = 'false', include_roles = 'false' } = req.query as {
+    const { userId } = (req as any).params;
+    const { by_category = 'false', include_roles = 'false' } = (req as any).query as {
       by_category?: string;
       include_roles?: string;
     };
@@ -502,7 +502,7 @@ router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req
  */
 router.get('/roles/:roleId', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
     const permissions = await permissionService.getRolePermissions(roleId);
 
     res.json({
@@ -529,7 +529,7 @@ router.get('/roles/:roleId', authenticateToken, requireAnyPermission(['permissio
  */
 router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = assignPermissionsSchema.validate(req.body);
+    const { error, value } = assignPermissionsSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -538,7 +538,7 @@ router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (re
       return;
     }
 
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
     const { permission_ids } = value;
 
     const permissions = await permissionService.assignPermissionsToRole(roleId, permission_ids);
@@ -575,7 +575,7 @@ router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (re
  */
 router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { permissionId } = req.params;
+    const { permissionId } = (req as any).params;
 
     const permission = await permissionService.findById(permissionId);
 
@@ -629,7 +629,7 @@ router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req
  */
 router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = updatePermissionSchema.validate(req.body);
+    const { error, value } = updatePermissionSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -638,7 +638,7 @@ router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req
       return;
     }
 
-    const { permissionId } = req.params;
+    const { permissionId } = (req as any).params;
     const updateData = value as PermissionUpdateData;
     const permission = await permissionService.updatePermission(permissionId, updateData);
 
@@ -674,7 +674,7 @@ router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req
  */
 router.delete('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { permissionId } = req.params;
+    const { permissionId } = (req as any).params;
 
     // Don't allow deletion of core permissions
     const corePermissions = [

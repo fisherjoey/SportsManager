@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
 import { type Game } from '@/lib/types/games'
@@ -42,6 +43,390 @@ interface GamesManagementPageProps {
   initialDateFilter?: string
 }
 
+// Create Game Dialog Component
+interface CreateGameDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onGameCreated: (game: Game) => void
+}
+
+function CreateGameDialog({ open, onOpenChange, onGameCreated }: CreateGameDialogProps) {
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    homeTeam: {
+      organization: '',
+      ageGroup: '',
+      gender: 'Boys' as 'Boys' | 'Girls',
+      rank: 1
+    },
+    awayTeam: {
+      organization: '',
+      ageGroup: '',
+      gender: 'Boys' as 'Boys' | 'Girls',
+      rank: 1
+    },
+    date: '',
+    time: '',
+    location: '',
+    postalCode: '',
+    level: 'Recreational',
+    gameType: 'Community' as 'Community' | 'Club' | 'Tournament' | 'Private Tournament',
+    division: '',
+    season: '',
+    payRate: 0,
+    refsNeeded: 2,
+    wageMultiplier: 1.0,
+    wageMultiplierReason: ''
+  })
+  const { toast } = useToast()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      apiClient.initializeToken()
+      const response = await apiClient.createGame(formData)
+
+      // Transform response to match frontend Game type
+      const newGame: Game = {
+        id: response.data.id,
+        homeTeam: response.data.homeTeam,
+        awayTeam: response.data.awayTeam,
+        date: response.data.date,
+        time: response.data.time,
+        startTime: response.data.startTime,
+        location: response.data.location,
+        level: response.data.level,
+        gameType: response.data.gameType,
+        division: response.data.division,
+        season: response.data.season,
+        status: response.data.status || 'unassigned',
+        refsNeeded: response.data.refsNeeded,
+        assignedReferees: response.data.assignedReferees || [],
+        payRate: response.data.payRate,
+        wageMultiplier: response.data.wageMultiplier,
+        createdAt: response.data.createdAt,
+        updatedAt: response.data.updatedAt
+      }
+
+      onGameCreated(newGame)
+    } catch (error: any) {
+      console.error('Failed to create game:', error)
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to create game. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateFormData = (path: string, value: any) => {
+    setFormData(prev => {
+      const keys = path.split('.')
+      const newData = { ...prev }
+      let current: any = newData
+
+      for (let i = 0; i < keys.length - 1; i++) {
+        current[keys[i]] = { ...current[keys[i]] }
+        current = current[keys[i]]
+      }
+
+      current[keys[keys.length - 1]] = value
+      return newData
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Game</DialogTitle>
+          <DialogDescription>
+            Add a new game to the system with team details and scheduling information.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Team Information */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Home Team */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Home Team</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="home-organization">Organization</Label>
+                  <Input
+                    id="home-organization"
+                    value={formData.homeTeam.organization}
+                    onChange={(e) => updateFormData('homeTeam.organization', e.target.value)}
+                    placeholder="e.g., Toronto FC"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="home-age-group">Age Group</Label>
+                  <Input
+                    id="home-age-group"
+                    value={formData.homeTeam.ageGroup}
+                    onChange={(e) => updateFormData('homeTeam.ageGroup', e.target.value)}
+                    placeholder="e.g., U14"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="home-gender">Gender</Label>
+                  <Select value={formData.homeTeam.gender} onValueChange={(value) => updateFormData('homeTeam.gender', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Boys">Boys</SelectItem>
+                      <SelectItem value="Girls">Girls</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="home-rank">Rank/Number</Label>
+                  <Input
+                    id="home-rank"
+                    type="number"
+                    min="1"
+                    value={formData.homeTeam.rank}
+                    onChange={(e) => updateFormData('homeTeam.rank', parseInt(e.target.value) || 1)}
+                    required
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Away Team */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Away Team</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="away-organization">Organization</Label>
+                  <Input
+                    id="away-organization"
+                    value={formData.awayTeam.organization}
+                    onChange={(e) => updateFormData('awayTeam.organization', e.target.value)}
+                    placeholder="e.g., Vancouver Whitecaps"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="away-age-group">Age Group</Label>
+                  <Input
+                    id="away-age-group"
+                    value={formData.awayTeam.ageGroup}
+                    onChange={(e) => updateFormData('awayTeam.ageGroup', e.target.value)}
+                    placeholder="e.g., U14"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="away-gender">Gender</Label>
+                  <Select value={formData.awayTeam.gender} onValueChange={(value) => updateFormData('awayTeam.gender', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Boys">Boys</SelectItem>
+                      <SelectItem value="Girls">Girls</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="away-rank">Rank/Number</Label>
+                  <Input
+                    id="away-rank"
+                    type="number"
+                    min="1"
+                    value={formData.awayTeam.rank}
+                    onChange={(e) => updateFormData('awayTeam.rank', parseInt(e.target.value) || 1)}
+                    required
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Game Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Game Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => updateFormData('date', e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="time">Time</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => updateFormData('time', e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => updateFormData('location', e.target.value)}
+                    placeholder="e.g., BMO Field"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="postal-code">Postal Code</Label>
+                  <Input
+                    id="postal-code"
+                    value={formData.postalCode}
+                    onChange={(e) => updateFormData('postalCode', e.target.value)}
+                    placeholder="e.g., M6K 3C3"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="level">Level</Label>
+                  <Select value={formData.level} onValueChange={(value) => updateFormData('level', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Recreational">Recreational</SelectItem>
+                      <SelectItem value="Competitive">Competitive</SelectItem>
+                      <SelectItem value="Elite">Elite</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="game-type">Game Type</Label>
+                  <Select value={formData.gameType} onValueChange={(value) => updateFormData('gameType', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Community">Community</SelectItem>
+                      <SelectItem value="Club">Club</SelectItem>
+                      <SelectItem value="Tournament">Tournament</SelectItem>
+                      <SelectItem value="Private Tournament">Private Tournament</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="refs-needed">Refs Needed</Label>
+                  <Input
+                    id="refs-needed"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.refsNeeded}
+                    onChange={(e) => updateFormData('refsNeeded', parseInt(e.target.value) || 2)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="division">Division</Label>
+                  <Input
+                    id="division"
+                    value={formData.division}
+                    onChange={(e) => updateFormData('division', e.target.value)}
+                    placeholder="e.g., Premier"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="season">Season</Label>
+                  <Input
+                    id="season"
+                    value={formData.season}
+                    onChange={(e) => updateFormData('season', e.target.value)}
+                    placeholder="e.g., Fall 2024"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="pay-rate">Pay Rate ($)</Label>
+                  <Input
+                    id="pay-rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.payRate}
+                    onChange={(e) => updateFormData('payRate', parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="wage-multiplier">Wage Multiplier</Label>
+                  <Input
+                    id="wage-multiplier"
+                    type="number"
+                    min="0.1"
+                    max="5.0"
+                    step="0.1"
+                    value={formData.wageMultiplier}
+                    onChange={(e) => updateFormData('wageMultiplier', parseFloat(e.target.value) || 1.0)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="wage-multiplier-reason">Multiplier Reason</Label>
+                  <Input
+                    id="wage-multiplier-reason"
+                    value={formData.wageMultiplierReason}
+                    onChange={(e) => updateFormData('wageMultiplierReason', e.target.value)}
+                    placeholder="Optional reason"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Game'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function GamesManagementPage({ initialDateFilter }: GamesManagementPageProps = {}) {
   const [games, setGames] = useState<Game[]>([])
   const [totalGames, setTotalGames] = useState<number>(0)
@@ -53,6 +438,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null)
   const [calendarUploadOpen, setCalendarUploadOpen] = useState(false)
+  const [createGameOpen, setCreateGameOpen] = useState(false)
   // Mentorship-related state
   const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(null)
   const [selectedMenteeName, setSelectedMenteeName] = useState<string>('')
@@ -110,7 +496,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       setLoading(true)
       // Initialize token before making API calls
       apiClient.initializeToken()
-      const response = await apiClient.getGames({ limit: 100 })
+      const response = await apiClient.getGames({ limit: 500 })
       setGames(response.data || [])
       // Set total count from pagination if available
       if (response.pagination?.total) {
@@ -406,7 +792,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           <Download className="h-4 w-4 mr-2" />
           Export
         </Button>
-        <Button>
+        <Button onClick={() => setCreateGameOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Game
         </Button>
@@ -595,6 +981,22 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           />
         </DialogContent>
       </Dialog>
+
+      {/* Create Game Dialog */}
+      <CreateGameDialog
+        open={createGameOpen}
+        onOpenChange={setCreateGameOpen}
+        onGameCreated={(newGame) => {
+          // Add the new game to the list
+          setGames(prevGames => [newGame, ...prevGames])
+          setTotalGames(prev => prev + 1)
+          toast({
+            title: 'Game created',
+            description: 'New game has been added to the system.'
+          })
+          setCreateGameOpen(false)
+        }}
+      />
     </PageLayout>
   )
 }

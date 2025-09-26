@@ -345,5 +345,5 @@ export class Logger {
 const logger = new Logger();
 
 // Export both named and default
-export { logger, Logger };
+export { logger };
 export default logger;

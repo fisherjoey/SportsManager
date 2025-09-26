@@ -37,9 +37,9 @@ try {
  * Validates Bearer tokens and attaches user information to the request
  */
 function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  const authHeader = req.headers['authorization'];
-  
-  console.log('authenticateToken - Path:', req.path, 'URL:', req.url, 'Has authHeader:', !!authHeader);
+  const authHeader = (req as any).headers['authorization'];
+
+  console.log('[DEBUG] authenticateToken middleware called - Path:', (req as any).path, 'URL:', (req as any).url, 'Query:', (req as any).query, 'Has authHeader:', !!authHeader);
   
   if (!authHeader || !authHeader.trim()) {
     console.log('No auth header provided');

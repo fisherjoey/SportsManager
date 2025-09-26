@@ -7,9 +7,7 @@
 
 import type { Knex } from 'knex';
 import { checkTimeOverlap } from '../utils/availability';
-
-// Import database configuration
-const db: Knex = require('../config/database');
+import db from '../config/database';
 
 // Type definitions
 export interface TimeWindow {

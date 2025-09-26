@@ -75,7 +75,7 @@ class ResponseCache {
    * Generate cache key from request
    */
   generateKey(req: RequestWithUser): string {
-    const { path, query = {}, user } = req;
+    const { path, query = {}, user } = req as any;
     const queryString = Object.keys(query)
       .sort()
       .map(key => `${key}=${query[key]}`)
@@ -94,7 +94,7 @@ class ResponseCache {
 
     return (req: RequestWithUser, res: Response, next: NextFunction): void => {
       // Skip caching for non-GET requests or if condition fails
-      if (req.method !== 'GET' || !condition(req)) {
+      if ((req as any).method !== 'GET' || !condition(req)) {
         return next();
       }
 

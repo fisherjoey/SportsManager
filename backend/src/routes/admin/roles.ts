@@ -124,7 +124,7 @@ const assignUserRoleSchema = Joi.object({
 router.get('/', authenticateToken, requireAnyPermission(['roles:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   console.log('Admin roles endpoint hit - User:', req.user?.email, 'Role:', req.user?.role);
   try {
-    const { include_inactive } = req.query as { include_inactive?: string };
+    const { include_inactive } = (req as any).query as { include_inactive?: string };
 
     const filters: RoleFilters = {
       includeInactive: include_inactive === 'true'
@@ -152,7 +152,7 @@ router.get('/', authenticateToken, requireAnyPermission(['roles:read', 'system:a
  */
 router.get('/:roleId', authenticateToken, requireAnyPermission(['roles:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
     const role = await roleService.getRoleWithPermissions(roleId);
 
     res.json({
@@ -182,7 +182,7 @@ router.get('/:roleId', authenticateToken, requireAnyPermission(['roles:read', 's
  */
 router.post('/', authenticateToken, requireAnyPermission(['roles:create', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = createRoleSchema.validate(req.body);
+    const { error, value } = createRoleSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -221,8 +221,8 @@ router.post('/', authenticateToken, requireAnyPermission(['roles:create', 'syste
  */
 router.put('/:roleId', authenticateToken, requireAnyPermission(['roles:update', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { error, value } = updateRoleSchema.validate(req.body);
+    const { roleId } = (req as any).params;
+    const { error, value } = updateRoleSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -261,8 +261,8 @@ router.put('/:roleId', authenticateToken, requireAnyPermission(['roles:update', 
  */
 router.delete('/:roleId', authenticateToken, requireAnyPermission(['roles:delete', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { force } = req.query as { force?: string };
+    const { roleId } = (req as any).params;
+    const { force } = (req as any).query as { force?: string };
 
     // Check if role can be deleted
     const safetyCheck: RoleSafetyCheck = await roleService.canDeleteRole(roleId);
@@ -301,8 +301,8 @@ router.delete('/:roleId', authenticateToken, requireAnyPermission(['roles:delete
  */
 router.post('/:roleId/permissions', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { error, value } = assignPermissionsSchema.validate(req.body);
+    const { roleId } = (req as any).params;
+    const { error, value } = assignPermissionsSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -342,8 +342,8 @@ router.post('/:roleId/permissions', authenticateToken, requireRole('admin'), asy
  */
 router.delete('/:roleId/permissions', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { error, value } = removePermissionsSchema.validate(req.body);
+    const { roleId } = (req as any).params;
+    const { error, value } = removePermissionsSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -379,8 +379,8 @@ router.delete('/:roleId/permissions', authenticateToken, requireRole('admin'), a
  */
 router.get('/:roleId/users', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { page = '1', limit = '50', include_inactive } = req.query as {
+    const { roleId } = (req as any).params;
+    const { page = '1', limit = '50', include_inactive } = (req as any).query as {
       page?: string;
       limit?: string;
       include_inactive?: string;
@@ -414,8 +414,8 @@ router.get('/:roleId/users', authenticateToken, requireRole('admin'), async (req
  */
 router.post('/:roleId/users', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { user_ids } = req.body as { user_ids?: string[] };
+    const { roleId } = (req as any).params;
+    const { user_ids } = (req as any).body as { user_ids?: string[] };
 
     if (!Array.isArray(user_ids) || user_ids.length === 0) {
       res.status(400).json({
@@ -453,8 +453,8 @@ router.post('/:roleId/users', authenticateToken, requireRole('admin'), async (re
  */
 router.delete('/:roleId/users', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { user_ids } = req.body as { user_ids?: string[] };
+    const { roleId } = (req as any).params;
+    const { user_ids } = (req as any).body as { user_ids?: string[] };
 
     if (!Array.isArray(user_ids) || user_ids.length === 0) {
       res.status(400).json({
@@ -492,8 +492,8 @@ router.delete('/:roleId/users', authenticateToken, requireRole('admin'), async (
  */
 router.patch('/:roleId/status', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
-    const { is_active } = req.body as { is_active?: boolean };
+    const { roleId } = (req as any).params;
+    const { is_active } = (req as any).body as { is_active?: boolean };
 
     if (typeof is_active !== 'boolean') {
       res.status(400).json({
@@ -536,7 +536,7 @@ router.patch('/:roleId/status', authenticateToken, requireRole('admin'), async (
  */
 router.get('/:roleId/hierarchy', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
     const hierarchy: RoleHierarchy = await roleService.getRoleHierarchy(roleId);
 
     res.json({

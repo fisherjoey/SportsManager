@@ -143,13 +143,13 @@ class DatabaseConnection {
 
 // Create singleton instance
 const dbConnection = DatabaseConnection.getInstance();
-const db: Knex<Database> = dbConnection.getKnex();
+const knexInstance: Knex<Database> = dbConnection.getKnex();
 
 // Enhanced connection validation with detailed error reporting
 const validateConnection = async (): Promise<boolean> => {
   try {
     const startTime = Date.now();
-    await db.raw('SELECT 1');
+    await knexInstance.raw('SELECT 1');
     const endTime = Date.now();
 
     connectionState.isConnected = true;
@@ -185,7 +185,7 @@ const healthCheck = async (): Promise<{
 }> => {
   try {
     const startTime = Date.now();
-    await db.raw('SELECT 1');
+    await knexInstance.raw('SELECT 1');
     const responseTime = Date.now() - startTime;
 
     return {
@@ -203,7 +203,7 @@ const healthCheck = async (): Promise<{
 // Graceful shutdown function
 const closeConnection = async (): Promise<void> => {
   try {
-    await db.destroy();
+    await knexInstance.destroy();
     connectionState.isConnected = false;
     console.log(`✅ Database: Connection to ${environment} database closed gracefully`);
   } catch (error) {
@@ -216,7 +216,7 @@ const closeConnection = async (): Promise<void> => {
 const withTransaction = async <T>(
   callback: (trx: Knex.Transaction) => Promise<T>
 ): Promise<T> => {
-  return db.transaction(callback);
+  return knexInstance.transaction(callback);
 };
 
 // Schema validation helper
@@ -228,7 +228,7 @@ const validateSchema = async (): Promise<{
   try {
     // Basic schema validation - check for essential tables
     const requiredTables = ['users', 'games', 'teams', 'assignments'];
-    const existingTables = await db.raw(
+    const existingTables = await knexInstance.raw(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
     );
 
@@ -253,11 +253,10 @@ const validateSchema = async (): Promise<{
 };
 
 // Export the knex instance as default for compatibility
-const knexDb = dbConnection.getKnex();
-export default knexDb;
+export default knexInstance;
 
 // Also export named exports for flexibility
-export const db = knexDb;
+export const db = knexInstance;
 export const pool = dbConnection.getPool();
 export {
   validateConnection,

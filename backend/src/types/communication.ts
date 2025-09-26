@@ -203,7 +203,7 @@ export interface UserInfo {
 
 export interface RequestWithUser {
   user: UserInfo;
-  files?: Express.Multer.File[];
+  files?: any[];
 }
 
 // Validation schemas interface

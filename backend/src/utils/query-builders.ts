@@ -322,7 +322,7 @@ export class QueryBuilder {
 
     return {
       page: Math.max(1, parseInt(String(page), 10) || 1),
-      limit: Math.min(300, Math.max(1, parseInt(String(limit), 10) || 50)),
+      limit: Math.min(1000, Math.max(1, parseInt(String(limit), 10) || 50)),
       sortBy: sortBy || null,
       sortOrder: ['asc', 'desc'].includes(String(sortOrder).toLowerCase())
         ? String(sortOrder).toLowerCase() as SortOrder

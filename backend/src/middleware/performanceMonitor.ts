@@ -155,7 +155,7 @@ function performanceMonitor(options: PerformanceMonitorOptions = {}) {
   return (req: RequestWithDb, res: Response, next: NextFunction): void => {
     const startTime = Date.now();
     const originalSend = res.send;
-    const endpoint = `${req.method} ${req.path}`;
+    const endpoint = `${(req as any).method} ${(req as any).path}`;
 
     // Track query count if enabled
     let queryCount = 0;
@@ -205,8 +205,8 @@ function performanceMonitor(options: PerformanceMonitorOptions = {}) {
           timestamp: new Date(),
           statusCode: res.statusCode,
           userId: req.user?.id,
-          userAgent: req.headers['user-agent'] as string,
-          ip: req.ip || (req.connection as any)?.remoteAddress
+          userAgent: (req as any).headers['user-agent'] as string,
+          ip: (req as any).ip || (req as any).connection?.remoteAddress
         };
 
         performanceStats.slowQueries.push(slowQuery);

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <h1>Testing Login</h1>
+    <div id="result"></div>
+
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+
+            try {
+                resultDiv.innerHTML = 'Testing login...';
+
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@cmba.ca',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h2 style="color: green;">✅ Login Successful!</h2>
+                        <p>Token: ${data.token ? 'Received' : 'Missing'}</p>
+                        <p>User ID: ${data.user?.id}</p>
+                        <p>Email: ${data.user?.email}</p>
+                        <p>Roles: ${data.user?.roles?.join(', ')}</p>
+                    `;
+
+                    // Store token in localStorage like the app does
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        console.log('Token stored in localStorage');
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2 style="color: red;">❌ Login Failed</h2>
+                        <p>Error: ${data.error || 'Unknown error'}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h2 style="color: red;">❌ Connection Error</h2>
+                    <p>${error.message}</p>
+                `;
+                console.error('Login error:', error);
+            }
+        }
+
+        // Test on page load
+        testLogin();
+    </script>
+</body>
+</html>

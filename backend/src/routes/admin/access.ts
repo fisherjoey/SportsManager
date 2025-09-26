@@ -124,7 +124,7 @@ router.get('/roles/:roleId/pages',
   authenticateToken,
   requirePermission('roles.read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
 
     // Verify role exists
     const role: Role | null = await RoleService.getRoleById(roleId);
@@ -156,11 +156,11 @@ router.put('/roles/:roleId/pages',
   authenticateToken,
   requirePermission('roles:manage'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
-    const { pageAccess } = req.body as { pageAccess?: PageAccess[] };
+    const { roleId } = (req as any).params;
+    const { pageAccess } = (req as any).body as { pageAccess?: PageAccess[] };
 
     console.log('PUT /roles/:roleId/pages - roleId:', roleId);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request body:', JSON.stringify((req as any).body, null, 2));
     console.log('pageAccess is array:', Array.isArray(pageAccess));
 
     // Validate input
@@ -250,7 +250,7 @@ router.get('/roles/:roleId/apis',
   authenticateToken,
   requirePermission('roles.read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
 
     // Verify role exists
     const role: Role | null = await RoleService.getRoleById(roleId);
@@ -282,8 +282,8 @@ router.put('/roles/:roleId/apis',
   authenticateToken,
   requirePermission('roles.manage'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
-    const { apiAccess } = req.body as { apiAccess?: ApiAccess[] };
+    const { roleId } = (req as any).params;
+    const { apiAccess } = (req as any).body as { apiAccess?: ApiAccess[] };
 
     // Validate input
     if (!Array.isArray(apiAccess)) {
@@ -354,7 +354,7 @@ router.get('/roles/:roleId/features',
   authenticateToken,
   requirePermission('roles.read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
 
     // Verify role exists
     const role: Role | null = await RoleService.getRoleById(roleId);
@@ -386,8 +386,8 @@ router.put('/roles/:roleId/features',
   authenticateToken,
   requirePermission('roles.manage'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
-    const { features } = req.body as { features?: Feature[] };
+    const { roleId } = (req as any).params;
+    const { features } = (req as any).body as { features?: Feature[] };
 
     // Validate input
     if (!Array.isArray(features)) {
@@ -441,7 +441,7 @@ router.get('/roles/:roleId/scopes',
   authenticateToken,
   requirePermission('roles.read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { roleId } = req.params;
+    const { roleId } = (req as any).params;
 
     // Verify role exists
     const role: Role | null = await RoleService.getRoleById(roleId);
@@ -474,7 +474,7 @@ router.get('/roles/:roleId/scopes',
 router.post('/check-page',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { page } = req.body as AccessCheckRequest;
+    const { page } = (req as any).body as AccessCheckRequest;
 
     if (!page) {
       res.status(400).json({
@@ -500,7 +500,7 @@ router.post('/check-page',
 router.post('/check-api',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { method, endpoint } = req.body as AccessCheckRequest;
+    const { method, endpoint } = (req as any).body as AccessCheckRequest;
 
     if (!method || !endpoint) {
       res.status(400).json({
@@ -526,7 +526,7 @@ router.post('/check-api',
 router.post('/check-feature',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { feature } = req.body as AccessCheckRequest;
+    const { feature } = (req as any).body as AccessCheckRequest;
 
     if (!feature) {
       res.status(400).json({

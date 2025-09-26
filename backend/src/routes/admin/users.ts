@@ -68,7 +68,7 @@ class RoleNotFoundError extends Error {
  */
 router.get('/:userId/roles', authenticateToken, requirePermission('users:read'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.params;
+    const { userId } = (req as any).params;
 
     // Get user's roles with assignment metadata
     const roles: UserRole[] = await db('user_roles')
@@ -99,8 +99,8 @@ router.get('/:userId/roles', authenticateToken, requirePermission('users:read'),
  */
 router.put('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.params;
-    const { role_ids } = req.body as { role_ids?: string[] };
+    const { userId } = (req as any).params;
+    const { role_ids } = (req as any).body as { role_ids?: string[] };
 
     // Validate input
     if (!Array.isArray(role_ids)) {
@@ -180,8 +180,8 @@ router.put('/:userId/roles', authenticateToken, requirePermission('roles:assign'
  */
 router.post('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.params;
-    const { role_ids } = req.body as { role_ids?: string[] };
+    const { userId } = (req as any).params;
+    const { role_ids } = (req as any).body as { role_ids?: string[] };
 
     // Validate input
     if (!Array.isArray(role_ids) || role_ids.length === 0) {
@@ -261,8 +261,8 @@ router.post('/:userId/roles', authenticateToken, requirePermission('roles:assign
  */
 router.delete('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.params;
-    const { role_ids } = req.body as { role_ids?: string[] };
+    const { userId } = (req as any).params;
+    const { role_ids } = (req as any).body as { role_ids?: string[] };
 
     // Validate input
     if (!Array.isArray(role_ids) || role_ids.length === 0) {

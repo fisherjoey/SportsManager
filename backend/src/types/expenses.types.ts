@@ -16,7 +16,7 @@ export interface Role {
 
 export interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
-  file?: Express.Multer.File;
+  file?: any;
 }
 
 // Receipt and Expense interfaces

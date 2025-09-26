@@ -456,6 +456,146 @@ describe('QueryBuilder', () => {
   });
 });
 
+  describe('SQL Injection Prevention', () => {
+    it('should safely handle malicious filter values', () => {
+      const maliciousFilters = {
+        status: "'; DROP TABLE users; --",
+        level: "1' OR '1'='1",
+        search: "<script>alert('xss')</script>"
+      };
+
+      // The QueryBuilder should use parameterized queries through Knex
+      // This test verifies the filters are passed through properly
+      QueryBuilder.applyCommonFilters(mockQuery as any, maliciousFilters);
+
+      // Knex handles parameterization, so we just verify the values are passed as parameters
+      expect(mockQuery.where).toHaveBeenCalledWith('status', "'; DROP TABLE users; --");
+      expect(mockQuery.where).toHaveBeenCalledWith('level', "1' OR '1'='1");
+      expect(mockQuery.where).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should handle malicious sort columns safely', () => {
+      const allowedColumns = ['name', 'email'];
+
+      // Try to inject malicious SQL in sortBy
+      const result = QueryBuilder.applySorting(
+        mockQuery as any,
+        'name; DROP TABLE users; --',
+        'asc',
+        allowedColumns
+      );
+
+      // Should not call orderBy since the column is not in allowed list
+      expect(mockQuery.orderBy).not.toHaveBeenCalled();
+      expect(result).toBe(mockQuery);
+    });
+
+    it('should validate sort order values', () => {
+      const allowedColumns = ['name'];
+
+      QueryBuilder.applySorting(
+        mockQuery as any,
+        'name',
+        'asc; DROP TABLE users; --',
+        allowedColumns
+      );
+
+      // Should default to 'asc' for invalid sort order
+      expect(mockQuery.orderBy).toHaveBeenCalledWith('name', 'asc');
+    });
+  });
+
+  describe('Edge Cases and Boundary Conditions', () => {
+    it('should handle extreme pagination values', () => {
+      // Test maximum values
+      QueryBuilder.applyPagination(mockQuery as any, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+
+      expect(mockQuery.limit).toHaveBeenCalledWith(300); // Capped at 300
+      expect(mockQuery.offset).toHaveBeenCalledWith((Number.MAX_SAFE_INTEGER - 1) * 300);
+    });
+
+    it('should handle negative pagination values', () => {
+      QueryBuilder.applyPagination(mockQuery as any, -10, -5);
+
+      expect(mockQuery.limit).toHaveBeenCalledWith(50); // Default limit
+      expect(mockQuery.offset).toHaveBeenCalledWith(0); // Page corrected to 1
+    });
+
+    it('should handle non-numeric pagination strings', () => {
+      QueryBuilder.applyPagination(mockQuery as any, 'not-a-number', 'also-not-a-number');
+
+      expect(mockQuery.limit).toHaveBeenCalledWith(50);
+      expect(mockQuery.offset).toHaveBeenCalledWith(0);
+    });
+
+    it('should handle very long search terms', () => {
+      const longSearch = 'a'.repeat(10000);
+      const filters = { search: longSearch };
+
+      QueryBuilder.applyCommonFilters(mockQuery as any, filters);
+
+      // Should still process the search
+      expect(mockQuery.where).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should handle special characters in search', () => {
+      const specialChars = "!@#$%^&*()[]{}|\\:;\"'<>?,./`~";
+      const filters = { search: specialChars };
+
+      QueryBuilder.applyCommonFilters(mockQuery as any, filters);
+
+      expect(mockQuery.where).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should handle empty arrays for multi-column search', () => {
+      const result = QueryBuilder.applyMultiColumnSearch(mockQuery as any, 'test', []);
+
+      expect(mockQuery.where).not.toHaveBeenCalled();
+      expect(result).toBe(mockQuery);
+    });
+
+    it('should handle unicode characters in search', () => {
+      const unicodeSearch = '测试 テスト тест 🔍';
+      const filters = { search: unicodeSearch };
+
+      QueryBuilder.applyCommonFilters(mockQuery as any, filters);
+
+      expect(mockQuery.where).toHaveBeenCalledWith(expect.any(Function));
+    });
+  });
+
+  describe('Performance Tests', () => {
+    it('should handle large filter objects efficiently', () => {
+      const largeFilters: any = {};
+
+      // Create 1000 filter properties
+      for (let i = 0; i < 1000; i++) {
+        largeFilters[`filter_${i}`] = `value_${i}`;
+      }
+
+      const startTime = Date.now();
+      QueryBuilder.applyCommonFilters(mockQuery as any, largeFilters);
+      const endTime = Date.now();
+
+      // Should complete in reasonable time (less than 100ms)
+      expect(endTime - startTime).toBeLessThan(100);
+    });
+
+    it('should handle large arrays for buildRelatedQuery', () => {
+      const mockDb = jest.fn().mockReturnValue(mockQuery);
+      const largeIds = Array.from({ length: 10000 }, (_, i) => i);
+
+      const startTime = Date.now();
+      QueryBuilder.buildRelatedQuery(mockDb, 'test_table', largeIds);
+      const endTime = Date.now();
+
+      // Should complete in reasonable time
+      expect(endTime - startTime).toBeLessThan(50);
+      expect(mockQuery.whereIn).toHaveBeenCalledWith('id', largeIds);
+    });
+  });
+});
+
 describe('QueryHelpers', () => {
   describe('getGameFilterMap', () => {
     it('should return game filter map', () => {

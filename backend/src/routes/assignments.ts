@@ -163,7 +163,7 @@ const getAssignments = async (
     status, 
     page = 1, 
     limit = 50 
-  } = req.query;
+  } = (req as any).query;
   
   // Build filters object - support both camelCase and snake_case for backward compatibility
   const filters: any = {};
@@ -232,10 +232,10 @@ const getAssignmentById = async (
   res: Response
 ): Promise<Response> => {
   // First check if assignment exists using base service method
-  const assignment = await assignmentService.findById(req.params.id);
+  const assignment = await assignmentService.findById((req as any).params.id);
   
   if (!assignment) {
-    throw ErrorFactory.notFound('Assignment', req.params.id);
+    throw ErrorFactory.notFound('Assignment', (req as any).params.id);
   }
   
   // Get enriched assignment data with joins using service method
@@ -246,7 +246,7 @@ const getAssignmentById = async (
   );
   
   // Find the specific assignment in the enriched results
-  const enrichedAssignment = enrichedResult.data.find((a: any) => a.id === req.params.id);
+  const enrichedAssignment = enrichedResult.data.find((a: any) => a.id === (req as any).params.id);
   
   if (!enrichedAssignment) {
     // Fallback to basic assignment data if enriched data is not available
@@ -298,8 +298,8 @@ const createAssignment = async (
   res: Response
 ): Promise<Response> => {
   const assignmentData = {
-    ...req.body,
-    assigned_by: req.body.assigned_by || req.user?.id // Add assigned_by from authenticated user if not provided
+    ...(req as any).body,
+    assigned_by: (req as any).body.assigned_by || req.user?.id // Add assigned_by from authenticated user if not provided
   };
   
   // Use AssignmentService to create assignment with all validations and conflict checking
@@ -358,7 +358,7 @@ const bulkUpdateAssignments = async (
   req: AuthenticatedRequest<{}, {}, BulkUpdateBody>, 
   res: Response
 ): Promise<Response> => {
-  const { updates } = req.body;
+  const { updates } = (req as any).body;
 
   // Use AssignmentService for bulk updates
   const results = await assignmentService.bulkUpdateAssignments(updates);
@@ -386,7 +386,7 @@ const bulkRemoveAssignments = async (
   req: AuthenticatedRequest<{}, {}, BulkRemoveBody>, 
   res: Response
 ): Promise<Response> => {
-  const { assignment_ids } = req.body;
+  const { assignment_ids } = (req as any).body;
 
   // Use AssignmentService for bulk removal
   const results = await assignmentService.bulkRemoveAssignments(assignment_ids);
@@ -414,18 +414,18 @@ const updateAssignmentStatus = async (
   req: AuthenticatedRequest<{id: string}, {}, AssignmentStatusUpdateBody>, 
   res: Response
 ): Promise<Response> => {
-  const { status } = req.body;
+  const { status } = (req as any).body;
 
   // Use AssignmentService for single status update
   const results = await assignmentService.bulkUpdateAssignments([{
-    assignment_id: req.params.id,
+    assignment_id: (req as any).params.id,
     status
   }]);
 
   if (results.summary.failedUpdates > 0) {
     const error = results.updateErrors[0];
     if (error.error === 'Assignment not found') {
-      throw ErrorFactory.notFound('Assignment', req.params.id);
+      throw ErrorFactory.notFound('Assignment', (req as any).params.id);
     }
     throw new Error(error.error);
   }
@@ -433,12 +433,12 @@ const updateAssignmentStatus = async (
   // Track critical status changes
   if (status === 'accepted') {
     ProductionMonitor.logCriticalPath('assignment.accepted', {
-      assignmentId: req.params.id,
+      assignmentId: (req as any).params.id,
       userId: req.user.id
     });
   } else if (status === 'declined') {
     ProductionMonitor.logCriticalPath('assignment.declined', {
-      assignmentId: req.params.id,
+      assignmentId: (req as any).params.id,
       userId: req.user.id
     });
   }
@@ -457,10 +457,10 @@ const deleteAssignment = async (
   res: Response
 ): Promise<Response> => {
   // Use AssignmentService for single assignment removal
-  const results = await assignmentService.bulkRemoveAssignments([req.params.id]);
+  const results = await assignmentService.bulkRemoveAssignments([(req as any).params.id]);
 
   if (results.summary.successfullyDeleted === 0) {
-    throw ErrorFactory.notFound('Assignment', req.params.id);
+    throw ErrorFactory.notFound('Assignment', (req as any).params.id);
   }
 
   return res.status(204).send();
@@ -473,7 +473,7 @@ const bulkAssignReferees = async (
   req: AuthenticatedRequest<{}, {}, BulkAssignmentBody>, 
   res: Response
 ): Promise<Response> => {
-  const { game_id, assignments, assigned_by } = req.body;
+  const { game_id, assignments, assigned_by } = (req as any).body;
   
   // Create assignments using service with transaction handling
   const createdAssignments = [];
@@ -544,7 +544,7 @@ const checkConflicts = async (
   req: AuthenticatedRequest<{}, {}, CreateAssignmentBody>, 
   res: Response
 ): Promise<Response> => {
-  const conflictAnalysis = await checkAssignmentConflicts(req.body);
+  const conflictAnalysis = await checkAssignmentConflicts((req as any).body);
   
   return ResponseFormatter.sendSuccess(res, {
     hasConflicts: conflictAnalysis.hasConflicts,
@@ -564,7 +564,7 @@ const getAvailableReferees = async (
   res: Response
 ): Promise<Response> => {
   // Use AssignmentService to get available referees with comprehensive analysis
-  const result = await assignmentService.getAvailableRefereesForGame(req.params.game_id);
+  const result = await assignmentService.getAvailableRefereesForGame((req as any).params.game_id);
   
   return ResponseFormatter.sendSuccess(
     res,

@@ -958,9 +958,13 @@ router.post('/upload',
                 await db('games')
                   .where('id', existingGame.id)
                   .update({
-                    game_date: gameData.gameDate,
-                    game_time: gameData.gameTime,
-                    notes: gameData.notes,
+                    date_time: `${gameData.gameDate} ${gameData.gameTime}:00`,
+                    field: gameData.locationName || existingGame.field,
+                    metadata: JSON.stringify({
+                      ...JSON.parse(existingGame.metadata || '{}'),
+                      notes: gameData.notes,
+                      location_address: gameData.locationAddress
+                    }),
                     updated_at: new Date()
                   });
 
@@ -972,17 +976,21 @@ router.post('/upload',
               }
             }
 
-            // Prepare game record
+            // Prepare game record (using actual database schema)
             const gameRecord: any = {
               id: uuidv4(),
-              game_date: gameData.gameDate,
-              game_time: gameData.gameTime,
-              level: gameData.level || options.defaultLevel,
-              game_type: gameData.gameType || options.defaultGameType,
-              status: 'unassigned',
-              refs_needed: 2, // Default value
-              external_id: gameData.externalId,
-              notes: gameData.notes,
+              game_number: Math.floor(Math.random() * 90000) + 10000, // Generate random game number
+              date_time: `${gameData.gameDate} ${gameData.gameTime}:00`, // Combine date and time
+              division: gameData.level || options.defaultLevel || 'Youth',
+              game_type: gameData.gameType || options.defaultGameType || 'League',
+              refs_needed: gameData.refereesRequired || 2,
+              field: gameData.locationName || null,
+              metadata: JSON.stringify({
+                external_id: gameData.externalId,
+                notes: gameData.notes,
+                original_status: gameData.status || 'scheduled',
+                location_address: gameData.locationAddress
+              }),
               created_at: new Date(),
               updated_at: new Date()
             };
@@ -1003,7 +1011,13 @@ router.post('/upload',
                 const newHomeTeam = {
                   id: uuidv4(),
                   name: gameData.homeTeamName,
+                  display_name: gameData.homeTeamName,
+                  team_number: Math.floor(Math.random() * 9000) + 1000, // Random team number
                   league_id: options.leagueId,
+                  metadata: JSON.stringify({
+                    sport: 'Basketball',
+                    level: gameData.level || options.defaultLevel || 'Youth'
+                  }),
                   created_at: new Date(),
                   updated_at: new Date()
                 };
@@ -1021,7 +1035,13 @@ router.post('/upload',
                 const newAwayTeam = {
                   id: uuidv4(),
                   name: gameData.awayTeamName,
+                  display_name: gameData.awayTeamName,
+                  team_number: Math.floor(Math.random() * 9000) + 1000, // Random team number
                   league_id: options.leagueId,
+                  metadata: JSON.stringify({
+                    sport: 'Basketball',
+                    level: gameData.level || options.defaultLevel || 'Youth'
+                  }),
                   created_at: new Date(),
                   updated_at: new Date()
                 };
@@ -1047,7 +1067,11 @@ router.post('/upload',
                 const newLocation = {
                   id: uuidv4(),
                   name: gameData.locationName,
-                  address: gameData.locationAddress,
+                  address: gameData.locationAddress || 'TBD',
+                  city: 'TBD',
+                  province: 'ON',
+                  postal_code: 'TBD',
+                  country: 'Canada',
                   created_at: new Date(),
                   updated_at: new Date()
                 };

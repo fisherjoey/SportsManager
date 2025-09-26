@@ -288,32 +288,52 @@ class ApiClient {
   }
 
   async createGame(gameData: {
-    homeTeam: string;
-    awayTeam: string;
+    homeTeam: {
+      organization: string;
+      ageGroup: string;
+      gender: 'Boys' | 'Girls';
+      rank: number;
+    };
+    awayTeam: {
+      organization: string;
+      ageGroup: string;
+      gender: 'Boys' | 'Girls';
+      rank: number;
+    };
     date: string;
     time: string;
     location: string;
     postalCode: string;
     level: string;
+    gameType: 'Community' | 'Club' | 'Tournament' | 'Private Tournament';
+    division: string;
+    season: string;
     payRate: number;
-    notes?: string;
+    refsNeeded: number;
+    wageMultiplier?: number;
+    wageMultiplierReason?: string;
   }) {
-    // Transform frontend camelCase to backend snake_case
-    const transformedData = {
-      home_team_name: gameData.homeTeam,
-      away_team_name: gameData.awayTeam,
-      game_date: gameData.date,
-      game_time: gameData.time,
+    // Backend expects this exact format
+    const requestBody = {
+      homeTeam: gameData.homeTeam,
+      awayTeam: gameData.awayTeam,
+      date: gameData.date,
+      time: gameData.time,
       location: gameData.location,
-      postal_code: gameData.postalCode,
+      postalCode: gameData.postalCode,
       level: gameData.level,
-      pay_rate: gameData.payRate,
-      notes: gameData.notes
+      gameType: gameData.gameType,
+      division: gameData.division,
+      season: gameData.season,
+      payRate: gameData.payRate,
+      refsNeeded: gameData.refsNeeded,
+      wageMultiplier: gameData.wageMultiplier !== undefined ? gameData.wageMultiplier : 1.0,
+      wageMultiplierReason: gameData.wageMultiplierReason !== undefined ? gameData.wageMultiplierReason : ''
     }
-    
+
     return this.request<any>('/games', {
       method: 'POST',
-      body: JSON.stringify(transformedData)
+      body: JSON.stringify(requestBody)
     })
   }
 

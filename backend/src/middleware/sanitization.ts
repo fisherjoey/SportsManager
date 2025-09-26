@@ -136,7 +136,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
   // Common pagination parameters
   pagination: Joi.object({
     page: Joi.number().integer().min(1).max(1000).default(1),
-    limit: Joi.number().integer().min(1).max(300).default(50),
+    limit: Joi.number().integer().min(1).max(1000).default(50),
     offset: Joi.number().integer().min(0).max(50000).default(0)
   }),
 
@@ -150,7 +150,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
     postal_code: Joi.string().pattern(/^[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d$/),
     location: Joi.string().max(100),
     page: Joi.number().integer().min(1).max(1000).default(1),
-    limit: Joi.number().integer().min(1).max(300).default(50)
+    limit: Joi.number().integer().min(1).max(1000).default(50)
   }),
 
   // Referee filtering parameters
@@ -160,7 +160,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
     postal_code: Joi.string().pattern(/^[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d$/),
     max_distance: Joi.number().integer().min(1).max(200),
     page: Joi.number().integer().min(1).max(1000).default(1),
-    limit: Joi.number().integer().min(1).max(300).default(50)
+    limit: Joi.number().integer().min(1).max(1000).default(50)
   }),
 
   // Assignment filtering parameters
@@ -171,7 +171,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
     date_from: Joi.date().iso(),
     date_to: Joi.date().iso().min(Joi.ref('date_from')),
     page: Joi.number().integer().min(1).max(1000).default(1),
-    limit: Joi.number().integer().min(1).max(300).default(50)
+    limit: Joi.number().integer().min(1).max(1000).default(50)
   }),
 
   // Search parameters
@@ -179,7 +179,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
     q: Joi.string().max(100).pattern(/^[a-zA-Z0-9\s\-_@.]+$/), // Allow only safe characters
     type: Joi.string().valid('games', 'referees', 'teams', 'locations'),
     page: Joi.number().integer().min(1).max(1000).default(1),
-    limit: Joi.number().integer().min(1).max(300).default(50)
+    limit: Joi.number().integer().min(1).max(1000).default(50)
   })
 };
 
@@ -188,6 +188,7 @@ const queryValidationSchemas: QueryValidationSchemas = {
  */
 function validateQuery(schemaName: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
+    console.log(`[DEBUG] validateQuery middleware called with schema: ${schemaName}, URL: ${req.url}, Query:`, req.query);
     const schema = queryValidationSchemas[schemaName];
     if (!schema) {
       console.error(`Unknown query validation schema: ${schemaName}`);

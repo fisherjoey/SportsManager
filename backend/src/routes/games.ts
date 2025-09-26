@@ -27,9 +27,9 @@ import {
   PaginatedResult
 } from '../types';
 import { AuthenticatedRequest } from '../types/auth.types';
-// Import middleware and utilities (typed as any for compatibility during migration)
-const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
-const { validateQuery, validateIdParam } = require('../middleware/sanitization');
+// Import middleware and utilities with proper ES6 imports for TypeScript
+import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../middleware/auth';
+import { validateQuery, validateIdParam } from '../middleware/sanitization';
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery: validateQuerySchema } = require('../middleware/validation');
 import { ErrorFactory } from '../utils/errors';
@@ -192,8 +192,8 @@ const gameSchema = Joi.object({
   season: Joi.string().required(),
   payRate: Joi.number().positive().required(),
   refsNeeded: Joi.number().integer().min(1).max(10).default(2),
-  wageMultiplier: Joi.number().min(0.1).max(5.0).default(1.0),
-  wageMultiplierReason: Joi.string().allow('')
+  wageMultiplier: Joi.number().min(0.1).max(5.0).optional().default(1.0),
+  wageMultiplierReason: Joi.string().allow('', null).optional().default('')
 });
 
 const gameUpdateSchema = Joi.object({
@@ -225,18 +225,18 @@ export const getGames = async (
   res: Response<PaginatedResult<GameResponse>>
 ): Promise<void> => {
   try {
-    console.log('Games endpoint hit with query:', req.query);
+    console.log('Games endpoint hit with query:', (req as any).query);
     
     const filters = {
-      status: req.query.status,
-      level: req.query.level,
-      game_type: req.query.game_type,
-      date_from: req.query.date_from,
-      date_to: req.query.date_to,
-      postal_code: req.query.postal_code
+      status: (req as any).query.status,
+      level: (req as any).query.level,
+      game_type: (req as any).query.game_type,
+      date_from: (req as any).query.date_from,
+      date_to: (req as any).query.date_to,
+      postal_code: (req as any).query.postal_code
     };
     
-    const paginationParams = QueryBuilder.validatePaginationParams(req.query);
+    const paginationParams = QueryBuilder.validatePaginationParams((req as any).query);
     const { page, limit } = paginationParams;
   
     // Try to get cached results first
@@ -419,7 +419,7 @@ export const getGameById = async (
   req: AuthenticatedRequest<{ id: string }>,
   res: Response<GameWithTeamsView | { error: string }>
 ): Promise<void> => {
-  const gameId = req.params.id;
+  const gameId = (req as any).params.id;
   
   // Try cache first
   const cachedGame = await CacheHelpers.cachePaginatedQuery(
@@ -470,7 +470,7 @@ export const getGameById = async (
   );
   
   if (!cachedGame) {
-    throw ErrorFactory.notFound('Game', req.params.id);
+    throw ErrorFactory.notFound('Game', (req as any).params.id);
   }
   
   res.json(cachedGame);
@@ -484,7 +484,10 @@ export const createGame = async (
   req: AuthenticatedRequest<{}, {}, CreateGameBody>,
   res: Response
 ): Promise<void> => {
-  const value = req.body;
+  const value = (req as any).body;
+
+  // Create a combined datetime from date and time
+  const gameDateTime = new Date(`${value.date}T${value.time}:00.000Z`);
 
   // Check for venue scheduling conflicts
   const conflictCheck: ConflictCheckResult = await checkGameSchedulingConflicts({
@@ -493,55 +496,162 @@ export const createGame = async (
     game_time: value.time
   });
 
-  // Transform frontend data to database format
+  // First, find or create teams and league
+  let homeTeamId = null;
+  let awayTeamId = null;
+  let leagueId = null;
+
+  try {
+    // Find or create league
+    const leagueName = `${value.homeTeam.organization} ${value.homeTeam.ageGroup} ${value.homeTeam.gender} ${value.division}`;
+
+    let league = await db('leagues')
+      .where('organization', value.homeTeam.organization)
+      .where('age_group', value.homeTeam.ageGroup)
+      .where('gender', value.homeTeam.gender)
+      .where('division', value.division)
+      .where('season', value.season)
+      .first();
+
+    if (!league) {
+      [league] = await db('leagues')
+        .insert({
+          organization: value.homeTeam.organization,
+          age_group: value.homeTeam.ageGroup,
+          gender: value.homeTeam.gender,
+          division: value.division,
+          season: value.season,
+          name: leagueName,
+          display_name: leagueName
+        })
+        .returning('*');
+    }
+
+    leagueId = league.id;
+
+    // Find or create home team
+    let homeTeam = await db('teams')
+      .where('league_id', leagueId)
+      .where('team_number', value.homeTeam.rank.toString())
+      .first();
+
+    if (!homeTeam) {
+      const homeTeamName = `${value.homeTeam.organization} ${value.homeTeam.ageGroup} ${value.homeTeam.gender} #${value.homeTeam.rank}`;
+      [homeTeam] = await db('teams')
+        .insert({
+          league_id: leagueId,
+          team_number: value.homeTeam.rank.toString(),
+          name: homeTeamName,
+          display_name: homeTeamName
+        })
+        .returning('*');
+    }
+
+    homeTeamId = homeTeam.id;
+
+    // Find or create away team
+    let awayTeam = await db('teams')
+      .where('league_id', leagueId)
+      .where('team_number', value.awayTeam.rank.toString())
+      .first();
+
+    if (!awayTeam) {
+      const awayTeamName = `${value.awayTeam.organization} ${value.awayTeam.ageGroup} ${value.awayTeam.gender} #${value.awayTeam.rank}`;
+      [awayTeam] = await db('teams')
+        .insert({
+          league_id: leagueId,
+          team_number: value.awayTeam.rank.toString(),
+          name: awayTeamName,
+          display_name: awayTeamName
+        })
+        .returning('*');
+    }
+
+    awayTeamId = awayTeam.id;
+
+  } catch (error) {
+    console.error('Error creating teams/league - Detailed error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail
+    });
+    throw new Error(`Failed to create or find teams and league: ${error.message}`);
+  }
+
+  // Transform frontend data to database format matching current schema
   const dbData = {
-    home_team: JSON.stringify(value.homeTeam),
-    away_team: JSON.stringify(value.awayTeam),
-    date_time: value.date,
-    game_time: value.time,
-    location: value.location,
-    postal_code: value.postalCode,
-    level: value.level,
-    game_type: value.gameType,
+    game_number: `G${Date.now()}`, // Generate unique game number
+    home_team_id: homeTeamId,
+    away_team_id: awayTeamId,
+    league_id: leagueId,
+    date_time: gameDateTime,
+    field: value.location,
     division: value.division,
-    season: value.season,
-    pay_rate: value.payRate,
+    game_type: value.gameType,
     refs_needed: value.refsNeeded,
+    base_wage: value.payRate,
     wage_multiplier: value.wageMultiplier,
-    wage_multiplier_reason: value.wageMultiplierReason
+    metadata: JSON.stringify({
+      season: value.season,
+      level: value.level,
+      postalCode: value.postalCode,
+      wageMultiplierReason: value.wageMultiplierReason,
+      homeTeam: value.homeTeam,
+      awayTeam: value.awayTeam
+    })
   };
 
-  const [game] = await db('games').insert(dbData).returning('*');
-    
+  console.log('Attempting to insert game with data:', JSON.stringify(dbData, null, 2));
+
+  let game;
+  try {
+    const result = await db('games').insert(dbData).returning('*');
+    game = result[0];
+    console.log('Game inserted successfully:', game.id);
+  } catch (dbError) {
+    console.error('Database insert error:', dbError);
+    console.error('Error details:', {
+      message: dbError.message,
+      code: dbError.code,
+      detail: dbError.detail,
+      table: dbError.table,
+      constraint: dbError.constraint
+    });
+    throw dbError;
+  }
+
   // Invalidate related caches
   CacheInvalidation.invalidateGames(queryCache);
-    
+
   // Transform response back to frontend format
+  const metadata = game.metadata ? JSON.parse(game.metadata) : {};
   const transformedGame: GameResponse = {
     id: game.id,
-    homeTeam: JSON.parse(game.home_team),
-    awayTeam: JSON.parse(game.away_team),
-    date: game.game_date,
-    time: game.game_time,
-    startTime: game.game_time,
-    location: game.location,
-    postalCode: game.postal_code,
-    level: game.level,
-    gameType: game.game_type,
-    division: game.division,
-    season: game.season,
-    payRate: game.pay_rate,
-    status: game.status,
-    refsNeeded: game.refs_needed,
-    wageMultiplier: game.wage_multiplier,
-    wageMultiplierReason: game.wage_multiplier_reason,
+    homeTeam: metadata.homeTeam || value.homeTeam,
+    awayTeam: metadata.awayTeam || value.awayTeam,
+    date: game.date_time ? new Date(game.date_time).toISOString().split('T')[0] : '',
+    time: game.date_time ? new Date(game.date_time).toTimeString().slice(0, 5) : '',
+    startTime: game.date_time ? new Date(game.date_time).toTimeString().slice(0, 5) : '',
+    location: game.field || '',
+    postalCode: metadata.postalCode || '',
+    level: metadata.level || value.level,
+    gameType: game.game_type || 'Community',
+    division: game.division || '',
+    season: metadata.season || '',
+    payRate: parseFloat(game.base_wage) || 0,
+    status: 'unassigned',
+    refsNeeded: game.refs_needed || 2,
+    wageMultiplier: parseFloat(game.wage_multiplier) || 1.0,
+    wageMultiplierReason: metadata.wageMultiplierReason || '',
     assignments: [],
     notes: '',
     assignedReferees: [],
     createdAt: game.created_at,
     updatedAt: game.updated_at
   };
-    
+
   const response: any = {
     success: true,
     data: transformedGame
@@ -552,7 +662,7 @@ export const createGame = async (
     response.warnings = [`Venue conflict detected: ${conflictCheck.errors.join('; ')}`];
     response.conflicts = conflictCheck.conflicts;
   }
-    
+
   ResponseFormatter.sendCreated(res, transformedGame, 'Game created successfully', `/api/games/${game.id}`);
 };
 
@@ -565,13 +675,13 @@ export const updateGame = async (
   res: Response
 ): Promise<void> => {
   try {
-    const value = req.body;
+    const value = (req as any).body;
 
     // Check for venue scheduling conflicts if location, date, or time is being updated
     let conflictCheck: ConflictCheckResult = { hasConflicts: false, errors: [] };
     if (value.location || value.date || value.time) {
       // Get current game data to merge with updates
-      const currentGame = await db('games').where('id', req.params.id).first();
+      const currentGame = await db('games').where('id', (req as any).params.id).first();
       if (!currentGame) {
         res.status(404).json({ error: 'Game not found' });
         return;
@@ -581,11 +691,11 @@ export const updateGame = async (
         location: value.location || currentGame.location,
         date_time: value.date || currentGame.date_time,
         game_time: value.time || currentGame.game_time
-      }, req.params.id);
+      }, (req as any).params.id);
     }
 
     const [game] = await db('games')
-      .where('id', req.params.id)
+      .where('id', (req as any).params.id)
       .update({ ...value, updated_at: new Date() })
       .returning('*');
 
@@ -595,7 +705,7 @@ export const updateGame = async (
     }
     
     // Invalidate related caches
-    CacheInvalidation.invalidateGames(queryCache, req.params.id);
+    CacheInvalidation.invalidateGames(queryCache, (req as any).params.id);
 
     const response: any = {
       success: true,
@@ -624,7 +734,7 @@ export const updateGameStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { status } = req.body;
+    const { status } = (req as any).body;
     const validStatuses = ['assigned', 'unassigned', 'up-for-grabs', 'completed', 'cancelled'];
     
     if (!validStatuses.includes(status)) {
@@ -633,7 +743,7 @@ export const updateGameStatus = async (
     }
 
     const [game] = await db('games')
-      .where('id', req.params.id)
+      .where('id', (req as any).params.id)
       .update({ status, updated_at: new Date() })
       .returning('*');
 
@@ -643,7 +753,7 @@ export const updateGameStatus = async (
     }
     
     // Invalidate related caches
-    CacheInvalidation.invalidateGames(queryCache, req.params.id);
+    CacheInvalidation.invalidateGames(queryCache, (req as any).params.id);
 
     res.json(game);
   } catch (error) {
@@ -661,7 +771,7 @@ export const deleteGame = async (
   res: Response
 ): Promise<void> => {
   try {
-    const deletedCount = await db('games').where('id', req.params.id).del();
+    const deletedCount = await db('games').where('id', (req as any).params.id).del();
     
     if (deletedCount === 0) {
       res.status(404).json({ error: 'Game not found' });
@@ -669,7 +779,7 @@ export const deleteGame = async (
     }
     
     // Invalidate related caches
-    CacheInvalidation.invalidateGames(queryCache, req.params.id);
+    CacheInvalidation.invalidateGames(queryCache, (req as any).params.id);
 
     res.status(204).send();
   } catch (error) {
@@ -687,7 +797,7 @@ export const bulkImportGames = async (
   res: Response<BulkImportResult>
 ): Promise<void> => {
   try {
-    const { games } = req.body;
+    const { games } = (req as any).body;
     
     if (!Array.isArray(games) || games.length === 0) {
       res.status(400).json({ 
@@ -920,7 +1030,8 @@ async function getOrCreateLocation(trx: any, locationName: string, postalCode: s
 // ============================================================================
 
 // GET /api/games - Get all games with optional filters
-router.get('/', authenticateToken, validateQuery('gamesFilter'), enhancedAsyncHandler(getGames));
+// Note: validateQuery runs before authenticateToken to ensure proper error codes for invalid parameters
+router.get('/', validateQuery('gamesFilter'), authenticateToken, enhancedAsyncHandler(getGames));
 
 // GET /api/games/:id - Get specific game
 router.get('/:id', authenticateToken, validateIdParam, enhancedAsyncHandler(getGameById));
