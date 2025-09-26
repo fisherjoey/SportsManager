@@ -1,0 +1,270 @@
+---
+name: Game Policy Test Suite
+description: Tests for game resource policy
+principals:
+  admin_user:
+    id: admin-123
+    roles:
+      - admin
+    attr:
+      organizationId: org-sports-league
+      primaryRegionId: region-north
+      regionIds:
+        - region-north
+        - region-south
+      isActive: true
+
+  assignor_user:
+    id: assignor-456
+    roles:
+      - assignor
+    attr:
+      organizationId: org-sports-league
+      primaryRegionId: region-north
+      regionIds:
+        - region-north
+      isActive: true
+
+  referee_user:
+    id: referee-789
+    roles:
+      - referee
+    attr:
+      organizationId: org-sports-league
+      primaryRegionId: region-north
+      regionIds:
+        - region-north
+      isActive: true
+
+  guest_user:
+    id: guest-000
+    roles:
+      - guest
+    attr:
+      isActive: true
+
+resources:
+  scheduled_game_north:
+    kind: game
+    id: game-123
+    attr:
+      organizationId: org-sports-league
+      regionId: region-north
+      createdBy: assignor-456
+      status: scheduled
+
+  in_progress_game:
+    kind: game
+    id: game-456
+    attr:
+      organizationId: org-sports-league
+      regionId: region-north
+      createdBy: assignor-456
+      status: in_progress
+
+  game_different_org:
+    kind: game
+    id: game-789
+    attr:
+      organizationId: org-different
+      regionId: region-north
+      createdBy: assignor-999
+      status: scheduled
+
+  game_different_region:
+    kind: game
+    id: game-101
+    attr:
+      organizationId: org-sports-league
+      regionId: region-west
+      createdBy: assignor-456
+      status: scheduled
+
+tests:
+  - name: Admin can do everything in their organization
+    input:
+      principals:
+        - admin_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - view
+        - create
+        - update
+        - delete
+        - assign
+    expected:
+      - principal: admin_user
+        resource: scheduled_game_north
+        actions:
+          view: EFFECT_ALLOW
+          create: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          delete: EFFECT_ALLOW
+          assign: EFFECT_ALLOW
+
+  - name: Assignor can view games in their region
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - view
+        - list
+    expected:
+      - principal: assignor_user
+        resource: scheduled_game_north
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+
+  - name: Assignor can create games in their region
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - create
+    expected:
+      - principal: assignor_user
+        resource: scheduled_game_north
+        actions:
+          create: EFFECT_ALLOW
+
+  - name: Assignor can update their own scheduled games
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - update
+    expected:
+      - principal: assignor_user
+        resource: scheduled_game_north
+        actions:
+          update: EFFECT_ALLOW
+
+  - name: Assignor cannot update games in progress
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - in_progress_game
+      actions:
+        - update
+    expected:
+      - principal: assignor_user
+        resource: in_progress_game
+        actions:
+          update: EFFECT_DENY
+
+  - name: Assignor can delete their own scheduled games
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - delete
+    expected:
+      - principal: assignor_user
+        resource: scheduled_game_north
+        actions:
+          delete: EFFECT_ALLOW
+
+  - name: Assignor cannot access games in different organization
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - game_different_org
+      actions:
+        - view
+        - create
+        - update
+        - delete
+    expected:
+      - principal: assignor_user
+        resource: game_different_org
+        actions:
+          view: EFFECT_DENY
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: Assignor cannot access games in different region
+    input:
+      principals:
+        - assignor_user
+      resources:
+        - game_different_region
+      actions:
+        - view
+        - create
+        - update
+    expected:
+      - principal: assignor_user
+        resource: game_different_region
+        actions:
+          view: EFFECT_DENY
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+
+  - name: Referee can view games in their region
+    input:
+      principals:
+        - referee_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - view
+        - list
+    expected:
+      - principal: referee_user
+        resource: scheduled_game_north
+        actions:
+          view: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+
+  - name: Referee cannot create or update games
+    input:
+      principals:
+        - referee_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - create
+        - update
+        - delete
+        - assign
+    expected:
+      - principal: referee_user
+        resource: scheduled_game_north
+        actions:
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+          assign: EFFECT_DENY
+
+  - name: Guest cannot access any games
+    input:
+      principals:
+        - guest_user
+      resources:
+        - scheduled_game_north
+      actions:
+        - view
+        - create
+        - update
+        - delete
+    expected:
+      - principal: guest_user
+        resource: scheduled_game_north
+        actions:
+          view: EFFECT_DENY
+          create: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY

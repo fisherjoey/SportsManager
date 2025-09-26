@@ -1,0 +1,101 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for referee resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "referee"
+  rules:
+    # Admin rules - full access within their organization
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    # Assignor rules
+    - actions: ['view', 'list']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+
+    - actions: ['create']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - actions: ['update']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.isActive == true
+
+    - actions: ['delete']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: >
+                  !has(request.resource.attr.activeAssignments) ||
+                  request.resource.attr.activeAssignments == 0
+
+    - actions: ['assign']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.isAvailable == true
+              - expr: request.resource.attr.isActive == true
+
+    # Referee rules - can view and update their own profile
+    - actions: ['view']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      condition:
+        match:
+          any:
+            of:
+              - expr: request.resource.attr.userId == request.principal.id
+              - expr: >
+                  request.resource.attr.organizationId == request.principal.attr.organizationId &&
+                  request.resource.attr.primaryRegionId in request.principal.attr.regionIds
+
+    - actions: ['update']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      condition:
+        match:
+          expr: request.resource.attr.userId == request.principal.id
+
+    # Guest rules - can view public referee profiles
+    - actions: ['view']
+      effect: EFFECT_ALLOW
+      roles:
+        - guest
+      condition:
+        match:
+          expr: request.resource.attr.profileVisibility == "public"

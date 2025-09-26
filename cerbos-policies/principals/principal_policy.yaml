@@ -1,0 +1,15 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Base principal policy defining common roles
+principalPolicy:
+  version: "default"
+  principal: "*"
+  rules:
+    - resource: "*"
+      actions:
+        - name: "*"
+          action: "*"
+          condition:
+            match:
+              expr: request.principal.attr.isActive == true
+          effect: EFFECT_ALLOW
