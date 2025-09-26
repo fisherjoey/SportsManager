@@ -29,6 +29,8 @@ import {
 import { AuthenticatedRequest } from '../types/auth.types';
 // Import middleware and utilities with proper ES6 imports for TypeScript
 import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+import { getGameResourceAttributes } from '../middleware/cerbos-migration-helpers';
 import { validateQuery, validateIdParam } from '../middleware/sanitization';
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery: validateQuerySchema } = require('../middleware/validation');
@@ -1031,24 +1033,54 @@ async function getOrCreateLocation(trx: any, locationName: string, postalCode: s
 
 // GET /api/games - Get all games with optional filters
 // Note: validateQuery runs before authenticateToken to ensure proper error codes for invalid parameters
-router.get('/', validateQuery('gamesFilter'), authenticateToken, enhancedAsyncHandler(getGames));
+router.get('/', validateQuery('gamesFilter'), authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'list',
+}), enhancedAsyncHandler(getGames));
 
 // GET /api/games/:id - Get specific game
-router.get('/:id', authenticateToken, validateIdParam, enhancedAsyncHandler(getGameById));
+router.get('/:id', authenticateToken, validateIdParam, requireCerbosPermission({
+  resource: 'game',
+  action: 'view',
+  getResourceId: (req) => req.params.id,
+  getResourceAttributes: async (req) => await getGameResourceAttributes(req.params.id),
+}), enhancedAsyncHandler(getGameById));
 
 // POST /api/games - Create new game
-router.post('/', authenticateToken, requirePermission('games:create'), validateBody(gameSchema), enhancedAsyncHandler(createGame));
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'create',
+}), validateBody(gameSchema), enhancedAsyncHandler(createGame));
 
 // PUT /api/games/:id - Update game
-router.put('/:id', authenticateToken, requireAnyPermission(['games:update', 'games:manage']), validateParams(IdParamSchema), validateBody(gameUpdateSchema), enhancedAsyncHandler(updateGame));
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+  getResourceAttributes: async (req) => await getGameResourceAttributes(req.params.id),
+}), validateParams(IdParamSchema), validateBody(gameUpdateSchema), enhancedAsyncHandler(updateGame));
 
 // PATCH /api/games/:id/status - Update game status
-router.patch('/:id/status', authenticateToken, requireAnyPermission(['games:update', 'games:manage']), enhancedAsyncHandler(updateGameStatus));
+router.patch('/:id/status', authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+  getResourceAttributes: async (req) => await getGameResourceAttributes(req.params.id),
+}), enhancedAsyncHandler(updateGameStatus));
 
 // DELETE /api/games/:id - Delete game
-router.delete('/:id', authenticateToken, requirePermission('games:delete'), enhancedAsyncHandler(deleteGame));
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+  getResourceAttributes: async (req) => await getGameResourceAttributes(req.params.id),
+  forbiddenMessage: 'You do not have permission to delete this game',
+}), enhancedAsyncHandler(deleteGame));
 
 // POST /api/games/bulk-import - Bulk import games
-router.post('/bulk-import', authenticateToken, requireAnyPermission(['games:create', 'games:manage']), enhancedAsyncHandler(bulkImportGames));
+router.post('/bulk-import', authenticateToken, requireCerbosPermission({
+  resource: 'game',
+  action: 'create',
+}), enhancedAsyncHandler(bulkImportGames));
 
 export default router;
