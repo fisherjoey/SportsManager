@@ -17,12 +17,14 @@ import type {
   CerbosBatchCheckResult,
 } from '../../types/cerbos.types';
 
+var sharedMockClient = {
+  checkResource: jest.fn(),
+  checkResources: jest.fn(),
+  planResources: jest.fn(),
+};
+
 jest.mock('@cerbos/grpc', () => ({
-  GRPC: jest.fn().mockImplementation(() => ({
-    checkResource: jest.fn(),
-    checkResources: jest.fn(),
-    planResources: jest.fn(),
-  })),
+  GRPC: jest.fn().mockImplementation(() => sharedMockClient),
 }));
 
 describe('CerbosAuthService', () => {
@@ -56,10 +58,11 @@ describe('CerbosAuthService', () => {
   };
 
   beforeEach(() => {
-    const { GRPC } = require('@cerbos/grpc');
-    mockCerbosClient = new GRPC();
-    service = new CerbosAuthService();
-    (service as any).client = mockCerbosClient;
+    sharedMockClient.checkResource.mockClear();
+    sharedMockClient.checkResources.mockClear();
+    sharedMockClient.planResources.mockClear();
+    service = CerbosAuthService.getInstance();
+    mockCerbosClient = sharedMockClient;
   });
 
   afterEach(() => {
