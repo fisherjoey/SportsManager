@@ -1,0 +1,82 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: |-
+  Common derived roles used across all resources in Sports Manager.
+  These roles define conditional relationships between users and resources.
+
+derivedRoles:
+  name: common_roles
+  definitions:
+    - name: owner
+      parentRoles:
+        - assignor
+        - admin
+        - super_admin
+      condition:
+        match:
+          any:
+            of:
+              - expr: request.resource.attr.ownerId == request.principal.id
+              - expr: request.resource.attr.createdBy == request.principal.id
+
+    - name: same_organization
+      parentRoles:
+        - assignor
+        - referee
+        - coach
+        - admin
+        - super_admin
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - name: same_region
+      parentRoles:
+        - assignor
+        - referee
+        - admin
+        - super_admin
+      condition:
+        match:
+          expr: request.resource.attr.regionId in request.principal.attr.regionIds
+
+    - name: primary_region_manager
+      parentRoles:
+        - assignor
+        - admin
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.regionId == request.principal.attr.primaryRegionId
+              - expr: request.principal.attr.isActive == true
+
+    - name: assigned_referee
+      parentRoles:
+        - referee
+      condition:
+        match:
+          expr: request.resource.attr.refereeId == request.principal.id
+
+    - name: active_user
+      parentRoles:
+        - assignor
+        - referee
+        - coach
+        - admin
+        - super_admin
+      condition:
+        match:
+          expr: request.principal.attr.isActive == true
+
+    - name: self
+      parentRoles:
+        - assignor
+        - referee
+        - coach
+        - admin
+        - super_admin
+        - guest
+      condition:
+        match:
+          expr: request.resource.id == request.principal.id

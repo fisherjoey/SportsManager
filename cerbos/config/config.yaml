@@ -1,0 +1,34 @@
+---
+# Cerbos Server Configuration
+# Sports Manager Application
+
+server:
+  httpListenAddr: ":3592"
+  grpcListenAddr: ":3593"
+  requestLimits:
+    maxRequestBytes: 4194304  # 4MB
+
+storage:
+  driver: "disk"
+  disk:
+    directory: "/policies"
+    watchForChanges: true
+
+# Audit logging for compliance
+audit:
+  enabled: true
+  backend: local
+  local:
+    storagePath: /data/audit.log
+    advanced:
+      maxFileSizeMB: 100
+      maxFileAgeDays: 30
+      maxBackups: 10
+
+# Schema validation
+schema:
+  enforcement: reject  # Reject invalid policies
+
+# Telemetry (disabled for local dev)
+telemetry:
+  disabled: true

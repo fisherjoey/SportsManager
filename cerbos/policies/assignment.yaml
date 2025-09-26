@@ -1,0 +1,152 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: assignment
+  importDerivedRoles:
+    - common_roles
+  schemas:
+    principalSchema:
+      ref: cerbos:///principal.yaml
+    resourceSchema:
+      ref: cerbos:///resource.assignment.yaml
+
+  rules:
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      name: admins-view-all
+
+    - actions:
+        - view
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - assigned_referee
+      name: referee-view-own
+
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+      name: assignors-view-org
+
+    - actions:
+        - create
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+      name: assignors-create
+
+    - actions:
+        - update
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status != "completed"
+              - expr: request.resource.attr.status != "cancelled"
+      name: owner-update-active
+
+    - actions:
+        - update
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - assigned_referee
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status == "offered"
+      name: referee-accept-decline
+
+    - actions:
+        - delete
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: admins-delete
+
+    - actions:
+        - delete
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.status == "pending"
+              - expr: request.principal.attr.isActive == true
+      name: owner-delete-pending
+
+    - actions:
+        - approve
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status == "accepted"
+      name: assignors-approve
+
+    - actions:
+        - reject
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          expr: request.principal.attr.isActive == true
+      name: assignors-reject
+
+    - actions:
+        - change_status
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          expr: request.principal.attr.isActive == true
+      name: assignors-change-status

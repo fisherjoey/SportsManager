@@ -50,7 +50,10 @@
       "Bash(PGPASSWORD=postgres123 \"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -d sports_management -f 20250926000001_add_multi_tenancy.sql)",
       "Bash(PGPASSWORD=postgres123 \"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -d sports_management -f 20250926000002_seed_default_organization.sql)",
       "Bash(PGPASSWORD=postgres123 \"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -d sports_management -c \"SELECT id, name, slug FROM organizations; SELECT COUNT(*) as user_count FROM users WHERE organization_id IS NOT NULL; SELECT COUNT(*) as game_count FROM games WHERE organization_id IS NOT NULL;\")",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []

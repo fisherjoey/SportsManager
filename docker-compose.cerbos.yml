@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:latest
+    container_name: sports-manager-cerbos
+    ports:
+      - "3592:3592"  # HTTP API
+      - "3593:3593"  # gRPC API (optional)
+    volumes:
+      - ./cerbos/policies:/policies:ro
+      - ./cerbos/config:/config:ro
+      - cerbos-data:/data
+    command:
+      - "server"
+      - "--config=/config/config.yaml"
+    environment:
+      - CERBOS_LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3592/_cerbos/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - sports-manager-network
+
+  # Optional: Cerbos Playground for policy testing
+  # Uncomment to enable interactive policy playground
+  # cerbos-playground:
+  #   image: ghcr.io/cerbos/cerbos-playground:latest
+  #   container_name: sports-manager-cerbos-playground
+  #   ports:
+  #     - "3594:3594"
+  #   depends_on:
+  #     cerbos:
+  #       condition: service_healthy
+  #   environment:
+  #     - CERBOS_SERVER=cerbos:3592
+  #   networks:
+  #     - sports-manager-network
+
+volumes:
+  cerbos-data:
+    driver: local
+
+networks:
+  sports-manager-network:
+    driver: bridge

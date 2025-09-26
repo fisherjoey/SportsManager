@@ -1,0 +1,179 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: game
+  importDerivedRoles:
+    - common_roles
+  schemas:
+    principalSchema:
+      ref: cerbos:///principal.yaml
+    resourceSchema:
+      ref: cerbos:///resource.game.yaml
+
+  rules:
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      name: admins-view-all
+
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - same_organization
+        - active_user
+      name: org-members-view
+
+    - actions:
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - same_region
+      name: region-members-view
+
+    - actions:
+        - create
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+        - assignor
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+      name: assignors-create-in-org
+
+    - actions:
+        - update
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+        - same_region
+      roles:
+        - assignor
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status != "completed"
+              - expr: request.resource.attr.status != "cancelled"
+      name: assignors-update-own-region
+
+    - actions:
+        - update
+        - delete
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: admins-update-delete
+
+    - actions:
+        - delete
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.status == "draft"
+              - expr: request.principal.attr.isActive == true
+      name: owner-delete-draft
+
+    - actions:
+        - assign_referee
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_region
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status == "scheduled"
+      name: assignors-assign-referees
+
+    - actions:
+        - unassign_referee
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_region
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.isActive == true
+              - expr: request.resource.attr.status != "completed"
+      name: assignors-unassign-referees
+
+    - actions:
+        - change_status
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_region
+      condition:
+        match:
+          expr: request.principal.attr.isActive == true
+      name: assignors-change-status
+
+    - actions:
+        - export
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: assignors-export
+
+    - actions:
+        - import
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - admin
+        - super_admin
+      condition:
+        match:
+          expr: request.principal.attr.isActive == true
+      name: assignors-import
+
+    - actions:
+        - approve
+        - reject
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: admins-approve-reject
