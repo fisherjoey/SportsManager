@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload } from 'lucide-react'
+import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload, FileUp } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,14 @@ import { useAuth } from '@/components/auth-provider'
 import { usePermissions } from '@/hooks/usePermissions'
 import { MenteeSelector } from '@/components/MenteeSelector'
 import { MenteeGamesView } from '@/components/MenteeGamesView'
+import CalendarUpload from '@/components/calendar-upload'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +52,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const [selectedDate, setSelectedDate] = useState<string>(initialDateFilter || 'all')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null)
+  const [calendarUploadOpen, setCalendarUploadOpen] = useState(false)
   // Mentorship-related state
   const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(null)
   const [selectedMenteeName, setSelectedMenteeName] = useState<string>('')
@@ -91,39 +100,40 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   }
 
   // Fetch games from API
-  useEffect(() => {
-    const fetchGames = async () => {
-      if (!isAuthenticated) {
-        setLoading(false)
-        return
-      }
-      
-      try {
-        setLoading(true)
-        // Initialize token before making API calls
-        apiClient.initializeToken()
-        const response = await apiClient.getGames({ limit: 100 })
-        setGames(response.data || [])
-        // Set total count from pagination if available
-        if (response.pagination?.total) {
-          setTotalGames(response.pagination.total)
-        } else {
-          setTotalGames(response.data?.length || 0)
-        }
-      } catch (error) {
-        console.error('Failed to fetch games:', error)
-        toast({
-          title: 'Error',
-          description: 'Failed to load games. Please try again later.',
-          variant: 'destructive'
-        })
-      } finally {
-        setLoading(false)
-      }
+  const fetchGames = async () => {
+    if (!isAuthenticated) {
+      setLoading(false)
+      return
     }
 
+    try {
+      setLoading(true)
+      // Initialize token before making API calls
+      apiClient.initializeToken()
+      const response = await apiClient.getGames({ limit: 100 })
+      setGames(response.data || [])
+      // Set total count from pagination if available
+      if (response.pagination?.total) {
+        setTotalGames(response.pagination.total)
+      } else {
+        setTotalGames(response.data?.length || 0)
+      }
+    } catch (error) {
+      console.error('Failed to fetch games:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load games. Please try again later.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch games on mount and when authentication changes
+  useEffect(() => {
     fetchGames()
-  }, [isAuthenticated, toast])
+  }, [isAuthenticated])
 
   // Update date filter when initialDateFilter prop changes
   useEffect(() => {
@@ -381,6 +391,13 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
             </Button>
           </>
         )}
+        <Button
+          variant="outline"
+          onClick={() => setCalendarUploadOpen(true)}
+        >
+          <FileUp className="h-4 w-4 mr-2" />
+          Import Calendar
+        </Button>
         <Button variant="outline">
           <Upload className="h-4 w-4 mr-2" />
           Import CSV
@@ -555,6 +572,29 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Calendar Upload Dialog */}
+      <Dialog open={calendarUploadOpen} onOpenChange={setCalendarUploadOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Games from Calendar</DialogTitle>
+            <DialogDescription>
+              Upload an ICS calendar file to import games into the system
+            </DialogDescription>
+          </DialogHeader>
+          <CalendarUpload
+            onUploadComplete={(result) => {
+              toast({
+                title: 'Import Complete',
+                description: `Successfully imported ${result.imported} games`,
+              })
+              setCalendarUploadOpen(false)
+              // Refresh games list
+              fetchGames()
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }

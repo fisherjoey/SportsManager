@@ -77,3 +77,4 @@ logs
 *.log
 *storybook.log
 storybook-static
+.claude/settings.local.json

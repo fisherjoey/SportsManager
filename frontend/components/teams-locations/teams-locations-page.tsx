@@ -65,27 +65,49 @@ export function TeamsLocationsPage() {
       try {
         setLoading(true)
         setError(null)
-        
+
         console.log('Starting to fetch data...')
-        
+
+        // Check if user is authenticated
+        const token = localStorage.getItem('auth_token')
+        if (!token) {
+          console.warn('No authentication token found')
+          setError('Please log in to view teams and locations')
+          setLoading(false)
+          return
+        }
+
         // Fetch teams
-        const teamsResponse = await apiClient.getTeams()
-        setTeams(teamsResponse.data?.teams || [])
-        console.log('Teams loaded:', teamsResponse.data?.teams?.length || 0)
-        
+        try {
+          const teamsResponse = await apiClient.getTeams()
+          setTeams(teamsResponse.data?.teams || [])
+          console.log('Teams loaded:', teamsResponse.data?.teams?.length || 0)
+        } catch (teamsError) {
+          console.error('Failed to fetch teams:', teamsError)
+          // Check if it's an authentication error
+          if (teamsError.message && (teamsError.message.includes('401') || teamsError.message.includes('403') || teamsError.message.includes('Invalid or expired token'))) {
+            setError('Your session has expired. Please log in again.')
+            // Optional: Clear the invalid token
+            localStorage.removeItem('auth_token')
+            // Optional: Redirect to login page
+            // window.location.href = '/login'
+            return
+          }
+          throw teamsError
+        }
+
         // Fetch locations
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
         console.log('Fetching locations from', `${API_BASE_URL}/locations`)
-        console.log('Token:', localStorage.getItem('auth_token') ? 'Present' : 'Missing')
-        
+
         const locationsResponse = await fetch(`${API_BASE_URL}/locations`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+            'Authorization': `Bearer ${token}`
           }
         })
-        
+
         console.log('Locations response status:', locationsResponse.status)
-        
+
         if (locationsResponse.ok) {
           const locationsData = await locationsResponse.json()
           console.log('Locations loaded successfully:', locationsData.length, 'locations')
@@ -94,11 +116,27 @@ export function TeamsLocationsPage() {
         } else {
           const errorText = await locationsResponse.text()
           console.error('Failed to fetch locations:', locationsResponse.status, locationsResponse.statusText, errorText)
+
+          // Check if it's an authentication error
+          if (locationsResponse.status === 401 || locationsResponse.status === 403) {
+            setError('Your session has expired. Please log in again.')
+            localStorage.removeItem('auth_token')
+            // Optional: Redirect to login page
+            // window.location.href = '/login'
+            return
+          }
+
           setError(`Failed to fetch locations: ${locationsResponse.statusText}`)
         }
       } catch (err) {
         console.error('Failed to fetch data:', err)
-        setError(err.message || 'Failed to load data')
+
+        // Better error messaging
+        if (err.message && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to server. Please check if the server is running.')
+        } else {
+          setError(err.message || 'Failed to load data')
+        }
       } finally {
         setLoading(false)
       }

@@ -7,13 +7,31 @@
 
 import express, { Request, Response } from 'express';
 import Joi from 'joi';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
 import { Database } from '../types/database.types';
 import { AuthenticatedRequest } from '../types/auth.types';
 import { ApiResponse, RouteParams } from '../types/api.types';
-import { authenticateToken, requireRole } from '../middleware/auth';
+const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+import { ICSParser, ParsedCalendar, GameImportData } from '../utils/ics-parser';
+import db from '../config/database';
 
-// Import database connection
-const db: Database = require('../config/database');
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only .ics files
+    if (file.mimetype === 'text/calendar' || file.originalname.endsWith('.ics')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .ics calendar files are allowed'));
+    }
+  }
+});
 
 const router = express.Router();
 
@@ -128,6 +146,33 @@ interface CalendarSyncStatusResponse extends ApiResponse {
   };
 }
 
+interface CalendarUploadResponse extends ApiResponse {
+  data: {
+    message: string;
+    imported: number;
+    failed: number;
+    skipped: number;
+    games?: Array<{
+      id: string;
+      gameDate: string;
+      gameTime: string;
+      homeTeamName?: string;
+      awayTeamName?: string;
+      status: 'imported' | 'failed' | 'skipped';
+      reason?: string;
+    }>;
+  };
+}
+
+interface CalendarUploadOptions {
+  overwriteExisting?: boolean;
+  autoCreateTeams?: boolean;
+  autoCreateLocations?: boolean;
+  defaultLevel?: string;
+  defaultGameType?: string;
+  leagueId?: string;
+}
+
 // Validation schemas
 const calendarQuerySchema = Joi.object({
   start_date: Joi.date().iso(),
@@ -149,6 +194,15 @@ const calendarSyncSchema = Joi.object({
   calendar_url: Joi.string().uri().required(),
   sync_direction: Joi.string().valid('import', 'export', 'bidirectional').default('import'),
   auto_sync: Joi.boolean().default(false)
+});
+
+const calendarUploadOptionsSchema = Joi.object({
+  overwriteExisting: Joi.boolean().default(false),
+  autoCreateTeams: Joi.boolean().default(false),
+  autoCreateLocations: Joi.boolean().default(false),
+  defaultLevel: Joi.string().default('Youth'),
+  defaultGameType: Joi.string().default('League'),
+  leagueId: Joi.string().uuid()
 });
 
 /**
@@ -761,5 +815,304 @@ router.delete('/sync', authenticateToken, requireRole('admin'), async (req: Auth
     });
   }
 });
+
+/**
+ * POST /api/calendar/upload - Upload and import ICS calendar file
+ * @route POST /api/calendar/upload
+ * @access Private (Admin or assignor role)
+ * @param {File} file - ICS calendar file
+ * @param {CalendarUploadOptions} body - Import options
+ * @returns {CalendarUploadResponse} Import results
+ */
+router.post('/upload',
+  authenticateToken,
+  upload.single('calendar'),
+  async (req: AuthenticatedRequest, res: Response<CalendarUploadResponse>) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'NO_FILE',
+            message: 'No calendar file provided'
+          }
+        });
+      }
+
+      // Validate options
+      const { error, value } = calendarUploadOptionsSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.details[0].message
+          }
+        });
+      }
+
+      const options = value as CalendarUploadOptions;
+      const fileContent = req.file.buffer.toString('utf-8');
+
+      // Validate ICS format
+      if (!ICSParser.isValidICS(fileContent)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_FORMAT',
+            message: 'Invalid ICS calendar file format'
+          }
+        });
+      }
+
+      // Parse the calendar
+      const parser = new ICSParser();
+      let calendar: ParsedCalendar;
+
+      try {
+        console.log('Parsing ICS file, content length:', fileContent.length);
+        console.log('First 500 chars:', fileContent.substring(0, 500));
+        calendar = parser.parse(fileContent);
+        console.log('Parsed calendar, found events:', calendar.events.length);
+      } catch (parseError) {
+        console.error('Error parsing ICS file:', parseError);
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'PARSE_ERROR',
+            message: 'Failed to parse calendar file',
+            details: (parseError as Error).message
+          }
+        });
+      }
+
+      if (calendar.events.length === 0) {
+        console.log('No events found in parsed calendar');
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'NO_EVENTS',
+            message: 'No events found in calendar file'
+          }
+        });
+      }
+
+      // Convert events to game data
+      const gameDataList = ICSParser.eventsToGameData(calendar.events);
+
+      console.log('Converted game data:', gameDataList.map(g => ({
+        date: g.gameDate,
+        time: g.gameTime,
+        home: g.homeTeamName,
+        away: g.awayTeamName,
+        level: g.level,
+        type: g.gameType,
+        location: g.locationName
+      })));
+
+      const importResults: Array<{
+        id: string;
+        gameDate: string;
+        gameTime: string;
+        homeTeamName?: string;
+        awayTeamName?: string;
+        status: 'imported' | 'failed' | 'skipped';
+        reason?: string;
+      }> = [];
+
+      let imported = 0;
+      let failed = 0;
+      let skipped = 0;
+
+      // Process games without transaction (SQLite doesn't support it well in this context)
+      try {
+        for (const gameData of gameDataList) {
+          const result = {
+            id: '',
+            gameDate: gameData.gameDate,
+            gameTime: gameData.gameTime,
+            homeTeamName: gameData.homeTeamName,
+            awayTeamName: gameData.awayTeamName,
+            status: 'failed' as const,
+            reason: ''
+          };
+
+          try {
+            // Check if game already exists by external ID
+            if (gameData.externalId) {
+              const existingGame = await db('games')
+                .where('external_id', gameData.externalId)
+                .first();
+
+              if (existingGame && !options.overwriteExisting) {
+                result.status = 'skipped';
+                result.reason = 'Game already exists';
+                result.id = existingGame.id;
+                skipped++;
+                importResults.push(result);
+                continue;
+              }
+
+              if (existingGame && options.overwriteExisting) {
+                // Update existing game
+                await db('games')
+                  .where('id', existingGame.id)
+                  .update({
+                    game_date: gameData.gameDate,
+                    game_time: gameData.gameTime,
+                    notes: gameData.notes,
+                    updated_at: new Date()
+                  });
+
+                result.id = existingGame.id;
+                result.status = 'imported';
+                imported++;
+                importResults.push(result);
+                continue;
+              }
+            }
+
+            // Prepare game record
+            const gameRecord: any = {
+              id: uuidv4(),
+              game_date: gameData.gameDate,
+              game_time: gameData.gameTime,
+              level: gameData.level || options.defaultLevel,
+              game_type: gameData.gameType || options.defaultGameType,
+              status: 'unassigned',
+              refs_needed: 2, // Default value
+              external_id: gameData.externalId,
+              notes: gameData.notes,
+              created_at: new Date(),
+              updated_at: new Date()
+            };
+
+            // Handle teams
+            if (gameData.homeTeamName && gameData.awayTeamName) {
+              // Look up or create teams
+              let homeTeamId = null;
+              let awayTeamId = null;
+
+              const homeTeam = await db('teams')
+                .where('name', gameData.homeTeamName)
+                .first();
+
+              if (homeTeam) {
+                homeTeamId = homeTeam.id;
+              } else if (options.autoCreateTeams) {
+                const newHomeTeam = {
+                  id: uuidv4(),
+                  name: gameData.homeTeamName,
+                  league_id: options.leagueId,
+                  created_at: new Date(),
+                  updated_at: new Date()
+                };
+                await db('teams').insert(newHomeTeam);
+                homeTeamId = newHomeTeam.id;
+              }
+
+              const awayTeam = await db('teams')
+                .where('name', gameData.awayTeamName)
+                .first();
+
+              if (awayTeam) {
+                awayTeamId = awayTeam.id;
+              } else if (options.autoCreateTeams) {
+                const newAwayTeam = {
+                  id: uuidv4(),
+                  name: gameData.awayTeamName,
+                  league_id: options.leagueId,
+                  created_at: new Date(),
+                  updated_at: new Date()
+                };
+                await db('teams').insert(newAwayTeam);
+                awayTeamId = newAwayTeam.id;
+              }
+
+              if (homeTeamId && awayTeamId) {
+                gameRecord.home_team_id = homeTeamId;
+                gameRecord.away_team_id = awayTeamId;
+              }
+            }
+
+            // Handle location
+            if (gameData.locationName) {
+              const location = await db('locations')
+                .where('name', gameData.locationName)
+                .first();
+
+              if (location) {
+                gameRecord.location_id = location.id;
+              } else if (options.autoCreateLocations) {
+                const newLocation = {
+                  id: uuidv4(),
+                  name: gameData.locationName,
+                  address: gameData.locationAddress,
+                  created_at: new Date(),
+                  updated_at: new Date()
+                };
+                await db('locations').insert(newLocation);
+                gameRecord.location_id = newLocation.id;
+              }
+            }
+
+            // Insert the game
+            await db('games').insert(gameRecord);
+
+            result.id = gameRecord.id;
+            result.status = 'imported';
+            imported++;
+            importResults.push(result);
+
+          } catch (gameError) {
+            console.error('Error importing game:', {
+              gameData,
+              error: gameError,
+              message: (gameError as Error).message,
+              stack: (gameError as Error).stack
+            });
+            result.status = 'failed';
+            result.reason = (gameError as Error).message;
+            failed++;
+            importResults.push(result);
+          }
+        }
+
+        // Log the import
+        console.log(`Calendar import completed by user ${req.user?.id}:`, {
+          total: gameDataList.length,
+          imported,
+          failed,
+          skipped
+        });
+
+        res.json({
+          success: true,
+          data: {
+            message: `Successfully processed ${gameDataList.length} events from calendar`,
+            imported,
+            failed,
+            skipped,
+            games: importResults
+          }
+        });
+
+      } catch (dbError) {
+        throw dbError;
+      }
+
+    } catch (error) {
+      console.error('Error processing calendar upload:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to process calendar upload',
+          ...(process.env.NODE_ENV === 'development' && { details: (error as Error).message })
+        }
+      });
+    }
+  }
+);
 
 export default router;

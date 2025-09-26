@@ -142,8 +142,26 @@ class ApiClient {
       const response = await fetch(url, config)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        let errorData = {}
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+
+        // Try to parse JSON error response
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json()
+            errorMessage = errorData.error || errorData.message || errorMessage
+          } else {
+            // If not JSON, try to get text
+            const text = await response.text()
+            if (text) {
+              errorMessage = text
+            }
+          }
+        } catch (parseError) {
+          // If parsing fails, keep the default error message
+          console.warn('Failed to parse error response:', parseError)
+        }
 
         // Only log non-authentication errors to console
         // 401 errors are expected when user is not logged in
