@@ -42,9 +42,9 @@ class ApiClient {
    * Get the base URL dynamically based on current host
    */
   private getBaseURL(): string {
-    // For server-side rendering, always use localhost direct URL
+    // For server-side rendering, use environment variable or localhost
     if (typeof window === 'undefined') {
-      return 'http://localhost:3001/api'
+      return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
     }
 
     // For client-side, check if we're on localhost and use proxy
@@ -57,14 +57,21 @@ class ApiClient {
     }
 
     // For non-localhost, use the environment variable if set
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      console.log('[API Client] Using env API URL:', process.env.NEXT_PUBLIC_API_URL)
+      return process.env.NEXT_PUBLIC_API_URL
+    }
+
     if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-      console.log('[API Client] Using env API URL:', process.env.NEXT_PUBLIC_API_BASE_URL)
+      console.log('[API Client] Using env API BASE URL:', process.env.NEXT_PUBLIC_API_BASE_URL)
       return process.env.NEXT_PUBLIC_API_BASE_URL
     }
 
-    // Fallback to direct backend URL
-    console.log('[API Client] Using fallback URL: http://localhost:3001/api')
-    return 'http://localhost:3001/api'
+    // Fallback to constructing from current host
+    const protocol = window.location.protocol
+    const currentHost = window.location.hostname
+    console.log(`[API Client] Using constructed URL: ${protocol}//${currentHost}:3001/api`)
+    return `${protocol}//${currentHost}:3001/api`
   }
 
   setToken(token: string) {

@@ -52,10 +52,15 @@ const nextConfig = {
 
   // API Proxy to backend server
   async rewrites() {
+    // Use environment variable for API URL, or fallback to localhost
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    // Remove /api from the end if present, as we'll add it with :path*
+    const backendUrl = apiUrl.replace(/\/api\/?$/, '')
+
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
