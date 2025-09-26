@@ -361,5 +361,3 @@ export class CerbosAuthService {
     return 'NULL';
   }
 }
-
-export default CerbosAuthService.getInstance();
