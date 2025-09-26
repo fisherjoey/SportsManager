@@ -97,9 +97,12 @@ export interface RequestUser {
 // Common enums
 export enum UserRole {
   ADMIN = 'admin',
-  ASSIGNOR = 'assignor', 
+  SUPER_ADMIN = 'super_admin',
+  ASSIGNOR = 'assignor',
   REFEREE = 'referee',
-  MANAGER = 'manager'
+  MANAGER = 'manager',
+  COACH = 'coach',
+  GUEST = 'guest'
 }
 
 export enum GameType {

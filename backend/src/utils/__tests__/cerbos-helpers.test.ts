@@ -7,6 +7,7 @@ import {
 } from '../cerbos-helpers';
 import type { User, RoleEntity } from '../../types/database.types';
 import type { AuthenticatedUser } from '../../types/auth.types';
+import { UserRole } from '../../types/index';
 import type {
   CerbosPrincipal,
   CerbosResource,
@@ -19,7 +20,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-123',
         email: 'assignor@example.com',
         name: 'John Assignor',
-        role: 'assignor',
+        role: UserRole.ASSIGNOR,
         is_active: true,
         email_verified: true,
         permissions: ['game:create', 'game:view', 'game:update'],
@@ -68,7 +69,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-456',
         email: 'multi@example.com',
         name: 'Multi Role',
-        role: 'assignor',
+        role: UserRole.ASSIGNOR,
         is_active: true,
         email_verified: true,
         permissions: ['game:create'],
@@ -97,7 +98,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-789',
         email: 'noreg@example.com',
         name: 'No Region',
-        role: 'guest',
+        role: UserRole.GUEST,
         is_active: true,
         email_verified: true,
         permissions: [],
@@ -116,7 +117,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-inactive',
         email: 'inactive@example.com',
         name: 'Inactive User',
-        role: 'referee',
+        role: UserRole.REFEREE,
         is_active: false,
         email_verified: true,
         permissions: [],
@@ -134,7 +135,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-dup',
         email: 'dup@example.com',
         name: 'Duplicate Roles',
-        role: 'assignor',
+        role: UserRole.ASSIGNOR,
         is_active: true,
         email_verified: true,
         permissions: [],
@@ -156,7 +157,7 @@ describe('Cerbos Helper Functions', () => {
         id: 'user-fallback',
         email: 'fallback@example.com',
         name: 'Fallback User',
-        role: 'referee',
+        role: UserRole.REFEREE,
         is_active: true,
         email_verified: true,
         permissions: [],
@@ -215,14 +216,14 @@ describe('Cerbos Helper Functions', () => {
         boolean_field: true,
       };
 
-      const resource = toResource('custom', customData);
+      const resource = toResource('custom' as any, customData);
 
       expect(resource.attr).toMatchObject({
         organizationId: 'org-1',
-        custom_field: 'custom_value',
+        customField: 'custom_value',
         nested: { prop: 'value' },
-        number_field: 42,
-        boolean_field: true,
+        numberField: 42,
+        booleanField: true,
       });
     });
   });
@@ -387,7 +388,7 @@ describe('Cerbos Helper Functions', () => {
 
   describe('attribute normalization', () => {
     it('should normalize organization_id to organizationId', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         organization_id: 'org-1',
       });
@@ -397,7 +398,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should normalize region_id to regionId', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         region_id: 'region-1',
       });
@@ -407,7 +408,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should normalize created_by to createdBy', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         created_by: 'user-1',
       });
@@ -417,7 +418,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should preserve camelCase attributes', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         alreadyCamelCase: 'value',
         anotherOne: 123,
@@ -428,7 +429,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should handle mixed snake_case and camelCase', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         snake_case_field: 'snake',
         camelCaseField: 'camel',
@@ -443,7 +444,7 @@ describe('Cerbos Helper Functions', () => {
 
   describe('edge cases', () => {
     it('should handle null values', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         null_field: null,
         organization_id: 'org-1',
@@ -453,7 +454,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should handle undefined values', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         undefined_field: undefined,
         organization_id: 'org-1',
@@ -463,7 +464,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should handle empty strings', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         empty_string: '',
         organization_id: 'org-1',
@@ -473,7 +474,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should handle array attributes', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         tags: ['tag1', 'tag2', 'tag3'],
         organization_id: 'org-1',
@@ -483,7 +484,7 @@ describe('Cerbos Helper Functions', () => {
     });
 
     it('should handle nested object attributes', () => {
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         metadata: {
           key1: 'value1',
@@ -504,7 +505,7 @@ describe('Cerbos Helper Functions', () => {
 
     it('should handle date objects', () => {
       const date = new Date('2025-10-01T19:00:00Z');
-      const resource = toResource('test', {
+      const resource = toResource('test' as any, {
         id: 'test-1',
         scheduled_date: date,
         organization_id: 'org-1',

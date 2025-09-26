@@ -50,7 +50,7 @@ export interface CerbosResource {
   kind: ResourceType;
   id: string;
   attr: {
-    organizationId: string;
+    organizationId?: string;
     regionId?: string;
     ownerId?: string;
     createdBy?: string;

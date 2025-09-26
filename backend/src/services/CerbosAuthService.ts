@@ -1,4 +1,5 @@
 import { GRPC } from '@cerbos/grpc';
+import { PlanKind } from '@cerbos/core';
 import type {
   CerbosPrincipal,
   CerbosResource,
@@ -19,7 +20,7 @@ interface CacheEntry<T> {
 
 export class CerbosAuthService {
   private static instance: CerbosAuthService;
-  private client: ReturnType<typeof GRPC>;
+  private client: GRPC;
   private cache: Map<string, CacheEntry<any>>;
   private cacheEnabled: boolean;
   private cacheTTL: number;
@@ -30,7 +31,7 @@ export class CerbosAuthService {
     const host = process.env.CERBOS_HOST || 'localhost:3592';
     const tls = process.env.CERBOS_TLS === 'true';
 
-    this.client = GRPC(host, { tls });
+    this.client = new GRPC(host, { tls });
 
     this.cache = new Map();
     this.cacheEnabled = process.env.CERBOS_CACHE_ENABLED !== 'false';
@@ -199,13 +200,22 @@ export class CerbosAuthService {
       const response = await this.client.planResources(request);
 
       let condition: string | undefined;
-      if (response.filter.kind === 'CONDITIONAL' && response.filter.condition) {
-        condition = this.convertConditionToSQL(response.filter.condition);
+      let kind: 'ALWAYS_ALLOWED' | 'ALWAYS_DENIED' | 'CONDITIONAL';
+
+      if (response.kind === PlanKind.CONDITIONAL) {
+        kind = 'CONDITIONAL';
+        if ('condition' in response) {
+          condition = this.convertConditionToSQL(response.condition);
+        }
+      } else if (response.kind === PlanKind.ALWAYS_ALLOWED) {
+        kind = 'ALWAYS_ALLOWED';
+      } else {
+        kind = 'ALWAYS_DENIED';
       }
 
       const result: CerbosQueryPlanResult = {
         filter: {
-          kind: response.filter.kind,
+          kind,
           condition,
         },
         validationErrors: response.validationErrors?.map((e: any) =>
@@ -240,15 +250,19 @@ export class CerbosAuthService {
     }
 
     try {
-      const healthy = await this.client.isHealthy();
+      await this.client.checkResource({
+        principal: { id: 'health-check', roles: ['guest'], attr: {} },
+        resource: { kind: 'game', id: 'health-check', attr: {} },
+        actions: ['view'],
+      });
 
       this.healthCheckCache = {
-        value: healthy,
+        value: true,
         expiry: now + this.HEALTH_CHECK_TTL,
       };
 
-      logger.debug('Cerbos health check', { healthy });
-      return healthy;
+      logger.debug('Cerbos health check passed');
+      return true;
     } catch (error) {
       logger.error('Cerbos health check failed', { error });
 

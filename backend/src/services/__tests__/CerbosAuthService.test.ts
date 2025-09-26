@@ -1,4 +1,14 @@
 import { CerbosAuthService } from '../CerbosAuthService';
+
+enum PlanKind {
+  ALWAYS_ALLOWED = 'KIND_ALWAYS_ALLOWED',
+  ALWAYS_DENIED = 'KIND_ALWAYS_DENIED',
+  CONDITIONAL = 'KIND_CONDITIONAL',
+}
+
+jest.mock('@cerbos/core', () => ({
+  PlanKind,
+}));
 import type {
   CerbosPrincipal,
   CerbosResource,
@@ -12,7 +22,6 @@ jest.mock('@cerbos/grpc', () => ({
     checkResource: jest.fn(),
     checkResources: jest.fn(),
     planResources: jest.fn(),
-    isHealthy: jest.fn(),
   })),
 }));
 
@@ -319,9 +328,11 @@ describe('CerbosAuthService', () => {
   describe('getQueryPlan', () => {
     it('should return ALWAYS_ALLOWED for unrestricted resources', async () => {
       mockCerbosClient.planResources.mockResolvedValue({
-        filter: {
-          kind: 'ALWAYS_ALLOWED',
-        },
+        kind: PlanKind.ALWAYS_ALLOWED,
+        cerbosCallId: 'test-call',
+        requestId: 'test-req',
+        validationErrors: [],
+        metadata: undefined,
       });
 
       const result = await service.getQueryPlan({
@@ -351,9 +362,11 @@ describe('CerbosAuthService', () => {
       };
 
       mockCerbosClient.planResources.mockResolvedValue({
-        filter: {
-          kind: 'ALWAYS_DENIED',
-        },
+        kind: PlanKind.ALWAYS_DENIED,
+        cerbosCallId: 'test-call',
+        requestId: 'test-req',
+        validationErrors: [],
+        metadata: undefined,
       });
 
       const result = await service.getQueryPlan({
@@ -369,18 +382,20 @@ describe('CerbosAuthService', () => {
 
     it('should return CONDITIONAL with filter expression', async () => {
       mockCerbosClient.planResources.mockResolvedValue({
-        filter: {
-          kind: 'CONDITIONAL',
-          condition: {
-            expression: {
-              operator: 'in',
-              operands: [
-                { variable: 'request.resource.attr.regionId' },
-                { value: mockPrincipal.attr.regionIds },
-              ],
-            },
+        kind: PlanKind.CONDITIONAL,
+        condition: {
+          expression: {
+            operator: 'in',
+            operands: [
+              { variable: 'request.resource.attr.regionId' },
+              { value: mockPrincipal.attr.regionIds },
+            ],
           },
         },
+        cerbosCallId: 'test-call',
+        requestId: 'test-req',
+        validationErrors: [],
+        metadata: undefined,
       });
 
       const result = await service.getQueryPlan({
@@ -400,30 +415,32 @@ describe('CerbosAuthService', () => {
 
     it('should generate SQL-compatible conditions', async () => {
       mockCerbosClient.planResources.mockResolvedValue({
-        filter: {
-          kind: 'CONDITIONAL',
-          condition: {
-            expression: {
-              operator: 'and',
-              operands: [
-                {
-                  operator: 'eq',
-                  operands: [
-                    { variable: 'request.resource.attr.organizationId' },
-                    { value: 'org-456' },
-                  ],
-                },
-                {
-                  operator: 'in',
-                  operands: [
-                    { variable: 'request.resource.attr.regionId' },
-                    { value: ['region-789', 'region-101'] },
-                  ],
-                },
-              ],
-            },
+        kind: PlanKind.CONDITIONAL,
+        condition: {
+          expression: {
+            operator: 'and',
+            operands: [
+              {
+                operator: 'eq',
+                operands: [
+                  { variable: 'request.resource.attr.organizationId' },
+                  { value: 'org-456' },
+                ],
+              },
+              {
+                operator: 'in',
+                operands: [
+                  { variable: 'request.resource.attr.regionId' },
+                  { value: ['region-789', 'region-101'] },
+                ],
+              },
+            ],
           },
         },
+        cerbosCallId: 'test-call',
+        requestId: 'test-req',
+        validationErrors: [],
+        metadata: undefined,
       });
 
       const result = await service.getQueryPlan({
@@ -438,16 +455,18 @@ describe('CerbosAuthService', () => {
 
   describe('isHealthy', () => {
     it('should return true when Cerbos is healthy', async () => {
-      mockCerbosClient.isHealthy.mockResolvedValue(true);
+      mockCerbosClient.checkResource.mockResolvedValue({
+        isAllowed: () => false,
+      });
 
       const healthy = await service.isHealthy();
 
       expect(healthy).toBe(true);
-      expect(mockCerbosClient.isHealthy).toHaveBeenCalled();
+      expect(mockCerbosClient.checkResource).toHaveBeenCalled();
     });
 
     it('should return false when Cerbos is unhealthy', async () => {
-      mockCerbosClient.isHealthy.mockResolvedValue(false);
+      mockCerbosClient.checkResource.mockRejectedValue(new Error('Connection failed'));
 
       const healthy = await service.isHealthy();
 
@@ -455,7 +474,7 @@ describe('CerbosAuthService', () => {
     });
 
     it('should return false on connection error', async () => {
-      mockCerbosClient.isHealthy.mockRejectedValue(
+      mockCerbosClient.checkResource.mockRejectedValue(
         new Error('Connection timeout')
       );
 
@@ -465,13 +484,15 @@ describe('CerbosAuthService', () => {
     });
 
     it('should cache health check results', async () => {
-      mockCerbosClient.isHealthy.mockResolvedValue(true);
+      mockCerbosClient.checkResource.mockResolvedValue({
+        isAllowed: () => false,
+      });
 
       await service.isHealthy();
       await service.isHealthy();
       await service.isHealthy();
 
-      expect(mockCerbosClient.isHealthy).toHaveBeenCalledTimes(1);
+      expect(mockCerbosClient.checkResource).toHaveBeenCalledTimes(1);
     });
   });
 

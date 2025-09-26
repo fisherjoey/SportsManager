@@ -53,7 +53,8 @@
       "Bash(npm test:*)",
       "Bash(docker-compose:*)",
       "Bash(docker compose:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
