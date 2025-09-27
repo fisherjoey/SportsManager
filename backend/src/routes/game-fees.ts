@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import db from '../config/database';
-import { authenticateToken, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler } from '../middleware/errorHandling';
 
 const router = express.Router();
@@ -99,7 +100,10 @@ interface GameFeeStats {
  * GET /api/game-fees
  * Get all game fees with optional filtering and pagination
  */
-router.get('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req: Request, res: Response) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'game_fee',
+  action: 'view:list',
+}), asyncHandler(async (req: Request, res: Response) => {
   const {
     page = '1',
     limit = '50',
@@ -200,7 +204,10 @@ router.get('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHand
  * POST /api/game-fees
  * Record a new game fee payment
  */
-router.post('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'game_fee',
+  action: 'create',
+}), asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { gameId, amount, paymentStatus = 'pending', paymentDate, paymentMethod, notes } = req.body as CreateGameFeeRequest;
 
   // Validate required fields
@@ -264,7 +271,11 @@ router.post('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHan
  * PUT /api/game-fees/:id
  * Update an existing game fee
  */
-router.put('/:id', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'game_fee',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { amount, paymentStatus, paymentDate, paymentMethod, notes } = req.body as UpdateGameFeeRequest;
 
@@ -323,7 +334,10 @@ router.put('/:id', authenticateToken, requireAnyRole('admin', 'finance'), asyncH
  * GET /api/game-fees/stats
  * Get game fee statistics and summaries
  */
-router.get('/stats', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req: Request, res: Response) => {
+router.get('/stats', authenticateToken, requireCerbosPermission({
+  resource: 'game_fee',
+  action: 'view:stats',
+}), asyncHandler(async (req: Request, res: Response) => {
   const { period = '30' } = req.query;
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - parseInt(period as string, 10));
