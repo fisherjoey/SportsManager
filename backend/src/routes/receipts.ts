@@ -6,7 +6,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import db from '../config/database';
-import { authenticateToken, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler  } from '../middleware/errorHandling';
 
 // Configure multer for file uploads
@@ -46,7 +47,10 @@ const upload = multer({
  * GET /api/receipts
  * Get all receipts for the current user or all receipts for admins
  */
-router.get('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'receipt',
+  action: 'view:list',
+}), asyncHandler(async (req, res) => {
   const { page = 1, limit = 50, status, startDate, endDate } = req.query;
   const offset = (page - 1) * limit;
 
@@ -134,7 +138,10 @@ router.get('/', authenticateToken, requireAnyRole('admin', 'finance'), asyncHand
  * POST /api/receipts/upload
  * Upload a new receipt
  */
-router.post('/upload', authenticateToken, requireAnyRole('admin', 'finance'), upload.single('receipt'), asyncHandler(async (req, res) => {
+router.post('/upload', authenticateToken, requireCerbosPermission({
+  resource: 'receipt',
+  action: 'upload',
+}), upload.single('receipt'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
@@ -182,7 +189,11 @@ router.post('/upload', authenticateToken, requireAnyRole('admin', 'finance'), up
  * GET /api/receipts/:id
  * Get a specific receipt
  */
-router.get('/:id', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'receipt',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   let query = db('expense_receipts as r')
@@ -225,7 +236,11 @@ router.get('/:id', authenticateToken, requireAnyRole('admin', 'finance'), asyncH
  * DELETE /api/receipts/:id
  * Delete a receipt
  */
-router.delete('/:id', authenticateToken, requireAnyRole('admin', 'finance'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'receipt',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Get receipt info first
