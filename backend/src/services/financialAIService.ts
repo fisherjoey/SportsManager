@@ -283,14 +283,14 @@ export class FinancialAIService {
         .where('b.id', budgetId)
         .where('b.organization_id', organizationId)
         .select('b.*', 'bp.start_date', 'bp.end_date', 'bc.category_type', 'bc.name as category_name')
-        .first();
+        .first() as unknown as any;
 
       if (!budget) {
         throw new Error('Budget not found');
       }
 
       // Get historical spending data for this category
-      const historicalData = await this.getHistoricalSpendingData(organizationId, budget.category_id, 24); // 24 months
+      const historicalData = await this.getHistoricalSpendingData(organizationId, (budget as any).category_id, 24); // 24 months
 
       let forecastData: BudgetForecast['forecastData'] = {};
       let confidenceScore = 0.5;
@@ -397,12 +397,12 @@ export class FinancialAIService {
         .join('budget_categories as bc', 'b.category_id', 'bc.id')
         .where('b.organization_id', organizationId)
         .where('b.budget_period_id', budgetPeriodId)
-        .select('b.*', 'bc.name as category_name', 'bc.category_type');
+        .select('b.*', 'bc.name as category_name', 'bc.category_type') as unknown as any[];
 
       const recommendations: BudgetRecommendation[] = [];
 
       for (const budget of budgets) {
-        const historicalData = await this.getHistoricalSpendingData(organizationId, budget.category_id, 12);
+        const historicalData = await this.getHistoricalSpendingData(organizationId, (budget as any).category_id, 12);
         const variance = (budget as any).spent_amount - (budget as any).allocated_amount;
         const recommendation = await this.generateBudgetRecommendationForBudget(budget, historicalData, variance);
 
@@ -431,22 +431,22 @@ export class FinancialAIService {
       const budgets = await db('budgets as b')
         .join('budget_categories as bc', 'b.category_id', 'bc.id')
         .where('b.organization_id', organizationId)
-        .select('b.*', 'bc.name as category_name');
+        .select('b.*', 'bc.name as category_name') as unknown as any[];
 
       const variances = await Promise.all(
-        budgets.map(async (budget) => {
-          const variance = budget.spent_amount - budget.allocated_amount;
-          const variancePercentage = (variance / budget.allocated_amount) * 100;
+        budgets.map(async (budget: any) => {
+          const variance = (budget as any).spent_amount - (budget as any).allocated_amount;
+          const variancePercentage = (variance / (budget as any).allocated_amount) * 100;
 
           return {
-            budgetId: budget.id,
-            category: budget.category_name,
-            plannedAmount: budget.allocated_amount,
-            actualAmount: budget.spent_amount,
+            budgetId: (budget as any).id,
+            category: (budget as any).category_name,
+            plannedAmount: (budget as any).allocated_amount,
+            actualAmount: (budget as any).spent_amount,
             variance,
             variancePercentage,
             status: this.getVarianceStatusForBudget(variancePercentage),
-            trend: await this.calculateSpendingTrendForBudget(budget.id)
+            trend: await this.calculateSpendingTrendForBudget((budget as any).id)
           };
         })
       );
@@ -492,7 +492,7 @@ export class FinancialAIService {
         .where('organization_id', organizationId)
         .whereBetween('expense_date', [startDate, endDate])
         .select('expense_date', 'amount', 'category_id')
-        .orderBy('expense_date');
+        .orderBy('expense_date') as unknown as any[];
 
       const patterns = await this.detectSpendingPatternsInData(spendingData);
       const averageMonthlySpend = await this.calculateAverageMonthlySpendFromData(spendingData);
@@ -524,13 +524,13 @@ export class FinancialAIService {
       const recentSpending = await db('expenses')
         .where('organization_id', organizationId)
         .where('expense_date', '>=', db.raw('DATE_SUB(NOW(), INTERVAL 30 DAY)'))
-        .select('*');
+        .select('*') as unknown as any[];
 
       const historicalSpending = await db('expenses')
         .where('organization_id', organizationId)
         .where('expense_date', '<', db.raw('DATE_SUB(NOW(), INTERVAL 30 DAY)'))
         .where('expense_date', '>=', db.raw('DATE_SUB(NOW(), INTERVAL 365 DAY)'))
-        .select('*');
+        .select('*') as unknown as any[];
 
       const anomalies: SpendingAnomaly[] = [];
 
@@ -637,9 +637,9 @@ export class FinancialAIService {
         db.raw('AVG(amount) as averageTransactionSize')
       )
       .groupBy(db.raw('DATE_FORMAT(expense_date, "%Y-%m")'))
-      .orderBy('period');
+      .orderBy('period') as unknown as any[];
 
-    return data.map(row => ({
+    return data.map((row: any) => ({
       period: row.period,
       categoryId,
       totalSpent: parseFloat(row.totalSpent),
@@ -659,7 +659,7 @@ export class FinancialAIService {
   ): Promise<{ forecastData: any; confidenceScore: number; influencingFactors: string[] }> {
     if (historicalData.length < 3) {
       return {
-        forecastData: { nextMonth: budget.allocated_amount / 12 },
+        forecastData: { nextMonth: (budget as any).allocated_amount / 12 },
         confidenceScore: 0.3,
         influencingFactors: ['limited_historical_data']
       };
@@ -716,22 +716,22 @@ export class FinancialAIService {
     budget: any,
     historicalData: HistoricalSpendingData[]
   ): Promise<{ forecastData: any; confidenceScore: number; influencingFactors: string[] }> {
-    const currentSpent = budget.spent_amount;
+    const currentSpent = (budget as any).spent_amount;
     const monthsRemaining = this.calculateMonthsRemaining();
     const avgMonthlySpend = historicalData.length > 0
       ? historicalData.reduce((sum, d) => sum + d.totalSpent, 0) / historicalData.length
       : currentSpent / (12 - monthsRemaining);
 
     const projectedTotal = currentSpent + (avgMonthlySpend * monthsRemaining);
-    const remainingBudget = budget.allocated_amount - currentSpent;
-    const projectedOverrun = Math.max(0, projectedTotal - budget.allocated_amount);
+    const remainingBudget = (budget as any).allocated_amount - currentSpent;
+    const projectedOverrun = Math.max(0, projectedTotal - (budget as any).allocated_amount);
 
     return {
       forecastData: {
         projectedTotal,
         remainingBudget,
         projectedOverrun,
-        utilizationRate: projectedTotal / budget.allocated_amount
+        utilizationRate: projectedTotal / (budget as any).allocated_amount
       },
       confidenceScore: historicalData.length > 6 ? 0.8 : 0.6,
       influencingFactors: ['historical_average', 'time_remaining', 'current_utilization']
@@ -746,7 +746,7 @@ export class FinancialAIService {
     budget: any,
     historicalData: HistoricalSpendingData[]
   ): Promise<{ forecastData: any; confidenceScore: number; influencingFactors: string[] }> {
-    const currentVariance = budget.spent_amount - (budget.allocated_amount * this.getYearProgress());
+    const currentVariance = (budget as any).spent_amount - ((budget as any).allocated_amount * this.getYearProgress());
     const varianceRange = this.calculateVarianceRange(historicalData, currentVariance);
 
     return {
@@ -922,7 +922,7 @@ export class FinancialAIService {
       .where('budget_id', budgetId)
       .orderBy('expense_date', 'desc')
       .limit(6)
-      .select('amount', 'expense_date');
+      .select('amount', 'expense_date') as unknown as any[];
 
     if (expenses.length < 3) return 'stable';
 
@@ -1062,7 +1062,7 @@ export class FinancialAIService {
       .where('organization_id', organizationId)
       .whereBetween('income_date', [startDate, endDate])
       .sum('amount as total')
-      .first();
+      .first() as unknown as any;
 
     return (result as any)?.total || 0;
   }
@@ -1072,7 +1072,7 @@ export class FinancialAIService {
       .where('organization_id', organizationId)
       .whereBetween('expense_date', [startDate, endDate])
       .sum('amount as total')
-      .first();
+      .first() as unknown as any;
 
     return (result as any)?.total || 0;
   }

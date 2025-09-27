@@ -6,9 +6,9 @@
 import vision from '@google-cloud/vision';
 import OpenAI from 'openai';
 import fs from 'fs-extra';
-import sharp from 'sharp';
-import pdf2pic from 'pdf2pic';
-import path from 'path';
+import * as sharp from 'sharp';
+import * as pdf2pic from 'pdf2pic';
+import * as path from 'path';
 import { logger } from '../utils/logger';
 import aiConfig from '../config/aiConfig';
 
@@ -633,11 +633,11 @@ export class AIServices {
     const now = Date.now();
     const keysToDelete: string[] = [];
 
-    for (const [key, entry] of this.responseCache.entries()) {
+    this.responseCache.forEach((entry, key) => {
       if (now > entry.expiresAt) {
         keysToDelete.push(key);
       }
-    }
+    });
 
     for (const key of keysToDelete) {
       this.responseCache.delete(key);
@@ -646,8 +646,11 @@ export class AIServices {
 
     // Enforce max cache size
     if (this.responseCache.size > this.config.maxCacheSize) {
-      const sortedEntries = Array.from(this.cacheTimestamps.entries())
-        .sort(([,a], [,b]) => a - b);
+      const timestampEntries: [string, number][] = [];
+      this.cacheTimestamps.forEach((timestamp, key) => {
+        timestampEntries.push([key, timestamp]);
+      });
+      const sortedEntries = timestampEntries.sort(([,a], [,b]) => a - b);
 
       const entriesToRemove = sortedEntries.slice(0, this.responseCache.size - this.config.maxCacheSize);
 
@@ -722,7 +725,7 @@ export class AIServices {
       }
 
       // Get image metadata
-      const metadata = await sharp(imagePath).metadata();
+      const metadata = await (sharp as any)(imagePath).metadata();
       result.dimensions = {
         width: metadata.width || 0,
         height: metadata.height || 0
@@ -859,7 +862,7 @@ export class AIServices {
     try {
       const outputPath = imagePath.replace(/\.[^.]+$/, '_optimized.png');
 
-      await sharp(imagePath)
+      await (sharp as any)(imagePath)
         .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
         .normalize()
         .sharpen()
@@ -879,7 +882,7 @@ export class AIServices {
    */
   private async getImageDimensions(imagePath: string): Promise<ImageDimensions> {
     try {
-      const metadata = await sharp(imagePath).metadata();
+      const metadata = await (sharp as any)(imagePath).metadata();
       return {
         width: metadata.width || 0,
         height: metadata.height || 0
