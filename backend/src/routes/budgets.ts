@@ -7,12 +7,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
 import {
-  authenticateToken,
-  requireRole,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
+  authenticateToken
 } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { auditMiddleware } from '../middleware/auditTrail';
 import type {
   BudgetPeriod,
@@ -187,7 +184,10 @@ const budgetAllocationSchema = Joi.object({
  */
 router.get('/periods',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -284,7 +284,10 @@ router.get('/periods',
  */
 router.post('/periods',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_period_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -359,7 +362,10 @@ router.post('/periods',
  */
 router.get('/categories',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -447,7 +453,10 @@ router.get('/categories',
  */
 router.post('/categories',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_category_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -526,7 +535,10 @@ router.post('/categories',
  */
 router.get('/',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -617,7 +629,10 @@ router.get('/',
  */
 router.post('/',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -708,7 +723,10 @@ router.post('/',
  */
 router.get('/:id',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   checkBudgetAccess('read'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -751,7 +769,10 @@ router.get('/:id',
  */
 router.put('/:id',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   checkBudgetAccess('update'),
   auditMiddleware('budget_update'),
   async (req: Request, res: Response): Promise<void> => {
@@ -815,7 +836,10 @@ router.put('/:id',
  */
 router.post('/:id/allocations',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   checkBudgetAccess('update'),
   auditMiddleware('budget_allocation_create'),
   async (req: Request, res: Response): Promise<void> => {
@@ -884,7 +908,10 @@ router.post('/:id/allocations',
  */
 router.delete('/periods/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   auditMiddleware('budget_period_delete'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -944,7 +971,10 @@ router.delete('/periods/:id',
  */
 router.delete('/categories/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   auditMiddleware('budget_category_delete'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -1004,7 +1034,10 @@ router.delete('/categories/:id',
  */
 router.delete('/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   checkBudgetAccess('delete'),
   auditMiddleware('budget_delete'),
   async (req: Request, res: Response): Promise<void> => {

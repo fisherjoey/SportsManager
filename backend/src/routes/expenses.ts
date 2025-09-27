@@ -36,12 +36,9 @@ const router = express.Router();
 // Import dependencies
 import db from '../config/database';
 import {
-  authenticateToken,
-  requireRole,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
+  authenticateToken
 } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import {
   receiptUploader,
   fileUploadSecurity,
@@ -419,7 +416,10 @@ router.post('/receipts/upload',
  */
 router.get('/receipts',
   authenticateToken,
-  requirePermission('expenses:read'),
+  requireCerbosPermission({
+    resource: 'expense',
+    action: 'view:list',
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       console.log('GET /receipts - User:', req.user.id);
