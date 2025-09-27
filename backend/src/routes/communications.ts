@@ -8,7 +8,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import Joi from 'joi';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { receiptUploader } from '../middleware/fileUpload';
 import { CommunicationService } from '../services/CommunicationService';
 import db, { pool } from '../config/database';
@@ -66,7 +67,10 @@ function isAuthenticated(req: Request): req is AuthenticatedRequest {
 /**
  * Get all communications (with access control)
  */
-router.get('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'communication',
+  action: 'view:list',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
     if (!isAuthenticated(req)) {
       res.status(401).json({ error: 'Authentication required' });
@@ -112,7 +116,11 @@ router.get('/', authenticateToken, async (req: Request, res: Response): Promise<
 /**
  * Get single communication by ID
  */
-router.get('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'communication',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req: Request, res: Response): Promise<void> => {
   try {
     if (!isAuthenticated(req)) {
       res.status(401).json({ error: 'Authentication required' });
@@ -152,7 +160,10 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response): Promi
 router.post(
   '/',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'create',
+  }),
   receiptUploader.array('attachments', 5),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -200,7 +211,11 @@ router.post(
 router.put(
   '/:id',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -255,7 +270,11 @@ router.put(
 router.post(
   '/:id/publish',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'publish',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -291,7 +310,11 @@ router.post(
 router.post(
   '/:id/archive',
   authenticateToken,
-  requireAnyRole('admin', 'hr'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'archive',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -328,6 +351,11 @@ router.post(
 router.post(
   '/:id/acknowledge',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'acknowledge',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -364,7 +392,11 @@ router.post(
 router.get(
   '/:id/recipients',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'admin:view_recipients',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -398,7 +430,10 @@ router.get(
 /**
  * Get user's unread communications count
  */
-router.get('/unread/count', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.get('/unread/count', authenticateToken, requireCerbosPermission({
+  resource: 'communication',
+  action: 'view:unread_count',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
     if (!isAuthenticated(req)) {
       res.status(401).json({ error: 'Authentication required' });
@@ -419,6 +454,10 @@ router.get('/unread/count', authenticateToken, async (req: Request, res: Respons
 router.get(
   '/acknowledgments/pending',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'view:pending_acknowledgments',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {
@@ -443,7 +482,10 @@ router.get(
 router.get(
   '/stats/overview',
   authenticateToken,
-  requireAnyRole('admin', 'hr'),
+  requireCerbosPermission({
+    resource: 'communication',
+    action: 'admin:view_stats',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!isAuthenticated(req)) {

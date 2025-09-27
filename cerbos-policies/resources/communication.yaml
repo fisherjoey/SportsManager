@@ -7,15 +7,19 @@ resourcePolicy:
     - common_roles
   resource: "communication"
   rules:
-    # Admin rules - full access within their organization
-    - actions: ['*']
+    - actions: ['view:list', 'view:details', 'create', 'update', 'publish', 'archive', 'admin:view_recipients', 'admin:view_stats']
       effect: EFFECT_ALLOW
       roles:
         - admin
       derivedRoles:
         - organization_admin
 
-    # Guest rules - no access
+    - actions: ['view:list', 'view:details', 'acknowledge', 'view:unread_count', 'view:pending_acknowledgments']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - referee
+
     - actions: ['*']
       effect: EFFECT_DENY
       roles:

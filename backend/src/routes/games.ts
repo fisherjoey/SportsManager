@@ -28,7 +28,7 @@ import {
 } from '../types';
 import { AuthenticatedRequest } from '../types/auth.types';
 // Import middleware and utilities with proper ES6 imports for TypeScript
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { getGameResourceAttributes } from '../middleware/cerbos-migration-helpers';
 import { validateQuery, validateIdParam } from '../middleware/sanitization';
