@@ -304,47 +304,64 @@ const deleteUser = async (
 };
 
 // Route definitions with proper middleware and handlers
-router.get('/roles', authenticateToken as any, enhancedAsyncHandler(getRoles as any));
+router.get('/roles',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:roles',
+  }) as any,
+  enhancedAsyncHandler(getRoles as any)
+);
 
 router.get('/',
   authenticateToken as any,
-  // Permission checks disabled until PermissionService DB connection is fixed
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:list',
+  }) as any,
   validateQuery(FilterSchemas.referees) as any,
   enhancedAsyncHandler(getUsers as any)
 );
 
-router.get('/:id', 
-  authenticateToken as any, 
-  validateParams(IdParamSchema) as any, 
+router.get('/:id',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(getUserById as any)
 );
 
-router.post('/', 
-  authenticateToken as any, 
+router.post('/',
+  authenticateToken as any,
   requireCerbosPermission({
     resource: 'user',
-    action: 'view:list',
-  }) as any, 
+    action: 'create',
+  }) as any,
   enhancedAsyncHandler(createUser as any)
 );
 
-router.put('/:id', 
-  authenticateToken as any, 
+router.put('/:id',
+  authenticateToken as any,
   requireCerbosPermission({
     resource: 'user',
-    action: 'view:list',
-  }) as any, 
-  validateParams(IdParamSchema) as any, 
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(updateUser as any)
 );
 
-router.delete('/:id', 
-  authenticateToken as any, 
+router.delete('/:id',
+  authenticateToken as any,
   requireCerbosPermission({
     resource: 'user',
-    action: 'view:list',
-  }) as any, 
-  validateParams(IdParamSchema) as any, 
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(deleteUser as any)
 );
 
