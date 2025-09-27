@@ -209,12 +209,12 @@ router.get('/',
           .select(
             'teams.id',
             'teams.name',
+            'teams.team_number',
+            'teams.display_name',
             'teams.league_id',
-            db.raw('"teams"."rank" as rank'),
-            'teams.location',
             'teams.contact_email',
             'teams.contact_phone',
-            'teams.organization_id',
+            'teams.metadata',
             'teams.created_at',
             'teams.updated_at',
             'leagues.organization',
@@ -240,8 +240,7 @@ router.get('/',
         // Optimized sorting using indexed columns
         baseQuery = baseQuery
           .orderBy('leagues.organization', 'asc')
-          .orderBy('leagues.age_group', 'asc')
-          .orderBy(db.raw('"teams"."rank"'), 'asc'); // Uses idx_teams_league_rank
+          .orderBy('leagues.age_group', 'asc');
 
         // Get total count efficiently
         const countQuery = QueryBuilder.buildCountQuery(baseQuery, 'teams.id');
