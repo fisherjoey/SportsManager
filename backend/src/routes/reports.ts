@@ -10,7 +10,8 @@ import Joi from 'joi';
 import { Database } from '../types/database.types';
 import { AuthenticatedRequest } from '../types/auth.types';
 import { ApiResponse, PaginationOptions } from '../types/api.types';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Import database connection
 const db: Database = require('../config/database');
@@ -256,7 +257,10 @@ const performanceQuerySchema = Joi.object({
  * @param {PerformanceQueryParams} query - Query parameters for filtering
  * @returns {RefereePerformanceResponse} Referee performance data with pagination
  */
-router.get('/referee-performance', authenticateToken, async (req: AuthenticatedRequest, res: Response<RefereePerformanceResponse>) => {
+router.get('/referee-performance', authenticateToken, requireCerbosPermission({
+  resource: 'report',
+  action: 'view:referee_performance',
+}), async (req: AuthenticatedRequest, res: Response<RefereePerformanceResponse>) => {
   try {
     const { error, value } = performanceQuerySchema.validate(req.query);
     if (error) {
@@ -409,7 +413,10 @@ router.get('/referee-performance', authenticateToken, async (req: AuthenticatedR
  * @param {ReportQueryParams} query - Query parameters for filtering
  * @returns {AssignmentPatternsResponse} Assignment pattern analysis data
  */
-router.get('/assignment-patterns', authenticateToken, async (req: AuthenticatedRequest, res: Response<AssignmentPatternsResponse>) => {
+router.get('/assignment-patterns', authenticateToken, requireCerbosPermission({
+  resource: 'report',
+  action: 'view:assignment_patterns',
+}), async (req: AuthenticatedRequest, res: Response<AssignmentPatternsResponse>) => {
   try {
     const { error, value } = reportQuerySchema.validate(req.query);
     if (error) {
@@ -598,7 +605,10 @@ router.get('/assignment-patterns', authenticateToken, async (req: AuthenticatedR
  * @param {ReportQueryParams} query - Query parameters for filtering
  * @returns {FinancialSummaryResponse} Financial summary data with breakdowns
  */
-router.get('/financial-summary', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response<FinancialSummaryResponse>) => {
+router.get('/financial-summary', authenticateToken, requireCerbosPermission({
+  resource: 'report',
+  action: 'view:financial_summary',
+}), async (req: AuthenticatedRequest, res: Response<FinancialSummaryResponse>) => {
   try {
     const { error, value } = reportQuerySchema.validate(req.query);
     if (error) {
@@ -799,7 +809,10 @@ router.get('/financial-summary', authenticateToken, requireRole('admin'), async 
  * @param {ReportQueryParams} query - Query parameters for filtering
  * @returns {AvailabilityGapsResponse} Availability gap analysis data
  */
-router.get('/availability-gaps', authenticateToken, async (req: AuthenticatedRequest, res: Response<AvailabilityGapsResponse>) => {
+router.get('/availability-gaps', authenticateToken, requireCerbosPermission({
+  resource: 'report',
+  action: 'view:availability_gaps',
+}), async (req: AuthenticatedRequest, res: Response<AvailabilityGapsResponse>) => {
   try {
     const { error, value } = reportQuerySchema.validate(req.query);
     if (error) {
