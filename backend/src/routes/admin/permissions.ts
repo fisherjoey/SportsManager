@@ -12,7 +12,8 @@
 
 import express, { Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../../middleware/auth';
+import { authenticateToken } from '../../middleware/auth';
+import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
 import PermissionService from '../../services/PermissionService';
@@ -140,7 +141,10 @@ const assignPermissionsSchema = Joi.object({
  * GET /api/admin/permissions - Get all permissions with optional filtering
  * Requires: permissions:read or system:admin permission
  */
-router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { active_only = 'true', use_cache = 'true' } = (req as any).query as {
       active_only?: string;
@@ -182,7 +186,10 @@ router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'sy
  * POST /api/admin/permissions - Create a new permission
  * Requires: system:admin permission
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = createPermissionSchema.validate((req as any).body);
     if (error) {
@@ -221,7 +228,10 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: Authentica
  * GET /api/admin/permissions/categories - Get unique permission categories
  * Requires: permissions:read or system:admin permission
  */
-router.get('/categories', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/categories', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { active_only = 'true' } = (req as any).query as { active_only?: string };
 
@@ -253,7 +263,10 @@ router.get('/categories', authenticateToken, requireAnyPermission(['permissions:
 /**
  * POST /api/admin/permissions/search - Search permissions
  */
-router.post('/search', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/search', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = searchSchema.validate((req as any).body);
     if (error) {
@@ -296,7 +309,10 @@ router.post('/search', authenticateToken, requireRole('admin'), async (req: Auth
 /**
  * GET /api/admin/permissions/cache/stats - Get permission cache statistics
  */
-router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/cache/stats', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const stats: CacheStats = permissionService.getCacheStats();
 
@@ -317,7 +333,10 @@ router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req: 
 /**
  * DELETE /api/admin/permissions/cache - Clear permission cache
  */
-router.delete('/cache', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.delete('/cache', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { user_id } = (req as any).query as { user_id?: string };
 
@@ -345,7 +364,10 @@ router.delete('/cache', authenticateToken, requireRole('admin'), async (req: Aut
 /**
  * POST /api/admin/permissions/users/bulk-check - Bulk permission check for users
  */
-router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/users/bulk-check', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = userPermissionsSchema.validate((req as any).body);
     if (error) {
@@ -398,7 +420,10 @@ router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async 
  * GET /api/admin/permissions/category/:category - Get permissions for specific category
  * Requires: permissions:read or system:admin permission
  */
-router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/category/:category', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { category } = (req as any).params;
     const { active_only = 'true' } = (req as any).query as { active_only?: string };
@@ -436,7 +461,11 @@ router.get('/category/:category', authenticateToken, requireAnyPermission(['perm
 /**
  * GET /api/admin/permissions/users/:userId - Get user's permissions with details
  */
-router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/users/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'user',
+  action: 'view:details',
+  getResourceId: (req) => req.params.userId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
     const { by_category = 'false', include_roles = 'false' } = (req as any).query as {
@@ -500,7 +529,11 @@ router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req
  * GET /api/admin/permissions/roles/:roleId - Get permissions for a role
  * Requires: permissions:read or system:admin permission
  */
-router.get('/roles/:roleId', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/roles/:roleId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view:details',
+  getResourceId: (req) => req.params.roleId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
     const permissions = await permissionService.getRolePermissions(roleId);
@@ -527,7 +560,11 @@ router.get('/roles/:roleId', authenticateToken, requireAnyPermission(['permissio
  * POST /api/admin/permissions/roles/:roleId - Assign permissions to a role
  * Requires: system:admin permission
  */
-router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/roles/:roleId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+  getResourceId: (req) => req.params.roleId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = assignPermissionsSchema.validate((req as any).body);
     if (error) {
@@ -573,7 +610,10 @@ router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (re
 /**
  * GET /api/admin/permissions/:permissionId - Get specific permission details
  */
-router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/:permissionId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { permissionId } = (req as any).params;
 
@@ -627,7 +667,10 @@ router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req
  * PUT /api/admin/permissions/:permissionId - Update a permission
  * Requires: system:admin permission
  */
-router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.put('/:permissionId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = updatePermissionSchema.validate((req as any).body);
     if (error) {
@@ -672,7 +715,10 @@ router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req
  * DELETE /api/admin/permissions/:permissionId - Delete a permission
  * Requires: system:admin permission
  */
-router.delete('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.delete('/:permissionId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'manage_permissions',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { permissionId } = (req as any).params;
 
