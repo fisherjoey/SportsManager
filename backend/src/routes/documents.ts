@@ -9,7 +9,8 @@ import Joi from 'joi';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { receiptUploader } from '../middleware/fileUpload';
 import type { AuthenticatedRequest } from '../types/auth.types';
 import type {
@@ -168,6 +169,10 @@ async function logAuditEvent(
  */
 router.get('/',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'view:list',
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -292,6 +297,11 @@ router.get('/',
  */
 router.get('/:id',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -371,7 +381,10 @@ router.get('/:id',
  */
 router.post('/',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'create',
+  }),
   receiptUploader.single('document'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
@@ -469,7 +482,11 @@ router.post('/',
  */
 router.post('/:id/versions',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'create:version',
+    getResourceId: (req) => req.params.id,
+  }),
   receiptUploader.single('document'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const client = await pool.connect();
@@ -594,7 +611,11 @@ router.post('/:id/versions',
  */
 router.put('/:id',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -663,7 +684,11 @@ router.put('/:id',
  */
 router.post('/:id/approve',
   authenticateToken,
-  requireAnyRole('admin', 'hr'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'approve',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -710,7 +735,11 @@ router.post('/:id/approve',
  */
 router.post('/:id/archive',
   authenticateToken,
-  requireAnyRole('admin', 'hr'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'archive',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -757,6 +786,11 @@ router.post('/:id/archive',
  */
 router.get('/:id/download',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'download',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -804,6 +838,11 @@ router.get('/:id/download',
  */
 router.post('/:id/acknowledge',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'acknowledge',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -884,7 +923,11 @@ router.post('/:id/acknowledge',
  */
 router.get('/:id/acknowledgments',
   authenticateToken,
-  requireAnyRole('admin', 'hr', 'manager'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'admin:view_acknowledgments',
+    getResourceId: (req) => req.params.id,
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const documentId = req.params.id;
@@ -941,7 +984,10 @@ router.get('/:id/acknowledgments',
  */
 router.get('/stats/overview',
   authenticateToken,
-  requireAnyRole('admin', 'hr'),
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'admin:view_stats',
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       // Get basic stats
@@ -1030,6 +1076,10 @@ router.get('/stats/overview',
  */
 router.get('/acknowledgments/pending',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'document',
+    action: 'view:pending_acknowledgments',
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user!.id;
