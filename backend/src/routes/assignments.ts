@@ -24,7 +24,8 @@ import { AuthenticatedRequest } from '../types/auth.types';
 const router = express.Router();
 const db = require('../config/database');
 const Joi = require('joi');
-const { authenticateToken, requireRole, requirePermission, requireAnyPermission } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requireCerbosPermission } = require('../middleware/requireCerbosPermission');
 const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculator');
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 import { checkAssignmentConflicts } from '../services/conflictDetectionService';
@@ -578,15 +579,28 @@ const getAvailableReferees = async (
 };
 
 // Route definitions with proper typing
-router.get('/', authenticateToken, validateQuery(FilterSchemas.assignments), enhancedAsyncHandler(getAssignments));
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'view:list',
+}), validateQuery(FilterSchemas.assignments), enhancedAsyncHandler(getAssignments));
 
-router.get('/:id', authenticateToken, requirePermission('assignments:read'), validateParams(IdParamSchema), enhancedAsyncHandler(getAssignmentById));
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), validateParams(IdParamSchema), enhancedAsyncHandler(getAssignmentById));
 
-router.post('/', authenticateToken, requirePermission('assignments:create'), validateBody(AssignmentSchemas.create), enhancedAsyncHandler(createAssignment));
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'create',
+}), validateBody(AssignmentSchemas.create), enhancedAsyncHandler(createAssignment));
 
-router.post('/bulk-update', 
-  authenticateToken, 
-  requireAnyPermission(['assignments:update', 'assignments:manage']), 
+router.post('/bulk-update',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'update',
+  }), 
   validateBody(Joi.object({
     updates: Joi.array().items(Joi.object({
       assignment_id: Joi.string().uuid().required(),
@@ -597,18 +611,25 @@ router.post('/bulk-update',
   enhancedAsyncHandler(bulkUpdateAssignments)
 );
 
-router.delete('/bulk-remove', 
-  authenticateToken, 
-  requireAnyPermission(['assignments:delete', 'assignments:manage']), 
+router.delete('/bulk-remove',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'delete',
+  }), 
   validateBody(Joi.object({
     assignment_ids: Joi.array().items(Joi.string().uuid()).min(1).max(100).required()
   })),
   enhancedAsyncHandler(bulkRemoveAssignments)
 );
 
-router.patch('/:id/status', 
+router.patch('/:id/status',
   authenticateToken,
-  requirePermission('assignments:update'),
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'change_status',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateBody(Joi.object({
     status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required()
@@ -616,11 +637,18 @@ router.patch('/:id/status',
   enhancedAsyncHandler(updateAssignmentStatus)
 );
 
-router.delete('/:id', authenticateToken, requirePermission('assignments:delete'), validateParams(IdParamSchema), enhancedAsyncHandler(deleteAssignment));
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), validateParams(IdParamSchema), enhancedAsyncHandler(deleteAssignment));
 
-router.post('/bulk', 
+router.post('/bulk',
   authenticateToken,
-  requirePermission('assignments:create'),
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'create',
+  }),
   validateBody(Joi.object({
     game_id: Joi.string().uuid().required(),
     assignments: Joi.array().items(Joi.object({
@@ -632,16 +660,22 @@ router.post('/bulk',
   enhancedAsyncHandler(bulkAssignReferees)
 );
 
-router.post('/check-conflicts', 
-  authenticateToken, 
-  requirePermission('assignments:read'),
+router.post('/check-conflicts',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'view:list',
+  }),
   validateBody(AssignmentSchemas.create),
   enhancedAsyncHandler(checkConflicts)
 );
 
-router.get('/available-referees/:game_id', 
+router.get('/available-referees/:game_id',
   authenticateToken,
-  requirePermission('assignments:read'),
+  requireCerbosPermission({
+    resource: 'assignment',
+    action: 'view:list',
+  }),
   validateParams(IdParamSchema.keys({ game_id: Joi.string().uuid().required() })),
   enhancedAsyncHandler(getAvailableReferees)
 );
