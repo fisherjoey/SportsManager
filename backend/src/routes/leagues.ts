@@ -159,7 +159,7 @@ router.get('/',
   }),
   validateQuery(leagueQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, LeagueQueryParams>, res: Response): Promise<void> => {
-    const { page = 1, limit = 50, ...filters } = req.query;
+    const { page = 1, limit = 50, ...filters } = (req as any).query;
 
     // Use cached aggregation for expensive league count queries
     const result = await CacheHelpers.cacheAggregation(
@@ -190,7 +190,7 @@ router.get('/',
         const leagues: LeagueWithCounts[] = await paginatedQuery;
 
         // Get counts using separate optimized queries instead of expensive JOINs
-        const leagueIds = leagues.map(league => league.id);
+        const leagueIds = leagues.map(league => (league as any).id);
 
         // Optimized team counts using idx_teams_league_rank index
         const teamCounts = leagueIds.length > 0 ? await db('teams')
@@ -217,8 +217,8 @@ router.get('/',
 
         const enhancedLeagues: LeagueWithCounts[] = leagues.map(league => ({
           ...league,
-          team_count: teamCountMap[league.id] || 0,
-          game_count: gameCountMap[league.id] || 0
+          team_count: teamCountMap[(league as any).id] || 0,
+          game_count: gameCountMap[(league as any).id] || 0
         }));
 
         return {
@@ -246,11 +246,11 @@ router.get('/:id',
   requireCerbosPermission({
     resource: 'league',
     action: 'view:details',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: Request<{ id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
+    const leagueId = (req as any).params.id;
 
     // Cache league details for 10 minutes
     const result = await CacheHelpers.cachePaginatedQuery(
@@ -282,8 +282,8 @@ router.get('/:id',
         const upcoming_games = games.filter(g => new Date(g.game_date) > now).length;
 
         return {
-          league,
-          teams,
+          league: league as any,
+          teams: teams as any,
           games,
           stats: {
             team_count: teams.length,
@@ -315,7 +315,7 @@ router.post('/',
   }),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, LeagueCreateBody>, res: Response): Promise<void> => {
-    const value = req.body;
+    const value = (req as any).body;
 
     // Check if league already exists
     const existingLeague = await db('leagues')
@@ -325,7 +325,7 @@ router.post('/',
         gender: value.gender,
         division: value.division,
         season: value.season
-      })
+      } as any)
       .first();
 
     if (existingLeague) {
@@ -341,7 +341,7 @@ router.post('/',
       res,
       { league },
       'League created successfully',
-      `/api/leagues/${league.id}`
+      `/api/leagues/${(league as any).id}`
     );
   })
 );
@@ -355,7 +355,7 @@ router.post('/bulk',
   }),
   validateBody(bulkLeagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkLeagueCreateBody>, res: Response): Promise<void> => {
-    const { organization, age_groups, genders, divisions, season, level } = req.body;
+    const { organization, age_groups, genders, divisions, season, level } = (req as any).body;
     const leaguesToCreate: LeagueCreateBody[] = [];
     const duplicates: string[] = [];
 
@@ -389,7 +389,7 @@ router.post('/bulk',
     // Create new leagues
     const createdLeagues: any[] = [];
     if (leaguesToCreate.length > 0) {
-      const leagues = await db('leagues').insert(leaguesToCreate).returning('*');
+      const leagues = await db('leagues').insert(leaguesToCreate as any).returning('*');
       createdLeagues.push(...leagues);
 
       // Invalidate related caches
@@ -418,13 +418,13 @@ router.put('/:id',
   requireCerbosPermission({
     resource: 'league',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, LeagueUpdateBody>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
-    const value = req.body;
+    const leagueId = (req as any).params.id;
+    const value = (req as any).body;
 
     const [league] = await db('leagues')
       .where('id', leagueId)
@@ -448,11 +448,11 @@ router.delete('/:id',
   requireCerbosPermission({
     resource: 'league',
     action: 'delete',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
+    const leagueId = (req as any).params.id;
 
     const league = await db('leagues').where('id', leagueId).first();
     if (!league) {
@@ -463,10 +463,10 @@ router.delete('/:id',
     const teamCount = await db('teams').where('league_id', leagueId).count('* as count').first();
     const gameCount = await db('games').where('league_id', leagueId).count('* as count').first();
 
-    if (parseInt(teamCount!.count.toString()) > 0 || parseInt(gameCount!.count.toString()) > 0) {
+    if (parseInt((teamCount as any).count.toString()) > 0 || parseInt((gameCount as any).count.toString()) > 0) {
       throw ErrorFactory.conflict('Cannot delete league with existing teams or games', {
-        teams: parseInt(teamCount!.count.toString()),
-        games: parseInt(gameCount!.count.toString())
+        teams: parseInt((teamCount as any).count.toString()),
+        games: parseInt((gameCount as any).count.toString())
       });
     }
 

@@ -10,12 +10,20 @@ export type ResourceType =
   | 'communication'
   | 'document'
   | 'role'
-  | 'permission';
+  | 'permission'
+  | 'team'
+  | 'league'
+  | 'location'
+  | 'post'
+  | 'referee_level';
 
 export type ResourceAction =
   | 'view'
   | 'view:list'
+  | 'list'
   | 'view:details'
+  | 'view:unread_count'
+  | 'view:pending_acknowledgments'
   | 'create'
   | 'update'
   | 'delete'
@@ -30,7 +38,14 @@ export type ResourceAction =
   | 'manage_roles'
   | 'manage_permissions'
   | 'manage_regions'
-  | 'view_audit_logs';
+  | 'view_audit_logs'
+  | 'bulk_create'
+  | 'generate'
+  | 'publish'
+  | 'archive'
+  | 'acknowledge'
+  | 'admin:view_recipients'
+  | 'admin:view_stats';
 
 export interface CerbosPrincipal {
   id: string;

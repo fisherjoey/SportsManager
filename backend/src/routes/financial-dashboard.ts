@@ -5,12 +5,8 @@
 
 import express, { Response } from 'express';
 import db from '../config/database';
-import {
-  authenticateToken,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
-} from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler } from '../middleware/errorHandling';
 
 import { AuthenticatedRequest } from '../types/auth.types';
@@ -60,7 +56,7 @@ const router = express.Router();
  */
 router.get('/',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({ resource: 'financial_dashboard', action: 'view' }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response<DashboardResponse | ErrorResponse>) => {
     const validation = validateDashboardQuery(req.query);
     if (!validation.isValid) {
@@ -582,7 +578,7 @@ async function getPendingApprovals(): Promise<PendingApprovals> {
  */
 router.get('/referee-payments',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({ resource: 'financial_dashboard', action: 'view:referee_payments' }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response<RefereePaymentResponse | ErrorResponse>) => {
     const validation = validateRefereePaymentQuery(req.query);
     if (!validation.isValid) {

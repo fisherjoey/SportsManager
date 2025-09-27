@@ -397,9 +397,9 @@ export const getGames = async (
       pagination: {
         page: parseInt(page.toString()),
         limit: parseInt(limit.toString()),
-        total: parseInt(totalCount.toString()),
-        totalPages: Math.ceil(totalCount / limit),
-        hasNext: Math.ceil(totalCount / limit) > parseInt(page.toString()),
+        total: parseInt((totalCount as any).toString()),
+        totalPages: Math.ceil((totalCount as any) / (limit as any)),
+        hasNext: Math.ceil((totalCount as any) / (limit as any)) > parseInt(page.toString()),
         hasPrevious: parseInt(page.toString()) > 1
       }
     };
@@ -494,9 +494,9 @@ export const createGame = async (
   // Check for venue scheduling conflicts
   const conflictCheck: ConflictCheckResult = await checkGameSchedulingConflicts({
     location: value.location,
-    date_time: value.date,
-    game_time: value.time
-  });
+    date_time: value.date as any,
+    game_time: value.time as any
+  } as any);
 
   // First, find or create teams and league
   let homeTeamId = null;
@@ -525,11 +525,11 @@ export const createGame = async (
           season: value.season,
           name: leagueName,
           display_name: leagueName
-        })
+        } as any)
         .returning('*');
     }
 
-    leagueId = league.id;
+    leagueId = (league as any).id;
 
     // Find or create home team
     let homeTeam = await db('teams')
@@ -545,11 +545,11 @@ export const createGame = async (
           team_number: value.homeTeam.rank.toString(),
           name: homeTeamName,
           display_name: homeTeamName
-        })
+        } as any)
         .returning('*');
     }
 
-    homeTeamId = homeTeam.id;
+    homeTeamId = (homeTeam as any).id;
 
     // Find or create away team
     let awayTeam = await db('teams')
@@ -565,11 +565,11 @@ export const createGame = async (
           team_number: value.awayTeam.rank.toString(),
           name: awayTeamName,
           display_name: awayTeamName
-        })
+        } as any)
         .returning('*');
     }
 
-    awayTeamId = awayTeam.id;
+    awayTeamId = (awayTeam as any).id;
 
   } catch (error) {
     console.error('Error creating teams/league - Detailed error:', error);
@@ -609,7 +609,7 @@ export const createGame = async (
 
   let game;
   try {
-    const result = await db('games').insert(dbData).returning('*');
+    const result = await db('games').insert(dbData as any).returning('*');
     game = result[0];
     console.log('Game inserted successfully:', game.id);
   } catch (dbError) {
@@ -690,10 +690,10 @@ export const updateGame = async (
       }
 
       conflictCheck = await checkGameSchedulingConflicts({
-        location: value.location || currentGame.location,
-        date_time: value.date || currentGame.date_time,
-        game_time: value.time || currentGame.game_time
-      }, (req as any).params.id);
+        location: value.location || (currentGame as any).location,
+        date_time: value.date as any || (currentGame as any).date_time,
+        game_time: value.time as any || (currentGame as any).game_time
+      } as any, (req as any).params.id);
     }
 
     const [game] = await db('games')
@@ -746,7 +746,7 @@ export const updateGameStatus = async (
 
     const [game] = await db('games')
       .where('id', (req as any).params.id)
-      .update({ status, updated_at: new Date() })
+      .update({ status, updated_at: new Date() } as any)
       .returning('*');
 
     if (!game) {

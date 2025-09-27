@@ -1,7 +1,9 @@
 import express, { Router } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import {
   AuthenticatedRequest,
   BudgetVarianceQuery,
@@ -79,7 +81,7 @@ const kpiConfigSchema = Joi.object({
  * GET /api/financial-reports/budget-variance
  * Generate budget variance report
  */
-router.get('/budget-variance', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<BudgetVarianceResponse | ErrorResponse>) => {
+router.get('/budget-variance', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:budget_variance' }), async (req: AuthenticatedRequest, res: express.Response<BudgetVarianceResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -215,7 +217,7 @@ router.get('/budget-variance', authenticateToken, async (req: AuthenticatedReque
  * GET /api/financial-reports/cash-flow
  * Generate cash flow report
  */
-router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<CashFlowResponse | ErrorResponse>) => {
+router.get('/cash-flow', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:cash_flow' }), async (req: AuthenticatedRequest, res: express.Response<CashFlowResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -373,7 +375,7 @@ router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, re
  * GET /api/financial-reports/expense-analysis
  * Generate detailed expense analysis report
  */
-router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<ExpenseAnalysisResponse | ErrorResponse>) => {
+router.get('/expense-analysis', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:expense_analysis' }), async (req: AuthenticatedRequest, res: express.Response<ExpenseAnalysisResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -567,7 +569,7 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
  * GET /api/financial-reports/payroll-summary
  * Generate payroll summary report
  */
-router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<PayrollSummaryResponse | ErrorResponse>) => {
+router.get('/payroll-summary', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:payroll_summary' }), async (req: AuthenticatedRequest, res: express.Response<PayrollSummaryResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -724,7 +726,7 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
  * GET /api/financial-reports/kpis
  * Get financial KPIs dashboard
  */
-router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<KPIResponse | ErrorResponse>) => {
+router.get('/kpis', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:kpis' }), async (req: AuthenticatedRequest, res: express.Response<KPIResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const { period_days = DEFAULT_PERIODS.KPI_CALCULATION_DAYS.toString() }: KPIQuery = req.query;
@@ -880,7 +882,7 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
  */
 router.post('/kpis',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'financial_report', action: 'create:kpi' }),
   async (req: AuthenticatedRequest, res: express.Response<KPIConfigResponse | ErrorResponse>) => {
     try {
       const { error, value } = kpiConfigSchema.validate(req.body);
@@ -918,7 +920,7 @@ router.post('/kpis',
  * GET /api/financial-reports/export/:type
  * Export financial report as CSV
  */
-router.get('/export/:type', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<ExportResponse | ErrorResponse>) => {
+router.get('/export/:type', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'export' }), async (req: AuthenticatedRequest, res: express.Response<ExportResponse | ErrorResponse>) => {
   try {
     const reportType: string = req.params.type;
     const organizationId: number = req.user.organization_id || req.user.id;

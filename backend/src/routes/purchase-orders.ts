@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken} from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Validation schemas
 const lineItemSchema = Joi.object({
@@ -626,7 +627,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
  * POST /api/purchase-orders/:id/approve
  * Approve or reject purchase order
  */
-router.post('/:id/approve', authenticateToken, requireAnyRole('admin', 'manager'), async (req, res) => {
+router.post('/:id/approve', authenticateToken, requireCerbosPermission({
+  resource: 'purchase_order',
+  action: 'manage'
+}), async (req, res) => {
   try {
     const poId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;
@@ -721,7 +725,10 @@ router.post('/:id/approve', authenticateToken, requireAnyRole('admin', 'manager'
  * POST /api/purchase-orders/:id/reject
  * Reject purchase order
  */
-router.post('/:id/reject', authenticateToken, requireAnyRole('admin', 'manager'), async (req, res) => {
+router.post('/:id/reject', authenticateToken, requireCerbosPermission({
+  resource: 'purchase_order',
+  action: 'manage'
+}), async (req, res) => {
   try {
     const poId = req.params.id;
     const { notes } = req.body;

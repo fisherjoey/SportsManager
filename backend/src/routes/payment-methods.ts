@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 const router = express.Router();
 
@@ -257,7 +258,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  * POST /api/payment-methods
  * Create new payment method (admin only)
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { error, value } = paymentMethodSchema.validate(req.body);
     if (error) {
@@ -372,7 +373,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
  * PUT /api/payment-methods/:id
  * Update payment method
  */
-router.put('/:id', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id', authenticateToken('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const paymentMethodId = req.params.id;
     const organizationId = req.user!.organization_id || req.user!.id;
@@ -472,7 +473,7 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req: Authenti
  * DELETE /api/payment-methods/:id
  * Deactivate payment method (soft delete)
  */
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/:id', authenticateToken('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const paymentMethodId = req.params.id;
     const organizationId = req.user!.organization_id || req.user!.id;

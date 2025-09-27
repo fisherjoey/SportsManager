@@ -10,29 +10,31 @@ import express from 'express';
 import { jest } from '@jest/globals';
 
 // Mock dependencies
-const mockDb = {
-  select: jest.fn().mockReturnThis(),
-  where: jest.fn().mockReturnThis(),
-  whereIn: jest.fn().mockReturnThis(),
-  join: jest.fn().mockReturnThis(),
-  leftJoin: jest.fn().mockReturnThis(),
-  orderBy: jest.fn().mockReturnThis(),
-  groupBy: jest.fn().mockReturnThis(),
-  first: jest.fn(),
-  insert: jest.fn().mockReturnThis(),
-  update: jest.fn().mockReturnThis(),
-  del: jest.fn(),
-  returning: jest.fn(),
-  count: jest.fn().mockReturnThis(),
-  distinct: jest.fn().mockReturnThis(),
-  raw: jest.fn(),
-  transaction: jest.fn()
+const mockDb: any = {
+  select: (jest.fn() as any).mockReturnThis(),
+  where: (jest.fn() as any).mockReturnThis(),
+  whereIn: (jest.fn() as any).mockReturnThis(),
+  orWhere: (jest.fn() as any).mockReturnThis(),
+  join: (jest.fn() as any).mockReturnThis(),
+  leftJoin: (jest.fn() as any).mockReturnThis(),
+  orderBy: (jest.fn() as any).mockReturnThis(),
+  groupBy: (jest.fn() as any).mockReturnThis(),
+  first: (jest.fn() as any).mockResolvedValue(null),
+  insert: (jest.fn() as any).mockReturnThis(),
+  update: (jest.fn() as any).mockReturnThis(),
+  del: (jest.fn() as any).mockResolvedValue(1),
+  returning: (jest.fn() as any).mockResolvedValue([]),
+  count: (jest.fn() as any).mockReturnThis(),
+  pluck: (jest.fn() as any).mockResolvedValue([]),
+  distinct: (jest.fn() as any).mockReturnThis(),
+  raw: jest.fn() as any,
+  transaction: jest.fn() as any
 };
 
-const mockCacheHelpers = {
-  cacheAggregation: jest.fn(),
-  cachePaginatedQuery: jest.fn(),
-  cacheLookupData: jest.fn()
+const mockCacheHelpers: any = {
+  cacheAggregation: (jest.fn() as any).mockResolvedValue({ leagues: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } }),
+  cachePaginatedQuery: (jest.fn() as any).mockResolvedValue(null),
+  cacheLookupData: (jest.fn() as any).mockResolvedValue([])
 };
 
 const mockCacheInvalidation = {
@@ -40,19 +42,56 @@ const mockCacheInvalidation = {
 };
 
 const mockQueryBuilder = {
-  validatePaginationParams: jest.fn().mockReturnValue({ page: 1, limit: 50 }),
+  validatePaginationParams: jest.fn().mockImplementation((params: any) => ({
+    page: parseInt(params.page) || 1,
+    limit: parseInt(params.limit) || 50
+  })),
   applyCommonFilters: jest.fn().mockReturnValue(mockDb),
-  buildCountQuery: jest.fn().mockReturnValue([{ count: 0 }]),
+  buildCountQuery: jest.fn().mockReturnValue(Promise.resolve([{ count: 0 }])),
   applyPagination: jest.fn().mockReturnValue(mockDb)
 };
 
 const mockAuth = {
-  authenticateToken: jest.fn((req: any, res: any, next: any) => {
+  authenticateToken: jest.fn().mockImplementation((req: any, res: any, next: any) => {
     req.user = { id: 'test-user-id', role: 'admin' };
     next();
+  })
+};
+
+const mockCerbos = {
+  requireCerbosPermission: jest.fn().mockImplementation(() => (req: any, res: any, next: any) => next())
+};
+
+const mockValidation = {
+  validateBody: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateParams: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateQuery: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next())
+};
+
+const mockResponseFormatter = {
+  sendSuccess: jest.fn().mockImplementation((res: any, data: any, message?: string) => {
+    res.json({ success: true, data, message });
   }),
-  requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
-  requirePermission: jest.fn(() => (req: any, res: any, next: any) => next())
+  sendCreated: jest.fn().mockImplementation((res: any, data: any, message?: string, location?: string) => {
+    res.status(201).json({ success: true, data, message });
+  }),
+  sendError: jest.fn().mockImplementation((res: any, error: any, statusCode: number) => {
+    res.status(statusCode).json({ error: error.message || error });
+  })
+};
+
+const mockEnhancedAsyncHandler = jest.fn().mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+  try {
+    await fn(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const mockErrorFactory = {
+  badRequest: (jest.fn() as any)((message: string) => new Error(message)),
+  notFound: (jest.fn() as any)((message: string) => new Error(message)),
+  conflict: (jest.fn() as any)((message: string) => new Error(message))
 };
 
 // Mock modules
@@ -67,20 +106,60 @@ jest.mock('../../utils/query-builders', () => ({
   QueryHelpers: {}
 }));
 jest.mock('../../middleware/auth', () => mockAuth);
-jest.mock('joi', () => ({
-  object: jest.fn().mockReturnValue({
-    validate: jest.fn().mockReturnValue({ error: null, value: {} })
-  }),
-  string: jest.fn().mockReturnThis(),
-  array: jest.fn().mockReturnThis(),
-  number: jest.fn().mockReturnThis(),
-  valid: jest.fn().mockReturnThis(),
-  required: jest.fn().mockReturnThis(),
-  min: jest.fn().mockReturnThis(),
-  max: jest.fn().mockReturnThis(),
-  items: jest.fn().mockReturnThis(),
-  default: jest.fn().mockReturnThis()
-}));
+jest.mock('../../middleware/requireCerbosPermission', () => mockCerbos);
+jest.mock('../../middleware/validation', () => mockValidation);
+jest.mock('../../utils/response-formatters', () => ({ ResponseFormatter: mockResponseFormatter }));
+jest.mock('../../middleware/enhanced-error-handling', () => ({ enhancedAsyncHandler: mockEnhancedAsyncHandler }));
+jest.mock('../../utils/errors', () => ({ ErrorFactory: mockErrorFactory }));
+jest.mock('joi', () => {
+  // Create a comprehensive chainable mock that handles all Joi methods
+  const createChainableMock = (): any => {
+    const mock: any = {};
+
+    // Define all Joi methods that need to be chainable
+    const chainableMethods = [
+      'string', 'number', 'boolean', 'array', 'object', 'date', 'binary',
+      'required', 'optional', 'allow', 'valid', 'invalid', 'default',
+      'min', 'max', 'length', 'email', 'uri', 'uuid', 'integer',
+      'positive', 'negative', 'items', 'keys', 'pattern', 'regex',
+      'alphanum', 'token', 'hex', 'base64', 'lowercase', 'uppercase',
+      'trim', 'replace', 'truncate', 'normalize', 'when', 'alternatives',
+      'alt', 'concat', 'raw', 'empty', 'strip', 'label', 'description',
+      'notes', 'tags', 'meta', 'example', 'unit', 'messages', 'prefs',
+      'preferences', 'strict', 'options', 'fork', 'validate'
+    ];
+
+    // Create mock functions for all chainable methods
+    chainableMethods.forEach(method => {
+      if (method === 'validate') {
+        mock[method] = jest.fn().mockReturnValue({ error: null, value: {} });
+      } else {
+        mock[method] = jest.fn().mockReturnValue(mock); // Return self for chaining
+      }
+    });
+
+    return mock;
+  };
+
+  // Create the main Joi mock
+  const joiMock = createChainableMock();
+
+  // Override specific methods that return schemas
+  joiMock.object = jest.fn().mockImplementation((schema?: any) => {
+    const schemaMock = createChainableMock();
+    return schemaMock;
+  });
+
+  joiMock.array = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.string = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.number = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.boolean = jest.fn().mockImplementation(() => createChainableMock());
+
+  return {
+    default: joiMock,
+    __esModule: true
+  };
+});
 
 describe('Leagues Routes Integration Tests', () => {
   let app: express.Application;
@@ -88,23 +167,51 @@ describe('Leagues Routes Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Restore default mock implementations after clearAllMocks
+    mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      req.user = { id: 'test-user-id', role: 'admin' };
+      next();
+    });
+    mockCerbos.requireCerbosPermission.mockImplementation(() => (req: any, res: any, next: any) => next());
+    mockValidation.validateBody.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateParams.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateQuery.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockEnhancedAsyncHandler.mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+      try {
+        await fn(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    });
+    mockQueryBuilder.validatePaginationParams.mockImplementation((params: any) => ({
+      page: parseInt(params.page) || 1,
+      limit: parseInt(params.limit) || 50
+    }));
+    mockQueryBuilder.applyCommonFilters.mockReturnValue(mockDb);
+    mockQueryBuilder.buildCountQuery.mockReturnValue(Promise.resolve([{ count: 0 }]));
+    mockQueryBuilder.applyPagination.mockReturnValue(mockDb);
+    mockCacheHelpers.cacheAggregation.mockResolvedValue({ leagues: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } });
+    mockCacheHelpers.cachePaginatedQuery.mockResolvedValue(null);
+    mockCacheHelpers.cacheLookupData.mockResolvedValue([]);
+
     app = express();
     app.use(express.json());
 
     // Import the router after mocks are set up
-    leaguesRouter = require('../leagues.js');
+    leaguesRouter = require('../leagues').default;
     app.use('/api/leagues', leaguesRouter);
   });
 
   describe('Route Module Structure', () => {
     it('should be able to import the leagues routes module', () => {
       expect(() => {
-        require('../leagues.js');
+        require('../leagues');
       }).not.toThrow();
     });
 
     it('should export an express router', () => {
-      const routeModule = require('../leagues.js');
+      const routeModule = require('../leagues').default;
       expect(routeModule).toBeDefined();
       expect(typeof routeModule).toBe('function'); // Express router is a function
     });
@@ -251,22 +358,12 @@ describe('Leagues Routes Integration Tests', () => {
       level: 'Recreational'
     };
 
-    it('should require admin role', async () => {
-      // Reset mock to check authorization
-      mockAuth.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (req.user.role !== role) {
-            return res.status(403).json({ error: 'Forbidden' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
-
-      // Set user as non-admin
-      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        req.user = { id: 'test-user-id', role: 'referee' };
-        next();
-      });
 
       const response = await request(app)
         .post('/api/leagues')
@@ -330,20 +427,12 @@ describe('Leagues Routes Integration Tests', () => {
       level: 'Recreational'
     };
 
-    it('should require admin role', async () => {
-      mockAuth.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (req.user.role !== role) {
-            return res.status(403).json({ error: 'Forbidden' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
-
-      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        req.user = { id: 'test-user-id', role: 'referee' };
-        next();
-      });
 
       const response = await request(app)
         .post('/api/leagues/bulk')
@@ -403,20 +492,12 @@ describe('Leagues Routes Integration Tests', () => {
       level: 'Competitive'
     };
 
-    it('should require admin role', async () => {
-      mockAuth.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (req.user.role !== role) {
-            return res.status(403).json({ error: 'Forbidden' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
-
-      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        req.user = { id: 'test-user-id', role: 'referee' };
-        next();
-      });
 
       const response = await request(app)
         .put('/api/leagues/league-1')
@@ -472,20 +553,12 @@ describe('Leagues Routes Integration Tests', () => {
   });
 
   describe('DELETE /api/leagues/:id - Delete league', () => {
-    it('should require admin role', async () => {
-      mockAuth.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (req.user.role !== role) {
-            return res.status(403).json({ error: 'Forbidden' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
-
-      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        req.user = { id: 'test-user-id', role: 'referee' };
-        next();
-      });
 
       const response = await request(app)
         .delete('/api/leagues/league-1')

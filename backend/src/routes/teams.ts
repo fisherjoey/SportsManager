@@ -199,7 +199,7 @@ router.get('/',
   }),
   validateQuery(teamQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, TeamQueryParams>, res: Response): Promise<void> => {
-    const { page = 1, limit = 50, ...filters } = req.query;
+    const { page = 1, limit = 50, ...filters } = (req as any).query;
 
     // Use cached aggregation for expensive team count queries
     const result = await CacheHelpers.cacheAggregation(
@@ -299,11 +299,11 @@ router.get('/:id',
   requireCerbosPermission({
     resource: 'team',
     action: 'view:details',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: Request<{ id: UUID }>, res: Response): Promise<void> => {
-    const teamId = req.params.id;
+    const teamId = (req as any).params.id;
 
     // Cache team details with games for 10 minutes
     const result = await CacheHelpers.cachePaginatedQuery(
@@ -395,7 +395,7 @@ router.post('/',
   }),
   validateBody(teamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, TeamCreateBody>, res: Response): Promise<void> => {
-    const value = req.body;
+    const value = (req as any).body;
 
     // Check if league exists
     const league = await db('leagues').where('id', value.league_id).first();
@@ -422,7 +422,7 @@ router.post('/',
       res,
       { team },
       'Team created successfully',
-      `/api/teams/${team.id}`
+      `/api/teams/${(team as any).id}`
     );
   })
 );
@@ -436,7 +436,7 @@ router.post('/bulk',
   }),
   validateBody(bulkTeamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkTeamCreateBody>, res: Response): Promise<void> => {
-    const { league_id, teams } = req.body;
+    const { league_id, teams } = (req as any).body;
 
     // Check if league exists
     const league = await db('leagues').where('id', league_id).first();
@@ -473,7 +473,7 @@ router.post('/bulk',
     // Create valid teams
     const createdTeams: any[] = [];
     if (validTeams.length > 0) {
-      const newTeams = await db('teams').insert(validTeams).returning('*');
+      const newTeams = await db('teams').insert(validTeams as any).returning('*');
       createdTeams.push(...newTeams);
 
       // Invalidate related caches
@@ -505,7 +505,7 @@ router.post('/generate',
   }),
   validateBody(bulkGenerateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkGenerateTeamBody>, res: Response): Promise<void> => {
-    const { league_id, count, name_pattern = 'Team {number}', location_base, auto_rank } = req.body;
+    const { league_id, count, name_pattern = 'Team {number}', location_base, auto_rank } = (req as any).body;
 
     // Check if league exists
     const league = await db('leagues').where('id', league_id).first();
@@ -544,7 +544,7 @@ router.post('/generate',
     // Create teams
     const createdTeams: any[] = [];
     if (teamsToCreate.length > 0) {
-      const newTeams = await db('teams').insert(teamsToCreate).returning('*');
+      const newTeams = await db('teams').insert(teamsToCreate as any).returning('*');
       createdTeams.push(...newTeams);
 
       // Invalidate related caches
@@ -556,11 +556,11 @@ router.post('/generate',
       {
         created: createdTeams,
         league: {
-          id: league.id,
-          organization: league.organization,
-          age_group: league.age_group,
-          gender: league.gender,
-          division: league.division
+          id: (league as any).id,
+          organization: (league as any).organization,
+          age_group: (league as any).age_group,
+          gender: (league as any).gender,
+          division: (league as any).division
         },
         summary: {
           requested: count,
@@ -579,13 +579,13 @@ router.put('/:id',
   requireCerbosPermission({
     resource: 'team',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   validateBody(teamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, TeamUpdateBody>, res: Response): Promise<void> => {
-    const teamId = req.params.id;
-    const value = req.body;
+    const teamId = (req as any).params.id;
+    const value = (req as any).body;
 
     // Check if new name conflicts with existing team in same league
     if (value.name) {
@@ -622,11 +622,11 @@ router.delete('/:id',
   requireCerbosPermission({
     resource: 'team',
     action: 'delete',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const teamId = req.params.id;
+    const teamId = (req as any).params.id;
 
     const team = await db('teams').where('id', teamId).first();
     if (!team) {
@@ -640,9 +640,9 @@ router.delete('/:id',
       .count('* as count')
       .first();
 
-    if (parseInt(gameCount!.count.toString()) > 0) {
+    if (parseInt((gameCount as any).count.toString()) > 0) {
       throw ErrorFactory.conflict('Cannot delete team with existing games', {
-        games: parseInt(gameCount!.count.toString())
+        games: parseInt((gameCount as any).count.toString())
       });
     }
 
@@ -664,7 +664,7 @@ router.get('/league/:league_id',
   }),
   validateParams(leagueIdParamSchema),
   enhancedAsyncHandler(async (req: Request<{ league_id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = req.params.league_id;
+    const leagueId = (req as any).params.league_id;
 
     // Cache league teams for 10 minutes
     const result = await CacheHelpers.cacheAggregation(
@@ -673,7 +673,7 @@ router.get('/league/:league_id',
         const teams = await db('teams')
           .select('teams.*')
           .where('teams.league_id', leagueId)
-          .orderBy(db.raw('"teams"."rank"'), 'asc'); // Uses idx_teams_league_rank
+          .orderBy((db.raw('"teams"."rank"') as any), 'asc'); // Uses idx_teams_league_rank
 
         const league = await db('leagues').where('id', leagueId).first();
         if (!league) {
@@ -705,7 +705,7 @@ router.get('/league/:league_id',
         }));
 
         return {
-          league,
+          league: league as any,
           teams: enhancedTeams
         };
       },

@@ -59,7 +59,7 @@ interface AuthenticatedRequest extends Request {
 
 // Type guard for authenticated requests
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user !== undefined;
+  return 'user' in req && (req as any).user !== undefined;
 }
 
 // COMMUNICATIONS ENDPOINTS
@@ -78,23 +78,23 @@ router.get('/', authenticateToken, requireCerbosPermission({
     }
 
     // Extract role safely
-    const userRoles = (req.user as any).roles || [];
+    const userRoles = ((req as any).user as any).roles || [];
     const primaryRole = Array.isArray(userRoles) && userRoles.length > 0
       ? (typeof userRoles[0] === 'object' ? userRoles[0].name : userRoles[0])
       : 'user';
 
     // Get communications with error handling
     const filters: CommunicationFilters = {
-      type: req.query.type as CommunicationType,
-      priority: req.query.priority as CommunicationPriority,
-      status: req.query.status as any || 'published',
-      unread_only: req.query.unread_only === 'true',
-      page: parseInt(req.query.page as string) || 1,
-      limit: parseInt(req.query.limit as string) || 10
+      type: (req as any).query.type as CommunicationType,
+      priority: (req as any).query.priority as CommunicationPriority,
+      status: (req as any).query.status as any || 'published',
+      unread_only: (req as any).query.unread_only === 'true',
+      page: parseInt((req as any).query.page as string) || 1,
+      limit: parseInt((req as any).query.limit as string) || 10
     };
 
     const result = await communicationService.getCommunications(
-      req.user.id,
+      (req as any).user.id,
       primaryRole,
       filters
     );
@@ -108,7 +108,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
       items: [],
       total: 0,
       page: 1,
-      limit: parseInt(req.query.limit as string) || 10
+      limit: parseInt((req as any).query.limit as string) || 10
     });
   }
 });
@@ -119,7 +119,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
 router.get('/:id', authenticateToken, requireCerbosPermission({
   resource: 'communication',
   action: 'view:details',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req) => (req as any).params.id,
 }), async (req: Request, res: Response): Promise<void> => {
   try {
     if (!isAuthenticated(req)) {
@@ -128,12 +128,12 @@ router.get('/:id', authenticateToken, requireCerbosPermission({
     }
 
     // Extract the primary role from the roles array
-    const userRoles = (req.user as any).roles || [];
+    const userRoles = ((req as any).user as any).roles || [];
     const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
     const communication = await communicationService.getCommunicationById(
-      req.params.id,
-      req.user.id,
+      (req as any).params.id,
+      (req as any).user.id,
       primaryRole
     );
 
@@ -144,7 +144,7 @@ router.get('/:id', authenticateToken, requireCerbosPermission({
 
     // Mark as read if user is a recipient and hasn't read it yet
     if (communication.sent_at && !communication.read_at) {
-      await communicationService.markAsRead(req.params.id, req.user.id);
+      await communicationService.markAsRead((req as any).params.id, (req as any).user.id);
     }
 
     res.json(communication);
@@ -172,7 +172,7 @@ router.post(
         return;
       }
 
-      const { error, value } = communicationSchema.validate(req.body);
+      const { error, value } = communicationSchema.validate((req as any).body);
       if (error) {
         res.status(400).json({ error: error.details[0].message });
         return;
@@ -193,7 +193,7 @@ router.post(
 
       const communication = await communicationService.createCommunication(
         communicationData,
-        req.user.id,
+        (req as any).user.id,
         attachments
       );
 
@@ -214,7 +214,7 @@ router.put(
   requireCerbosPermission({
     resource: 'communication',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -223,7 +223,7 @@ router.put(
         return;
       }
 
-      const { error, value } = communicationSchema.partial().validate(req.body);
+      const { error, value } = (communicationSchema as any).partial().validate((req as any).body);
       if (error) {
         res.status(400).json({ error: error.details[0].message });
         return;
@@ -237,13 +237,13 @@ router.put(
       }
 
       // Extract the primary role from the roles array
-      const userRoles = (req.user as any).roles || [];
+      const userRoles = ((req as any).user as any).roles || [];
       const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
       const communication = await communicationService.updateCommunication(
-        req.params.id,
+        (req as any).params.id,
         updateData,
-        req.user.id,
+        (req as any).user.id,
         primaryRole
       );
 
@@ -273,7 +273,7 @@ router.post(
   requireCerbosPermission({
     resource: 'communication',
     action: 'publish',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -283,12 +283,12 @@ router.post(
       }
 
       // Extract the primary role from the roles array
-      const userRoles = (req.user as any).roles || [];
+      const userRoles = ((req as any).user as any).roles || [];
       const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
       const communication = await communicationService.publishCommunication(
-        req.params.id,
-        req.user.id,
+        (req as any).params.id,
+        (req as any).user.id,
         primaryRole
       );
 
@@ -313,7 +313,7 @@ router.post(
   requireCerbosPermission({
     resource: 'communication',
     action: 'archive',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -323,12 +323,12 @@ router.post(
       }
 
       // Extract the primary role from the roles array
-      const userRoles = (req.user as any).roles || [];
+      const userRoles = ((req as any).user as any).roles || [];
       const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
       const communication = await communicationService.archiveCommunication(
-        req.params.id,
-        req.user.id,
+        (req as any).params.id,
+        (req as any).user.id,
         primaryRole
       );
 
@@ -354,7 +354,7 @@ router.post(
   requireCerbosPermission({
     resource: 'communication',
     action: 'acknowledge',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -363,11 +363,11 @@ router.post(
         return;
       }
 
-      const { acknowledgment_text }: AcknowledgmentRequest = req.body;
+      const { acknowledgment_text }: AcknowledgmentRequest = (req as any).body;
 
       const acknowledged = await communicationService.acknowledgeCommunication(
-        req.params.id,
-        req.user.id,
+        (req as any).params.id,
+        (req as any).user.id,
         acknowledgment_text
       );
 
@@ -395,7 +395,7 @@ router.get(
   requireCerbosPermission({
     resource: 'communication',
     action: 'admin:view_recipients',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -405,12 +405,12 @@ router.get(
       }
 
       // Extract the primary role from the roles array
-      const userRoles = (req.user as any).roles || [];
+      const userRoles = ((req as any).user as any).roles || [];
       const primaryRole = userRoles.length > 0 ? userRoles[0]?.name || userRoles[0] : 'user';
 
       const recipients = await communicationService.getCommunicationRecipients(
-        req.params.id,
-        req.user.id,
+        (req as any).params.id,
+        (req as any).user.id,
         primaryRole
       );
 
@@ -440,7 +440,7 @@ router.get('/unread/count', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const unreadCount = await communicationService.getUnreadCount(req.user.id);
+    const unreadCount = await communicationService.getUnreadCount((req as any).user.id);
     res.json({ unread_count: unreadCount });
   } catch (error) {
     console.error('Error fetching unread count:', error);
@@ -466,7 +466,7 @@ router.get(
       }
 
       const pendingAcknowledgments = await communicationService.getPendingAcknowledgments(
-        req.user.id
+        (req as any).user.id
       );
       res.json(pendingAcknowledgments);
     } catch (error) {

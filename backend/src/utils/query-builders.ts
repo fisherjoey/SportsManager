@@ -280,7 +280,7 @@ export class QueryBuilder {
     const hasPrevPage = validPage > 1;
 
     return {
-      data: data as U[],
+      data: data as unknown as U[],
       pagination: {
         page: validPage,
         limit: validLimit,

@@ -1,0 +1,21 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for payment_method resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "payment_method"
+  rules:
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest
