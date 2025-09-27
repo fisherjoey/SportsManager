@@ -3,8 +3,8 @@
 import express from 'express';
 const router = express.Router();
 import PermissionService from '../services/PermissionService';
-import authenticateJWT from '../middleware/auth';
-import { checkPermission  } from '../middleware/rbac';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 const permissionService = new PermissionService();
 
@@ -13,7 +13,10 @@ const permissionService = new PermissionService();
  * @desc    Get all permissions
  * @access  Private - Requires permission management
  */
-router.get('/', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const { page, limit, category, search } = req.query;
     const result = await permissionService.getAllPermissions({
@@ -34,7 +37,10 @@ router.get('/', authenticateJWT, checkPermission('manage_permissions'), async (r
  * @desc    Get all permission categories
  * @access  Private - Requires permission management
  */
-router.get('/categories', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.get('/categories', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:categories',
+}), async (req, res) => {
   try {
     const categories = await permissionService.getCategories();
     res.json(categories);
@@ -49,7 +55,10 @@ router.get('/categories', authenticateJWT, checkPermission('manage_permissions')
  * @desc    Get permissions grouped by category
  * @access  Private - Requires permission management
  */
-router.get('/by-category', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.get('/by-category', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:by_category',
+}), async (req, res) => {
   try {
     const permissions = await permissionService.getPermissionsByCategory();
     res.json(permissions);
@@ -64,7 +73,11 @@ router.get('/by-category', authenticateJWT, checkPermission('manage_permissions'
  * @desc    Get permission by ID
  * @access  Private - Requires permission management
  */
-router.get('/:id', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const permission = await permissionService.getPermission(req.params.id);
     if (!permission) {
@@ -82,7 +95,10 @@ router.get('/:id', authenticateJWT, checkPermission('manage_permissions'), async
  * @desc    Create a new permission
  * @access  Private - Requires permission management
  */
-router.post('/', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'create',
+}), async (req, res) => {
   try {
     const { name, code, description, category, risk_level, resource_type, action } = req.body;
     
@@ -112,7 +128,11 @@ router.post('/', authenticateJWT, checkPermission('manage_permissions'), async (
  * @desc    Update a permission
  * @access  Private - Requires permission management
  */
-router.put('/:id', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { name, code, description, category, risk_level, resource_type, action } = req.body;
     
@@ -138,7 +158,11 @@ router.put('/:id', authenticateJWT, checkPermission('manage_permissions'), async
  * @desc    Delete a permission
  * @access  Private - Requires permission management
  */
-router.delete('/:id', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     await permissionService.deletePermission(req.params.id);
     res.json({ message: 'Permission deleted successfully' });
@@ -153,7 +177,11 @@ router.delete('/:id', authenticateJWT, checkPermission('manage_permissions'), as
  * @desc    Get permissions for a specific role
  * @access  Private - Requires permission management
  */
-router.get('/role/:roleId', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.get('/role/:roleId', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:role_permissions',
+  getResourceId: (req) => req.params.roleId,
+}), async (req, res) => {
   try {
     const permissions = await permissionService.getRolePermissions(req.params.roleId);
     res.json(permissions);
@@ -168,7 +196,11 @@ router.get('/role/:roleId', authenticateJWT, checkPermission('manage_permissions
  * @desc    Assign permissions to a role
  * @access  Private - Requires permission management
  */
-router.post('/role/:roleId', authenticateJWT, checkPermission('manage_permissions'), async (req, res) => {
+router.post('/role/:roleId', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'assign:role_permissions',
+  getResourceId: (req) => req.params.roleId,
+}), async (req, res) => {
   try {
     const { permissionIds } = req.body;
     
@@ -189,7 +221,11 @@ router.post('/role/:roleId', authenticateJWT, checkPermission('manage_permission
  * @desc    Get permissions for a specific user
  * @access  Private - User can get their own permissions, admin can get any
  */
-router.get('/user/:userId', authenticateJWT, async (req, res) => {
+router.get('/user/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'view:user_permissions',
+  getResourceId: (req) => req.params.userId,
+}), async (req, res) => {
   try {
     const requestedUserId = req.params.userId;
     const currentUserId = req.user.id;
@@ -215,7 +251,10 @@ router.get('/user/:userId', authenticateJWT, async (req, res) => {
  * @desc    Check if current user has specific permissions
  * @access  Private
  */
-router.post('/check', authenticateJWT, async (req, res) => {
+router.post('/check', authenticateToken, requireCerbosPermission({
+  resource: 'permission',
+  action: 'check',
+}), async (req, res) => {
   try {
     const { permissions } = req.body;
     const userId = req.user.id;
