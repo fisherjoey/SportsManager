@@ -1,0 +1,28 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for location resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "location"
+  rules:
+    - actions: ['view:list', 'view:details', 'view:distances', 'create', 'update', 'delete', 'admin:manage_distances']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:list', 'view:details', 'view:distances']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - referee
+      derivedRoles:
+        - same_organization
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import knex from '../config/database';
 import DistanceCalculationService from '../services/DistanceCalculationService';
 
@@ -76,7 +77,10 @@ interface DistanceFilters {
 
 // Get all active locations
 // Requires: locations:read permission
-router.get('/', authenticateToken, requirePermission('locations:read'), async (req: Request, res: Response) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'view:list',
+}), async (req: Request, res: Response) => {
   try {
     const { search, city, limit = '50' } = req.query;
     const limitNum = parseInt(limit as string, 10);
@@ -108,7 +112,11 @@ router.get('/', authenticateToken, requirePermission('locations:read'), async (r
 
 // Get location by ID
 // Requires: locations:read permission
-router.get('/:id', authenticateToken, requirePermission('locations:read'), async (req: Request, res: Response) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req: Request, res: Response) => {
   try {
     const location = await knex('locations')
       .where('id', req.params.id)
@@ -128,7 +136,10 @@ router.get('/:id', authenticateToken, requirePermission('locations:read'), async
 
 // Create new location
 // Requires: locations:create or system:manage permission
-router.post('/', authenticateToken, requireAnyPermission(['locations:create', 'system:manage']), async (req: Request, res: Response) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'create',
+}), async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -227,7 +238,11 @@ router.post('/', authenticateToken, requireAnyPermission(['locations:create', 's
 
 // Update location
 // Requires: locations:update or system:manage permission
-router.put('/:id', authenticateToken, requireAnyPermission(['locations:update', 'system:manage']), async (req: Request, res: Response) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -337,7 +352,11 @@ router.put('/:id', authenticateToken, requireAnyPermission(['locations:update', 
 
 // Deactivate location - soft delete
 // Requires: locations:delete or system:manage permission
-router.delete('/:id', authenticateToken, requireAnyPermission(['locations:delete', 'system:manage']), async (req: Request, res: Response) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req: Request, res: Response) => {
   try {
     // Check if location is used in any games
     const gamesCount = await knex('games')
@@ -368,7 +387,10 @@ router.delete('/:id', authenticateToken, requireAnyPermission(['locations:delete
 });
 
 // Get distances for current user to all locations
-router.get('/distances', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/distances', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'view:distances',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const {
       maxDriveTimeMinutes,
@@ -419,7 +441,10 @@ router.get('/distances', authenticateToken, async (req: AuthenticatedRequest, re
 });
 
 // Get distance to a specific location for current user
-router.get('/:locationId/distance', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/:locationId/distance', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'view:distances',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const distance = await knex('user_location_distances')
       .join('locations', 'user_location_distances.location_id', 'locations.id')
@@ -449,7 +474,10 @@ router.get('/:locationId/distance', authenticateToken, async (req: Authenticated
 });
 
 // Admin endpoint: Get distance calculation statistics
-router.get('/admin/distance-stats', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/admin/distance-stats', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'admin:manage_distances',
+}), async (req: Request, res: Response) => {
   try {
     const distanceService = new DistanceCalculationService();
     const stats = await distanceService.getCalculationStats();
@@ -462,7 +490,10 @@ router.get('/admin/distance-stats', authenticateToken, requireRole('admin'), asy
 });
 
 // Admin endpoint: Trigger distance calculation for a specific user
-router.post('/admin/calculate-user-distances/:userId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/admin/calculate-user-distances/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'admin:manage_distances',
+}), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -499,7 +530,10 @@ router.post('/admin/calculate-user-distances/:userId', authenticateToken, requir
 });
 
 // Admin endpoint: Trigger distance calculation for a specific location
-router.post('/admin/calculate-location-distances/:locationId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/admin/calculate-location-distances/:locationId', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'admin:manage_distances',
+}), async (req: Request, res: Response) => {
   try {
     const { locationId } = req.params;
 
@@ -537,7 +571,10 @@ router.post('/admin/calculate-location-distances/:locationId', authenticateToken
 });
 
 // Admin endpoint: Retry failed distance calculations
-router.post('/admin/retry-failed-calculations', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/admin/retry-failed-calculations', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'admin:manage_distances',
+}), async (req: Request, res: Response) => {
   try {
     const { maxRetries = 10 } = req.body;
 
@@ -567,7 +604,10 @@ router.post('/admin/retry-failed-calculations', authenticateToken, requireRole('
 });
 
 // Admin endpoint: Initialize all distance calculations
-router.post('/admin/initialize-all-distances', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/admin/initialize-all-distances', authenticateToken, requireCerbosPermission({
+  resource: 'location',
+  action: 'admin:manage_distances',
+}), async (req: Request, res: Response) => {
   try {
     const distanceService = new DistanceCalculationService();
 
