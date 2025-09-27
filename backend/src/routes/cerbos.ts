@@ -1,6 +1,7 @@
 import express, { Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../types/auth.types';
 import CerbosPolicyService from '../services/CerbosPolicyService';
 import { logger } from '../utils/logger';
@@ -36,7 +37,10 @@ const setRoleRulesSchema = Joi.object().pattern(
   })
 );
 
-router.get('/resources', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/resources', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:resources',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const resources = await policyService.listResources();
 
@@ -54,7 +58,11 @@ router.get('/resources', authenticateToken, requireRole('admin'), async (req: Au
   }
 });
 
-router.get('/resources/:kind', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/resources/:kind', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:resource_details',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind } = req.params;
     const policy = await policyService.getResource(kind);
@@ -81,7 +89,10 @@ router.get('/resources/:kind', authenticateToken, requireRole('admin'), async (r
   }
 });
 
-router.post('/resources', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/resources', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'create:resource',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { error, value } = createResourceSchema.validate(req.body);
     if (error) {
@@ -119,7 +130,11 @@ router.post('/resources', authenticateToken, requireRole('admin'), async (req: A
   }
 });
 
-router.put('/resources/:kind', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.put('/resources/:kind', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'update:resource',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind } = req.params;
     const policy = req.body;
@@ -159,7 +174,11 @@ router.put('/resources/:kind', authenticateToken, requireRole('admin'), async (r
   }
 });
 
-router.delete('/resources/:kind', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.delete('/resources/:kind', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'delete:resource',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind } = req.params;
     const deleted = await policyService.deleteResource(kind);
@@ -187,7 +206,11 @@ router.delete('/resources/:kind', authenticateToken, requireRole('admin'), async
   }
 });
 
-router.get('/resources/:kind/actions', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/resources/:kind/actions', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:actions',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind } = req.params;
     const policy = await policyService.getResource(kind);
@@ -219,7 +242,11 @@ router.get('/resources/:kind/actions', authenticateToken, requireRole('admin'), 
   }
 });
 
-router.post('/resources/:kind/actions', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/resources/:kind/actions', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'create:action',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind } = req.params;
     const { error, value } = addActionSchema.validate(req.body);
@@ -264,7 +291,11 @@ router.post('/resources/:kind/actions', authenticateToken, requireRole('admin'),
   }
 });
 
-router.delete('/resources/:kind/actions/:action', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.delete('/resources/:kind/actions/:action', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'delete:action',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind, action } = req.params;
     const policy = await policyService.removeAction(kind, action);
@@ -293,7 +324,11 @@ router.delete('/resources/:kind/actions/:action', authenticateToken, requireRole
   }
 });
 
-router.get('/resources/:kind/roles/:role', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:roles',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind, role } = req.params;
     const rules = await policyService.getRoleRules(kind, role);
@@ -320,7 +355,11 @@ router.get('/resources/:kind/roles/:role', authenticateToken, requireRole('admin
   }
 });
 
-router.put('/resources/:kind/roles/:role', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.put('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'update:roles',
+  getResourceId: (req) => req.params.kind,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { kind, role } = req.params;
     const { error, value } = setRoleRulesSchema.validate(req.body);
@@ -359,7 +398,10 @@ router.put('/resources/:kind/roles/:role', authenticateToken, requireRole('admin
   }
 });
 
-router.post('/reload', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/reload', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'reload',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const cerbosHealth = await fetch('http://localhost:3592/_cerbos/health');
     if (!cerbosHealth.ok) {
@@ -386,7 +428,10 @@ router.post('/reload', authenticateToken, requireRole('admin'), async (req: Auth
   }
 });
 
-router.get('/derived-roles', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/derived-roles', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:derived_roles',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const derivedRoles = await policyService.getDerivedRoles();
 

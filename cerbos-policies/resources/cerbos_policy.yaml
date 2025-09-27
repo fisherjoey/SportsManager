@@ -1,0 +1,22 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for cerbos_policy resource (Cerbos policy management interface)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "cerbos_policy"
+  rules:
+    - actions: ['view:resources', 'view:resource_details', 'create:resource', 'update:resource', 'delete:resource', 'view:actions', 'create:action', 'delete:action', 'view:roles', 'update:roles', 'reload', 'view:derived_roles']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest
