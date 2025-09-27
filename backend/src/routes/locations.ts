@@ -82,7 +82,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
   action: 'view:list',
 }), async (req: Request, res: Response) => {
   try {
-    const { search, city, limit = '50' } = req.query;
+    const { search, city, limit = '50' } = (req as any).query;
     const limitNum = parseInt(limit as string, 10);
 
     let query = knex('locations')
@@ -115,13 +115,13 @@ router.get('/', authenticateToken, requireCerbosPermission({
 router.get('/:id', authenticateToken, requireCerbosPermission({
   resource: 'location',
   action: 'view:details',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req) => (req as any).params.id,
 }), async (req: Request, res: Response) => {
   try {
     const location = await knex('locations')
-      .where('id', req.params.id)
+      .where('id', (req as any).params.id)
       .where('is_active', true)
-      .first() as Location | undefined;
+      .first() as unknown as Location | undefined;
 
     if (!location) {
       return res.status(404).json({ error: 'Location not found' });
@@ -162,7 +162,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
       hourly_rate,
       game_rate,
       cost_notes
-    } = req.body as CreateLocationRequest;
+    } = (req as any).body as CreateLocationRequest;
 
     // Validate required fields
     if (!name || !address || !city || !postal_code) {
@@ -176,7 +176,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
       .where('name', name)
       .where('address', address)
       .where('city', city)
-      .first() as Location | undefined;
+      .first() as unknown as Location | undefined;
 
     if (existingLocation) {
       return res.status(409).json({
@@ -206,8 +206,8 @@ router.post('/', authenticateToken, requireCerbosPermission({
         hourly_rate: hourly_rate ? parseFloat(hourly_rate.toString()) : null,
         game_rate: game_rate ? parseFloat(game_rate.toString()) : null,
         cost_notes
-      })
-      .returning('*') as Location[];
+      } as any)
+      .returning('*') as unknown as Location[];
 
     // If location has coordinates, trigger distance calculations for all users
     if (location.latitude && location.longitude) {
@@ -215,7 +215,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
       setImmediate(async () => {
         try {
           const distanceService = new DistanceCalculationService();
-          const result = await distanceService.calculateAllUsersDistanceToLocation(location.id!);
+          const result = await distanceService.calculateAllUsersDistanceToLocation(location.id!.toString());
           console.log(`Distance calculations triggered for new location ${location.name}:`, {
             successful: result.successful.length,
             failed: result.failed.length,
@@ -241,7 +241,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
 router.put('/:id', authenticateToken, requireCerbosPermission({
   resource: 'location',
   action: 'update',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req) => (req as any).params.id,
 }), async (req: Request, res: Response) => {
   try {
     const {
@@ -266,7 +266,7 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
       hourly_rate,
       game_rate,
       cost_notes
-    } = req.body as UpdateLocationRequest;
+    } = (req as any).body as UpdateLocationRequest;
 
     const updateData: Partial<Location> = {};
 
@@ -335,9 +335,9 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
     }
 
     const [location] = await knex('locations')
-      .where('id', req.params.id)
-      .update(updateData)
-      .returning('*') as Location[];
+      .where('id', (req as any).params.id)
+      .update(updateData as any)
+      .returning('*') as unknown as Location[];
 
     if (!location) {
       return res.status(404).json({ error: 'Location not found' });
@@ -355,14 +355,14 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
 router.delete('/:id', authenticateToken, requireCerbosPermission({
   resource: 'location',
   action: 'delete',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req) => (req as any).params.id,
 }), async (req: Request, res: Response) => {
   try {
     // Check if location is used in any games
     const gamesCount = await knex('games')
-      .where('location_id', req.params.id)
+      .where('location_id', (req as any).params.id)
       .count('* as count')
-      .first() as { count: string };
+      .first() as unknown as { count: string };
 
     if (parseInt(gamesCount.count) > 0) {
       return res.status(409).json({
@@ -371,9 +371,9 @@ router.delete('/:id', authenticateToken, requireCerbosPermission({
     }
 
     const [location] = await knex('locations')
-      .where('id', req.params.id)
-      .update({ is_active: false })
-      .returning('*') as Location[];
+      .where('id', (req as any).params.id)
+      .update({ is_active: false } as any)
+      .returning('*') as unknown as Location[];
 
     if (!location) {
       return res.status(404).json({ error: 'Location not found' });
@@ -398,7 +398,7 @@ router.get('/distances', authenticateToken, requireCerbosPermission({
       maxDistanceKm,
       city,
       limit = '50'
-    } = req.query;
+    } = (req as any).query;
 
     const distanceService = new DistanceCalculationService();
 
@@ -418,7 +418,7 @@ router.get('/distances', authenticateToken, requireCerbosPermission({
       filters.city = city as string;
     }
 
-    let distances = await distanceService.getUserDistances(req.user!.userId, filters);
+    let distances = await distanceService.getUserDistances(req.user!.userId.toString(), filters);
 
     // Apply limit
     if (limit) {
@@ -449,7 +449,7 @@ router.get('/:locationId/distance', authenticateToken, requireCerbosPermission({
     const distance = await knex('user_location_distances')
       .join('locations', 'user_location_distances.location_id', 'locations.id')
       .where('user_location_distances.user_id', req.user!.userId)
-      .where('user_location_distances.location_id', req.params.locationId)
+      .where('user_location_distances.location_id', (req as any).params.locationId)
       .where('user_location_distances.calculation_successful', true)
       .where('locations.is_active', true)
       .select(
@@ -495,7 +495,7 @@ router.post('/admin/calculate-user-distances/:userId', authenticateToken, requir
   action: 'admin:manage_distances',
 }), async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const { userId } = (req as any).params;
 
     // Verify user exists
     const user = await knex('users').where('id', userId).first();
@@ -508,7 +508,7 @@ router.post('/admin/calculate-user-distances/:userId', authenticateToken, requir
     // Run calculation in background
     setImmediate(async () => {
       try {
-        const result = await distanceService.calculateUserDistancesToAllLocations(parseInt(userId, 10));
+        const result = await distanceService.calculateUserDistancesToAllLocations(userId.toString());
         console.log(`Manual distance calculation completed for user ${userId}:`, {
           successful: result.successful.length,
           failed: result.failed.length,
@@ -535,10 +535,10 @@ router.post('/admin/calculate-location-distances/:locationId', authenticateToken
   action: 'admin:manage_distances',
 }), async (req: Request, res: Response) => {
   try {
-    const { locationId } = req.params;
+    const { locationId } = (req as any).params;
 
     // Verify location exists
-    const location = await knex('locations').where('id', locationId).first() as Location | undefined;
+    const location = await knex('locations').where('id', locationId).first() as unknown as Location | undefined;
     if (!location) {
       return res.status(404).json({ error: 'Location not found' });
     }
@@ -548,7 +548,7 @@ router.post('/admin/calculate-location-distances/:locationId', authenticateToken
     // Run calculation in background
     setImmediate(async () => {
       try {
-        const result = await distanceService.calculateAllUsersDistanceToLocation(parseInt(locationId, 10));
+        const result = await distanceService.calculateAllUsersDistanceToLocation(locationId.toString());
         console.log(`Manual distance calculation completed for location ${locationId}:`, {
           successful: result.successful.length,
           failed: result.failed.length,
@@ -576,7 +576,7 @@ router.post('/admin/retry-failed-calculations', authenticateToken, requireCerbos
   action: 'admin:manage_distances',
 }), async (req: Request, res: Response) => {
   try {
-    const { maxRetries = 10 } = req.body;
+    const { maxRetries = 10 } = (req as any).body;
 
     const distanceService = new DistanceCalculationService();
 

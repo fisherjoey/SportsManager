@@ -61,10 +61,10 @@ router.get('/resources', authenticateToken, requireCerbosPermission({
 router.get('/resources/:kind', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'view:resource_details',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind } = req.params;
+    const { kind } = (req as any).params;
     const policy = await policyService.getResource(kind);
 
     if (!policy) {
@@ -81,7 +81,7 @@ router.get('/resources/:kind', authenticateToken, requireCerbosPermission({
       message: 'Resource retrieved successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to get resource', { kind: req.params.kind, error: error.message, userId: req.user?.id });
+    logger.error('Failed to get resource', { kind: (req as any).params.kind, error: error.message, userId: req.user?.id });
     res.status(500).json({
       error: 'Failed to retrieve resource',
       details: error.message,
@@ -94,7 +94,7 @@ router.post('/resources', authenticateToken, requireCerbosPermission({
   action: 'create:resource',
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { error, value } = createResourceSchema.validate(req.body);
+    const { error, value } = createResourceSchema.validate((req as any).body);
     if (error) {
       res.status(400).json({
         error: 'Validation failed',
@@ -133,11 +133,11 @@ router.post('/resources', authenticateToken, requireCerbosPermission({
 router.put('/resources/:kind', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'update:resource',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind } = req.params;
-    const policy = req.body;
+    const { kind } = (req as any).params;
+    const policy = (req as any).body;
 
     const validation = await policyService.validatePolicy(policy);
     if (!validation.valid) {
@@ -158,7 +158,7 @@ router.put('/resources/:kind', authenticateToken, requireCerbosPermission({
       message: 'Resource updated successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to update resource', { kind: req.params.kind, error: error.message, userId: req.user?.id });
+    logger.error('Failed to update resource', { kind: (req as any).params.kind, error: error.message, userId: req.user?.id });
 
     if (error.message.includes('not found')) {
       res.status(404).json({
@@ -177,10 +177,10 @@ router.put('/resources/:kind', authenticateToken, requireCerbosPermission({
 router.delete('/resources/:kind', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'delete:resource',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind } = req.params;
+    const { kind } = (req as any).params;
     const deleted = await policyService.deleteResource(kind);
 
     if (!deleted) {
@@ -198,7 +198,7 @@ router.delete('/resources/:kind', authenticateToken, requireCerbosPermission({
       message: 'Resource deleted successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to delete resource', { kind: req.params.kind, error: error.message, userId: req.user?.id });
+    logger.error('Failed to delete resource', { kind: (req as any).params.kind, error: error.message, userId: req.user?.id });
     res.status(500).json({
       error: 'Failed to delete resource',
       details: error.message,
@@ -209,10 +209,10 @@ router.delete('/resources/:kind', authenticateToken, requireCerbosPermission({
 router.get('/resources/:kind/actions', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'view:actions',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind } = req.params;
+    const { kind } = (req as any).params;
     const policy = await policyService.getResource(kind);
 
     if (!policy) {
@@ -234,7 +234,7 @@ router.get('/resources/:kind/actions', authenticateToken, requireCerbosPermissio
       message: 'Actions retrieved successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to get actions', { kind: req.params.kind, error: error.message, userId: req.user?.id });
+    logger.error('Failed to get actions', { kind: (req as any).params.kind, error: error.message, userId: req.user?.id });
     res.status(500).json({
       error: 'Failed to retrieve actions',
       details: error.message,
@@ -245,11 +245,11 @@ router.get('/resources/:kind/actions', authenticateToken, requireCerbosPermissio
 router.post('/resources/:kind/actions', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'create:action',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind } = req.params;
-    const { error, value } = addActionSchema.validate(req.body);
+    const { kind } = (req as any).params;
+    const { error, value } = addActionSchema.validate((req as any).body);
 
     if (error) {
       res.status(400).json({
@@ -270,7 +270,7 @@ router.post('/resources/:kind/actions', authenticateToken, requireCerbosPermissi
       message: 'Action added successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to add action', { kind: req.params.kind, error: error.message, userId: req.user?.id });
+    logger.error('Failed to add action', { kind: (req as any).params.kind, error: error.message, userId: req.user?.id });
 
     if (error.message.includes('not found')) {
       res.status(404).json({
@@ -294,10 +294,10 @@ router.post('/resources/:kind/actions', authenticateToken, requireCerbosPermissi
 router.delete('/resources/:kind/actions/:action', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'delete:action',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind, action } = req.params;
+    const { kind, action } = (req as any).params;
     const policy = await policyService.removeAction(kind, action);
 
     logger.info('Action removed from resource', { kind, action, userId: req.user?.id });
@@ -308,7 +308,7 @@ router.delete('/resources/:kind/actions/:action', authenticateToken, requireCerb
       message: 'Action removed successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to remove action', { kind: req.params.kind, action: req.params.action, error: error.message, userId: req.user?.id });
+    logger.error('Failed to remove action', { kind: (req as any).params.kind, action: (req as any).params.action, error: error.message, userId: req.user?.id });
 
     if (error.message.includes('not found')) {
       res.status(404).json({
@@ -327,10 +327,10 @@ router.delete('/resources/:kind/actions/:action', authenticateToken, requireCerb
 router.get('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'view:roles',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind, role } = req.params;
+    const { kind, role } = (req as any).params;
     const rules = await policyService.getRoleRules(kind, role);
 
     res.json({
@@ -339,7 +339,7 @@ router.get('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermi
       message: 'Role rules retrieved successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to get role rules', { kind: req.params.kind, role: req.params.role, error: error.message, userId: req.user?.id });
+    logger.error('Failed to get role rules', { kind: (req as any).params.kind, role: (req as any).params.role, error: error.message, userId: req.user?.id });
 
     if (error.message.includes('not found')) {
       res.status(404).json({
@@ -358,11 +358,11 @@ router.get('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermi
 router.put('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermission({
   resource: 'cerbos_policy',
   action: 'update:roles',
-  getResourceId: (req) => req.params.kind,
+  getResourceId: (req) => (req as any).params.kind,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { kind, role } = req.params;
-    const { error, value } = setRoleRulesSchema.validate(req.body);
+    const { kind, role } = (req as any).params;
+    const { error, value } = setRoleRulesSchema.validate((req as any).body);
 
     if (error) {
       res.status(400).json({
@@ -382,7 +382,7 @@ router.put('/resources/:kind/roles/:role', authenticateToken, requireCerbosPermi
       message: 'Role rules updated successfully',
     });
   } catch (error: any) {
-    logger.error('Failed to set role rules', { kind: req.params.kind, role: req.params.role, error: error.message, userId: req.user?.id });
+    logger.error('Failed to set role rules', { kind: (req as any).params.kind, role: (req as any).params.role, error: error.message, userId: req.user?.id });
 
     if (error.message.includes('not found')) {
       res.status(404).json({

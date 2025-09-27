@@ -70,7 +70,7 @@ class RoleNotFoundError extends Error {
 router.get('/:userId/roles', authenticateToken, requireCerbosPermission({
   resource: 'user',
   action: 'view:details',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
@@ -105,7 +105,7 @@ router.get('/:userId/roles', authenticateToken, requireCerbosPermission({
 router.put('/:userId/roles', authenticateToken, requireCerbosPermission({
   resource: 'user',
   action: 'manage_roles',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
@@ -143,7 +143,7 @@ router.put('/:userId/roles', authenticateToken, requireCerbosPermission({
     }
 
     // Use transaction to ensure atomicity
-    await db.transaction(async (trx: DatabaseTransaction) => {
+    await (db as any).transaction(async (trx: any) => {
       // Remove existing roles
       await trx('user_roles').where('user_id', userId).del();
 
@@ -190,7 +190,7 @@ router.put('/:userId/roles', authenticateToken, requireCerbosPermission({
 router.post('/:userId/roles', authenticateToken, requireCerbosPermission({
   resource: 'user',
   action: 'manage_roles',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
@@ -275,7 +275,7 @@ router.post('/:userId/roles', authenticateToken, requireCerbosPermission({
 router.delete('/:userId/roles', authenticateToken, requireCerbosPermission({
   resource: 'user',
   action: 'manage_roles',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;

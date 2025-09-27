@@ -61,25 +61,16 @@ export interface UserResponse {
   user: any;
 }
 
-// Extend AuthenticatedRequest to work with Express Request types
-interface AuthenticatedRequestWithParams<P = {}, ResBody = any, ReqBody = any, ReqQuery = {}> 
-  extends Request<P, ResBody, ReqBody, ReqQuery> {
-  user?: {
-    id: UUID;
-    email: string;
-    name: string;
-    roles?: any[];
-  };
-}
+// Use the existing AuthenticatedRequest type instead of creating a new one
 
 /**
  * GET /api/users/roles
  * Get all available roles
  */
-const getRoles = async (req: AuthenticatedRequestWithParams, res: Response): Promise<any> => {
-  const db: Database = req.app.locals.db;
+const getRoles = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+  const db: Database = (req as any).app.locals.db;
   
-  const roles = await db('roles')
+  const roles = await (db as any)('roles')
     .select(['id', 'name', 'description'])
     .orderBy('name', 'asc');
   
@@ -92,12 +83,12 @@ const getRoles = async (req: AuthenticatedRequestWithParams, res: Response): Pro
  * Requires: users:read permission
  */
 const getUsers = async (
-  req: AuthenticatedRequestWithParams<{}, UsersResponse, {}, GetUsersQuery>,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   try {
     const userService = new UserService(db as any);
-    const { page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 50 } = (req as any).query;
 
     // Get all users with error handling
     const users = await userService.findWhere({}, {
@@ -131,15 +122,15 @@ const getUsers = async (
  * Get a specific user
  */
 const getUserById = async (
-  req: AuthenticatedRequestWithParams<UserIdParams, UserResponse>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
+  const userId = (req as any).params.id;
   
   // Users can only view their own profile unless they're admin
-  const isAdmin = req.user?.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
-  if (!isAdmin && req.user?.id !== userId) {
+  const isAdmin = (req as any).user?.roles && ((req as any).user.roles.some((role: any) => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (!isAdmin && (req as any).user?.id !== userId) {
     throw ErrorFactory.forbidden('Not authorized to view this user');
   }
 
@@ -163,11 +154,11 @@ const getUserById = async (
  * Create a new user (admin only)
  */
 const createUser = async (
-  req: AuthenticatedRequestWithParams<{}, UserResponse, CreateUserBody>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const { email, password, name, send_welcome_email = false } = req.body;
+  const { email, password, name, send_welcome_email = false } = (req as any).body;
   
   console.log('Creating user with data:', { email, name });
   
@@ -222,12 +213,12 @@ const createUser = async (
  * Update a user (admin only)
  */
 const updateUser = async (
-  req: AuthenticatedRequestWithParams<UserIdParams, UserResponse, UpdateUserBody>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
-  const { email, name, role, password, roles } = req.body;
+  const userId = (req as any).params.id;
+  const { email, name, role, password, roles } = (req as any).body;
   
   // Check if user exists
   const user = await userService.findById(userId);
@@ -252,7 +243,7 @@ const updateUser = async (
   // Update roles if provided (new RBAC system)
   if (roles && Array.isArray(roles)) {
     // Remove existing roles
-    await db('user_roles').where('user_id', userId).del();
+    await (db as any)('user_roles').where('user_id', userId).del();
     
     // Add new roles
     if (roles.length > 0) {
@@ -260,10 +251,10 @@ const updateUser = async (
         user_id: userId,
         role_id: roleId,
         assigned_at: new Date(),
-        assigned_by: req.user?.id
+        assigned_by: (req as any).user?.id
       }));
       
-      await db('user_roles').insert(roleAssignments);
+      await (db as any)('user_roles').insert(roleAssignments);
     }
   }
   
@@ -278,14 +269,14 @@ const updateUser = async (
  * Delete a user (admin only)
  */
 const deleteUser = async (
-  req: AuthenticatedRequestWithParams<UserIdParams>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
+  const userId = (req as any).params.id;
   
   // Prevent deleting own account
-  if (req.user?.id === userId) {
+  if ((req as any).user?.id === userId) {
     throw new ValidationError('Cannot delete your own account');
   }
   

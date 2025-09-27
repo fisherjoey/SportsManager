@@ -84,7 +84,7 @@ const checkBudgetAccess = (action: 'read' | 'update' | 'delete' | 'create') => {
         }
 
         // Check budget status for certain actions
-        if (['update', 'delete'].includes(action) && budget.status === 'locked') {
+        if (['update', 'delete'].includes(action) && (budget as any).status === 'locked') {
           res.status(403).json({
             error: 'Budget locked',
             message: 'Cannot perform this action on a locked budget'
@@ -93,7 +93,7 @@ const checkBudgetAccess = (action: 'read' | 'update' | 'delete' | 'create') => {
         }
 
         // Check if user is the budget owner
-        if (budget.owner_id === userId) {
+        if ((budget as any).owner_id === userId) {
           return next();
         }
 
@@ -246,13 +246,13 @@ router.get('/periods',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const periods: BudgetPeriodModel[] = await query
+      const periods: BudgetPeriodModel[] = (await query
         .orderBy(filters.sort_by, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetPeriodsResponse = {
         periods: periods.map(period => ({
@@ -334,8 +334,8 @@ router.post('/periods',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetPeriod = {
         ...newPeriod,
@@ -416,13 +416,13 @@ router.get('/categories',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const categories: BudgetCategoryModel[] = await query
+      const categories: BudgetCategoryModel[] = (await query
         .orderBy(filters.sort_by, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetCategoriesResponse = {
         categories: categories.map(category => ({
@@ -508,8 +508,8 @@ router.post('/categories',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetCategory = {
         ...newCategory,
@@ -593,13 +593,13 @@ router.get('/',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const budgets: BudgetModel[] = await query
+      const budgets: BudgetModel[] = (await query
         .orderBy(`budgets.${filters.sort_by}`, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetsResponse = {
         budgets: budgets.map(budget => ({
@@ -697,8 +697,8 @@ router.post('/',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: Budget = {
         ...newBudget,
@@ -736,7 +736,7 @@ router.get('/:id',
       const budget: BudgetModel = await db('budgets')
         .where('id', budgetId)
         .where('organization_id', organizationId)
-        .first();
+        .first() as any;
 
       if (!budget) {
         res.status(404).json({
@@ -810,8 +810,8 @@ router.put('/:id',
         .update({
           ...updateData,
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: Budget = {
         ...updatedBudget,
@@ -882,8 +882,8 @@ router.post('/:id/allocations',
           ...validatedData,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetAllocation = {
         ...newAllocation,

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import Joi from 'joi';
-import crypto from 'crypto';
+import * as Joi from 'joi';
+import * as crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../config/database';
@@ -70,6 +70,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
+  body: any;
 }
 
 // Validation schemas
@@ -111,7 +112,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
 
     // Check if user already exists
     console.log('Checking if user exists with email:', email);
-    const existingUser = await db('users').where('email', email).first() as User | undefined;
+    const existingUser = await db('users').where('email', email).first() as unknown as User | undefined;
     if (existingUser) {
       console.log('User already exists:', existingUser.email);
       return res.status(409).json({ error: 'User with this email already exists' });
@@ -123,14 +124,14 @@ router.post('/', authenticateToken, requireCerbosPermission({
       .where('email', email)
       .where('used', false)
       .where('expires_at', '>', new Date())
-      .first() as Invitation | undefined;
+      .first() as unknown as Invitation | undefined;
 
     if (existingInvitation) {
       return res.status(409).json({ error: 'Invitation already sent to this email' });
     }
 
     // Get inviter details
-    const inviter = await db('users').where('id', req.user!.userId).first() as User | undefined;
+    const inviter = await db('users').where('id', req.user!.userId).first() as unknown as User | undefined;
     const inviterName = inviter ? inviter.name : 'System Administrator';
 
     // Generate secure token
@@ -138,7 +139,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     // Create invitation
-    const [invitation] = await db('invitations').insert({
+    const insertData = {
       email,
       first_name,
       last_name,
@@ -146,7 +147,8 @@ router.post('/', authenticateToken, requireCerbosPermission({
       invited_by: req.user!.userId,
       token,
       expires_at: expiresAt
-    }).returning('*') as Invitation[];
+    };
+    const [invitation] = await db('invitations').insert(insertData as any).returning('*') as unknown as Invitation[];
 
     // Generate invitation link
     const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/complete-signup?token=${token}`;
@@ -237,7 +239,7 @@ router.get('/:token', async (req: Request, res: Response) => {
       .where('token', token)
       .where('used', false)
       .where('expires_at', '>', new Date())
-      .first() as Invitation | undefined;
+      .first() as unknown as Invitation | undefined;
 
     if (!invitation) {
       return res.status(404).json({ error: 'Invalid or expired invitation' });
@@ -276,14 +278,14 @@ router.post('/:token/complete', async (req: Request, res: Response) => {
       .where('token', token)
       .where('used', false)
       .where('expires_at', '>', new Date())
-      .first() as Invitation | undefined;
+      .first() as unknown as Invitation | undefined;
 
     if (!invitation) {
       return res.status(404).json({ error: 'Invalid or expired invitation' });
     }
 
     // Check if user already exists (double check)
-    const existingUser = await db('users').where('email', invitation.email).first() as User | undefined;
+    const existingUser = await db('users').where('email', invitation.email).first() as unknown as User | undefined;
     if (existingUser) {
       return res.status(409).json({ error: 'User already exists' });
     }
@@ -299,7 +301,7 @@ router.post('/:token/complete', async (req: Request, res: Response) => {
         email: invitation.email,
         password_hash,
         role: invitation.role
-      }).returning('*') as User[];
+      }).returning('*') as unknown as User[];
 
       const userData: any = {
         id: user.id,
@@ -319,7 +321,7 @@ router.post('/:token/complete', async (req: Request, res: Response) => {
           postal_code: postal_code || null,
           max_distance: max_distance || 25,
           is_available: true
-        }).returning('*') as Referee[];
+        }).returning('*') as unknown as Referee[];
 
         userData.referee = referee;
       }
@@ -375,7 +377,7 @@ router.delete('/:id', authenticateToken, requireCerbosPermission({
   try {
     const { id } = req.params;
 
-    const invitation = await db('invitations').where('id', id).first() as Invitation | undefined;
+    const invitation = await db('invitations').where('id', id).first() as unknown as Invitation | undefined;
     if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });
     }

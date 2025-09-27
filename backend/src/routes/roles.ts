@@ -75,7 +75,7 @@ router.get('/available', authenticateToken, requireCerbosPermission({
 router.put('/users/:userId', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'admin:update_user_roles',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: Request, res: Response) => {
   try {
     const { error, value } = updateRolesSchema.validate(req.body);
@@ -96,21 +96,21 @@ router.put('/users/:userId', authenticateToken, requireCerbosPermission({
     }
 
     // Check if user exists
-    const user = await db('users').where('id', userId).first() as User | undefined;
+    const user = await (db as any)('users').where('id', userId).first() as User | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Update user roles
-    await db('users')
+    await (db as any)('users')
       .where('id', userId)
       .update({
         roles: JSON.stringify(roles), // Store as JSON string for PostgreSQL array handling
-        updated_at: db.fn.now()
+        updated_at: (db as any).fn.now()
       });
 
     // Fetch updated user
-    const updatedUser = await db('users')
+    const updatedUser = await (db as any)('users')
       .select('id', 'email', 'role', 'roles', 'name', 'created_at', 'updated_at')
       .where('id', userId)
       .first() as User;
@@ -134,12 +134,12 @@ router.put('/users/:userId', authenticateToken, requireCerbosPermission({
 router.get('/users/:userId', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'admin:view_user_roles',
-  getResourceId: (req) => req.params.userId,
+  getResourceId: (req: any) => req.params.userId,
 }), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const user = await db('users')
+    const user = await (db as any)('users')
       .select('id', 'email', 'role', 'roles', 'name')
       .where('id', userId)
       .first() as User | undefined;

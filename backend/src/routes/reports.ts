@@ -9,7 +9,12 @@ import express, { Request, Response } from 'express';
 import Joi from 'joi';
 import { Database } from '../types/database.types';
 import { AuthenticatedRequest } from '../types/auth.types';
-import { ApiResponse, PaginationOptions } from '../types/api.types';
+import { ApiResponse } from '../types/api.types';
+
+interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
 import { authenticateToken } from '../middleware/auth';
 import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
@@ -262,7 +267,7 @@ router.get('/referee-performance', authenticateToken, requireCerbosPermission({
   action: 'view:referee_performance',
 }), async (req: AuthenticatedRequest, res: Response<RefereePerformanceResponse>) => {
   try {
-    const { error, value } = performanceQuerySchema.validate(req.query);
+    const { error, value } = performanceQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({
         success: false,
@@ -301,9 +306,9 @@ router.get('/referee-performance', authenticateToken, requireCerbosPermission({
         'users.is_available',
         'users.wage_per_game',
         db.raw('COUNT(CASE WHEN game_assignments.id IS NOT NULL THEN 1 END) as total_assignments'),
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['accepted']) as 'accepted_assignments',
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['declined']) as 'declined_assignments',
-        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['completed']) as 'completed_assignments',
+        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['accepted']) as unknown as 'accepted_assignments',
+        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['declined']) as unknown as 'declined_assignments',
+        db.raw('COUNT(CASE WHEN game_assignments.status = ? THEN 1 END', ['completed']) as unknown as 'completed_assignments',
         db.raw('COALESCE(SUM(game_assignments.calculated_wage), 0) as total_earnings'),
         db.raw('COALESCE(AVG(game_assignments.calculated_wage), 0) as average_wage'),
         db.raw('COUNT(DISTINCT games.game_date) as unique_game_days')
@@ -418,7 +423,7 @@ router.get('/assignment-patterns', authenticateToken, requireCerbosPermission({
   action: 'view:assignment_patterns',
 }), async (req: AuthenticatedRequest, res: Response<AssignmentPatternsResponse>) => {
   try {
-    const { error, value } = reportQuerySchema.validate(req.query);
+    const { error, value } = reportQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({
         success: false,
@@ -610,7 +615,7 @@ router.get('/financial-summary', authenticateToken, requireCerbosPermission({
   action: 'view:financial_summary',
 }), async (req: AuthenticatedRequest, res: Response<FinancialSummaryResponse>) => {
   try {
-    const { error, value } = reportQuerySchema.validate(req.query);
+    const { error, value } = reportQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({
         success: false,
@@ -729,13 +734,13 @@ router.get('/financial-summary', authenticateToken, requireCerbosPermission({
 
     const financialSummary: FinancialSummaryData = {
       overall: {
-        totalAssignments: parseInt(overallSummary?.total_assignments) || 0,
-        uniqueReferees: parseInt(overallSummary?.unique_referees) || 0,
-        uniqueGames: parseInt(overallSummary?.unique_games) || 0,
-        totalWages: parseFloat(overallSummary?.total_wages) || 0,
-        averageWage: parseFloat(overallSummary?.average_wage) || 0,
-        minWage: parseFloat(overallSummary?.min_wage) || 0,
-        maxWage: parseFloat(overallSummary?.max_wage) || 0
+        totalAssignments: parseInt((overallSummary as any)?.total_assignments) || 0,
+        uniqueReferees: parseInt((overallSummary as any)?.unique_referees) || 0,
+        uniqueGames: parseInt((overallSummary as any)?.unique_games) || 0,
+        totalWages: parseFloat((overallSummary as any)?.total_wages) || 0,
+        averageWage: parseFloat((overallSummary as any)?.average_wage) || 0,
+        minWage: parseFloat((overallSummary as any)?.min_wage) || 0,
+        maxWage: parseFloat((overallSummary as any)?.max_wage) || 0
       },
       byReferee: refereeBreakdown.map((r: any) => ({
         refereeId: r.referee_id,
@@ -814,7 +819,7 @@ router.get('/availability-gaps', authenticateToken, requireCerbosPermission({
   action: 'view:availability_gaps',
 }), async (req: AuthenticatedRequest, res: Response<AvailabilityGapsResponse>) => {
   try {
-    const { error, value } = reportQuerySchema.validate(req.query);
+    const { error, value } = reportQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({
         success: false,

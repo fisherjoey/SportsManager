@@ -587,7 +587,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
 router.get('/:id', authenticateToken, requireCerbosPermission({
   resource: 'assignment',
   action: 'view:details',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req: any) => req.params.id,
 }), validateParams(IdParamSchema), enhancedAsyncHandler(getAssignmentById));
 
 router.post('/', authenticateToken, requireCerbosPermission({
@@ -628,7 +628,7 @@ router.patch('/:id/status',
   requireCerbosPermission({
     resource: 'assignment',
     action: 'change_status',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req: any) => req.params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object({
@@ -640,7 +640,7 @@ router.patch('/:id/status',
 router.delete('/:id', authenticateToken, requireCerbosPermission({
   resource: 'assignment',
   action: 'delete',
-  getResourceId: (req) => req.params.id,
+  getResourceId: (req: any) => req.params.id,
 }), validateParams(IdParamSchema), enhancedAsyncHandler(deleteAssignment));
 
 router.post('/bulk',

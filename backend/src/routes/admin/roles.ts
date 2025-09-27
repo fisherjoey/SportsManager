@@ -157,7 +157,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
 router.get('/:roleId', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'view:details',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -233,7 +233,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
 router.put('/:roleId', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'update',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -277,7 +277,7 @@ router.put('/:roleId', authenticateToken, requireCerbosPermission({
 router.delete('/:roleId', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'delete',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -321,7 +321,7 @@ router.delete('/:roleId', authenticateToken, requireCerbosPermission({
 router.post('/:roleId/permissions', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'manage_permissions',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -366,7 +366,7 @@ router.post('/:roleId/permissions', authenticateToken, requireCerbosPermission({
 router.delete('/:roleId/permissions', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'manage_permissions',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -407,7 +407,7 @@ router.delete('/:roleId/permissions', authenticateToken, requireCerbosPermission
 router.get('/:roleId/users', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'manage_users',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -446,7 +446,7 @@ router.get('/:roleId/users', authenticateToken, requireCerbosPermission({
 router.post('/:roleId/users', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'manage_users',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -489,7 +489,7 @@ router.post('/:roleId/users', authenticateToken, requireCerbosPermission({
 router.delete('/:roleId/users', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'manage_users',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -532,7 +532,7 @@ router.delete('/:roleId/users', authenticateToken, requireCerbosPermission({
 router.patch('/:roleId/status', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'update',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
@@ -580,7 +580,7 @@ router.patch('/:roleId/status', authenticateToken, requireCerbosPermission({
 router.get('/:roleId/hierarchy', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'view:details',
-  getResourceId: (req) => req.params.roleId,
+  getResourceId: (req: any) => req.params.roleId,
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;

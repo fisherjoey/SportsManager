@@ -219,19 +219,23 @@ export interface HistoricalPattern {
  */
 export interface GenerateSuggestionsRequestBody extends Request {
   body: GenerateSuggestionsRequest;
+  user: { userId: string };
 }
 
 export interface RejectSuggestionRequestBody extends Request {
   body: RejectSuggestionRequest;
   params: { id: string };
+  user: { userId: string };
 }
 
 export interface GetSuggestionsRequest extends Request {
   query: SuggestionFilters & PaginationParams;
+  user?: { userId: string };
 }
 
 export interface AcceptSuggestionRequest extends Request {
   params: { id: string };
+  user: { userId: string };
 }
 
 /**

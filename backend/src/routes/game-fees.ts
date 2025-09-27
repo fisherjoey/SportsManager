@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import db from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
@@ -30,7 +30,7 @@ interface Game {
   away_team_id: number;
 }
 
-interface GameFeeWithGame extends GameFee {
+interface GameFeeWithGame extends Omit<GameFee, 'recorded_by'> {
   game_date: string;
   game_time: string;
   location: string;
@@ -207,7 +207,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
 router.post('/', authenticateToken, requireCerbosPermission({
   resource: 'game_fee',
   action: 'create',
-}), asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+}), asyncHandler(async (req: any, res: Response, next: NextFunction) => {
   const { gameId, amount, paymentStatus = 'pending', paymentDate, paymentMethod, notes } = req.body as CreateGameFeeRequest;
 
   // Validate required fields
@@ -225,7 +225,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
   }
 
   // Check if game exists
-  const game = await db('games').where('id', gameId).first() as Game | undefined;
+  const game = await db('games').where('id', gameId).first() as unknown as Game | undefined;
   if (!game) {
     return res.status(404).json({
       error: 'Game not found'
@@ -233,7 +233,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
   }
 
   // Check if fee already exists for this game
-  const existingFee = await db('game_fees').where('game_id', gameId).first() as GameFee | undefined;
+  const existingFee = await db('game_fees').where('game_id', gameId).first() as unknown as GameFee | undefined;
   if (existingFee) {
     return res.status(409).json({
       error: 'Game fee already exists for this game. Use PUT to update.'
@@ -249,7 +249,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
     payment_method: paymentMethod,
     notes: notes,
     recorded_by: req.user!.userId
-  }).returning('*') as GameFee[];
+  } as any).returning('*') as unknown as GameFee[];
 
   res.status(201).json({
     success: true,
@@ -280,7 +280,7 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
   const { amount, paymentStatus, paymentDate, paymentMethod, notes } = req.body as UpdateGameFeeRequest;
 
   // Check if game fee exists
-  const existingFee = await db('game_fees').where('id', id).first() as GameFee | undefined;
+  const existingFee = await db('game_fees').where('id', id).first() as unknown as GameFee | undefined;
   if (!existingFee) {
     return res.status(404).json({
       error: 'Game fee not found'
@@ -309,10 +309,10 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
   if (notes !== undefined) updateData.notes = notes;
 
   // Update the record
-  await db('game_fees').where('id', id).update(updateData);
+  await db('game_fees').where('id', id).update(updateData as any);
 
   // Fetch updated record
-  const updatedFee = await db('game_fees').where('id', id).first() as GameFee;
+  const updatedFee = await db('game_fees').where('id', id).first() as unknown as GameFee;
 
   res.json({
     success: true,
@@ -355,7 +355,7 @@ router.get('/stats', authenticateToken, requireCerbosPermission({
       .where('g.game_date', '>=', startDate.toISOString().split('T')[0])
       .sum('gf.amount as total')
       .count('gf.id as count')
-      .first() as Promise<{ total: string; count: string }>,
+      .first() as unknown as Promise<{ total: string; count: string }>,
 
     // Paid fees
     db('game_fees as gf')
@@ -364,7 +364,7 @@ router.get('/stats', authenticateToken, requireCerbosPermission({
       .where('gf.payment_status', 'paid')
       .sum('gf.amount as total')
       .count('gf.id as count')
-      .first() as Promise<{ total: string; count: string }>,
+      .first() as unknown as Promise<{ total: string; count: string }>,
 
     // Pending fees
     db('game_fees as gf')
@@ -373,7 +373,7 @@ router.get('/stats', authenticateToken, requireCerbosPermission({
       .where('gf.payment_status', 'pending')
       .sum('gf.amount as total')
       .count('gf.id as count')
-      .first() as Promise<{ total: string; count: string }>,
+      .first() as unknown as Promise<{ total: string; count: string }>,
 
     // Overdue fees (games older than 30 days with pending payment)
     db('game_fees as gf')
@@ -382,7 +382,7 @@ router.get('/stats', authenticateToken, requireCerbosPermission({
       .where('gf.payment_status', 'pending')
       .sum('gf.amount as total')
       .count('gf.id as count')
-      .first() as Promise<{ total: string; count: string }>
+      .first() as unknown as Promise<{ total: string; count: string }>
   ]);
 
   // Get revenue by level
