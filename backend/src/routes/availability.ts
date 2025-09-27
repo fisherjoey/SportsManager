@@ -249,7 +249,11 @@ router.get('/referees/:id',
 // POST /api/availability/referees/:id - Create availability window
 router.post('/referees/:id',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   validateBody(availabilityCreateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, AvailabilityCreateBody>, res: Response): Promise<void> => {
@@ -300,7 +304,10 @@ router.post('/referees/:id',
 // PUT /api/availability/:windowId - Update availability window
 router.put('/:windowId',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateParams(windowIdParamSchema),
   validateBody(availabilityUpdateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ windowId: UUID }, any, AvailabilityUpdateBody>, res: Response): Promise<void> => {
@@ -356,7 +363,10 @@ router.put('/:windowId',
 // DELETE /api/availability/:windowId - Delete availability window
 router.delete('/:windowId',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateParams(windowIdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ windowId: UUID }>, res: Response): Promise<void> => {
     const windowId = req.params.windowId;
@@ -442,7 +452,10 @@ router.get('/conflicts',
 // POST /api/availability/bulk - Bulk create availability windows
 router.post('/bulk',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateBody(bulkCreateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkAvailabilityCreateBody>, res: Response): Promise<void> => {
     const { referee_id, windows } = req.body;
