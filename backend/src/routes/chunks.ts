@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Validation schemas
 const createChunkSchema = Joi.object({
@@ -194,7 +195,10 @@ class ChunkService {
 }
 
 // POST /api/chunks - Create new chunk
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'create',
+}), async (req, res) => {
   try {
     const { error, value } = createChunkSchema.validate(req.body);
     if (error) {
@@ -268,7 +272,10 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/chunks - Get all chunks
-router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const { 
       location, 
@@ -337,7 +344,11 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/chunks/:id - Get specific chunk with games
-router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -413,7 +424,11 @@ router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // PUT /api/chunks/:id - Update chunk
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = updateChunkSchema.validate(req.body);
@@ -544,7 +559,11 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // POST /api/chunks/:id/assign - Assign referee to chunk
-router.post('/:id/assign', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/assign', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'assign',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = assignChunkSchema.validate(req.body);
@@ -650,7 +669,11 @@ router.post('/:id/assign', authenticateToken, requireRole('admin'), async (req, 
 });
 
 // DELETE /api/chunks/:id - Delete chunk
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { force = false } = req.query;
@@ -708,7 +731,10 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 });
 
 // POST /api/chunks/auto-create - Auto-create chunks
-router.post('/auto-create', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/auto-create', authenticateToken, requireCerbosPermission({
+  resource: 'chunk',
+  action: 'auto_create',
+}), async (req, res) => {
   try {
     const { error, value } = autoCreateSchema.validate(req.body);
     if (error) {
