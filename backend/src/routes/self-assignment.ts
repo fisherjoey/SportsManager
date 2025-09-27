@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import db from '../config/database';
 import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { calculateFinalWage, getWageBreakdown } from '../utils/wage-calculator';
 
 const router = express.Router();
@@ -58,7 +59,10 @@ interface SelfAssignmentRequest {
 }
 
 // POST /api/self-assignment - Allow referees to self-assign to available games (with restrictions)
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'self_assignment',
+  action: 'create',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { game_id, position_id } = req.body as SelfAssignmentRequest;
     const user_id = req.user!.userId;
@@ -208,7 +212,10 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
 });
 
 // GET /api/self-assignment/available - Get games available for self-assignment
-router.get('/available', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/available', authenticateToken, requireCerbosPermission({
+  resource: 'self_assignment',
+  action: 'view:available',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     console.log('Starting available games endpoint');
     const user_id = req.user!.userId;
