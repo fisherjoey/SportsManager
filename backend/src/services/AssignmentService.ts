@@ -432,10 +432,10 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       let query = (this.db as any)('game_assignments')
         .join('games', 'game_assignments.game_id', 'games.id')
         .join('users', 'game_assignments.user_id', 'users.id')
-        .join('positions', 'game_assignments.position_id', 'positions.id')
+        // .join('positions', 'game_assignments.position_id', 'positions.id') // TODO: positions table doesn't exist yet
         .join('teams as home_team', 'games.home_team_id', 'home_team.id')
         .join('teams as away_team', 'games.away_team_id', 'away_team.id')
-        .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+        // .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id') // TODO: referee_levels table doesn't exist yet
         .select(
           'game_assignments.*',
           'games.game_date',
@@ -448,9 +448,10 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
           'home_team.name as home_team_name',
           'away_team.name as away_team_name',
           'users.name as referee_name',
-          'users.email as referee_email',
-          'positions.name as position_name',
-          'referee_levels.name as referee_level'
+          'users.email as referee_email'
+          // TODO: add back when positions and referee_levels tables exist:
+          // 'positions.name as position_name',
+          // 'referee_levels.name as referee_level'
         );
 
       // Apply filters

@@ -12,17 +12,17 @@
  */
 
 import express, { Request, Response } from 'express';
-import { 
-  AssignmentEntity, 
+import {
+  AssignmentEntity,
   AssignmentWithDetailsView,
   AssignmentStatus,
   UUID,
-  PaginatedResult 
+  PaginatedResult
 } from '../types';
 import { AuthenticatedRequest } from '../types/auth.types';
+import db from '../config/database';
 
 const router = express.Router();
-const db = require('../config/database');
 const Joi = require('joi');
 const { authenticateToken } = require('../middleware/auth');
 const { requireCerbosPermission } = require('../middleware/requireCerbosPermission');

@@ -24,7 +24,7 @@
 
 | Endpoint | Method | Status | Error |
 |----------|--------|--------|-------|
-| `/api/assignments` | GET | ❌ Fail | Internal server error |
+| `/api/assignments` | GET | ❌ Fail | Database schema issue - missing tables |
 
 ### 🔧 Issues Fixed
 
@@ -42,6 +42,18 @@
    - Issue: Policy changes not reloading
    - Fixed: Docker restart required
    - Result: All policies working
+
+4. **Assignment policy action mismatch**
+   - Issue: Policy used separate 'view' and 'list' actions instead of compound 'view:list'
+   - Also: Wildcard '*' actions not matching compound actions
+   - Fixed: Updated assignment policy to use explicit compound actions
+   - Result: Cerbos authorization now working for assignments
+
+5. **Assignment query joins non-existent tables**
+   - Issue: `getAssignmentsWithDetails` joins `positions` and `referee_levels` tables that don't exist
+   - Impact: Database query fails with "relation does not exist" error
+   - Fixed: Commented out missing table joins, need to create tables or update schema
+   - Status: Partial fix - query no longer crashes but missing data fields
 
 ---
 
@@ -180,10 +192,11 @@ checkResource({
 
 ## Next Steps
 
-1. ✅ Fix assignment route error
-2. ⏭️ Test remaining migrated routes (referees, users, expenses, budgets, availability)
-3. ⏭️ Continue with remaining 53 routes
-4. ⏭️ Create comprehensive integration tests
+1. 🔧 Complete assignment route fix - resolve database import/initialization issue
+2. 📊 Create missing database tables (`positions`, `referee_levels`) or update schema
+3. ⏭️ Test remaining migrated routes (referees, users, expenses, budgets, availability)
+4. ⏭️ Continue with remaining 53 routes
+5. ⏭️ Create comprehensive integration tests
 
 ---
 
