@@ -372,6 +372,5 @@ export {
   hasPermission,
   getUserPermissions,
   requireAdmin,
-  requireSuperAdmin,
-  permissionService
+  requireSuperAdmin
 };

@@ -224,7 +224,7 @@ interface QueuedRequest {
  * AI Services class providing OCR, text extraction, and categorization
  */
 export class AIServices {
-  private visionClient: vision.ImageAnnotatorClient | null = null;
+  private visionClient: any | null = null;
   private openaiClient: OpenAI | null = null;
   private initialized: boolean = false;
   private initPromise: Promise<void>;

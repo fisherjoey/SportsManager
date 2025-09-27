@@ -260,11 +260,11 @@ const getAssignmentById = async (
     gameId: enrichedAssignment.game_id,
     refereeId: enrichedAssignment.user_id,
     positionId: enrichedAssignment.position_id,
-    assignedAt: enrichedAssignment.assigned_at,
+    assignedAt: (enrichedAssignment as any).assigned_at,
     assignedBy: enrichedAssignment.assigned_by,
     status: enrichedAssignment.status,
-    createdAt: enrichedAssignment.created_at,
-    updatedAt: enrichedAssignment.updated_at,
+    createdAt: (enrichedAssignment as any).created_at,
+    updatedAt: (enrichedAssignment as any).updated_at,
     calculatedWage: enrichedAssignment.calculated_wage,
     game: {
       id: enrichedAssignment.game_id,
@@ -335,7 +335,7 @@ const createAssignment = async (
     assignmentId: result.assignment.id,
     gameId: result.assignment.game_id,
     refereeId: result.assignment.user_id,
-    wage: result.assignment.wage,
+    wage: (result.assignment as any).wage,
     userId: req.user.id
   });
   

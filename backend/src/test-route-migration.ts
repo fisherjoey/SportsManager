@@ -193,8 +193,8 @@ class RouteMigrationTester {
     }, {} as Record<string, any[]>);
 
     Object.entries(routeGroups).forEach(([route, results]) => {
-      const passed = results.filter(r => r.passed).length;
-      const total = results.length;
+      const passed = (results as any).filter((r: any) => r.passed).length;
+      const total = (results as any).length;
       console.log(`  ${route}: ${passed}/${total} passed`);
     });
   }

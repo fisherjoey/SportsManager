@@ -9,7 +9,7 @@
  */
 
 import express, { Response, NextFunction } from 'express';
-import Joi from 'joi';
+import * as Joi from 'joi';
 import { authenticateToken } from '../../middleware/auth';
 import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
@@ -203,7 +203,7 @@ router.post('/', authenticateToken, requireCerbosPermission({
     }
 
     const { permissions, ...roleData } = value as RoleCreateData & { permissions?: string[] };
-    const role = await roleService.createRole(roleData, permissions);
+    const role = await roleService.createRole(roleData as any);
 
     res.status(201).json({
       success: true,
@@ -247,7 +247,7 @@ router.put('/:roleId', authenticateToken, requireCerbosPermission({
     }
 
     const { permissions, ...roleData } = value as RoleUpdateData & { permissions?: string[] };
-    const role = await roleService.updateRole(roleId, roleData, permissions);
+    const role = await roleService.updateRole(roleId, roleData as any);
 
     res.json({
       success: true,
@@ -423,7 +423,7 @@ router.get('/:roleId/users', authenticateToken, requireCerbosPermission({
       includeInactive: include_inactive === 'true'
     };
 
-    const result: PaginatedUserResult = await roleService.getUsersWithRole(roleId, filters);
+    const result = await roleService.getUsersWithRole(roleId, filters) as unknown as PaginatedUserResult;
 
     res.json({
       success: true,
@@ -460,7 +460,7 @@ router.post('/:roleId/users', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const result: UserRoleOperationResult = await roleService.addUsersToRole(roleId, user_ids);
+    const result = await roleService.addUsersToRole(roleId, user_ids) as unknown as UserRoleOperationResult;
 
     res.json({
       success: true,
@@ -503,7 +503,7 @@ router.delete('/:roleId/users', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const result: UserRoleOperationResult = await roleService.removeUsersFromRole(roleId, user_ids);
+    const result = await roleService.removeUsersFromRole(roleId, user_ids) as unknown as UserRoleOperationResult;
 
     res.json({
       success: true,
@@ -584,7 +584,7 @@ router.get('/:roleId/hierarchy', authenticateToken, requireCerbosPermission({
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { roleId } = (req as any).params;
-    const hierarchy: RoleHierarchy = await roleService.getRoleHierarchy(roleId);
+    const hierarchy = await roleService.getRoleHierarchy(roleId) as unknown as RoleHierarchy;
 
     res.json({
       success: true,

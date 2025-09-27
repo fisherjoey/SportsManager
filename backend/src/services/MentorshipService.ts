@@ -422,7 +422,7 @@ class MentorshipService extends BaseService {
           this.db.raw('COUNT(CASE WHEN status = \'terminated\' THEN 1 END) as terminated_mentorships')
         )
         .where('mentor_id', mentorId)
-        .first() as {
+        .first() as unknown as {
           total_mentorships: string;
           active_mentorships: string;
           completed_mentorships: string;
@@ -629,7 +629,7 @@ class MentorshipService extends BaseService {
    * @param mentorship - Created mentorship
    * @param options - Creation options
    */
-  async afterCreate(mentorship: MentorshipRecord, options: Record<string, any>): Promise<void> {
+  async afterCreate(mentorship: any, options: Record<string, any>): Promise<void> {
     if (this.options.enableAuditTrail) {
       console.log(`Mentorship relationship created: ${mentorship.mentor_id} -> ${mentorship.mentee_id} (${mentorship.id})`);
     }
@@ -642,8 +642,8 @@ class MentorshipService extends BaseService {
    * @param options - Update options
    */
   async afterUpdate(
-    mentorship: MentorshipRecord,
-    previousMentorship: MentorshipRecord,
+    mentorship: any,
+    previousMentorship: any,
     options: Record<string, any>
   ): Promise<void> {
     if (this.options.enableAuditTrail && previousMentorship.status !== mentorship.status) {
