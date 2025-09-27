@@ -54,7 +54,15 @@
       "Bash(docker-compose:*)",
       "Bash(docker compose:*)",
       "Bash(npm uninstall:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(where docker)",
+      "Bash(powershell:*)",
+      "Bash(docker logs:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(docker restart:*)",
+      "Bash(git restore:*)",
+      "Bash(PGPASSWORD=postgres123 \"/c/Program Files/PostgreSQL/17/bin/psql\" -U postgres -h localhost -d sports_management -c \"\\dt\")"
     ],
     "deny": [],
     "ask": []

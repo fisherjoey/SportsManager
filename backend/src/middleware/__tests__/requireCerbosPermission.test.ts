@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedUser } from '../../types/auth.types';
 import { UserRole } from '../../types/index';
 
+
 const mockCheckPermission = jest.fn();
 
 jest.mock('../../services/CerbosAuthService', () => {
