@@ -4,7 +4,8 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyPermission } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import emailService from '../services/emailService';
 
 const router = express.Router();
@@ -91,7 +92,10 @@ const completeInvitationSchema = Joi.object({
 
 // POST /api/invitations - Create invitation
 // Requires: users:create or users:invite permission
-router.post('/', authenticateToken, requireAnyPermission(['users:create', 'users:invite']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'invitation',
+  action: 'create',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     console.log('Creating invitation - request body:', req.body);
     console.log('User making request:', req.user);
@@ -184,7 +188,10 @@ router.post('/', authenticateToken, requireAnyPermission(['users:create', 'users
 });
 
 // GET /api/invitations - Get all invitations (admin only)
-router.get('/', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'invitation',
+  action: 'view:list',
+}), async (req: Request, res: Response) => {
   try {
     const { status = 'all', page = '1', limit = '50' } = req.query;
     const pageNum = parseInt(page as string, 10);
@@ -360,7 +367,11 @@ router.post('/:token/complete', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/invitations/:id - Cancel invitation (admin only)
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'invitation',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
