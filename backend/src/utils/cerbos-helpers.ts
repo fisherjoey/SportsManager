@@ -5,6 +5,25 @@ import type {
   ResourceType,
 } from '../types/cerbos.types';
 
+function normalizeCerbosRole(roleName: string): string {
+  const normalized = roleName.toLowerCase().replace(/[\s_-]+/g, '');
+
+  if (normalized === 'superadmin' || normalized === 'admin') {
+    return 'admin';
+  }
+  if (normalized === 'assignor' || normalized === 'assignmentmanager') {
+    return 'assignor';
+  }
+  if (normalized.includes('referee')) {
+    return 'referee';
+  }
+  if (normalized === 'guest') {
+    return 'guest';
+  }
+
+  return 'guest';
+}
+
 export function toPrincipal(
   user: AuthenticatedUser,
   organizationId: string,
@@ -14,14 +33,23 @@ export function toPrincipal(
   let roles: string[] = [];
 
   if (user.roles && user.roles.length > 0) {
-    roles = Array.from(new Set(user.roles.map((r) => r.name).filter(Boolean)));
+    roles = user.roles
+      .map((r: any) => {
+        if (typeof r === 'string') return r;
+        if (r && r.name) return r.name;
+        return null;
+      })
+      .filter(Boolean)
+      .map((r: string) => normalizeCerbosRole(r));
   } else if (user.role) {
-    roles = [user.role];
+    roles = [normalizeCerbosRole(user.role)];
   }
 
   if (roles.length === 0) {
     roles = ['guest'];
   }
+
+  roles = Array.from(new Set(roles));
 
   return {
     id: user.id,
