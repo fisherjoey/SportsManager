@@ -8,7 +8,8 @@ import express, { Request, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import { Database } from '../types/database.types';
 import db from '../config/database';
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter } from '../utils/response-formatters';
 import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
@@ -320,20 +321,29 @@ router.get('/:id',
 
 router.post('/', 
   authenticateToken as any, 
-  requireRole('admin') as any, 
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:list',
+  }) as any, 
   enhancedAsyncHandler(createUser as any)
 );
 
 router.put('/:id', 
   authenticateToken as any, 
-  requireRole('admin') as any, 
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:list',
+  }) as any, 
   validateParams(IdParamSchema) as any, 
   enhancedAsyncHandler(updateUser as any)
 );
 
 router.delete('/:id', 
   authenticateToken as any, 
-  requireRole('admin') as any, 
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:list',
+  }) as any, 
   validateParams(IdParamSchema) as any, 
   enhancedAsyncHandler(deleteUser as any)
 );

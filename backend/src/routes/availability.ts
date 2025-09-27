@@ -7,7 +7,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { Database, UUID, AuthenticatedRequest } from '../types';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter } from '../utils/response-formatters';
 import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
@@ -380,7 +381,10 @@ router.delete('/:windowId',
 // GET /api/availability/conflicts - Check for scheduling conflicts
 router.get('/conflicts',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'view:list',
+  }),
   validateQuery(conflictQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, ConflictQueryParams>, res: Response): Promise<void> => {
     const { date, start_time, end_time, referee_id } = req.query;
