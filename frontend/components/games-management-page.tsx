@@ -18,6 +18,7 @@ import { StatsGrid } from '@/components/ui/stats-grid'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 import { usePermissions } from '@/hooks/usePermissions'
+import { CERBOS_PERMISSIONS } from '@/lib/permissions'
 import { MenteeSelector } from '@/components/MenteeSelector'
 import { MenteeGamesView } from '@/components/MenteeGamesView'
 import CalendarUpload from '@/components/calendar-upload'
@@ -447,8 +448,8 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const { isAuthenticated } = useAuth()
   const { hasPermission, hasAnyPermission } = usePermissions()
 
-  // Check if user has mentorship permissions
-  const isMentor = hasAnyPermission(['mentorships:read', 'mentorships:manage'])
+  // Check if user has mentorship permissions (now mapped to referee management)
+  const isMentor = hasAnyPermission([CERBOS_PERMISSIONS.REFEREES.VIEW_LIST, CERBOS_PERMISSIONS.REFEREES.UPDATE])
 
   // Fetch mentees for mentor dropdown
   useEffect(() => {
@@ -728,7 +729,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           <Button variant="ghost" size="sm">
             <Edit className="h-4 w-4" />
           </Button>
-          {hasPermission('games:delete') && (
+          {hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE) && (
             <Button 
               variant="ghost" 
               size="sm" 

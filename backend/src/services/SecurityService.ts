@@ -603,50 +603,16 @@ class SecurityService {
   }
 
   /**
-   * Check user permissions
+   * Check user permissions (DEPRECATED - Use Cerbos authorization instead)
+   * This method is kept for backward compatibility but should not be used for new code.
+   * All permission checks should use Cerbos policies via requireCerbosPermission middleware.
    */
   async checkPermission(userId, resource, action) {
-    // Get user roles
-    const user = await knex('users').where({ id: userId }).first();
-    if (!user) {
-      return false;
-    }
+    console.warn('DEPRECATED: SecurityService.checkPermission() should be replaced with Cerbos authorization');
 
-    const userRoles = user.roles || [user.role];
-    
-    // Admin always has access
-    if (userRoles.includes('admin')) {
-      return true;
-    }
-
-    // Check role-based permissions
-    const rolePermissions = await knex('role_permissions')
-      .join('permissions', 'role_permissions.permission_id', 'permissions.id')
-      .join('roles', 'role_permissions.role_id', 'roles.id')
-      .whereIn('roles.name', userRoles)
-      .where('permissions.resource', resource)
-      .where('permissions.action', action)
-      .where('permissions.is_active', true)
-      .first();
-
-    if (rolePermissions) {
-      return true;
-    }
-
-    // Check user-specific permissions
-    const userPermission = await knex('user_permissions')
-      .join('permissions', 'user_permissions.permission_id', 'permissions.id')
-      .where('user_permissions.user_id', userId)
-      .where('permissions.resource', resource)
-      .where('permissions.action', action)
-      .where('permissions.is_active', true)
-      .where(function() {
-        this.whereNull('user_permissions.expires_at')
-          .orWhere('user_permissions.expires_at', '>', new Date());
-      })
-      .first();
-
-    return userPermission ? userPermission.granted : false;
+    // For backward compatibility, return false to force proper Cerbos implementation
+    // This ensures any remaining code using this method will fail safely
+    return false;
   }
 }
 

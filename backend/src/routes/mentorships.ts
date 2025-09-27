@@ -151,14 +151,14 @@ router.get('/',
       let mentorships;
       let userRole = 'mentee'; // default
 
-      // Check if user has admin/manage permissions directly from database
+      // Check if user has admin/manage permissions via roles
+      // Note: Permission checking is now handled by Cerbos at the route level
+      // This check is just for determining view scope
       const hasManagePermission = await db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
-        .join('role_permissions', 'roles.id', 'role_permissions.role_id')
-        .join('permissions', 'role_permissions.permission_id', 'permissions.id')
         .where('user_roles.user_id', userId)
         .where('user_roles.is_active', true)
-        .where('permissions.name', 'mentorships:manage')
+        .whereIn('roles.name', ['Super Admin', 'Mentorship Coordinator'])
         .first();
 
       console.log(`User ${userId} has manage permission:`, !!hasManagePermission);

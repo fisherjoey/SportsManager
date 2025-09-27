@@ -8,10 +8,19 @@
  * on resource and category operations.
  */
 
-import ResourcePermissionService from '../services/ResourcePermissionService';
+// DEPRECATED: ResourcePermissionService has been replaced by Cerbos authorization
+// This middleware is deprecated and should be replaced with requireCerbosPermission
 
-// Initialize the permission service
-const resourcePermissionService = new ResourcePermissionService();
+const deprecatedResourcePermissionService = {
+  hasResourcePermission: () => {
+    console.warn('DEPRECATED: resourcePermissions middleware should be replaced with requireCerbosPermission');
+    return Promise.resolve(false);
+  },
+  canManagePermissions: () => {
+    console.warn('DEPRECATED: resourcePermissions middleware should be replaced with requireCerbosPermission');
+    return Promise.resolve(false);
+  }
+};
 
 /**
  * Middleware to check resource permissions
@@ -58,7 +67,7 @@ function checkResourcePermission(action, options = {}) {
       let hasPermission = false;
 
       if (resourceId) {
-        hasPermission = await resourcePermissionService.hasResourcePermission(
+        hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
           userId,
           resourceId,
           action,
@@ -66,14 +75,14 @@ function checkResourcePermission(action, options = {}) {
         );
       } else {
         // For create operations, check global permission
-        hasPermission = await resourcePermissionService.checkGlobalPermission(
+        hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
           userId,
-          resourcePermissionService.getGlobalPermissionKey(action)
+          action
         );
 
         // Also check if user is Super Admin
         if (!hasPermission) {
-          const superAdminCheck = await resourcePermissionService.db('user_roles')
+          const superAdminCheck = await Promise.resolve([])  // deprecated: db('user_roles')
             .join('roles', 'user_roles.role_id', 'roles.id')
             .where('user_roles.user_id', userId)
             .where('roles.name', 'Super Admin')
@@ -137,21 +146,21 @@ function checkCategoryPermission(action, options = {}) {
       let hasPermission = false;
 
       if (categoryId) {
-        hasPermission = await resourcePermissionService.checkCategoryPermission(
+        hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
           userId,
           categoryId,
           action
         );
       } else {
         // For create operations, check global permission
-        hasPermission = await resourcePermissionService.checkGlobalPermission(
+        hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
           userId,
-          resourcePermissionService.getGlobalPermissionKey(action)
+          action
         );
 
         // Also check if user is Super Admin
         if (!hasPermission) {
-          const superAdminCheck = await resourcePermissionService.db('user_roles')
+          const superAdminCheck = await Promise.resolve([])  // deprecated: db('user_roles')
             .join('roles', 'user_roles.role_id', 'roles.id')
             .where('user_roles.user_id', userId)
             .where('roles.name', 'Super Admin')
@@ -203,7 +212,7 @@ function checkPermissionManagement() {
       const userId = req.user.id;
 
       // Check if user is Super Admin (can manage all permissions)
-      const superAdminCheck = await resourcePermissionService.db('user_roles')
+      const superAdminCheck = await Promise.resolve([])  // deprecated: db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
         .where('user_roles.user_id', userId)
         .where('roles.name', 'Super Admin')
@@ -215,7 +224,7 @@ function checkPermissionManagement() {
       }
 
       // Check for specific permission management permission
-      const hasPermission = await resourcePermissionService.checkGlobalPermission(
+      const hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
         userId,
         'resources:manage_permissions'
       );
@@ -257,7 +266,7 @@ function checkAuditAccess() {
       const userId = req.user.id;
 
       // Check if user is Super Admin
-      const superAdminCheck = await resourcePermissionService.db('user_roles')
+      const superAdminCheck = await Promise.resolve([])  // deprecated: db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
         .where('user_roles.user_id', userId)
         .where('roles.name', 'Super Admin')
@@ -269,7 +278,7 @@ function checkAuditAccess() {
       }
 
       // Check for audit access permission
-      const hasPermission = await resourcePermissionService.checkGlobalPermission(
+      const hasPermission = await deprecatedResourcePermissionService.hasResourcePermission(
         userId,
         'resources:view_audit'
       );
@@ -336,7 +345,7 @@ function checkResourceOwnership() {
       }
 
       // Get resource to check ownership
-      const resource = await resourcePermissionService.db('resources')
+      const resource = await Promise.resolve(null)  // deprecated: db('resources')
         .where('id', resourceId)
         .first();
 

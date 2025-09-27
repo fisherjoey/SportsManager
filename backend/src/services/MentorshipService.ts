@@ -360,50 +360,12 @@ class MentorshipService extends BaseService {
       // Get current mentorship
       const mentorship = await this.findById(mentorshipId) as MentorshipRecord;
 
-      console.log(`[MentorshipService] Checking permissions for user ${userId} to update mentorship ${mentorshipId}`);
+      // Permission checking has been moved to Cerbos middleware
+      // The requireCerbosPermission middleware in the route handles authorization
+      console.log(`[MentorshipService] Updating mentorship ${mentorshipId} status to ${newStatus} by user ${userId}`);
 
-      // First, let's see what roles this user has
-      const userRoles = await this.db('user_roles')
-        .join('roles', 'user_roles.role_id', 'roles.id')
-        .where('user_roles.user_id', userId)
-        .select('roles.name', 'user_roles.is_active');
-
-      console.log(`[MentorshipService] User roles:`, userRoles);
-
-      // Check if user has admin/manage permissions
-      // First check if user is Super Admin (has automatic bypass)
-      const isSuperAdmin = await this.db('user_roles')
-        .join('roles', 'user_roles.role_id', 'roles.id')
-        .where('user_roles.user_id', userId)
-        .where('roles.name', 'Super Admin')
-        .first();
-
-      console.log(`[MentorshipService] Is Super Admin:`, !!isSuperAdmin);
-
-      // Then check for specific mentorship management permissions
-      let hasSpecificPermission = false;
-      if (!isSuperAdmin) {
-        hasSpecificPermission = await this.db('user_roles')
-          .join('roles', 'user_roles.role_id', 'roles.id')
-          .join('role_permissions', 'roles.id', 'role_permissions.role_id')
-          .join('permissions', 'role_permissions.permission_id', 'permissions.id')
-          .where('user_roles.user_id', userId)
-          .where('user_roles.is_active', true)
-          .whereIn('permissions.name', ['mentorships:manage', 'mentorships:update', 'system:admin'])
-          .first();
-      }
-
-      console.log(`[MentorshipService] Has specific permission:`, !!hasSpecificPermission);
-
-      const hasManagePermission = isSuperAdmin || hasSpecificPermission;
-
-      console.log(`[MentorshipService] Final permission check result:`, !!hasManagePermission);
-
-      // Only users with proper permissions can update mentorship status
-      if (!hasManagePermission) {
-        console.error(`[MentorshipService] Access denied for user ${userId}`);
-        throw new Error('Access denied: You need mentorship management permissions to update mentorship status');
-      }
+      // Note: Authorization is now handled by Cerbos at the route level
+      // This service method assumes the user has already been authorized
 
       // Prepare update data
       const updateData: Partial<MentorshipRecord> = {
@@ -509,18 +471,16 @@ class MentorshipService extends BaseService {
       }
 
       // Check if user has mentoring permission through RBAC
-      // Check for either mentorships:manage or mentorships:create permissions
+      // This now only checks for the role existence, not legacy permission tables
       const hasMentorRole = await this.db('user_roles as ur')
         .join('roles as r', 'ur.role_id', 'r.id')
-        .join('role_permissions as rp', 'r.id', 'rp.role_id')
-        .join('permissions as p', 'rp.permission_id', 'p.id')
         .where('ur.user_id', userId)
-        .whereIn('p.name', ['mentorships:manage', 'mentorships:create', 'mentorship.provide'])
+        .whereIn('r.name', ['Mentorship Coordinator', 'Super Admin'])
         .where('ur.is_active', true)
         .first();
 
       if (!hasMentorRole) {
-        throw new Error('User does not have mentor permissions. User must have "Mentorship Coordinator" RBAC role or "Mentor" referee capability.');
+        throw new Error('User does not have mentor permissions. User must have "Mentorship Coordinator" RBAC role.');
       }
 
     } catch (error: any) {
@@ -635,16 +595,15 @@ class MentorshipService extends BaseService {
               .where('user_roles.is_active', true)
               .where('roles.is_active', true);
           })
-          // OR users with mentorship permission through RBAC
+          // OR users with Super Admin role (can also mentor)
           .orWhereExists(function() {
             this.select('*')
-              .from('user_roles as ur')
-              .join('roles as r', 'ur.role_id', 'r.id')
-              .join('role_permissions as rp', 'r.id', 'rp.role_id')
-              .join('permissions as p', 'rp.permission_id', 'p.id')
-              .whereRaw('ur.user_id = users.id')
-              .where('p.name', 'mentorship.provide')
-              .where('ur.is_active', true);
+              .from('user_roles')
+              .join('roles', 'user_roles.role_id', 'roles.id')
+              .whereRaw('user_roles.user_id = users.id')
+              .where('roles.name', 'Super Admin')
+              .where('user_roles.is_active', true)
+              .where('roles.is_active', true);
           });
         })
         .whereNotExists(function() {

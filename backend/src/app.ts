@@ -79,7 +79,6 @@ import menteeGamesRoutes from './routes/mentee-games';
 
 // Import admin routes
 import adminRoleRoutes from './routes/admin/roles';
-import adminPermissionRoutes from './routes/admin/permissions';
 import adminMaintenanceRoutes from './routes/admin/maintenance';
 import testRoleRoutes from './routes/admin/test-roles';
 import adminRBACRegistryRoutes from './routes/admin/rbac-registry';
@@ -225,7 +224,6 @@ app.use('/api/mentees', menteeGamesRoutes);
 
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);
-app.use('/api/admin/permissions', adminPermissionRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
 app.use('/api/admin/access', adminAccessRoutes);
 app.use('/api/admin/users', adminUsersRoutes);

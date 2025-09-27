@@ -163,9 +163,22 @@ class ApiClient {
           console.warn('Failed to parse error response:', parseError)
         }
 
-        // Only log non-authentication errors to console
-        // 401 errors are expected when user is not logged in
-        if (response.status !== 401) {
+        // Handle different error types appropriately
+        if (response.status === 403) {
+          // Cerbos authorization failure - create a user-friendly error
+          const cerbosError = new Error('Access denied. You do not have permission to perform this action.')
+          ;(cerbosError as any).status = 403
+          ;(cerbosError as any).type = 'PERMISSION_DENIED'
+          ;(cerbosError as any).originalError = errorMessage
+          throw cerbosError
+        } else if (response.status === 401) {
+          // Authentication failure - don't log these as they're expected
+          const authError = new Error('Authentication required. Please log in.')
+          ;(authError as any).status = 401
+          ;(authError as any).type = 'AUTHENTICATION_REQUIRED'
+          throw authError
+        } else {
+          // Log other errors for debugging
           console.error(`API Error [${method}] ${url}:`, {
             status: response.status,
             statusText: response.statusText,

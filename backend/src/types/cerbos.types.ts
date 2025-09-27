@@ -15,7 +15,9 @@ export type ResourceType =
   | 'league'
   | 'location'
   | 'post'
-  | 'referee_level';
+  | 'referee_level'
+  | 'calendar'
+  | 'financial_report';
 
 export type ResourceAction =
   | 'view'
@@ -24,7 +26,14 @@ export type ResourceAction =
   | 'view:details'
   | 'view:unread_count'
   | 'view:pending_acknowledgments'
+  | 'view:budget_variance'
+  | 'view:cash_flow'
+  | 'view:expense_analysis'
+  | 'view:payroll_summary'
+  | 'view:kpis'
   | 'create'
+  | 'create:kpi'
+  | 'create:version'
   | 'update'
   | 'delete'
   | 'assign_referee'
@@ -44,8 +53,16 @@ export type ResourceAction =
   | 'publish'
   | 'archive'
   | 'acknowledge'
+  | 'download'
   | 'admin:view_recipients'
-  | 'admin:view_stats';
+  | 'admin:view_stats'
+  | 'admin:view_acknowledgments'
+  | 'view:games_calendar'
+  | 'admin:configure_sync'
+  | 'admin:view_sync_status'
+  | 'admin:disable_sync'
+  | 'admin:trigger_sync'
+  | 'admin:upload_calendar';
 
 export interface CerbosPrincipal {
   id: string;

@@ -141,7 +141,7 @@ router.get('/',
     is_available: Joi.boolean()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, RefereeListQueryParams>, res: Response): Promise<void> => {
-    const { page = 1, limit = 50, ...filters } = req.query;
+    const { page = 1, limit = 50, ...filters } = (req as any).query;
 
     // Use RefereeService to get paginated profiles with enhanced data
     const result: PaginatedResult<any> = await refereeService.getRefereeProfiles(filters, page, limit);
@@ -156,11 +156,11 @@ router.get('/:id',
   requireCerbosPermission({
     resource: 'referee',
     action: 'view:details',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     // Use RefereeService to get complete referee profile
     const profile = await refereeService.getRefereeProfile(refereeId, { includeUser: true });
@@ -195,7 +195,7 @@ router.post('/',
   validateBody(UserSchemas.create),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any>, res: Response): Promise<void> => {
     // Ensure role is set to referee
-    const value = { ...req.body, role: 'referee' };
+    const value = { ...(req as any).body, role: 'referee' };
 
     // Use UserService to create referee with proper defaults
     const referee = await userService.createReferee(value);
@@ -214,7 +214,7 @@ router.put('/:id',
   authenticateToken,
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, RefereeUpdateBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     // Check if user is admin or updating their own profile
     const isAdmin = req.user.role === 'admin';
@@ -226,7 +226,7 @@ router.put('/:id',
 
     // Use appropriate schema based on user role
     const schema = isAdmin ? UserSchemas.adminUpdate : UserSchemas.update;
-    const { error, value } = schema.validate(req.body);
+    const { error, value } = schema.validate((req as any).body);
     if (error) {
       throw ErrorFactory.fromJoiError(error);
     }
@@ -261,8 +261,8 @@ router.patch('/:id/availability',
     is_available: Joi.boolean().required()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, AvailabilityUpdateBody>, res: Response): Promise<void> => {
-    const { is_available } = req.body;
-    const refereeId = req.params.id;
+    const { is_available } = (req as any).body;
+    const refereeId = (req as any).params.id;
 
     // Use UserService to update availability
     const updatedReferee = await userService.updateAvailability(refereeId, is_available);
@@ -275,7 +275,7 @@ router.patch('/:id/availability',
 router.get('/available/:gameId',
   validateParams(IdParamSchema.keys({ gameId: Joi.string().uuid().required() })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ gameId: UUID }>, res: Response): Promise<void> => {
-    const gameId = req.params.gameId;
+    const gameId = (req as any).params.gameId;
 
     // First verify the game exists
     const game = await db('games').where('id', gameId).first();
@@ -285,11 +285,11 @@ router.get('/available/:gameId',
 
     // Use UserService to find available referees for the specific game date/time
     const availableReferees = await userService.findAvailableReferees(
-      game.game_date,
-      game.game_time,
+      ( game as any).game_date,
+      ( game as any).game_time,
       {
-        level: game.level,
-        location: game.location
+        level: ( game as any).level,
+        location: ( game as any).location
       }
     );
 
@@ -312,13 +312,16 @@ router.patch('/:id/level',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
-  validateBody(UserSchemas.levelUpdate),
+  validateBody(Joi.object({
+    new_referee_level: Joi.string().required(),
+    is_white_whistle: Joi.boolean()
+  })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, LevelUpdateBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
-    const { new_referee_level, is_white_whistle } = req.body;
+    const refereeId = (req as any).params.id;
+    const { new_referee_level, is_white_whistle } = (req as any).body;
 
     // Verify referee exists
     const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
@@ -347,7 +350,7 @@ router.patch('/:id/roles',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object<RoleActionBody>({
@@ -355,8 +358,8 @@ router.patch('/:id/roles',
     role_name: Joi.string().required()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, RoleActionBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
-    const { action, role_name } = req.body;
+    const refereeId = (req as any).params.id;
+    const { action, role_name } = (req as any).body;
 
     // Verify referee exists
     const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
@@ -403,7 +406,7 @@ router.patch('/:id/roles',
 router.get('/:id/white-whistle-status',
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     // Get referee with level information
     const referee = await userService.getUserWithRefereeDetails(refereeId);
@@ -439,11 +442,11 @@ router.delete('/:id',
   requireCerbosPermission({
     resource: 'referee',
     action: 'delete',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     // Verify referee exists before deletion
     const existingReferee = await userService.findById(refereeId, { select: ['id', 'role'] });
@@ -540,7 +543,7 @@ router.get('/:id/profile',
   }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     const profile = await refereeService.getRefereeProfile(refereeId, { includeUser: true });
     if (!profile) {
@@ -557,7 +560,7 @@ router.put('/:id/wage',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object<WageUpdateBody>({
@@ -565,8 +568,8 @@ router.put('/:id/wage',
     notes: Joi.string().max(500).optional()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, WageUpdateBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
-    const { wage_amount, notes } = req.body;
+    const refereeId = (req as any).params.id;
+    const { wage_amount, notes } = (req as any).body;
 
     await refereeService.updateWage(refereeId, wage_amount, req.user.id, { notes });
 
@@ -580,7 +583,7 @@ router.put('/:id/type',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object<TypeChangeBody>({
@@ -591,8 +594,8 @@ router.put('/:id/type',
     reason: Joi.string().max(255).optional()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, TypeChangeBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
-    const { referee_type, update_wage_to_default, reason } = req.body;
+    const refereeId = (req as any).params.id;
+    const { referee_type, update_wage_to_default, reason } = (req as any).body;
 
     const result = await refereeService.changeRefereeType(
       refereeId,
@@ -641,7 +644,7 @@ router.post('/:id/profile',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object<ProfileCreateBody>({
@@ -663,13 +666,13 @@ router.post('/:id/profile',
     notes: Joi.string().max(1000).optional()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, ProfileCreateBody>, res: Response): Promise<void> => {
-    const userId = req.params.id;
-    const profileData = req.body;
+    const userId = (req as any).params.id;
+    const profileData = (req as any).body;
     const { referee_type, ...initialData } = profileData;
 
     // Get the referee type role
     const refereeTypeRole = await db('roles')
-      .where({ name: referee_type, category: 'referee_type' })
+      .where({ name: referee_type, category: 'referee_type' } as any)
       .first();
 
     if (!refereeTypeRole) {
@@ -679,18 +682,18 @@ router.post('/:id/profile',
     // Create the referee profile
     const profile = await refereeService.createRefereeProfile(
       userId,
-      refereeTypeRole,
+      refereeTypeRole as any,
       initialData as any
     );
 
     // Assign the referee type role
     await db('user_roles').insert({
       user_id: userId,
-      role_id: refereeTypeRole.id,
+      role_id: (refereeTypeRole as any).id,
       assigned_by: req.user.id,
       assigned_at: new Date(),
       is_active: true
-    });
+    } as any);
 
     ResponseFormatter.sendCreated(
       res,
@@ -707,7 +710,7 @@ router.patch('/:id/profile',
   requireCerbosPermission({
     resource: 'referee',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object<ProfileUpdateBody>({
@@ -731,8 +734,8 @@ router.patch('/:id/profile',
     is_active: Joi.boolean().optional()
   })),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, ProfileUpdateBody>, res: Response): Promise<void> => {
-    const userId = req.params.id;
-    const updateData = req.body;
+    const userId = (req as any).params.id;
+    const updateData = (req as any).body;
 
     // Get current profile
     const profiles = await refereeService.findWhere({ user_id: userId, is_active: true });
@@ -756,7 +759,7 @@ router.get('/:id/white-whistle',
   }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
+    const refereeId = (req as any).params.id;
 
     const [refereeType, profile, showWhiteWhistle] = await Promise.all([
       refereeService.getRefereeType(refereeId),

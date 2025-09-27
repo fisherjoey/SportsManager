@@ -99,49 +99,37 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get role with its permissions
+   * Get role with its permissions (DEPRECATED - Permissions now managed by Cerbos)
    * @param roleId - Role ID
    * @param options - Options including transaction
-   * @returns Role with permissions
+   * @returns Role without permissions
    */
   async getRoleWithPermissions(roleId: UUID, options: RoleOperationOptions = {}): Promise<Role> {
-    const db = options.transaction || this.db;
-    
-    try {
-      const role = await (db as any)('roles')
-        .leftJoin('role_permissions', 'roles.id', 'role_permissions.role_id')
-        .leftJoin('permissions', 'role_permissions.permission_id', 'permissions.id')
-        .select(
-          'roles.*',
-          (db as any).raw('COALESCE(JSON_AGG(DISTINCT permissions.*) FILTER (WHERE permissions.id IS NOT NULL), \'[]\') as permissions')
-        )
-        .where('roles.id', roleId)
-        .groupBy('roles.id')
-        .first() as Role & { permissions: string | Permission[] };
+    console.warn('DEPRECATED: getRoleWithPermissions() - Permissions are now managed by Cerbos policies');
 
+    try {
+      const role = await this.getRoleById(roleId);
       if (!role) {
         throw new Error(`Role not found with id: ${roleId}`);
       }
 
-      // Parse permissions JSON
-      role.permissions = typeof role.permissions === 'string' 
-        ? JSON.parse(role.permissions) as Permission[]
-        : (role.permissions as Permission[]) || [];
-
-      return role;
+      // Return role without permissions since they're managed by Cerbos
+      return {
+        ...role,
+        permissions: []
+      };
     } catch (error) {
-      console.error('Error getting role with permissions:', error);
-      throw new Error(`Failed to get role with permissions: ${(error as Error).message}`);
+      console.error('Error getting role:', error);
+      throw new Error(`Failed to get role: ${(error as Error).message}`);
     }
   }
 
   /**
    * Create a new role
    * @param roleData - Role data
-   * @param permissions - Permission IDs to assign
-   * @returns Created role with permissions
+   * @returns Created role
    */
-  async createRole(roleData: CreateRoleData, permissions: UUID[] = []): Promise<Role> {
+  async createRole(roleData: CreateRoleData): Promise<Role> {
     return await this.withTransaction(async (trx) => {
       // Create the role
       const [role] = await (trx as any)('roles')
@@ -152,31 +140,27 @@ class RoleService extends BaseService<Role> {
         })
         .returning('*') as Role[];
 
-      // Assign permissions if provided
-      if (permissions && permissions.length > 0) {
-        await this.assignPermissionsToRole(role.id, permissions, { transaction: trx });
-      }
+      // Note: Permissions are now managed by Cerbos policies, not database tables
+      console.log(`Created role: ${role.name}. Remember to update Cerbos policies if needed.`);
 
-      // Return role with permissions
-      return await this.getRoleWithPermissions(role.id, { transaction: trx });
+      return role;
     });
   }
 
   /**
-   * Update role and optionally its permissions
+   * Update role
    * @param roleId - Role ID
    * @param roleData - Updated role data
-   * @param permissions - Permission IDs (optional)
-   * @returns Updated role with permissions
+   * @returns Updated role
    */
-  async updateRole(roleId: UUID, roleData: UpdateRoleData, permissions: UUID[] | null = null): Promise<Role> {
+  async updateRole(roleId: UUID, roleData: UpdateRoleData): Promise<Role> {
     return await this.withTransaction(async (trx) => {
       // Check if trying to update Super Admin
       const existingRole = await trx('roles').where('id', roleId).first() as Role;
       if (!existingRole) {
         throw new Error(`Role not found with id: ${roleId}`);
       }
-      
+
       if (existingRole.name === 'Super Admin') {
         throw new Error('Super Admin role cannot be modified');
       }
@@ -194,92 +178,27 @@ class RoleService extends BaseService<Role> {
         throw new Error(`Role not found with id: ${roleId}`);
       }
 
-      // Update permissions if provided
-      if (permissions !== null && Array.isArray(permissions)) {
-        // Remove existing permissions
-        await trx('role_permissions').where('role_id', roleId).del();
-        
-        // Add new permissions
-        if (permissions.length > 0) {
-          await this.assignPermissionsToRole(roleId, permissions, { transaction: trx });
-        }
-      }
+      // Note: Permissions are now managed by Cerbos policies
+      console.log(`Updated role: ${role.name}. Remember to update Cerbos policies if needed.`);
 
-      // Return updated role with permissions
-      return await this.getRoleWithPermissions(roleId, { transaction: trx });
+      return role;
     });
   }
 
   /**
-   * Assign permissions to a role
-   * @param roleId - Role ID
-   * @param permissionIds - Permission IDs
-   * @param options - Options
+   * Assign permissions to a role (DEPRECATED - Use Cerbos policies)
    */
   async assignPermissionsToRole(roleId: UUID, permissionIds: UUID[], options: RoleOperationOptions = {}): Promise<void> {
-    const trx = options.transaction || this.db;
-
-    try {
-      // Validate role exists
-      const role = await trx('roles').where('id', roleId).first() as Role;
-      if (!role) {
-        throw new Error(`Role not found with id: ${roleId}`);
-      }
-
-      // Prevent modifying Super Admin permissions
-      if (role.name === 'Super Admin') {
-        throw new Error('Super Admin permissions cannot be modified');
-      }
-
-      // Validate permissions exist
-      if (permissionIds.length > 0) {
-        const existingPermissions = await (trx as any)('permissions')
-          .whereIn('id', permissionIds)
-          .pluck('id') as UUID[];
-        
-        const invalidPermissions = permissionIds.filter(id => !existingPermissions.includes(id));
-        if (invalidPermissions.length > 0) {
-          throw new Error(`Invalid permission IDs: ${invalidPermissions.join(', ')}`);
-        }
-
-        // Insert role-permission relationships
-        const rolePermissions: RolePermissionAssignment[] = permissionIds.map(permissionId => ({
-          role_id: roleId,
-          permission_id: permissionId,
-          created_at: new Date()
-        }));
-
-        await (trx as any)('role_permissions')
-          .insert(rolePermissions)
-          .onConflict(['role_id', 'permission_id'])
-          .ignore();
-      }
-    } catch (error) {
-      console.error('Error assigning permissions to role:', error);
-      throw new Error(`Failed to assign permissions to role: ${(error as Error).message}`);
-    }
+    console.warn('DEPRECATED: assignPermissionsToRole() - Use Cerbos policies instead');
+    throw new Error('Permission assignment is now handled by Cerbos policies. Please update the corresponding policy YAML files.');
   }
 
   /**
-   * Remove permissions from a role
-   * @param roleId - Role ID
-   * @param permissionIds - Permission IDs
-   * @param options - Options
+   * Remove permissions from a role (DEPRECATED - Use Cerbos policies)
    */
   async removePermissionsFromRole(roleId: UUID, permissionIds: UUID[], options: RoleOperationOptions = {}): Promise<number> {
-    const trx = options.transaction || this.db;
-
-    try {
-      const deletedCount = await trx('role_permissions')
-        .where('role_id', roleId)
-        .whereIn('permission_id', permissionIds)
-        .del();
-
-      return deletedCount;
-    } catch (error) {
-      console.error('Error removing permissions from role:', error);
-      throw new Error(`Failed to remove permissions from role: ${(error as Error).message}`);
-    }
+    console.warn('DEPRECATED: removePermissionsFromRole() - Use Cerbos policies instead');
+    throw new Error('Permission removal is now handled by Cerbos policies. Please update the corresponding policy YAML files.');
   }
 
   /**
@@ -354,7 +273,7 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get all available roles with permission counts
+   * Get all available roles with metadata
    * @param options - Query options
    * @returns Roles with metadata
    */
@@ -363,11 +282,10 @@ class RoleService extends BaseService<Role> {
       const { includeInactive = false } = options;
 
       let query = (this.db as any)('roles')
-        .leftJoin('role_permissions', 'roles.id', 'role_permissions.role_id')
         .leftJoin('user_roles', 'roles.id', 'user_roles.role_id')
         .select(
           'roles.*',
-          (this.db as any).raw('COUNT(DISTINCT role_permissions.permission_id) as permission_count'),
+          (this.db as any).raw('0 as permission_count'), // Permissions managed by Cerbos
           (this.db as any).raw('COUNT(DISTINCT user_roles.user_id) as user_count')
         )
         .groupBy('roles.id')
@@ -382,7 +300,7 @@ class RoleService extends BaseService<Role> {
       // Convert counts to integers
       return roles.map(role => ({
         ...role,
-        permission_count: parseInt(role.permission_count) || 0,
+        permission_count: 0, // Permissions are managed by Cerbos
         user_count: parseInt(role.user_count) || 0
       }));
     } catch (error) {
@@ -502,8 +420,7 @@ class RoleService extends BaseService<Role> {
         throw new Error(safetyCheck.reason || 'Cannot delete role');
       }
 
-      // Remove role-permission relationships
-      await trx('role_permissions').where('role_id', roleId).del();
+      // Note: Role-permission relationships are managed by Cerbos, not database
 
       // Remove user-role relationships (if forcing)
       if (options.force) {
@@ -512,6 +429,8 @@ class RoleService extends BaseService<Role> {
 
       // Delete the role
       const deletedCount = await trx('roles').where('id', roleId).del();
+
+      console.log(`Deleted role ${roleId}. Remember to update Cerbos policies if needed.`);
 
       return deletedCount > 0;
     });
@@ -604,22 +523,15 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get role permissions (security-critical method)
+   * Get role permissions (DEPRECATED - Use Cerbos policies)
    * @param roleId - Role ID
-   * @returns Array of permissions for the role
+   * @returns Empty array (permissions managed by Cerbos)
    */
   async getRolePermissions(roleId: UUID): Promise<Permission[]> {
-    try {
-      const permissions = await (this.db as any)('permissions')
-        .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
-        .where('role_permissions.role_id', roleId)
-        .select('permissions.*') as Permission[];
+    console.warn('DEPRECATED: getRolePermissions() - Permissions are now managed by Cerbos policies');
 
-      return permissions;
-    } catch (error) {
-      console.error('Error getting role permissions:', error);
-      throw new Error(`Failed to get role permissions: ${(error as Error).message}`);
-    }
+    // Return empty array since permissions are managed by Cerbos
+    return [];
   }
 
   /**

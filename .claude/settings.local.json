@@ -88,7 +88,8 @@
       "Bash(timeout 30s npm test -- src/routes/__tests__/teams.test.ts --testNamePattern=\"should accept pagination\" --testTimeout=5000)",
       "Bash(timeout 30s npm test:*)",
       "Bash(timeout 10 npm test -- --testPathPattern=\"teams.test\" --testNamePattern=\"should be able to import\" --no-coverage)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(cut:*)"
     ],
     "deny": [],
     "ask": []

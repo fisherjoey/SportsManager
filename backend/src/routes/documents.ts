@@ -13,6 +13,7 @@ import { authenticateToken } from '../middleware/auth';
 import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { receiptUploader } from '../middleware/fileUpload';
 import type { AuthenticatedRequest } from '../types/auth.types';
+import { DocumentAuditAction } from '../types/document.types';
 import type {
   Document,
   DocumentVersion,
@@ -26,14 +27,14 @@ import type {
   DocumentAcknowledgmentsResponse,
   DocumentStats,
   PendingAcknowledgmentsResponse,
+  PendingAcknowledgment,
   DocumentStatus,
   AccessPermissions,
   AcknowledgmentMethod,
   DocumentModel,
   DocumentVersionModel,
   DocumentAcknowledgmentModel,
-  DocumentFileInfo,
-  DocumentAuditAction
+  DocumentFileInfo
 } from '../types/document.types';
 
 const router = express.Router();
@@ -155,8 +156,8 @@ async function logAuditEvent(
       action,
       userId,
       details ? JSON.stringify(details) : null,
-      req?.ip || null,
-      req?.get('User-Agent') || null
+      (req as any)?.ip || null,
+      (req as any)?.get('User-Agent') || null
     ]);
   } catch (error) {
     console.error('Error logging audit event:', error);
@@ -175,20 +176,20 @@ router.get('/',
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const page = Math.max(1, parseInt(req.query.page as string) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const page = Math.max(1, parseInt((req as any).query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt((req as any).query.limit as string) || 20));
       const offset = (page - 1) * limit;
 
       const filters: DocumentQueryFilters = {
-        category: req.query.category as string,
-        subcategory: req.query.subcategory as string,
-        status: req.query.status as DocumentStatus,
-        uploaded_by: req.query.uploaded_by as string,
-        requires_acknowledgment: req.query.requires_acknowledgment === 'true',
-        tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
-        search: req.query.search as string,
-        sort_by: req.query.sort_by as string || 'created_at',
-        sort_order: (req.query.sort_order as 'asc' | 'desc') || 'desc'
+        category: (req as any).query.category as string,
+        subcategory: (req as any).query.subcategory as string,
+        status: (req as any).query.status as DocumentStatus,
+        uploaded_by: (req as any).query.uploaded_by as string,
+        requires_acknowledgment: (req as any).query.requires_acknowledgment === 'true',
+        tags: (req as any).query.tags ? ((req as any).query.tags as string).split(',') : undefined,
+        search: (req as any).query.search as string,
+        sort_by: (req as any).query.sort_by as string || 'created_at',
+        sort_order: ((req as any).query.sort_order as 'asc' | 'desc') || 'desc'
       };
 
       let query = `
@@ -300,11 +301,11 @@ router.get('/:id',
   requireCerbosPermission({
     resource: 'document',
     action: 'view:details',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
 
       // Check access permissions
@@ -388,14 +389,14 @@ router.post('/',
   receiptUploader.single('document'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      if (!req.file) {
+      if (!(req as any).file) {
         res.status(400).json({ error: 'No file uploaded' });
         return;
       }
 
-      const { error, value } = documentSchema.validate(req.body);
+      const { error, value } = documentSchema.validate((req as any).body);
       if (error) {
-        await cleanupFile(req.file.path);
+        await cleanupFile((req as any).file.path);
         res.status(400).json({ error: error.details[0].message });
         return;
       }
@@ -404,9 +405,9 @@ router.post('/',
       const userId = req.user!.id;
 
       // Calculate file checksum
-      const checksum = await calculateChecksum(req.file.path);
+      const checksum = await calculateChecksum((req as any).file.path);
       if (!checksum) {
-        await cleanupFile(req.file.path);
+        await cleanupFile((req as any).file.path);
         res.status(500).json({ error: 'Failed to process file' });
         return;
       }
@@ -428,10 +429,10 @@ router.post('/',
         documentData.description || null,
         documentData.category,
         documentData.subcategory || null,
-        req.file.path,
-        req.file.originalname,
-        path.extname(req.file.originalname).slice(1),
-        req.file.size,
+        (req as any).file.path,
+        (req as any).file.originalname,
+        path.extname((req as any).file.originalname).slice(1),
+        (req as any).file.size,
         version,
         userId,
         documentData.effective_date || null,
@@ -446,7 +447,7 @@ router.post('/',
       await pool.query(
         `INSERT INTO document_versions (document_id, version, file_path, uploaded_by, is_current)
          VALUES ($1, $2, $3, $4, true)`,
-        [result.rows[0].id, version, req.file.path, userId]
+        [result.rows[0].id, version, (req as any).file.path, userId]
       );
 
       const document: Document = {
@@ -468,8 +469,8 @@ router.post('/',
       res.status(201).json(document);
     } catch (error) {
       console.error('Error uploading document:', error);
-      if (req.file) {
-        await cleanupFile(req.file.path);
+      if ((req as any).file) {
+        await cleanupFile((req as any).file.path);
       }
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -485,7 +486,7 @@ router.post('/:id/versions',
   requireCerbosPermission({
     resource: 'document',
     action: 'create:version',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   receiptUploader.single('document'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -493,16 +494,16 @@ router.post('/:id/versions',
     try {
       await client.query('BEGIN');
 
-      if (!req.file) {
+      if (!(req as any).file) {
         await client.query('ROLLBACK');
         res.status(400).json({ error: 'No file uploaded' });
         return;
       }
 
-      const { error, value } = versionSchema.validate(req.body);
+      const { error, value } = versionSchema.validate((req as any).body);
       if (error) {
         await client.query('ROLLBACK');
-        await cleanupFile(req.file.path);
+        await cleanupFile((req as any).file.path);
         res.status(400).json({ error: error.details[0].message });
         return;
       }
@@ -510,7 +511,7 @@ router.post('/:id/versions',
       const versionData: CreateDocumentVersionRequest = value;
       const userId = req.user!.id;
       const userRole = req.user!.role;
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
 
       // Check if document exists and user has permission to update
       const docQuery = `
@@ -521,7 +522,7 @@ router.post('/:id/versions',
 
       if (docResult.rows.length === 0) {
         await client.query('ROLLBACK');
-        await cleanupFile(req.file.path);
+        await cleanupFile((req as any).file.path);
         res.status(404).json({ error: 'Document not found or permission denied' });
         return;
       }
@@ -529,10 +530,10 @@ router.post('/:id/versions',
       const currentDoc: DocumentModel = docResult.rows[0];
 
       // Calculate file checksum
-      const checksum = await calculateChecksum(req.file.path);
+      const checksum = await calculateChecksum((req as any).file.path);
       if (!checksum) {
         await client.query('ROLLBACK');
-        await cleanupFile(req.file.path);
+        await cleanupFile((req as any).file.path);
         res.status(500).json({ error: 'Failed to process file' });
         return;
       }
@@ -558,10 +559,10 @@ router.post('/:id/versions',
 
       const updateResult = await client.query(updateQuery, [
         newVersion,
-        req.file.path,
-        req.file.originalname,
-        path.extname(req.file.originalname).slice(1),
-        req.file.size,
+        (req as any).file.path,
+        (req as any).file.originalname,
+        path.extname((req as any).file.originalname).slice(1),
+        (req as any).file.size,
         checksum,
         documentId
       ]);
@@ -570,7 +571,7 @@ router.post('/:id/versions',
       await client.query(
         `INSERT INTO document_versions (document_id, version, file_path, uploaded_by, change_notes, is_current)
          VALUES ($1, $2, $3, $4, $5, true)`,
-        [documentId, newVersion, req.file.path, userId, versionData.change_notes]
+        [documentId, newVersion, (req as any).file.path, userId, versionData.change_notes]
       );
 
       await client.query('COMMIT');
@@ -595,8 +596,8 @@ router.post('/:id/versions',
     } catch (error) {
       await client.query('ROLLBACK');
       console.error('Error uploading document version:', error);
-      if (req.file) {
-        await cleanupFile(req.file.path);
+      if ((req as any).file) {
+        await cleanupFile((req as any).file.path);
       }
       res.status(500).json({ error: 'Internal server error' });
     } finally {
@@ -614,11 +615,11 @@ router.put('/:id',
   requireCerbosPermission({
     resource: 'document',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
       const userRole = req.user!.role;
 
@@ -634,7 +635,14 @@ router.put('/:id',
         return;
       }
 
-      const { error, value } = documentSchema.partial().validate(req.body);
+      const { error, value } = Joi.object({
+        title: Joi.string(),
+        description: Joi.string().allow(''),
+        category: Joi.string(),
+        status: Joi.string(),
+        requires_acknowledgment: Joi.boolean(),
+        metadata: Joi.object()
+      }).validate((req as any).body);
       if (error) {
         res.status(400).json({ error: error.details[0].message });
         return;
@@ -687,11 +695,11 @@ router.post('/:id/approve',
   requireCerbosPermission({
     resource: 'document',
     action: 'approve',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
 
       const query = `
@@ -738,11 +746,11 @@ router.post('/:id/archive',
   requireCerbosPermission({
     resource: 'document',
     action: 'archive',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
 
       const query = `
@@ -789,11 +797,11 @@ router.get('/:id/download',
   requireCerbosPermission({
     resource: 'document',
     action: 'download',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
 
       // Check access permissions
@@ -841,14 +849,14 @@ router.post('/:id/acknowledge',
   requireCerbosPermission({
     resource: 'document',
     action: 'acknowledge',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
+      const documentId = (req as any).params.id;
       const userId = req.user!.id;
 
-      const { error, value } = acknowledgmentSchema.validate(req.body);
+      const { error, value } = acknowledgmentSchema.validate((req as any).body);
       if (error) {
         res.status(400).json({ error: error.details[0].message });
         return;
@@ -894,8 +902,8 @@ router.post('/:id/acknowledge',
         documentId,
         userId,
         acknowledgmentData.acknowledgment_method,
-        acknowledgmentData.ip_address || req.ip,
-        acknowledgmentData.user_agent || req.get('User-Agent')
+        acknowledgmentData.ip_address || (req as any).ip,
+        acknowledgmentData.user_agent || (req as any).get('User-Agent')
       ]);
 
       const acknowledgment: DocumentAcknowledgment = {
@@ -926,13 +934,13 @@ router.get('/:id/acknowledgments',
   requireCerbosPermission({
     resource: 'document',
     action: 'admin:view_acknowledgments',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req) => (req as any).params.id,
   }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const documentId = req.params.id;
-      const page = Math.max(1, parseInt(req.query.page as string) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+      const documentId = (req as any).params.id;
+      const page = Math.max(1, parseInt((req as any).query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt((req as any).query.limit as string) || 50));
       const offset = (page - 1) * limit;
 
       const query = `

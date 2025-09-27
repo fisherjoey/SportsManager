@@ -15,6 +15,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 
 import { apiClient, type User, type Permission } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
+import PermissionUtils from '@/lib/permissions'
 
 /**
  * Type definition for the Authentication Context
@@ -212,48 +213,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return roles.some(role => userRoles.includes(role))
   }
 
-  // Permission checking methods with memoization
+  // Permission checking methods with memoization and Cerbos support
   const hasPermission = useCallback((permission: string): boolean => {
     if (!user || !isAuthenticated) return false
-    
+
     // Super Admin and Admin always have access to everything
     const userRoles = user.roles || []
     if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
-    
-    // Check if user has the specific permission
-    return permissions.some(p => p.name === permission && p.active)
+
+    // Use the updated PermissionUtils to check permissions (supports legacy conversion)
+    return PermissionUtils.hasPermissions(permissions, [permission])
   }, [user, isAuthenticated, permissions])
 
   const hasAnyPermission = useCallback((permissionList: string[]): boolean => {
     if (!user || !isAuthenticated) return false
-    
+
     // Super Admin and Admin always have access to everything
     const userRoles = user.roles || []
     if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
-    
-    // Check if user has any of the specified permissions
-    return permissionList.some(permission => 
-      permissions.some(p => p.name === permission && p.active)
-    )
+
+    // Use the updated PermissionUtils to check permissions (supports legacy conversion)
+    return PermissionUtils.hasAnyPermissions(permissions, permissionList)
   }, [user, isAuthenticated, permissions])
 
   const hasAllPermissions = useCallback((permissionList: string[]): boolean => {
     if (!user || !isAuthenticated) return false
-    
+
     // Super Admin and Admin always have access to everything
     const userRoles = user.roles || []
     if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
     }
-    
-    // Check if user has all of the specified permissions
-    return permissionList.every(permission =>
-      permissions.some(p => p.name === permission && p.active)
-    )
+
+    // Use the updated PermissionUtils to check permissions (supports legacy conversion)
+    return PermissionUtils.hasPermissions(permissions, permissionList)
   }, [user, isAuthenticated, permissions])
 
   const refreshPermissions = useCallback(async (): Promise<void> => {

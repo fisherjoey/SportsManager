@@ -104,11 +104,11 @@ const login = async (
   }
 
   // Secure password comparison
-  const isValidPassword = await bcrypt.compare(password, user.password_hash);
+  const isValidPassword = await bcrypt.compare(password, (user as any).password_hash);
   if (!isValidPassword) {
     await createAuditLog({
       event_type: AUDIT_EVENTS.AUTH_LOGIN_FAILURE,
-      user_id: user.id,
+      user_id: (user as any).id,
       user_email: email,
       ip_address: req.headers['x-forwarded-for'] as string || req.ip,
       user_agent: req.headers['user-agent'],
@@ -118,7 +118,7 @@ const login = async (
     
     ProductionMonitor.logCriticalPath('auth.failure', {
       reason: 'invalid_password',
-      userId: user.id,
+      userId: (user as any).id,
       ip: req.headers['x-forwarded-for'] || req.ip
     });
     
@@ -129,7 +129,7 @@ const login = async (
   let permissions: string[] = [];
   
   try {
-    permissions = await getUserPermissions(user.id);
+    permissions = await getUserPermissions((user as any).id);
   } catch (error) {
     console.warn('Failed to get user permissions during login:', (error as Error).message);
     // Don't fail login if permission retrieval fails
@@ -140,7 +140,7 @@ const login = async (
   try {
     const roleRecords = await db('user_roles')
       .join('roles', 'user_roles.role_id', 'roles.id')
-      .where('user_roles.user_id', user.id)
+      .where('user_roles.user_id', (user as any).id)
       .where('roles.is_active', true)
       .select('roles.name', 'roles.id');
     
@@ -151,15 +151,15 @@ const login = async (
   }
 
   if (userRoles.length === 0) {
-    console.warn(`User ${user.email} has no roles assigned`);
+    console.warn(`User ${(user as any).email} has no roles assigned`);
   }
 
   // Generate JWT token with minimal payload to prevent 431 errors
   // Permissions should be fetched separately, not stored in token
   const jwtPayload: Omit<JWTPayload, 'iat' | 'exp' | 'permissions'> = {
-    userId: user.id,
-    email: user.email,
-    role: user.role // Keep legacy role for backwards compatibility
+    userId: (user as any).id,
+    email: (user as any).email,
+    role: (user as any).role // Keep legacy role for backwards compatibility
   };
 
   const token = jwt.sign(
@@ -173,30 +173,30 @@ const login = async (
 
   // Prepare comprehensive user response data
   const userData: LoginResponse['user'] = {
-    id: user.id,
-    email: user.email,
+    id: (user as any).id,
+    email: (user as any).email,
     roles: userRoles,
     permissions: permissions,
     name: user.name,
-    phone: user.phone,
-    location: user.location,
-    postal_code: user.postal_code,
-    max_distance: user.max_distance,
-    is_available: user.is_available,
-    wage_per_game: user.wage_per_game,
-    referee_level_id: user.referee_level_id,
-    year_started_refereeing: user.year_started_refereeing,
-    games_refereed_season: user.games_refereed_season,
-    evaluation_score: user.evaluation_score,
-    notes: user.notes,
-    created_at: user.created_at as Timestamp,
-    updated_at: user.updated_at as Timestamp
+    phone: (user as any).phone,
+    location: (user as any).location,
+    postal_code: (user as any).postal_code,
+    max_distance: (user as any).max_distance,
+    is_available: (user as any).is_available,
+    wage_per_game: (user as any).wage_per_game,
+    referee_level_id: (user as any).referee_level_id,
+    year_started_refereeing: (user as any).year_started_refereeing,
+    games_refereed_season: (user as any).games_refereed_season,
+    evaluation_score: (user as any).evaluation_score,
+    notes: (user as any).notes,
+    created_at: (user as any).created_at as Timestamp,
+    updated_at: (user as any).updated_at as Timestamp
   };
 
   // Log successful authentication
   await createAuditLog({
     event_type: AUDIT_EVENTS.AUTH_LOGIN_SUCCESS,
-    user_id: user.id,
+    user_id: (user as any).id,
     user_email: email,
     ip_address: req.headers['x-forwarded-for'] as string || req.ip,
     user_agent: req.headers['user-agent'],
@@ -204,7 +204,7 @@ const login = async (
   });
   
   ProductionMonitor.logCriticalPath('auth.login', {
-    userId: user.id,
+    userId: (user as any).id,
     roles: userRoles,
     ip: req.headers['x-forwarded-for'] || req.ip
   });
@@ -286,12 +286,12 @@ const register = async (
         try {
           const locationService = new LocationDataService();
           await locationService.createOrUpdateUserLocation(
-            user.id, 
+            (user as any).id, 
             location || postal_code
           );
-          console.log(`Location data created for new user ${user.id}`);
+          console.log(`Location data created for new user ${(user as any).id}`);
         } catch (error) {
-          console.error(`Failed to create location data for user ${user.id}:`, (error as Error).message);
+          console.error(`Failed to create location data for user ${(user as any).id}:`, (error as Error).message);
         }
       });
     }
@@ -300,7 +300,7 @@ const register = async (
     let permissions: string[] = [];
     
     try {
-      permissions = await getUserPermissions(user.id);
+      permissions = await getUserPermissions((user as any).id);
     } catch (error) {
       console.warn('Failed to get user permissions during registration:', (error as Error).message);
     }
@@ -308,9 +308,9 @@ const register = async (
     // Generate JWT for new user
     const token = jwt.sign(
       { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role,
+        userId: (user as any).id, 
+        email: (user as any).email, 
+        role: (user as any).role,
         roles: [], // New users start with empty roles array
         permissions: permissions
       },
@@ -320,30 +320,30 @@ const register = async (
 
     // Prepare response data
     const responseUserData: LoginResponse['user'] = {
-      id: user.id,
-      email: user.email,
+      id: (user as any).id,
+      email: (user as any).email,
       roles: [],
       permissions: permissions,
       name: user.name,
-      phone: user.phone,
-      location: user.location,
-      postal_code: user.postal_code,
-      max_distance: user.max_distance,
-      is_available: user.is_available,
-      wage_per_game: user.wage_per_game,
-      referee_level_id: user.referee_level_id,
-      year_started_refereeing: user.year_started_refereeing,
-      games_refereed_season: user.games_refereed_season,
-      evaluation_score: user.evaluation_score,
-      notes: user.notes,
-      created_at: user.created_at as Timestamp,
-      updated_at: user.updated_at as Timestamp
+      phone: (user as any).phone,
+      location: (user as any).location,
+      postal_code: (user as any).postal_code,
+      max_distance: (user as any).max_distance,
+      is_available: (user as any).is_available,
+      wage_per_game: (user as any).wage_per_game,
+      referee_level_id: (user as any).referee_level_id,
+      year_started_refereeing: (user as any).year_started_refereeing,
+      games_refereed_season: (user as any).games_refereed_season,
+      evaluation_score: (user as any).evaluation_score,
+      notes: (user as any).notes,
+      created_at: (user as any).created_at as Timestamp,
+      updated_at: (user as any).updated_at as Timestamp
     };
 
     // Audit successful registration
     await createAuditLog({
       event_type: AUDIT_EVENTS.AUTH_REGISTER,
-      user_id: user.id,
+      user_id: (user as any).id,
       user_email: email,
       ip_address: req.headers['x-forwarded-for'] as string || req.ip,
       user_agent: req.headers['user-agent'],
@@ -352,14 +352,14 @@ const register = async (
     });
     
     ProductionMonitor.logCriticalPath('auth.register', {
-      userId: user.id,
+      userId: (user as any).id,
       role: role,
       ip: req.headers['x-forwarded-for'] || req.ip
     });
     
     if (role === 'referee') {
       ProductionMonitor.logCriticalPath('referee.registered', {
-        userId: user.id,
+        userId: (user as any).id,
         postalCode: postal_code,
         maxDistance: max_distance
       });
@@ -385,7 +385,7 @@ const getProfile = async (
 ): Promise<void> => {
   try {
     // Check if user is authenticated
-    if (!req.user || !req.user.id) {
+    if (!req.user || !(req.user as any).id) {
       console.error('getProfile: No user in request', req.user);
       res.status(401).json({
         error: 'Not authenticated',
@@ -396,7 +396,7 @@ const getProfile = async (
 
     const user = await db('users')
       .select('*')
-      .where('id', req.user.id)
+      .where('id', (req.user as any).id)
       .first();
 
     if (!user) {
@@ -410,7 +410,7 @@ const getProfile = async (
     let permissions: string[] = [];
 
     try {
-      permissions = await getUserPermissions(user.id);
+      permissions = await getUserPermissions((user as any).id);
     } catch (error) {
       console.warn('Failed to get user permissions for profile:', (error as Error).message);
     }
@@ -420,7 +420,7 @@ const getProfile = async (
     try {
       const roleRecords = await db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
-        .where('user_roles.user_id', user.id)
+        .where('user_roles.user_id', (user as any).id)
         .where('roles.is_active', true)
         .select('roles.name', 'roles.id');
 
@@ -431,24 +431,24 @@ const getProfile = async (
     }
 
     const userData: ProfileResponse['user'] = {
-      id: user.id,
-      email: user.email,
+      id: (user as any).id,
+      email: (user as any).email,
       roles: userRoles,
       permissions: permissions,
       name: user.name,
-      phone: user.phone,
-      location: user.location,
-      postal_code: user.postal_code,
-      max_distance: user.max_distance,
-      is_available: user.is_available,
-      wage_per_game: user.wage_per_game,
-      referee_level_id: user.referee_level_id,
-      year_started_refereeing: user.year_started_refereeing,
-      games_refereed_season: user.games_refereed_season,
-      evaluation_score: user.evaluation_score,
-      notes: user.notes,
-      created_at: user.created_at as Timestamp,
-      updated_at: user.updated_at as Timestamp
+      phone: (user as any).phone,
+      location: (user as any).location,
+      postal_code: (user as any).postal_code,
+      max_distance: (user as any).max_distance,
+      is_available: (user as any).is_available,
+      wage_per_game: (user as any).wage_per_game,
+      referee_level_id: (user as any).referee_level_id,
+      year_started_refereeing: (user as any).year_started_refereeing,
+      games_refereed_season: (user as any).games_refereed_season,
+      evaluation_score: (user as any).evaluation_score,
+      notes: (user as any).notes,
+      created_at: (user as any).created_at as Timestamp,
+      updated_at: (user as any).updated_at as Timestamp
     };
 
     res.json({ user: userData });
@@ -470,7 +470,7 @@ const refreshPermissions = async (
   res: Response<RefreshPermissionsResponse>
 ): Promise<void> => {
   // Get fresh permissions from database (bypass cache)
-  const permissions = await getUserPermissions(req.user.id, false);
+  const permissions = await getUserPermissions((req.user as any).id, false);
 
   res.json({
     success: true,

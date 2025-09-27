@@ -1,68 +1,252 @@
 /**
- * @fileoverview Test suite for calendar routes
- * @description Comprehensive integration tests for all calendar endpoints with proper mocking
- * and TypeScript type checking. Tests iCal generation, calendar sync, and date/time handling.
+ * @fileoverview Calendar Routes Integration Tests
+ *
+ * Comprehensive test suite for the calendar routes following TDD approach.
+ * Tests all endpoints with proper authentication, authorization, and data validation.
  */
 
 import request from 'supertest';
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import { jest } from '@jest/globals';
 
 // Mock dependencies
-const mockDb = {
-  where: jest.fn(() => mockDb),
-  whereIn: jest.fn(() => mockDb),
-  join: jest.fn(() => mockDb),
-  leftJoin: jest.fn(() => mockDb),
-  select: jest.fn(() => mockDb),
-  orderBy: jest.fn(() => mockDb),
-  first: jest.fn(),
-  update: jest.fn(),
-  raw: jest.fn(),
+const mockDb: any = {
+  select: (jest.fn() as any).mockReturnThis(),
+  where: (jest.fn() as any).mockReturnThis(),
+  whereIn: (jest.fn() as any).mockReturnThis(),
+  orWhere: (jest.fn() as any).mockReturnThis(),
+  join: (jest.fn() as any).mockReturnThis(),
+  leftJoin: (jest.fn() as any).mockReturnThis(),
+  orderBy: (jest.fn() as any).mockReturnThis(),
+  groupBy: (jest.fn() as any).mockReturnThis(),
+  first: (jest.fn() as any).mockResolvedValue(null),
+  insert: (jest.fn() as any).mockReturnThis(),
+  update: (jest.fn() as any).mockReturnThis(),
+  del: (jest.fn() as any).mockResolvedValue(1),
+  returning: (jest.fn() as any).mockResolvedValue([]),
+  count: (jest.fn() as any).mockReturnThis(),
+  pluck: (jest.fn() as any).mockResolvedValue([]),
+  raw: jest.fn() as any,
+  transaction: jest.fn() as any,
   // For the main query method
   then: jest.fn()
 };
 
-const mockAuthMiddleware = {
-  authenticateToken: jest.fn((req: any, res: any, next: any) => {
-    req.user = {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      roles: ['admin']
-    };
+const mockCacheHelpers: any = {
+  cacheAggregation: (jest.fn() as any).mockResolvedValue({ calendar: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } }),
+  cachePaginatedQuery: (jest.fn() as any).mockResolvedValue(null),
+  cacheLookupData: (jest.fn() as any).mockResolvedValue([])
+};
+
+const mockCacheInvalidation = {
+  invalidateCalendar: jest.fn()
+};
+
+const mockQueryBuilder = {
+  validatePaginationParams: jest.fn().mockImplementation((params: any) => ({
+    page: parseInt(params.page) || 1,
+    limit: parseInt(params.limit) || 50
+  })),
+  applyCommonFilters: jest.fn().mockReturnValue(mockDb),
+  buildCountQuery: jest.fn().mockReturnValue(Promise.resolve([{ count: 0 }])),
+  applyPagination: jest.fn().mockReturnValue(mockDb)
+};
+
+const mockAuth = {
+  authenticateToken: jest.fn().mockImplementation((req: any, res: any, next: any) => {
+    req.user = { id: 'test-user-id', role: 'admin' };
     next();
+  })
+};
+
+const mockCerbos = {
+  requireCerbosPermission: jest.fn().mockImplementation(() => (req: any, res: any, next: any) => next())
+};
+
+const mockValidation = {
+  validateBody: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateParams: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateQuery: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next())
+};
+
+const mockResponseFormatter = {
+  sendSuccess: jest.fn().mockImplementation((res: any, data: any, message?: string) => {
+    res.json({ success: true, data, message });
   }),
-  requireRole: jest.fn((role: string) => (req: any, res: any, next: any) => next())
+  sendCreated: jest.fn().mockImplementation((res: any, data: any, message?: string, location?: string) => {
+    res.status(201).json({ success: true, data, message });
+  }),
+  sendError: jest.fn().mockImplementation((res: any, error: any, statusCode: number) => {
+    res.status(statusCode).json({ error: error.message || error });
+  })
+};
+
+const mockEnhancedAsyncHandler = jest.fn().mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+  try {
+    await fn(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const mockErrorFactory = {
+  badRequest: (jest.fn() as any)((message: string) => new Error(message)),
+  notFound: (jest.fn() as any)((message: string) => new Error(message)),
+  conflict: (jest.fn() as any)((message: string) => new Error(message))
+};
+
+const mockICSParser = {
+  isValidICS: jest.fn().mockReturnValue(true),
+  parse: jest.fn().mockReturnValue({ events: [] }),
+  eventsToGameData: jest.fn().mockReturnValue([])
+};
+
+const mockUpload = {
+  single: jest.fn().mockReturnValue((req: any, res: any, next: any) => next())
+};
+
+const mockMulter: any = jest.fn().mockImplementation(() => mockUpload);
+mockMulter.memoryStorage = jest.fn().mockReturnValue({});
+mockMulter.diskStorage = jest.fn().mockReturnValue({});
+
+const mockUuid = {
+  v4: jest.fn().mockReturnValue('test-uuid-123')
 };
 
 // Mock modules
-jest.unstable_mockModule('../config/database', () => ({
-  default: mockDb
+jest.mock('multer', () => mockMulter);
+jest.mock('uuid', () => mockUuid);
+jest.mock('../../config/database', () => mockDb);
+jest.mock('../../utils/query-cache', () => ({
+  queryCache: {},
+  CacheHelpers: mockCacheHelpers,
+  CacheInvalidation: mockCacheInvalidation
 }));
-
-jest.unstable_mockModule('../middleware/auth', () => ({
-  authenticateToken: mockAuthMiddleware.authenticateToken,
-  requireRole: mockAuthMiddleware.requireRole
+jest.mock('../../utils/query-builders', () => ({
+  QueryBuilder: mockQueryBuilder,
+  QueryHelpers: {}
 }));
+jest.mock('../../middleware/auth', () => mockAuth);
+jest.mock('../../middleware/requireCerbosPermission', () => mockCerbos);
+jest.mock('../../middleware/validation', () => mockValidation);
+jest.mock('../../utils/response-formatters', () => ({ ResponseFormatter: mockResponseFormatter }));
+jest.mock('../../middleware/enhanced-error-handling', () => ({ enhancedAsyncHandler: mockEnhancedAsyncHandler }));
+jest.mock('../../utils/errors', () => ({ ErrorFactory: mockErrorFactory }));
+jest.mock('../../utils/ics-parser', () => ({
+  ICSParser: mockICSParser
+}));
+jest.mock('joi', () => {
+  // Create a comprehensive chainable mock that handles all Joi methods
+  const createChainableMock = (): any => {
+    const mock: any = {};
 
-// Create mock app
-const app = express();
-app.use(express.json());
+    // Define all Joi methods that need to be chainable
+    const chainableMethods = [
+      'string', 'number', 'boolean', 'array', 'object', 'date', 'binary',
+      'required', 'optional', 'allow', 'valid', 'invalid', 'default',
+      'min', 'max', 'length', 'email', 'uri', 'uuid', 'integer',
+      'positive', 'negative', 'items', 'keys', 'pattern', 'regex',
+      'alphanum', 'token', 'hex', 'base64', 'lowercase', 'uppercase',
+      'trim', 'replace', 'truncate', 'normalize', 'when', 'alternatives',
+      'alt', 'concat', 'raw', 'empty', 'strip', 'label', 'description',
+      'notes', 'tags', 'meta', 'example', 'unit', 'messages', 'prefs',
+      'preferences', 'strict', 'options', 'fork', 'validate', 'iso'
+    ];
 
-// Import the router after mocking
-const calendarRouter = (await import('../calendar.js')).default;
-app.use('/api/calendar', calendarRouter);
+    // Create mock functions for all chainable methods
+    chainableMethods.forEach(method => {
+      if (method === 'validate') {
+        mock[method] = jest.fn().mockReturnValue({ error: null, value: {} });
+      } else {
+        mock[method] = jest.fn().mockReturnValue(mock); // Return self for chaining
+      }
+    });
 
-describe('Calendar Routes', () => {
+    return mock;
+  };
+
+  // Create the main Joi mock
+  const joiMock = createChainableMock();
+
+  // Override specific methods that return schemas
+  joiMock.object = jest.fn().mockImplementation((schema?: any) => {
+    const schemaMock = createChainableMock();
+    return schemaMock;
+  });
+
+  joiMock.array = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.string = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.number = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.boolean = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.date = jest.fn().mockImplementation(() => createChainableMock());
+
+  return {
+    default: joiMock,
+    __esModule: true
+  };
+});
+
+describe('Calendar Routes Integration Tests', () => {
+  let app: express.Application;
+  let calendarRouter: express.Router;
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Restore default mock implementations after clearAllMocks
+    mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      req.user = { id: 'test-user-id', role: 'admin' };
+      next();
+    });
+    mockCerbos.requireCerbosPermission.mockImplementation(() => (req: any, res: any, next: any) => next());
+    mockValidation.validateBody.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateParams.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateQuery.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockEnhancedAsyncHandler.mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+      try {
+        await fn(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    });
+    mockQueryBuilder.validatePaginationParams.mockImplementation((params: any) => ({
+      page: parseInt(params.page) || 1,
+      limit: parseInt(params.limit) || 50
+    }));
+    mockQueryBuilder.applyCommonFilters.mockReturnValue(mockDb);
+    mockQueryBuilder.buildCountQuery.mockReturnValue(Promise.resolve([{ count: 0 }]));
+    mockQueryBuilder.applyPagination.mockReturnValue(mockDb);
+    mockCacheHelpers.cacheAggregation.mockResolvedValue({ calendar: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } });
+    mockCacheHelpers.cachePaginatedQuery.mockResolvedValue(null);
+    mockCacheHelpers.cacheLookupData.mockResolvedValue([]);
+
     // Reset mock database to return empty results by default
     mockDb.first.mockResolvedValue(null);
     mockDb.update.mockResolvedValue([]);
     mockDb.raw.mockResolvedValue([]);
     // Reset the main query method to return empty array
     mockDb.then.mockImplementation((callback: Function) => callback([]));
+
+    app = express();
+    app.use(express.json());
+
+    // Import the router after mocks are set up
+    calendarRouter = require('../calendar').default;
+    app.use('/api/calendar', calendarRouter);
+  });
+
+  describe('Route Module Structure', () => {
+    it('should be able to import the calendar routes module', () => {
+      expect(() => {
+        require('../calendar');
+      }).not.toThrow();
+    });
+
+    it('should export an express router', () => {
+      const routeModule = require('../calendar').default;
+      expect(routeModule).toBeDefined();
+      expect(typeof routeModule).toBe('function'); // Express router is a function
+    });
   });
 
   describe('GET /referees/:id/calendar/ical', () => {
@@ -160,6 +344,14 @@ describe('Calendar Routes', () => {
     });
 
     it('should validate query parameters', async () => {
+      const joiMock = require('joi').default;
+      joiMock.object.mockReturnValue({
+        validate: (jest.fn() as any).mockReturnValue({
+          error: { details: [{ message: 'Invalid date format' }] },
+          value: null
+        })
+      });
+
       const response = await request(app)
         .get('/api/calendar/referees/referee-123/calendar/ical')
         .query({
@@ -307,7 +499,7 @@ describe('Calendar Routes', () => {
     });
 
     it('should require authentication', async () => {
-      mockAuthMiddleware.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
         res.status(401).json({ error: 'Access token required' });
       });
 
@@ -319,6 +511,14 @@ describe('Calendar Routes', () => {
     });
 
     it('should validate query parameters', async () => {
+      const joiMock = require('joi').default;
+      joiMock.object.mockReturnValue({
+        validate: (jest.fn() as any).mockReturnValue({
+          error: { details: [{ message: 'Invalid status value' }] },
+          value: null
+        })
+      });
+
       const response = await request(app)
         .get('/api/calendar/games/calendar-feed')
         .query({
@@ -368,13 +568,10 @@ describe('Calendar Routes', () => {
       });
     });
 
-    it('should require admin role', async () => {
-      mockAuthMiddleware.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (role === 'admin') {
-            return res.status(403).json({ error: 'Insufficient permissions' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
 
@@ -385,10 +582,18 @@ describe('Calendar Routes', () => {
         })
         .expect(403);
 
-      expect(response.body.error).toBe('Insufficient permissions');
+      expect(response.body.error).toBe('Forbidden');
     });
 
     it('should validate request body', async () => {
+      const joiMock = require('joi').default;
+      joiMock.object.mockReturnValue({
+        validate: (jest.fn() as any).mockReturnValue({
+          error: { details: [{ message: 'Invalid calendar URL' }] },
+          value: null
+        })
+      });
+
       const response = await request(app)
         .post('/api/calendar/sync')
         .send({
@@ -536,13 +741,10 @@ describe('Calendar Routes', () => {
       expect(response.body.error).toBe('Calendar sync feature not available');
     });
 
-    it('should require admin role', async () => {
-      mockAuthMiddleware.requireRole.mockImplementation((role: string) =>
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          if (role === 'admin') {
-            return res.status(403).json({ error: 'Insufficient permissions' });
-          }
-          next();
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
 
@@ -550,7 +752,7 @@ describe('Calendar Routes', () => {
         .delete('/api/calendar/sync')
         .expect(403);
 
-      expect(response.body.error).toBe('Insufficient permissions');
+      expect(response.body.error).toBe('Forbidden');
     });
   });
 
@@ -641,6 +843,63 @@ describe('Calendar Routes', () => {
       expect(icalContent).toContain('SUMMARY:Referee - Lions vs Tigers');
       expect(icalContent).toContain('STATUS:TENTATIVE'); // pending status
       expect(icalContent).toContain('LOCATION:'); // empty location
+    });
+  });
+
+  describe('POST /api/calendar/upload - Upload calendar file', () => {
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
+        (req: any, res: any, next: any) => {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+      );
+
+      const response = await request(app)
+        .post('/api/calendar/upload')
+        .attach('calendar', Buffer.from('BEGIN:VCALENDAR\nEND:VCALENDAR'), 'test.ics')
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
+
+    it('should require calendar file', async () => {
+      const response = await request(app)
+        .post('/api/calendar/upload')
+        .expect(400);
+
+      expect(response.body.error.message).toContain('No calendar file provided');
+    });
+
+    it('should validate ICS format', async () => {
+      mockICSParser.isValidICS.mockReturnValue(false);
+
+      const response = await request(app)
+        .post('/api/calendar/upload')
+        .attach('calendar', Buffer.from('INVALID ICS'), 'test.ics')
+        .expect(400);
+
+      expect(response.body.error.message).toContain('Invalid ICS calendar file format');
+    });
+
+    it('should process valid calendar file', async () => {
+      mockICSParser.isValidICS.mockReturnValue(true);
+      mockICSParser.parse.mockReturnValue({
+        events: [{ summary: 'Test Event', dtstart: '20240101T100000Z' }]
+      });
+      mockICSParser.eventsToGameData.mockReturnValue([{
+        gameDate: '2024-01-01',
+        gameTime: '10:00',
+        homeTeamName: 'Team A',
+        awayTeamName: 'Team B'
+      }]);
+
+      const response = await request(app)
+        .post('/api/calendar/upload')
+        .attach('calendar', Buffer.from('BEGIN:VCALENDAR\nBEGIN:VEVENT\nEND:VEVENT\nEND:VCALENDAR'), 'test.ics')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.message).toContain('Successfully processed');
     });
   });
 

@@ -305,7 +305,7 @@ END:VEVENT
  */
 router.get('/referees/:id/calendar/ical', async (req: Request<RefereeCalendarParams>, res: Response) => {
   try {
-    const { error, value } = calendarQuerySchema.validate(req.query);
+    const { error, value } = calendarQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -423,7 +423,7 @@ router.get('/games/calendar-feed', authenticateToken, requireCerbosPermission({
   action: 'view:games_calendar',
 }), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { error, value } = gameCalendarQuerySchema.validate(req.query);
+    const { error, value } = gameCalendarQuerySchema.validate((req as any).query);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -596,7 +596,7 @@ router.post('/sync', authenticateToken, requireCerbosPermission({
   action: 'admin:configure_sync',
 }), async (req: AuthenticatedRequest, res: Response<CalendarSyncResponse>) => {
   try {
-    const { error, value } = calendarSyncSchema.validate(req.body);
+    const { error, value } = calendarSyncSchema.validate((req as any).body);
     if (error) {
       return res.status(400).json({
         success: false,
@@ -645,7 +645,7 @@ router.post('/sync', authenticateToken, requireCerbosPermission({
           calendar_auto_sync: auto_sync,
           calendar_sync_enabled: true,
           updated_at: new Date()
-        });
+        } as any);
 
       // Log the calendar sync configuration
       console.log(`Calendar sync configured by user ${userId}:`, {
@@ -732,19 +732,19 @@ router.get('/sync/status', authenticateToken, requireCerbosPermission({
       });
     }
 
-    const syncSettings: CalendarSyncSettings | null = orgSettings.calendar_sync_enabled ? {
-      calendarUrl: orgSettings.calendar_sync_url,
-      syncDirection: orgSettings.calendar_sync_direction,
-      autoSync: !!orgSettings.calendar_auto_sync,
+    const syncSettings: CalendarSyncSettings | null = ( orgSettings as any).calendar_sync_enabled ? {
+      calendarUrl: ( orgSettings as any).calendar_sync_url,
+      syncDirection: ( orgSettings as any).calendar_sync_direction,
+      autoSync: !!( orgSettings as any).calendar_auto_sync,
       enabled: true,
-      lastSyncAt: orgSettings.calendar_last_sync_at,
-      lastSyncStatus: orgSettings.calendar_last_sync_status
+      lastSyncAt: ( orgSettings as any).calendar_last_sync_at,
+      lastSyncStatus: ( orgSettings as any).calendar_last_sync_status
     } : null;
 
     res.json({
       success: true,
       data: {
-        syncEnabled: !!orgSettings.calendar_sync_enabled,
+        syncEnabled: !!( orgSettings as any).calendar_sync_enabled,
         syncSettings,
         requiresSetup: false
       }
@@ -807,7 +807,7 @@ router.delete('/sync', authenticateToken, requireCerbosPermission({
         calendar_sync_direction: null,
         calendar_auto_sync: false,
         updated_at: new Date()
-      });
+      } as any);
 
     res.json({
       success: true,
@@ -846,7 +846,7 @@ router.post('/upload',
   upload.single('calendar'),
   async (req: AuthenticatedRequest, res: Response<CalendarUploadResponse>) => {
     try {
-      if (!req.file) {
+      if (!(req as any).file) {
         return res.status(400).json({
           success: false,
           error: {
@@ -857,7 +857,7 @@ router.post('/upload',
       }
 
       // Validate options
-      const { error, value } = calendarUploadOptionsSchema.validate(req.body);
+      const { error, value } = calendarUploadOptionsSchema.validate((req as any).body);
       if (error) {
         return res.status(400).json({
           success: false,
@@ -869,7 +869,7 @@ router.post('/upload',
       }
 
       const options = value as CalendarUploadOptions;
-      const fileContent = req.file.buffer.toString('utf-8');
+      const fileContent = (req as any).file.buffer.toString('utf-8');
 
       // Validate ICS format
       if (!ICSParser.isValidICS(fileContent)) {
@@ -950,7 +950,7 @@ router.post('/upload',
             gameTime: gameData.gameTime,
             homeTeamName: gameData.homeTeamName,
             awayTeamName: gameData.awayTeamName,
-            status: 'failed' as const,
+            status: 'failed' as 'imported' | 'failed' | 'skipped',
             reason: ''
           };
 
@@ -964,7 +964,7 @@ router.post('/upload',
               if (existingGame && !options.overwriteExisting) {
                 result.status = 'skipped';
                 result.reason = 'Game already exists';
-                result.id = existingGame.id;
+                result.id = (existingGame as any).id;
                 skipped++;
                 importResults.push(result);
                 continue;
@@ -973,19 +973,19 @@ router.post('/upload',
               if (existingGame && options.overwriteExisting) {
                 // Update existing game
                 await db('games')
-                  .where('id', existingGame.id)
+                  .where('id', (existingGame as any).id)
                   .update({
                     date_time: `${gameData.gameDate} ${gameData.gameTime}:00`,
-                    field: gameData.locationName || existingGame.field,
+                    field: gameData.locationName || (existingGame as any).field,
                     metadata: JSON.stringify({
-                      ...JSON.parse(existingGame.metadata || '{}'),
+                      ...JSON.parse((existingGame as any).metadata || '{}'),
                       notes: gameData.notes,
                       location_address: gameData.locationAddress
-                    }),
+                    } as any),
                     updated_at: new Date()
-                  });
+                  } as any);
 
-                result.id = existingGame.id;
+                result.id = (existingGame as any).id;
                 result.status = 'imported';
                 imported++;
                 importResults.push(result);
@@ -1000,12 +1000,12 @@ router.post('/upload',
               date_time: `${gameData.gameDate} ${gameData.gameTime}:00`, // Combine date and time
               division: gameData.level || options.defaultLevel || 'Youth',
               game_type: gameData.gameType || options.defaultGameType || 'League',
-              refs_needed: gameData.refereesRequired || 2,
+              refs_needed: (gameData as any).refereesRequired || 2,
               field: gameData.locationName || null,
               metadata: JSON.stringify({
                 external_id: gameData.externalId,
                 notes: gameData.notes,
-                original_status: gameData.status || 'scheduled',
+                original_status: (gameData as any).status || 'scheduled',
                 location_address: gameData.locationAddress
               }),
               created_at: new Date(),
@@ -1023,7 +1023,7 @@ router.post('/upload',
                 .first();
 
               if (homeTeam) {
-                homeTeamId = homeTeam.id;
+                homeTeamId = (homeTeam as any).id;
               } else if (options.autoCreateTeams) {
                 const newHomeTeam = {
                   id: uuidv4(),
@@ -1038,7 +1038,7 @@ router.post('/upload',
                   created_at: new Date(),
                   updated_at: new Date()
                 };
-                await db('teams').insert(newHomeTeam);
+                await db('teams').insert(newHomeTeam as any);
                 homeTeamId = newHomeTeam.id;
               }
 
@@ -1047,7 +1047,7 @@ router.post('/upload',
                 .first();
 
               if (awayTeam) {
-                awayTeamId = awayTeam.id;
+                awayTeamId = (awayTeam as any).id;
               } else if (options.autoCreateTeams) {
                 const newAwayTeam = {
                   id: uuidv4(),
@@ -1062,7 +1062,7 @@ router.post('/upload',
                   created_at: new Date(),
                   updated_at: new Date()
                 };
-                await db('teams').insert(newAwayTeam);
+                await db('teams').insert(newAwayTeam as any);
                 awayTeamId = newAwayTeam.id;
               }
 
@@ -1079,7 +1079,7 @@ router.post('/upload',
                 .first();
 
               if (location) {
-                gameRecord.location_id = location.id;
+                gameRecord.location_id = (location as any).id;
               } else if (options.autoCreateLocations) {
                 const newLocation = {
                   id: uuidv4(),
@@ -1092,7 +1092,7 @@ router.post('/upload',
                   created_at: new Date(),
                   updated_at: new Date()
                 };
-                await db('locations').insert(newLocation);
+                await db('locations').insert(newLocation as any);
                 gameRecord.location_id = newLocation.id;
               }
             }
