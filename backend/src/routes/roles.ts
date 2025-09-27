@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 const router = express.Router();
 
@@ -35,7 +36,10 @@ const VALID_ROLES = ['admin', 'referee', 'referee_coach', 'evaluator'] as const;
 type ValidRole = typeof VALID_ROLES[number];
 
 // GET /api/roles/available - Get list of available roles
-router.get('/available', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/available', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view:available',
+}), async (req: Request, res: Response) => {
   try {
     // Return predefined roles for now - can be made dynamic later
     const availableRoles: Role[] = [
@@ -68,7 +72,11 @@ router.get('/available', authenticateToken, requireRole('admin'), async (req: Re
 });
 
 // PUT /api/roles/users/:userId - Update user roles (Admin only)
-router.put('/users/:userId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.put('/users/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'admin:update_user_roles',
+  getResourceId: (req) => req.params.userId,
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = updateRolesSchema.validate(req.body);
     if (error) {
@@ -123,7 +131,11 @@ router.put('/users/:userId', authenticateToken, requireRole('admin'), async (req
 });
 
 // GET /api/roles/users/:userId - Get user roles
-router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/users/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'admin:view_user_roles',
+  getResourceId: (req) => req.params.userId,
+}), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
