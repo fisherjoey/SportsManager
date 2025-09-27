@@ -12,7 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Database } from '../types/database.types';
 import { AuthenticatedRequest } from '../types/auth.types';
 import { ApiResponse, RouteParams } from '../types/api.types';
-const { authenticateToken, requireRole, requireAnyRole } = require('../middleware/auth');
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ICSParser, ParsedCalendar, GameImportData } from '../utils/ics-parser';
 import db from '../config/database';
 
@@ -417,7 +418,10 @@ router.get('/referees/:id/calendar/ical', async (req: Request<RefereeCalendarPar
  * @param {GameCalendarQueryParams} query - Query parameters for filtering games
  * @returns {string} iCal formatted calendar content
  */
-router.get('/games/calendar-feed', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/games/calendar-feed', authenticateToken, requireCerbosPermission({
+  resource: 'calendar',
+  action: 'view:games_calendar',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { error, value } = gameCalendarQuerySchema.validate(req.query);
     if (error) {
@@ -587,7 +591,10 @@ router.get('/games/calendar-feed', authenticateToken, async (req: AuthenticatedR
  * @param {CalendarSyncRequest} body - Calendar sync configuration
  * @returns {CalendarSyncResponse} Sync configuration response
  */
-router.post('/sync', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response<CalendarSyncResponse>) => {
+router.post('/sync', authenticateToken, requireCerbosPermission({
+  resource: 'calendar',
+  action: 'admin:configure_sync',
+}), async (req: AuthenticatedRequest, res: Response<CalendarSyncResponse>) => {
   try {
     const { error, value } = calendarSyncSchema.validate(req.body);
     if (error) {
@@ -696,7 +703,10 @@ router.post('/sync', authenticateToken, requireRole('admin'), async (req: Authen
  * @access Private (Admin only)
  * @returns {CalendarSyncStatusResponse} Calendar sync status
  */
-router.get('/sync/status', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response<CalendarSyncStatusResponse>) => {
+router.get('/sync/status', authenticateToken, requireCerbosPermission({
+  resource: 'calendar',
+  action: 'admin:view_sync_status',
+}), async (req: AuthenticatedRequest, res: Response<CalendarSyncStatusResponse>) => {
   try {
     const orgSettings = await db('organization_settings').first();
 
@@ -759,7 +769,10 @@ router.get('/sync/status', authenticateToken, requireRole('admin'), async (req: 
  * @access Private (Admin only)
  * @returns {CalendarSyncResponse} Sync disable response
  */
-router.delete('/sync', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response<CalendarSyncResponse>) => {
+router.delete('/sync', authenticateToken, requireCerbosPermission({
+  resource: 'calendar',
+  action: 'admin:disable_sync',
+}), async (req: AuthenticatedRequest, res: Response<CalendarSyncResponse>) => {
   try {
     const orgSettings = await db('organization_settings').first();
 
@@ -826,6 +839,10 @@ router.delete('/sync', authenticateToken, requireRole('admin'), async (req: Auth
  */
 router.post('/upload',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'calendar',
+    action: 'admin:upload_calendar',
+  }),
   upload.single('calendar'),
   async (req: AuthenticatedRequest, res: Response<CalendarUploadResponse>) => {
     try {
