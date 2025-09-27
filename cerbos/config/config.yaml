@@ -5,14 +5,17 @@
 server:
   httpListenAddr: ":3592"
   grpcListenAddr: ":3593"
-  requestLimits:
-    maxRequestBytes: 4194304  # 4MB
+  adminAPI:
+    enabled: true
+    # No authentication for development - SECURE THIS IN PRODUCTION
+    adminCredentials:
+      username: ""
+      passwordHash: ""
 
 storage:
-  driver: "disk"
-  disk:
-    directory: "/policies"
-    watchForChanges: true
+  driver: "sqlite3"
+  sqlite3:
+    dsn: "file:/data/cerbos.db?_fk=true"
 
 # Audit logging for compliance
 audit:
@@ -20,10 +23,6 @@ audit:
   backend: local
   local:
     storagePath: /data/audit.log
-    advanced:
-      maxFileSizeMB: 100
-      maxFileAgeDays: 30
-      maxBackups: 10
 
 # Schema validation
 schema:

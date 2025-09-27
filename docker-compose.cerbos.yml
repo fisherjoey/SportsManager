@@ -8,8 +8,10 @@ services:
       - "3592:3592"
       - "3593:3593"
     volumes:
-      - ./cerbos-policies:/policies:ro
-    command: server --config=/policies/.cerbos.yaml
+      - ./cerbos/policies:/policies:ro
+      - ./cerbos/config:/config:ro
+      - cerbos-data:/data
+    command: server --config=/config/config.yaml
     environment:
       - CERBOS_LOG_LEVEL=INFO
     healthcheck:
@@ -19,3 +21,6 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+
+volumes:
+  cerbos-data:

@@ -6,22 +6,8 @@ import type {
 } from '../types/cerbos.types';
 
 function normalizeCerbosRole(roleName: string): string {
-  const normalized = roleName.toLowerCase().replace(/[\s_-]+/g, '');
-
-  if (normalized === 'superadmin' || normalized === 'admin') {
-    return 'admin';
-  }
-  if (normalized === 'assignor' || normalized === 'assignmentmanager') {
-    return 'assignor';
-  }
-  if (normalized.includes('referee')) {
-    return 'referee';
-  }
-  if (normalized === 'guest') {
-    return 'guest';
-  }
-
-  return 'guest';
+  // Preserve granular roles - just convert to lowercase and replace spaces/hyphens with underscores
+  return roleName.toLowerCase().replace(/[\s-]+/g, '_');
 }
 
 export function toPrincipal(

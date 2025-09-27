@@ -84,6 +84,7 @@ import testRoleRoutes from './routes/admin/test-roles';
 import adminRBACRegistryRoutes from './routes/admin/rbac-registry';
 import adminAccessRoutes from './routes/admin/access';
 import adminUsersRoutes from './routes/admin/users';
+import adminCerbosPoliciesRoutes from './routes/admin/cerbos-policies';
 import cerbosRoutes from './routes/cerbos';
 
 const app = express();
@@ -227,6 +228,7 @@ app.use('/api/admin/roles', adminRoleRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
 app.use('/api/admin/access', adminAccessRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/admin/cerbos-policies', adminCerbosPoliciesRoutes);
 app.use('/api/admin/rbac-registry', adminRBACRegistryRoutes);
 app.use('/api/test-roles', testRoleRoutes);
 

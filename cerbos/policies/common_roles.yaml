@@ -4,12 +4,21 @@ description: |-
   Common derived roles used across all resources in Sports Manager.
   These roles define conditional relationships between users and resources.
 
+  Granular Role System:
+  The system uses granular roles for fine-grained permission control:
+  - admin, super_admin: Administrative roles with varying levels of access
+  - assignor, assignment_manager: Assignment and scheduling management
+  - referee, junior_referee, senior_referee, head_referee, rookie_referee: Referee roles by experience level
+  - referee_coach, referee_coordinator: Referee training and coordination
+  - mentor, mentorship_coordinator: Mentorship and development programs
+  - coach: Team coaching role
+  - guest: Limited access role for external users
+
 derivedRoles:
   name: common_roles
   definitions:
     - name: owner
       parentRoles:
-        - assignor
         - admin
         - super_admin
       condition:
@@ -21,29 +30,45 @@ derivedRoles:
 
     - name: same_organization
       parentRoles:
-        - assignor
-        - referee
-        - coach
         - admin
         - super_admin
+        - assignor
+        - assignment_manager
+        - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
+        - referee_coach
+        - referee_coordinator
+        - mentor
+        - mentorship_coordinator
+        - coach
       condition:
         match:
           expr: request.resource.attr.organizationId == request.principal.attr.organizationId
 
     - name: same_region
       parentRoles:
-        - assignor
-        - referee
         - admin
         - super_admin
+        - assignor
+        - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
+        - referee_coordinator
       condition:
         match:
           expr: request.resource.attr.regionId in request.principal.attr.regionIds
 
     - name: primary_region_manager
       parentRoles:
-        - assignor
         - admin
+        - super_admin
+        - assignor
+        - referee_coordinator
       condition:
         match:
           all:
@@ -54,28 +79,50 @@ derivedRoles:
     - name: assigned_referee
       parentRoles:
         - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
       condition:
         match:
           expr: request.resource.attr.refereeId == request.principal.id
 
     - name: active_user
       parentRoles:
-        - assignor
-        - referee
-        - coach
         - admin
         - super_admin
+        - assignor
+        - assignment_manager
+        - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
+        - referee_coach
+        - referee_coordinator
+        - mentor
+        - mentorship_coordinator
+        - coach
       condition:
         match:
           expr: request.principal.attr.isActive == true
 
     - name: self
       parentRoles:
-        - assignor
-        - referee
-        - coach
         - admin
         - super_admin
+        - assignor
+        - assignment_manager
+        - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
+        - referee_coach
+        - referee_coordinator
+        - mentor
+        - mentorship_coordinator
+        - coach
         - guest
       condition:
         match:
