@@ -6,7 +6,8 @@
 
 import express, { Request, Response } from 'express';
 import Joi from 'joi';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import db from '../config/database';
 import {
   generateRoundRobin,
@@ -127,7 +128,10 @@ function getRefereeCountForLevel(level: string): number {
 /**
  * POST /api/tournaments/generate - Generate tournament schedule
  */
-router.post('/generate', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/generate', authenticateToken, requireCerbosPermission({
+  resource: 'tournament',
+  action: 'generate',
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = tournamentSchema.validate(req.body);
     if (error) {
@@ -258,7 +262,10 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
 /**
  * POST /api/tournaments/create-games - Create actual games from tournament
  */
-router.post('/create-games', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/create-games', authenticateToken, requireCerbosPermission({
+  resource: 'tournament',
+  action: 'create:games',
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = createGamesSchema.validate(req.body);
     if (error) {
