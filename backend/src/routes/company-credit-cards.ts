@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Validation schemas
 const creditCardSchema = Joi.object({
@@ -251,7 +252,7 @@ router.get('/', authenticateToken, async (req, res) => {
  * POST /api/company-credit-cards
  * Create new company credit card (admin only)
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({ resource: 'company_credit_card', action: '*' }), async (req, res) => {
   try {
     const { error, value } = creditCardSchema.validate(req.body);
     if (error) {
@@ -482,7 +483,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
  * PUT /api/company-credit-cards/:id
  * Update credit card
  */
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({ resource: 'company_credit_card', action: '*' }), async (req, res) => {
   try {
     const cardId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;
@@ -825,7 +826,7 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
  * POST /api/company-credit-cards/:id/assign
  * Assign credit card to user
  */
-router.post('/:id/assign', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/assign', authenticateToken, requireCerbosPermission({ resource: 'company_credit_card', action: '*' }), async (req, res) => {
   try {
     const cardId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;
@@ -920,7 +921,7 @@ router.post('/:id/assign', authenticateToken, requireRole('admin'), async (req, 
  * POST /api/company-credit-cards/:id/block
  * Block/unblock credit card
  */
-router.post('/:id/block', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/block', authenticateToken, requireCerbosPermission({ resource: 'company_credit_card', action: '*' }), async (req, res) => {
   try {
     const cardId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;
@@ -983,7 +984,7 @@ router.post('/:id/block', authenticateToken, requireRole('admin'), async (req, r
  * POST /api/company-credit-cards/:id/unblock
  * Unblock credit card
  */
-router.post('/:id/unblock', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/unblock', authenticateToken, requireCerbosPermission({ resource: 'company_credit_card', action: '*' }), async (req, res) => {
   try {
     const cardId = req.params.id;
     const organizationId = req.user.organization_id || req.user.id;

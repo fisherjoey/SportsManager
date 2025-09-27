@@ -3,7 +3,8 @@
 import express from 'express';
 const router = express.Router();
 import { Pool  } from 'pg';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import Joi from 'joi';
 
 const pool = new Pool({
@@ -552,7 +553,7 @@ router.get('/:id/evaluations', authenticateToken, async (req, res) => {
 });
 
 // Create new evaluation
-router.post('/:id/evaluations', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/evaluations', authenticateToken, requireCerbosPermission({ resource: 'employee', action: '*' }), async (req, res) => {
   try {
     const { error, value } = evaluationSchema.validate({
       ...req.body,
@@ -627,7 +628,7 @@ router.get('/:id/training', authenticateToken, async (req, res) => {
 });
 
 // Create new training record
-router.post('/:id/training', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/training', authenticateToken, requireCerbosPermission({ resource: 'employee', action: '*' }), async (req, res) => {
   try {
     const { error, value } = trainingSchema.validate({
       ...req.body,
@@ -673,7 +674,7 @@ router.post('/:id/training', authenticateToken, requireAnyRole('admin', 'hr', 'm
 });
 
 // Update training record
-router.put('/training/:trainingId', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.put('/training/:trainingId', authenticateToken, requireCerbosPermission({ resource: 'employee', action: '*' }), async (req, res) => {
   try {
     const { error, value } = trainingSchema.partial().validate(req.body);
     if (error) {

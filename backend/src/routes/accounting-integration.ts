@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { auditMiddleware  } from '../middleware/auditTrail';
 
 // Validation schemas
@@ -135,7 +136,7 @@ router.get('/chart-of-accounts', authenticateToken, async (req, res) => {
  */
 router.post('/chart-of-accounts',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -208,7 +209,7 @@ router.post('/chart-of-accounts',
  */
 router.get('/integrations', 
   authenticateToken, 
-  requireAnyRole('admin', 'manager'), 
+  requireCerbosPermission({ resource: 'accounting', action: '*' }), 
   async (req, res) => {
     try {
       const organizationId = req.user.organization_id || req.user.id;
@@ -245,7 +246,7 @@ router.get('/integrations',
  */
 router.post('/integrations',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -299,7 +300,7 @@ router.post('/integrations',
  */
 router.post('/integrations/:id/test',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -434,7 +435,7 @@ router.get('/journal-entries', authenticateToken, async (req, res) => {
  */
 router.post('/journal-entries',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -558,7 +559,7 @@ router.post('/journal-entries',
  */
 router.post('/journal-entries/:id/approve',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   auditMiddleware({ logAllRequests: true }),
   async (req, res) => {
     try {
@@ -606,7 +607,7 @@ router.post('/journal-entries/:id/approve',
  */
 router.get('/sync-logs',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'accounting', action: '*' }),
   async (req, res) => {
     try {
       const organizationId = req.user.organization_id || req.user.id;
