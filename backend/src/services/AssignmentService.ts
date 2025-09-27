@@ -431,20 +431,14 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       // Build query with all necessary joins
       let query = (this.db as any)('game_assignments')
         .join('games', 'game_assignments.game_id', 'games.id')
-        .join('users', 'game_assignments.user_id', 'users.id')
+        .join('users', 'game_assignments.referee_id', 'users.id')
         // .join('positions', 'game_assignments.position_id', 'positions.id') // TODO: positions table doesn't exist yet
         .join('teams as home_team', 'games.home_team_id', 'home_team.id')
         .join('teams as away_team', 'games.away_team_id', 'away_team.id')
         // .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id') // TODO: referee_levels table doesn't exist yet
         .select(
           'game_assignments.*',
-          'games.game_date',
-          'games.game_time',
-          'games.location',
-          'games.level',
-          'games.pay_rate',
-          'games.wage_multiplier',
-          'games.wage_multiplier_reason',
+          'games.*',
           'home_team.name as home_team_name',
           'away_team.name as away_team_name',
           'users.name as referee_name',
@@ -459,16 +453,16 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
         query = query.where('game_assignments.game_id', filters.game_id);
       }
       if (filters.user_id) {
-        query = query.where('game_assignments.user_id', filters.user_id);
+        query = query.where('game_assignments.referee_id', filters.user_id);
       }
       if (filters.status) {
         query = query.where('game_assignments.status', filters.status);
       }
       if (filters.date_from) {
-        query = query.where('games.game_date', '>=', filters.date_from);
+        query = query.where('games.date_time', '>=', filters.date_from);
       }
       if (filters.date_to) {
-        query = query.where('games.game_date', '<=', filters.date_to);
+        query = query.where('games.date_time', '<=', filters.date_to);
       }
 
       // Get total count
@@ -476,7 +470,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       
       // Apply pagination and ordering
       query = query
-        .orderBy('games.game_date', 'asc')
+        .orderBy('games.date_time', 'asc')
         .limit(limit)
         .offset(offset);
 
