@@ -10,7 +10,8 @@
 
 import express, { Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { authenticateToken, requirePermission } from '../../middleware/auth';
+import { authenticateToken } from '../../middleware/auth';
+import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
 // Import services and middleware
@@ -122,7 +123,11 @@ const featureSchema = Joi.object({
  */
 router.get('/roles/:roleId/pages',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
 
@@ -154,7 +159,11 @@ router.get('/roles/:roleId/pages',
  */
 router.put('/roles/:roleId/pages',
   authenticateToken,
-  requirePermission('roles:manage'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'manage_permissions',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
     const { pageAccess } = (req as any).body as { pageAccess?: PageAccess[] };
@@ -229,7 +238,11 @@ router.put('/roles/:roleId/pages',
  */
 router.get('/page-registry',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const pages: PageRegistry[] = await RoleAccessService.getPageRegistry();
 
@@ -248,7 +261,11 @@ router.get('/page-registry',
  */
 router.get('/roles/:roleId/apis',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
 
@@ -280,7 +297,10 @@ router.get('/roles/:roleId/apis',
  */
 router.put('/roles/:roleId/apis',
   authenticateToken,
-  requirePermission('roles.manage'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'manage_permissions',
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
     const { apiAccess } = (req as any).body as { apiAccess?: ApiAccess[] };
@@ -333,7 +353,11 @@ router.put('/roles/:roleId/apis',
  */
 router.get('/api-registry',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const apis: ApiRegistry[] = await RoleAccessService.getApiRegistry();
 
@@ -352,7 +376,11 @@ router.get('/api-registry',
  */
 router.get('/roles/:roleId/features',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
 
@@ -384,7 +412,10 @@ router.get('/roles/:roleId/features',
  */
 router.put('/roles/:roleId/features',
   authenticateToken,
-  requirePermission('roles.manage'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'manage_permissions',
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
     const { features } = (req as any).body as { features?: Feature[] };
@@ -439,7 +470,11 @@ router.put('/roles/:roleId/features',
  */
 router.get('/roles/:roleId/scopes',
   authenticateToken,
-  requirePermission('roles.read'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.roleId,
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     const { roleId } = (req as any).params;
 
@@ -553,7 +588,10 @@ router.post('/check-feature',
  */
 router.post('/clear-cache',
   authenticateToken,
-  requirePermission('roles.manage'),
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'manage_permissions',
+  }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     await RoleAccessService.clearAllCaches();
 
