@@ -7,13 +7,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { Database, UUID, AuthenticatedRequest, PaginatedResult } from '../types';
-import { authenticateToken, requireRole, requirePermission } from '../middleware/auth';
-import { ResponseFormatter } from '../utils/response-formatters';
-import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
-import { validateBody, validateParams, validateQuery } from '../middleware/validation';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
 import { ErrorFactory } from '../utils/errors';
-import { QueryBuilder, QueryHelpers } from '../utils/query-builders';
-import { queryCache, CacheHelpers, CacheInvalidation } from '../utils/query-cache';
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
+import db from '../config/database';
 
 const router = express.Router();
 
@@ -114,15 +116,6 @@ interface FilterOptions {
   levels: string[];
 }
 
-// Initialize database connection (will be injected)
-let db: Database;
-
-// Route initialization function
-export function initializeRoutes(database: Database): express.Router {
-  db = database;
-  return router;
-}
-
 // Validation schemas
 const leagueSchema = Joi.object<LeagueCreateBody>({
   organization: Joi.string().required(),
@@ -160,7 +153,10 @@ const idParamSchema = Joi.object({
 // GET /api/leagues - Get all leagues with optional filtering
 router.get('/',
   authenticateToken,
-  requirePermission('leagues:read'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:list',
+  }),
   validateQuery(leagueQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, LeagueQueryParams>, res: Response): Promise<void> => {
     const { page = 1, limit = 50, ...filters } = req.query;
@@ -246,6 +242,12 @@ router.get('/',
 
 // GET /api/leagues/:id - Get specific league with teams
 router.get('/:id',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: Request<{ id: UUID }>, res: Response): Promise<void> => {
     const leagueId = req.params.id;
@@ -307,7 +309,10 @@ router.get('/:id',
 // POST /api/leagues - Create new league
 router.post('/',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'create',
+  }),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, LeagueCreateBody>, res: Response): Promise<void> => {
     const value = req.body;
@@ -344,7 +349,10 @@ router.post('/',
 // POST /api/leagues/bulk - Create multiple leagues
 router.post('/bulk',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'bulk_create',
+  }),
   validateBody(bulkLeagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkLeagueCreateBody>, res: Response): Promise<void> => {
     const { organization, age_groups, genders, divisions, season, level } = req.body;
@@ -407,7 +415,11 @@ router.post('/bulk',
 // PUT /api/leagues/:id - Update league
 router.put('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, LeagueUpdateBody>, res: Response): Promise<void> => {
@@ -433,7 +445,11 @@ router.put('/:id',
 // DELETE /api/leagues/:id - Delete league
 router.delete('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
     const leagueId = req.params.id;
@@ -465,6 +481,11 @@ router.delete('/:id',
 
 // GET /api/leagues/options/filters - Get filter options for dropdowns
 router.get('/options/filters',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:list',
+  }),
   enhancedAsyncHandler(async (req: Request, res: Response): Promise<void> => {
     // Cache filter options for 30 minutes as they change infrequently
     const result = await CacheHelpers.cacheLookupData(

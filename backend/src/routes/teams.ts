@@ -7,13 +7,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { Database, UUID, AuthenticatedRequest, PaginatedResult } from '../types';
-import { authenticateToken, requireRole, requirePermission } from '../middleware/auth';
-import { ResponseFormatter } from '../utils/response-formatters';
-import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
-import { validateBody, validateParams, validateQuery } from '../middleware/validation';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
 import { ErrorFactory } from '../utils/errors';
-import { QueryBuilder, QueryHelpers } from '../utils/query-builders';
-import { queryCache, CacheHelpers, CacheInvalidation } from '../utils/query-cache';
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
+import db from '../config/database';
 
 const router = express.Router();
 
@@ -138,15 +140,6 @@ interface LeagueTeamsResult {
   }>;
 }
 
-// Initialize database connection (will be injected)
-let db: Database;
-
-// Route initialization function
-export function initializeRoutes(database: Database): express.Router {
-  db = database;
-  return router;
-}
-
 // Validation schemas
 const teamSchema = Joi.object<TeamCreateBody>({
   name: Joi.string().required(),
@@ -200,7 +193,10 @@ const leagueIdParamSchema = Joi.object({
 // GET /api/teams - Get all teams with optional filtering
 router.get('/',
   authenticateToken,
-  requirePermission('teams:read'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'view:list',
+  }),
   validateQuery(teamQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, TeamQueryParams>, res: Response): Promise<void> => {
     const { page = 1, limit = 50, ...filters } = req.query;
@@ -211,13 +207,21 @@ router.get('/',
         // Optimized query using idx_teams_league_rank index
         let baseQuery = db('teams')
           .select(
-            'teams.*',
+            'teams.id',
+            'teams.name',
+            'teams.league_id',
+            db.raw('"teams"."rank" as rank'),
+            'teams.location',
+            'teams.contact_email',
+            'teams.contact_phone',
+            'teams.organization_id',
+            'teams.created_at',
+            'teams.updated_at',
             'leagues.organization',
             'leagues.age_group',
             'leagues.gender',
             'leagues.division',
-            'leagues.season',
-            'leagues.level'
+            'leagues.season'
           )
           .join('leagues', 'teams.league_id', 'leagues.id');
 
@@ -237,7 +241,7 @@ router.get('/',
         baseQuery = baseQuery
           .orderBy('leagues.organization', 'asc')
           .orderBy('leagues.age_group', 'asc')
-          .orderBy('teams.rank', 'asc'); // Uses idx_teams_league_rank
+          .orderBy(db.raw('"teams"."rank"'), 'asc'); // Uses idx_teams_league_rank
 
         // Get total count efficiently
         const countQuery = QueryBuilder.buildCountQuery(baseQuery, 'teams.id');
@@ -292,6 +296,12 @@ router.get('/',
 
 // GET /api/teams/:id - Get specific team with games
 router.get('/:id',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: Request<{ id: UUID }>, res: Response): Promise<void> => {
     const teamId = req.params.id;
@@ -380,7 +390,10 @@ router.get('/:id',
 // POST /api/teams - Create new team
 router.post('/',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'create',
+  }),
   validateBody(teamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, TeamCreateBody>, res: Response): Promise<void> => {
     const value = req.body;
@@ -418,7 +431,10 @@ router.post('/',
 // POST /api/teams/bulk - Create multiple teams
 router.post('/bulk',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'bulk_create',
+  }),
   validateBody(bulkTeamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkTeamCreateBody>, res: Response): Promise<void> => {
     const { league_id, teams } = req.body;
@@ -484,7 +500,10 @@ router.post('/bulk',
 // POST /api/teams/generate - Generate teams with pattern
 router.post('/generate',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'generate',
+  }),
   validateBody(bulkGenerateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkGenerateTeamBody>, res: Response): Promise<void> => {
     const { league_id, count, name_pattern = 'Team {number}', location_base, auto_rank } = req.body;
@@ -558,7 +577,11 @@ router.post('/generate',
 // PUT /api/teams/:id - Update team
 router.put('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   validateBody(teamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, TeamUpdateBody>, res: Response): Promise<void> => {
@@ -597,7 +620,11 @@ router.put('/:id',
 // DELETE /api/teams/:id - Delete team
 router.delete('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
     const teamId = req.params.id;
@@ -631,6 +658,11 @@ router.delete('/:id',
 
 // GET /api/teams/league/:league_id - Get all teams for a specific league
 router.get('/league/:league_id',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'team',
+    action: 'view:list',
+  }),
   validateParams(leagueIdParamSchema),
   enhancedAsyncHandler(async (req: Request<{ league_id: UUID }>, res: Response): Promise<void> => {
     const leagueId = req.params.league_id;
@@ -642,7 +674,7 @@ router.get('/league/:league_id',
         const teams = await db('teams')
           .select('teams.*')
           .where('teams.league_id', leagueId)
-          .orderBy('teams.rank', 'asc'); // Uses idx_teams_league_rank
+          .orderBy(db.raw('"teams"."rank"'), 'asc'); // Uses idx_teams_league_rank
 
         const league = await db('leagues').where('id', leagueId).first();
         if (!league) {
