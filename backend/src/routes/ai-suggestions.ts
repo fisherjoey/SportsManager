@@ -6,7 +6,8 @@
 
 import express, { Router, Response } from 'express';
 import Joi from 'joi';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { logger } from '../utils/logger';
 import { pool } from '../config/database';
 import {
@@ -681,7 +682,10 @@ async function buildSuggestionsQuery(params: SuggestionQueryParams): Promise<Sug
 /**
  * POST /api/ai-suggestions - Generate AI suggestions
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSuggestionsRequestBody, res: Response<GenerateSuggestionsResponse>) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'generate',
+}), async (req: GenerateSuggestionsRequestBody, res: Response<GenerateSuggestionsResponse>) => {
   const requestId = generateRequestId();
 
   try {
@@ -792,7 +796,10 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSu
 /**
  * GET /api/ai-suggestions - Retrieve suggestions with filtering and pagination
  */
-router.get('/', authenticateToken, requireRole('admin'), async (req: GetSuggestionsRequest, res: Response<GetSuggestionsResponse>) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'view:list',
+}), async (req: GetSuggestionsRequest, res: Response<GetSuggestionsResponse>) => {
   try {
     const { error, value } = suggestionsQuerySchema.validate(req.query);
 
@@ -834,7 +841,11 @@ router.get('/', authenticateToken, requireRole('admin'), async (req: GetSuggesti
 /**
  * PUT /api/ai-suggestions/:id/accept - Accept suggestion and create assignment
  */
-router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req: AcceptSuggestionRequest, res: Response<AcceptSuggestionResponse>) => {
+router.put('/:id/accept', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'accept',
+  getResourceId: (req) => req.params.id,
+}), async (req: AcceptSuggestionRequest, res: Response<AcceptSuggestionResponse>) => {
   try {
     const { id } = req.params;
 
@@ -951,7 +962,11 @@ router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req: A
 /**
  * PUT /api/ai-suggestions/:id/reject - Reject suggestion with optional reason
  */
-router.put('/:id/reject', authenticateToken, requireRole('admin'), async (req: RejectSuggestionRequestBody, res: Response<RejectSuggestionResponse>) => {
+router.put('/:id/reject', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'reject',
+  getResourceId: (req) => req.params.id,
+}), async (req: RejectSuggestionRequestBody, res: Response<RejectSuggestionResponse>) => {
   try {
     const { id } = req.params;
     const { error, value } = rejectSuggestionSchema.validate(req.body);
