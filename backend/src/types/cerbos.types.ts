@@ -26,7 +26,9 @@ export type ResourceType =
   | 'invitation'
   | 'tournament'
   | 'ai_suggestion'
-  | 'financial_dashboard';
+  | 'financial_dashboard'
+  | 'employee'
+  | 'maintenance';
 
 export type ResourceAction =
   | 'view'
