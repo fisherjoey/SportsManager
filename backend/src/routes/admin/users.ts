@@ -5,7 +5,8 @@
  */
 
 import express, { Response, NextFunction } from 'express';
-import { authenticateToken, requireRole, requirePermission } from '../../middleware/auth';
+import { authenticateToken } from '../../middleware/auth';
+import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
 
 // Import database and utilities (still JavaScript for now)
@@ -66,7 +67,11 @@ class RoleNotFoundError extends Error {
  * GET /api/admin/users/:userId/roles
  * Get all roles assigned to a user
  */
-router.get('/:userId/roles', authenticateToken, requirePermission('users:read'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/:userId/roles', authenticateToken, requireCerbosPermission({
+  resource: 'user',
+  action: 'view:details',
+  getResourceId: (req) => req.params.userId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
 
@@ -97,7 +102,11 @@ router.get('/:userId/roles', authenticateToken, requirePermission('users:read'),
  * PUT /api/admin/users/:userId/roles
  * Replace all roles for a user (complete replacement)
  */
-router.put('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.put('/:userId/roles', authenticateToken, requireCerbosPermission({
+  resource: 'user',
+  action: 'manage_roles',
+  getResourceId: (req) => req.params.userId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
     const { role_ids } = (req as any).body as { role_ids?: string[] };
@@ -178,7 +187,11 @@ router.put('/:userId/roles', authenticateToken, requirePermission('roles:assign'
  * POST /api/admin/users/:userId/roles
  * Add roles to a user (additive)
  */
-router.post('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.post('/:userId/roles', authenticateToken, requireCerbosPermission({
+  resource: 'user',
+  action: 'manage_roles',
+  getResourceId: (req) => req.params.userId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
     const { role_ids } = (req as any).body as { role_ids?: string[] };
@@ -259,7 +272,11 @@ router.post('/:userId/roles', authenticateToken, requirePermission('roles:assign
  * DELETE /api/admin/users/:userId/roles
  * Remove roles from a user
  */
-router.delete('/:userId/roles', authenticateToken, requirePermission('roles:assign'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.delete('/:userId/roles', authenticateToken, requireCerbosPermission({
+  resource: 'user',
+  action: 'manage_roles',
+  getResourceId: (req) => req.params.userId,
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = (req as any).params;
     const { role_ids } = (req as any).body as { role_ids?: string[] };
