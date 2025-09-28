@@ -86,7 +86,15 @@ export class CerbosAuthService {
         request.auxData = auxData;
       }
 
+      console.log('[CERBOS CHECK] Request:', JSON.stringify({
+        principal: { id: principal.id, roles: principal.roles },
+        resource: { kind: resource.kind, id: resource.id },
+        action
+      }, null, 2));
+
       const response = await this.client.checkResource(request);
+
+      console.log('[CERBOS CHECK] Response allowed:', response.isAllowed(action));
 
       const result: CerbosCheckResult = {
         allowed: response.isAllowed(action),

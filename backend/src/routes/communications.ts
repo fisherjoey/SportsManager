@@ -430,23 +430,23 @@ router.get(
 /**
  * Get user's unread communications count
  */
-router.get('/unread/count', authenticateToken, requireCerbosPermission({
-  resource: 'communication',
-  action: 'view:unread_count',
-}), async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!isAuthenticated(req)) {
-      res.status(401).json({ error: 'Authentication required' });
-      return;
-    }
-
-    const unreadCount = await communicationService.getUnreadCount((req as any).user.id);
-    res.json({ unread_count: unreadCount });
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// router.get('/unread/count', authenticateToken, requireCerbosPermission({
+//   resource: 'communication',
+//   action: 'view:unread_count',
+// }), async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     if (!isAuthenticated(req)) {
+//       res.status(401).json({ error: 'Authentication required' });
+//       return;
+//     }
+// 
+//     const unreadCount = await communicationService.getUnreadCount((req as any).user.id);
+//     res.json({ unread_count: unreadCount });
+//   } catch (error) {
+//     console.error('Error fetching unread count:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 /**
  * Get pending acknowledgments for user

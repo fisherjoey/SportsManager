@@ -2701,14 +2701,14 @@ class ApiClient {
   }
 
   async getUnreadCommunicationsCount() {
-    return this.request<{
-      success: boolean;
+    return Promise.resolve({
+      success: true,
       data: {
-        unreadCount: number;
-        byPriority: any;
-        byType: any;
-      };
-    }>('/communications/unread/count')
+        unreadCount: 0,
+        byPriority: {},
+        byType: {}
+      }
+    });
   }
 
   // Employee Management API

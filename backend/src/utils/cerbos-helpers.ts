@@ -37,6 +37,8 @@ export function toPrincipal(
 
   roles = Array.from(new Set(roles));
 
+  console.log('[CERBOS DEBUG] Principal roles:', roles, 'for user:', user.email);
+
   return {
     id: user.id,
     roles,

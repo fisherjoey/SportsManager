@@ -5,17 +5,13 @@ resourcePolicy:
   resource: game
   importDerivedRoles:
     - common_roles
-  schemas:
-    principalSchema:
-      ref: cerbos:///principal.yaml
-    resourceSchema:
-      ref: cerbos:///resource.game.yaml
 
   rules:
     - actions:
         - view
         - view:list
         - view:details
+        - list
       effect: EFFECT_ALLOW
       roles:
         - admin

@@ -97,36 +97,19 @@ export function TeamsLocationsPage() {
         }
 
         // Fetch locations
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-        console.log('Fetching locations from', `${API_BASE_URL}/locations`)
-
-        const locationsResponse = await fetch(`${API_BASE_URL}/locations`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
-        console.log('Locations response status:', locationsResponse.status)
-
-        if (locationsResponse.ok) {
-          const locationsData = await locationsResponse.json()
-          console.log('Locations loaded successfully:', locationsData.length, 'locations')
-          console.log('First few locations:', locationsData.slice(0, 3))
-          setLocations(locationsData)
-        } else {
-          const errorText = await locationsResponse.text()
-          console.error('Failed to fetch locations:', locationsResponse.status, locationsResponse.statusText, errorText)
-
+        try {
+          const locationsResponse = await apiClient.request('/locations')
+          setLocations(locationsResponse.data || locationsResponse || [])
+          console.log('Locations loaded:', locationsResponse.data?.length || locationsResponse?.length || 0)
+        } catch (locationsError) {
+          console.error('Failed to fetch locations:', locationsError)
           // Check if it's an authentication error
-          if (locationsResponse.status === 401 || locationsResponse.status === 403) {
+          if (locationsError.message && (locationsError.message.includes('401') || locationsError.message.includes('403') || locationsError.message.includes('Invalid or expired token'))) {
             setError('Your session has expired. Please log in again.')
             localStorage.removeItem('auth_token')
-            // Optional: Redirect to login page
-            // window.location.href = '/login'
             return
           }
-
-          setError(`Failed to fetch locations: ${locationsResponse.statusText}`)
+          throw locationsError
         }
       } catch (err) {
         console.error('Failed to fetch data:', err)

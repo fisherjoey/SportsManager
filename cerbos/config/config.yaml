@@ -13,9 +13,10 @@ server:
       passwordHash: ""
 
 storage:
-  driver: "sqlite3"
-  sqlite3:
-    dsn: "file:/data/cerbos.db?_fk=true"
+  driver: "disk"
+  disk:
+    directory: "/policies"
+    watchForChanges: true
 
 # Audit logging for compliance
 audit:

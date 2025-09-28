@@ -497,9 +497,170 @@ router.get('/me',
   asyncHandler(getProfile)
 );
 
-router.post('/refresh-permissions', 
-  authenticateToken, 
+router.post('/refresh-permissions',
+  authenticateToken,
   asyncHandler(refreshPermissions)
+);
+
+/**
+ * POST /api/auth/check-page-access
+ * Validate if user can access a specific page/route
+ */
+const checkPageAccess = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse<{ hasAccess: boolean; reason?: string }>>
+): Promise<void> => {
+  const { page } = req.body;
+
+  if (!page || typeof page !== 'string') {
+    throw new ValidationError('Page path is required');
+  }
+
+  const user = req.user as AuthenticatedUser;
+
+  // Get user roles
+  let userRoles: string[] = [];
+  try {
+    const roleRecords = await db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where('user_roles.user_id', user.id)
+      .where('roles.is_active', true)
+      .select('roles.name');
+
+    userRoles = roleRecords.map((r: any) => r.name);
+  } catch (error) {
+    console.warn('Failed to get user roles for page access check:', (error as Error).message);
+  }
+
+  // Define comprehensive page access rules (maps page paths to required roles)
+  const pageAccessRules: Record<string, string[]> = {
+    // Public/General pages (all authenticated users)
+    '/dashboard': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee', 'referee_coach', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'coach'],
+    '/profile': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee', 'referee_coach', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'coach', 'guest'],
+    '/me': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee', 'referee_coach', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'coach', 'guest'],
+    '/calendar': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee', 'referee_coach', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'coach'],
+
+    // Admin pages (admin and super_admin only)
+    '/admin': ['admin', 'super_admin'],
+    '/admin/users': ['admin', 'super_admin'],
+    '/admin/roles': ['admin', 'super_admin'],
+    '/admin/maintenance': ['admin', 'super_admin'],
+    '/admin/cerbos-policies': ['admin', 'super_admin'],
+    '/admin/access': ['admin', 'super_admin'],
+    '/admin/rbac-registry': ['admin', 'super_admin'],
+    '/admin/test-roles': ['admin', 'super_admin'],
+
+    // Assignment management pages
+    '/assignments': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator'],
+    '/assignments/ai-suggestions': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+    '/assignments/patterns': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+    '/ai-assignment-rules': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+    '/self-assignment': ['referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee'],
+
+    // Games and scheduling
+    '/games': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee', 'senior_referee', 'head_referee', 'junior_referee', 'rookie_referee', 'referee_coordinator', 'coach'],
+    '/availability': ['referee', 'junior_referee', 'senior_referee', 'head_referee', 'rookie_referee'],
+    '/game-fees': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+
+    // Referee management
+    '/referees': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator', 'referee_coach'],
+    '/referee-roles': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator'],
+
+    // Sports organization management
+    '/leagues': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'coach'],
+    '/teams': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'coach'],
+    '/tournaments': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'coach'],
+    '/locations': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+    '/organization': ['admin', 'super_admin'],
+
+    // Communication and content
+    '/posts': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'referee_coach'],
+    '/content': ['admin', 'super_admin'],
+    '/communications': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator'],
+    '/resources': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator', 'mentor', 'mentorship_coordinator', 'referee_coach'],
+
+    // Financial management pages
+    '/financial': ['admin', 'super_admin'],
+    '/financial/dashboard': ['admin', 'super_admin'],
+    '/financial/transactions': ['admin', 'super_admin'],
+    '/financial/reports': ['admin', 'super_admin'],
+    '/expenses': ['admin', 'super_admin'],
+    '/budgets': ['admin', 'super_admin'],
+    '/budget-tracker': ['admin', 'super_admin'],
+    '/payment-methods': ['admin', 'super_admin'],
+    '/purchase-orders': ['admin', 'super_admin'],
+    '/company-credit-cards': ['admin', 'super_admin'],
+    '/approvals': ['admin', 'super_admin'],
+    '/accounting': ['admin', 'super_admin'],
+    '/receipts': ['admin', 'super_admin'],
+
+    // Organizational management
+    '/employees': ['admin', 'super_admin'],
+    '/assets': ['admin', 'super_admin'],
+    '/documents': ['admin', 'super_admin'],
+    '/compliance': ['admin', 'super_admin'],
+    '/workflows': ['admin', 'super_admin'],
+
+    // Analytics and reporting
+    '/analytics': ['admin', 'super_admin'],
+    '/analytics/organizational': ['admin', 'super_admin'],
+    '/reports': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator'],
+    '/performance': ['admin', 'super_admin'],
+
+    // Mentorship program
+    '/mentorships': ['admin', 'super_admin', 'mentor', 'mentorship_coordinator', 'referee_coach', 'senior_referee', 'head_referee'],
+    '/mentees': ['mentor', 'mentorship_coordinator', 'referee_coach', 'senior_referee', 'head_referee'],
+
+    // User management
+    '/users': ['admin', 'super_admin', 'assignor', 'assignment_manager', 'referee_coordinator'],
+    '/roles': ['admin', 'super_admin'],
+    '/invitations': ['admin', 'super_admin', 'assignor', 'assignment_manager'],
+
+    // Read-only access for guests
+    '/games/view': ['guest'],
+    '/calendar/view': ['guest'],
+
+    // Cerbos policy management
+    '/cerbos': ['admin', 'super_admin'],
+  };
+
+  // Normalize page path (remove query params, trailing slashes)
+  const normalizedPage = page.split('?')[0].replace(/\/$/, '');
+
+  // Check if page has access rules defined
+  const requiredRoles = pageAccessRules[normalizedPage];
+
+  if (!requiredRoles) {
+    // No specific rules - allow access (or deny by default, depending on your security policy)
+    res.json({
+      success: true,
+      data: {
+        hasAccess: true,
+        reason: 'No access restrictions defined for this page'
+      }
+    });
+    return;
+  }
+
+  // Check if user has any of the required roles
+  const hasAccess = requiredRoles.some(role =>
+    userRoles.map(r => r.toLowerCase().replace(/[\s-]+/g, '_')).includes(role)
+  );
+
+  res.json({
+    success: true,
+    data: {
+      hasAccess,
+      reason: hasAccess
+        ? `User has required role(s): ${requiredRoles.join(', ')}`
+        : `User lacks required role(s): ${requiredRoles.join(', ')}`
+    }
+  });
+};
+
+router.post('/check-page-access',
+  authenticateToken,
+  asyncHandler(checkPageAccess)
 );
 
 export default router;
