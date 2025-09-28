@@ -5,14 +5,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Build output
-dist
+# Next.js build output
+.next
+out
 build
+dist
 
 # Testing
 coverage
 .nyc_output
-test-results
 
 # Version control
 .git
@@ -36,7 +37,6 @@ test-results
 # Documentation
 README.md
 docs
-*.md
 
 # Docker
 Dockerfile
@@ -47,18 +47,8 @@ docker-compose*.yml
 .github
 .gitlab-ci.yml
 
-# TypeScript
-*.tsbuildinfo
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
 # Misc
+*.log
 .cache
 .temp
 .tmp
