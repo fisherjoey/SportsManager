@@ -10,6 +10,9 @@
 
 import express, { Response, NextFunction } from 'express';
 import * as Joi from 'joi';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as yaml from 'js-yaml';
 import { authenticateToken } from '../../middleware/auth';
 import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
@@ -21,6 +24,159 @@ const router = express.Router();
 
 // Initialize services
 const roleService = new RoleService(db);
+
+// Cerbos policies directory
+const CERBOS_POLICIES_DIR = process.env.CERBOS_POLICIES_DIR || path.join(__dirname, '..', '..', '..', 'cerbos', 'policies');
+
+/**
+ * Helper function to get permissions for a role from Cerbos policies
+ */
+async function getRolePermissionsFromCerbos(roleCode: string): Promise<string[]> {
+  try {
+    const permissions: string[] = [];
+
+    // Read all policy files to find where this role has permissions
+    const files = await fs.readdir(CERBOS_POLICIES_DIR);
+    const yamlFiles = files.filter(file => file.endsWith('.yaml') && !file.startsWith('_'));
+
+    for (const file of yamlFiles) {
+      const filePath = path.join(CERBOS_POLICIES_DIR, file);
+      const content = await fs.readFile(filePath, 'utf-8');
+
+      try {
+        const policy = yaml.load(content) as any;
+
+        if (policy?.resourcePolicy?.rules) {
+          for (const rule of policy.resourcePolicy.rules) {
+            // Check if this role is in the roles array for this rule
+            if (rule.roles && rule.roles.includes(roleCode)) {
+              // Add the actions with the resource prefix
+              const resource = policy.resourcePolicy.resource;
+              if (rule.actions) {
+                for (const action of rule.actions) {
+                  permissions.push(`${resource}:${action}`);
+                }
+              }
+            }
+          }
+        }
+      } catch (parseError) {
+        console.warn(`Error parsing YAML file ${file}:`, parseError);
+      }
+    }
+
+    // Remove duplicates and return
+    return [...new Set(permissions)];
+  } catch (error) {
+    console.error('Error reading permissions from Cerbos:', error);
+    return [];
+  }
+}
+
+/**
+ * Helper function to update Cerbos policies for a role
+ */
+async function updateCerbosPoliciesForRole(roleName: string, permissions: string[] = []): Promise<void> {
+  try {
+    // Group permissions by resource
+    const permissionsByResource = new Map<string, string[]>();
+
+    for (const permission of permissions) {
+      const [resource, action] = permission.split(':');
+      if (!permissionsByResource.has(resource)) {
+        permissionsByResource.set(resource, []);
+      }
+      permissionsByResource.get(resource)!.push(action);
+    }
+
+    // Create or update policy files for each resource
+    for (const [resource, actions] of permissionsByResource) {
+      const policyFile = `${resource}.yaml`;
+      const policyPath = path.join(CERBOS_POLICIES_DIR, policyFile);
+
+      let policy: any;
+
+      // Try to read existing policy
+      try {
+        const existingContent = await fs.readFile(policyPath, 'utf-8');
+        policy = yaml.load(existingContent) as any;
+
+        // Remove existing rules for this role
+        if (policy?.resourcePolicy?.rules) {
+          policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
+            (rule: any) => !rule.roles?.includes(roleName)
+          );
+        }
+      } catch (err) {
+        // File doesn't exist, create new policy
+        policy = {
+          apiVersion: 'api.cerbos.dev/v1',
+          resourcePolicy: {
+            version: 'default',
+            resource: resource,
+            rules: []
+          }
+        };
+      }
+
+      // Add new rule for this role
+      if (actions.length > 0) {
+        if (!policy.resourcePolicy) {
+          policy.resourcePolicy = { version: 'default', resource, rules: [] };
+        }
+        if (!policy.resourcePolicy.rules) {
+          policy.resourcePolicy.rules = [];
+        }
+
+        policy.resourcePolicy.rules.push({
+          actions: actions,
+          effect: 'EFFECT_ALLOW',
+          roles: [roleName]
+        });
+      }
+
+      // Write the policy file
+      const yamlContent = yaml.dump(policy, { sortKeys: false });
+      await fs.writeFile(policyPath, '---\n' + yamlContent, 'utf-8');
+      console.log(`Updated Cerbos policy for resource ${resource} with role ${roleName}`);
+    }
+  } catch (error) {
+    console.error('Error updating Cerbos policies:', error);
+    // Don't throw - we want the role to be created in DB even if Cerbos update fails
+  }
+}
+
+/**
+ * Helper function to remove a role from all Cerbos policies
+ */
+async function removeRoleFromCerbosPolicies(roleName: string): Promise<void> {
+  try {
+    const files = await fs.readdir(CERBOS_POLICIES_DIR);
+    const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+
+    for (const file of yamlFiles) {
+      const filePath = path.join(CERBOS_POLICIES_DIR, file);
+      const content = await fs.readFile(filePath, 'utf-8');
+      const policy = yaml.load(content) as any;
+
+      if (policy?.resourcePolicy?.rules) {
+        const originalLength = policy.resourcePolicy.rules.length;
+        policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
+          (rule: any) => !rule.roles?.includes(roleName)
+        );
+
+        // Only write if we actually removed something
+        if (policy.resourcePolicy.rules.length < originalLength) {
+          const yamlContent = yaml.dump(policy, { sortKeys: false });
+          await fs.writeFile(filePath, '---\n' + yamlContent, 'utf-8');
+          console.log(`Removed role ${roleName} from ${file}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error removing role from Cerbos policies:', error);
+  }
+}
 
 // Type definitions for role management
 interface RoleCreateData {
@@ -82,26 +238,28 @@ interface RoleHierarchy {
   children?: any[];
 }
 
-// Validation schemas
+// Validation schemas - updated to support dynamic permissions
 const createRoleSchema = Joi.object({
   name: Joi.string().min(2).max(50).required(),
   description: Joi.string().min(5).max(500).allow('', null),
-  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/).allow('', null),
+  code: Joi.string().min(2).max(50).pattern(/^[a-z0-9_]+$/).allow('', null),
   category: Joi.string().min(2).max(30).allow('', null),
   color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).default('#6B7280').allow('', null),
   is_system: Joi.boolean().default(false),
   is_active: Joi.boolean().default(true),
-  permissions: Joi.array().items(Joi.string()).allow(null) // Allow permission names or UUIDs
+  permissions: Joi.array().items(Joi.string()).allow(null), // Allow permission names or UUIDs
+  permission_ids: Joi.array().items(Joi.string()).allow(null) // Legacy field, ignored but allowed
 });
 
 const updateRoleSchema = Joi.object({
   name: Joi.string().min(2).max(50).allow('', null),
   description: Joi.string().min(5).max(500).allow('', null),
-  code: Joi.string().min(2).max(20).pattern(/^[A-Z_]+$/).allow('', null),
+  code: Joi.string().min(2).max(50).pattern(/^[a-z0-9_]+$/).allow('', null),
   category: Joi.string().min(2).max(30).allow('', null),
   color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
   is_active: Joi.boolean(),
-  permissions: Joi.array().items(Joi.string()).allow(null) // Allow permission names or UUIDs
+  permissions: Joi.array().items(Joi.string()).allow(null), // Allow permission names or UUIDs
+  permission_ids: Joi.array().items(Joi.string()).allow(null) // Legacy field, ignored but allowed
 });
 
 const assignPermissionsSchema = Joi.object({
@@ -126,7 +284,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'view:list',
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  console.log('Admin roles endpoint hit - User:', req.user?.email, 'Role:', req.user?.role);
+  console.log('Admin roles endpoint hit - User:', req.user?.email, 'Getting roles with permissions...');
   try {
     const { include_inactive } = (req as any).query as { include_inactive?: string };
 
@@ -135,10 +293,24 @@ router.get('/', authenticateToken, requireCerbosPermission({
     };
 
     const roles = await roleService.getRolesWithMetadata(filters);
+    console.log('Fetched roles from database:', roles.map(r => ({ name: r.name, code: r.code })));
+
+    // Add permissions for each role by reading from Cerbos policy files
+    const rolesWithPermissions = await Promise.all(roles.map(async (role) => {
+      const roleCode = role.code || role.name.toLowerCase().replace(/\s+/g, '_');
+      console.log(`Getting permissions for role: ${role.name} (code: ${roleCode})`);
+      const permissions = await getRolePermissionsFromCerbos(roleCode);
+      console.log(`Found ${permissions.length} permissions for ${role.name}:`, permissions);
+      return {
+        ...role,
+        permissions,
+        permission_count: permissions.length
+      };
+    }));
 
     res.json({
       success: true,
-      data: { roles },
+      data: { roles: rolesWithPermissions },
       message: 'Roles retrieved successfully'
     });
   } catch (error: any) {
@@ -163,9 +335,17 @@ router.get('/:roleId', authenticateToken, requireCerbosPermission({
     const { roleId } = (req as any).params;
     const role = await roleService.getRoleWithPermissions(roleId);
 
+    // Add permissions from Cerbos policies
+    const permissions = await getRolePermissionsFromCerbos(role.code || role.name);
+    const roleWithPermissions = {
+      ...role,
+      permissions,
+      permission_count: permissions.length
+    };
+
     res.json({
       success: true,
-      data: { role },
+      data: { role: roleWithPermissions },
       message: 'Role retrieved successfully'
     });
   } catch (error: any) {
@@ -202,13 +382,28 @@ router.post('/', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const { permissions, ...roleData } = value as RoleCreateData & { permissions?: string[] };
+    const { permissions, permission_ids, ...roleData } = value as RoleCreateData & { permissions?: string[]; permission_ids?: string[] };
+
+    // Generate code from name if not provided
+    if (!roleData.code && roleData.name) {
+      roleData.code = roleData.name
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+    }
+
     const role = await roleService.createRole(roleData as any);
+
+    // If permissions are provided, update Cerbos policies
+    // Use role.code for Cerbos (e.g., 'super_admin') while role.name is display name (e.g., 'Super Admin')
+    if (permissions && permissions.length > 0) {
+      await updateCerbosPoliciesForRole(role.code || role.name, permissions);
+    }
 
     res.status(201).json({
       success: true,
-      data: { role },
-      message: 'Role created successfully'
+      data: { role: { ...role, permissions: permissions || [] } },
+      message: 'Role created successfully with permissions'
     });
   } catch (error: any) {
     console.error('Error creating role:', error);
@@ -246,12 +441,18 @@ router.put('/:roleId', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const { permissions, ...roleData } = value as RoleUpdateData & { permissions?: string[] };
+    const { permissions, permission_ids, ...roleData } = value as RoleUpdateData & { permissions?: string[]; permission_ids?: string[] };
     const role = await roleService.updateRole(roleId, roleData as any);
+
+    // If permissions are provided, update Cerbos policies
+    // Use role.code for Cerbos (e.g., 'admin') while role.name is display name (e.g., 'Admin')
+    if (permissions !== undefined) {
+      await updateCerbosPoliciesForRole(role.code || role.name, permissions);
+    }
 
     res.json({
       success: true,
-      data: { role },
+      data: { role: { ...role, permissions: permissions } },
       message: 'Role updated successfully'
     });
   } catch (error: any) {
@@ -334,8 +535,19 @@ router.post('/:roleId/permissions', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const { permission_ids } = value;
-    await roleService.assignPermissionsToRole(roleId, permission_ids);
+    const { permission_ids, permissions } = value;
+    const permissionsToAssign = permissions || permission_ids;
+
+    // Update database permissions
+    await roleService.assignPermissionsToRole(roleId, permissionsToAssign);
+
+    // Get role to update Cerbos policies
+    const role = await roleService.getRoleById(roleId);
+    if (role) {
+      // Update Cerbos policies with the new permissions
+      // Use role.code for Cerbos (e.g., 'referee') while role.name is display name (e.g., 'Referee')
+      await updateCerbosPoliciesForRole(role.code || role.name, permissionsToAssign);
+    }
 
     const updatedRole = await roleService.getRoleWithPermissions(roleId);
 
@@ -599,5 +811,7 @@ router.get('/:roleId/hierarchy', authenticateToken, requireCerbosPermission({
     });
   }
 });
+
+// Removed duplicate POST /:roleId/permissions endpoint - using existing one above
 
 export default router;

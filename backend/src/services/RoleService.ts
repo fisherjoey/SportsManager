@@ -52,6 +52,7 @@ export interface RoleDeletionCheck {
 // Role creation and update interfaces
 export interface CreateRoleData {
   name: string;
+  code?: string;
   description?: string;
   is_system?: boolean;
   is_active?: boolean;
@@ -134,13 +135,20 @@ class RoleService extends BaseService<Role> {
    */
   async createRole(roleData: CreateRoleData): Promise<Role> {
     return await this.withTransaction(async (trx) => {
+      // Generate code from name if not provided
+      const dataWithCode = {
+        ...roleData,
+        code: roleData.code || roleData.name
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]/g, ''),
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
       // Create the role
       const [role] = await (trx as any)('roles')
-        .insert({
-          ...roleData,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
+        .insert(dataWithCode)
         .returning('*') as Role[];
 
       // Sync role with Cerbos Admin API (optional - doesn't fail DB operation)
