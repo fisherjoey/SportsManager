@@ -68,12 +68,10 @@ export interface UserResponse {
  * Get all available roles
  */
 const getRoles = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
-  const db: Database = (req as any).app.locals.db;
-  
   const roles = await (db as any)('roles')
     .select(['id', 'name', 'description'])
     .orderBy('name', 'asc');
-  
+
   return ResponseFormatter.sendSuccess(res, { roles }, 'Roles retrieved successfully');
 };
 

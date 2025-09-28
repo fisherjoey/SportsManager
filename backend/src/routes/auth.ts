@@ -142,9 +142,10 @@ const login = async (
       .join('roles', 'user_roles.role_id', 'roles.id')
       .where('user_roles.user_id', (user as any).id)
       .where('roles.is_active', true)
-      .select('roles.name', 'roles.id');
-    
-    userRoles = roleRecords.map((r: any) => r.name);
+      .select('roles.name', 'roles.code', 'roles.id');
+
+    // Use role.code for Cerbos (e.g., 'super_admin') instead of role.name (e.g., 'Super Admin')
+    userRoles = roleRecords.map((r: any) => r.code || r.name);
   } catch (error) {
     console.warn('Failed to get user roles during login:', (error as Error).message);
     userRoles = [];
@@ -510,7 +511,7 @@ const checkPageAccess = async (
   req: AuthenticatedRequest,
   res: Response<ApiResponse<{ hasAccess: boolean; reason?: string }>>
 ): Promise<void> => {
-  const { page } = req.body;
+  const { page } = (req as any).body;
 
   if (!page || typeof page !== 'string') {
     throw new ValidationError('Page path is required');
