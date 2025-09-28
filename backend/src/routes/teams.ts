@@ -662,64 +662,65 @@ router.get('/league/:league_id',
     resource: 'team',
     action: 'view:list',
   }),
-  validateParams(leagueIdParamSchema),
-  enhancedAsyncHandler(async (req: Request<{ league_id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = (req as any).params.league_id;
+  async (req: Request<{ league_id: UUID }>, res: Response): Promise<void> => {
+    try {
+      const leagueId = (req as any).params.league_id;
 
-    // Cache league teams for 10 minutes
-    const result = await CacheHelpers.cacheAggregation(
-      async (): Promise<LeagueTeamsResult | null> => {
-        // Optimized query using idx_teams_league_rank index
-        const teams = await db('teams')
-          .select('teams.*')
-          .where('teams.league_id', leagueId)
-          .orderBy((db.raw('"teams"."rank"') as any), 'asc'); // Uses idx_teams_league_rank
+      // Query teams for league ordered by team number
+      const teams = await db('teams')
+        .select('teams.*')
+        .where('teams.league_id', leagueId)
+        .orderBy('teams.team_number', 'asc');
 
-        const league = await db('leagues').where('id', leagueId).first();
-        if (!league) {
-          return null;
-        }
-
-        // Optimized game count query using separate query to avoid expensive JOINs
-        const teamIds = teams.map(team => team.id);
-        const gameCounts = teamIds.length > 0 ? await db('games')
-          .select(
-            db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END as team_id'),
-            db.raw('COUNT(*) as game_count')
-          )
-          .where(function() {
-            this.whereIn('home_team_id', teamIds)
-              .orWhereIn('away_team_id', teamIds);
-          })
-          .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
-
-        // Create lookup map for game counts
-        const gameCountMap: Record<string, number> = {};
-        gameCounts.forEach(gc => {
-          gameCountMap[gc.team_id] = (gameCountMap[gc.team_id] || 0) + parseInt(gc.game_count);
+      const league = await db('leagues').where('id', leagueId).first();
+      if (!league) {
+        res.status(404).json({
+          success: false,
+          error: 'League not found'
         });
+        return;
+      }
 
-        const enhancedTeams = teams.map(team => ({
-          ...team,
-          game_count: gameCountMap[team.id] || 0
-        }));
+      // Optimized game count query using separate query to avoid expensive JOINs
+      const teamIds = teams.map((team: any) => team.id);
+      const gameCounts = teamIds.length > 0 ? await db('games')
+        .select(
+          db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END as team_id'),
+          db.raw('COUNT(*) as game_count')
+        )
+        .where(function() {
+          this.whereIn('home_team_id', teamIds)
+            .orWhereIn('away_team_id', teamIds);
+        })
+        .groupBy(db.raw('CASE WHEN home_team_id IS NOT NULL THEN home_team_id ELSE away_team_id END')) : [];
 
-        return {
-          league: league as any,
+      // Create lookup map for game counts
+      const gameCountMap: Record<string, number> = {};
+      gameCounts.forEach((gc: any) => {
+        gameCountMap[gc.team_id] = (gameCountMap[gc.team_id] || 0) + parseInt(gc.game_count);
+      });
+
+      const enhancedTeams = teams.map((team: any) => ({
+        ...team,
+        game_count: gameCountMap[team.id] || 0
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          league,
           teams: enhancedTeams
-        };
-      },
-      'league_teams',
-      { league_id: leagueId },
-      10 * 60 * 1000
-    );
-
-    if (!result) {
-      throw ErrorFactory.notFound('League not found', leagueId);
+        },
+        message: 'Teams retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Error fetching teams for league:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch teams for league'
+      });
     }
-
-    ResponseFormatter.sendSuccess(res, result, 'League teams retrieved successfully');
-  })
+  }
 );
 
 export default router;

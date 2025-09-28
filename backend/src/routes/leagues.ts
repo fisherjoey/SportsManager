@@ -486,35 +486,39 @@ router.get('/options/filters',
     resource: 'league',
     action: 'view:list',
   }),
-  enhancedAsyncHandler(async (req: Request, res: Response): Promise<void> => {
-    // Cache filter options for 30 minutes as they change infrequently
-    const result = await CacheHelpers.cacheLookupData(
-      async (): Promise<FilterOptions> => {
-        // Use Promise.all for parallel execution of independent queries
-        const [organizations, age_groups, genders, divisions, seasons, levels] = await Promise.all([
-          db('leagues').distinct('organization').orderBy('organization'),
-          db('leagues').distinct('age_group').orderBy('age_group'),
-          db('leagues').distinct('gender').orderBy('gender'),
-          db('leagues').distinct('division').orderBy('division'),
-          db('leagues').distinct('season').orderBy('season', 'desc'),
-          db('leagues').distinct('level').orderBy('level')
-        ]);
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Use Promise.all for parallel execution of independent queries
+      const [organizations, age_groups, genders, divisions, seasons] = await Promise.all([
+        db('leagues').distinct('organization').orderBy('organization'),
+        db('leagues').distinct('age_group').orderBy('age_group'),
+        db('leagues').distinct('gender').orderBy('gender'),
+        db('leagues').distinct('division').orderBy('division'),
+        db('leagues').distinct('season').orderBy('season', 'desc')
+      ]);
 
-        return {
-          organizations: organizations.map(o => o.organization),
-          age_groups: age_groups.map(a => a.age_group),
-          genders: genders.map(g => g.gender),
-          divisions: divisions.map(d => d.division),
-          seasons: seasons.map(s => s.season),
-          levels: levels.map(l => l.level)
-        };
-      },
-      'filter_options',
-      30 * 60 * 1000 // Cache for 30 minutes
-    );
+      const result = {
+        organizations: organizations.map((o: any) => o.organization).filter(Boolean),
+        age_groups: age_groups.map((a: any) => a.age_group).filter(Boolean),
+        genders: genders.map((g: any) => g.gender).filter(Boolean),
+        divisions: divisions.map((d: any) => d.division).filter(Boolean),
+        seasons: seasons.map((s: any) => s.season).filter(Boolean),
+        levels: [] // Leagues table doesn't have a level column
+      };
 
-    ResponseFormatter.sendSuccess(res, result, 'Filter options retrieved successfully');
-  })
+      res.json({
+        success: true,
+        data: result,
+        message: 'Filter options retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch filter options'
+      });
+    }
+  }
 );
 
 export default router;
