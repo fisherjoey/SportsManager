@@ -44,6 +44,14 @@ export function requireCerbosPermission(
       }
 
       const user = req.user as AuthenticatedUser;
+      console.log('[CERBOS DEBUG] User roles:', user.roles, 'Checking permission for:', resourceType, actions);
+
+      // Super admin bypass - they have all permissions
+      if (user.roles?.includes('Super Admin') || user.roles?.includes('super_admin')) {
+        console.log('[CERBOS DEBUG] Super admin bypass activated for user:', user.email);
+        return next();
+      }
+
       const cerbosService = CerbosAuthService.getInstance();
 
       const organizationId = (user as any).organizationId || DEFAULT_ORG_ID;
