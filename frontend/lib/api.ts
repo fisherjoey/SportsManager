@@ -3539,6 +3539,211 @@ class ApiClient {
     })
   }
 
+  // Cerbos Policy Management endpoints
+  async getCerbosPolicies() {
+    return this.request<{
+      success: boolean;
+      data: { policies: any[] };
+      message: string;
+    }>('/admin/cerbos-policies')
+  }
+
+  async getCerbosPolicy(policyId: string) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`)
+  }
+
+  async createCerbosPolicy(policyData: any) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>('/admin/cerbos-policies', {
+      method: 'POST',
+      body: JSON.stringify(policyData)
+    })
+  }
+
+  async updateCerbosPolicy(policyId: string, policyData: any) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(policyData)
+    })
+  }
+
+  async deleteCerbosPolicy(policyId: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async updateRolePermissionsInCerbos(role: string, permissions: string[]) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: string;
+        updatedPolicies: string[];
+        permissions: string[];
+      };
+      message: string;
+    }>('/admin/cerbos-policies/role-permissions', {
+      method: 'POST',
+      body: JSON.stringify({ role, permissions })
+    })
+  }
+
+  async getRolePermissionsFromCerbos(roleName: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: string;
+        permissions: string[];
+      };
+      message: string;
+    }>(`/admin/cerbos-policies/role/${roleName}/permissions`)
+  }
+
+  async getCerbosRoles() {
+    return this.request<{
+      success: boolean;
+      data: { roles: any[] };
+      message: string;
+    }>('/admin/cerbos-policies/roles')
+  }
+
+  async createCerbosRole(roleData: { name: string; parentRoles?: string[]; condition?: string }) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>('/admin/cerbos-policies/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async updateCerbosRole(roleName: string, roleData: { name?: string; parentRoles?: string[]; condition?: string }) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>(`/admin/cerbos-policies/roles/${roleName}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async deleteCerbosRole(roleName: string, force = false) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/cerbos-policies/roles/${roleName}${force ? '?force=true' : ''}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Unified Role Management endpoints
+  async getUnifiedRoles() {
+    return this.request<{
+      success: boolean;
+      data: {
+        roles: Array<{
+          name: string;
+          description?: string;
+          permissions: string[];
+          userCount?: number;
+          color?: string;
+          source: 'cerbos' | 'database' | 'both';
+        }>;
+      };
+      message: string;
+    }>('/admin/roles')
+  }
+
+  async getUnifiedRole(name: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          userCount?: number;
+          color?: string;
+          source: 'cerbos' | 'database' | 'both';
+        };
+      };
+      message: string;
+    }>(`/admin/unified-roles/${name}`)
+  }
+
+  async createUnifiedRole(roleData: {
+    name: string;
+    description?: string;
+    permissions: string[];
+    color?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          color?: string;
+          userCount: number;
+          source: string;
+        };
+      };
+      message: string;
+    }>('/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async updateUnifiedRole(idOrName: string, roleData: {
+    description?: string;
+    permissions?: string[];
+    color?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          color?: string;
+          source: string;
+        };
+      };
+      message: string;
+    }>(`/admin/roles/${idOrName}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async deleteUnifiedRole(name: string, force = false) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/unified-roles/${name}${force ? '?force=true' : ''}`, {
+      method: 'DELETE'
+    })
+  }
+
   // Generic HTTP methods for resources and other endpoints
   async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, {
