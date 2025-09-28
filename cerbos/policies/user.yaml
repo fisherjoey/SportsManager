@@ -1,8 +1,8 @@
 ---
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
-  version: "default"
-  resource: "user"
+  version: default
+  resource: user
   rules:
     - actions:
         - view
@@ -18,3 +18,8 @@ resourcePolicy:
       roles:
         - admin
         - super_admin
+    - actions:
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - assignment_manager

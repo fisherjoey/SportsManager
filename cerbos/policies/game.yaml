@@ -1,11 +1,10 @@
 ---
 apiVersion: api.cerbos.dev/v1
 resourcePolicy:
-  version: "default"
+  version: default
   resource: game
   importDerivedRoles:
     - common_roles
-
   rules:
     - actions:
         - view
@@ -17,7 +16,6 @@ resourcePolicy:
         - admin
         - super_admin
       name: admins-view-all
-
     - actions:
         - view
         - view:list
@@ -27,7 +25,6 @@ resourcePolicy:
         - same_organization
         - active_user
       name: org-members-view
-
     - actions:
         - view:list
         - view:details
@@ -35,7 +32,6 @@ resourcePolicy:
       derivedRoles:
         - same_region
       name: region-members-view
-
     - actions:
         - create
       effect: EFFECT_ALLOW
@@ -48,9 +44,10 @@ resourcePolicy:
           all:
             of:
               - expr: request.principal.attr.isActive == true
-              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: >-
+                  request.resource.attr.organizationId ==
+                  request.principal.attr.organizationId
       name: assignors-create-in-org
-
     - actions:
         - update
       effect: EFFECT_ALLOW
@@ -67,7 +64,6 @@ resourcePolicy:
               - expr: request.resource.attr.status != "completed"
               - expr: request.resource.attr.status != "cancelled"
       name: assignors-update-own-region
-
     - actions:
         - update
         - delete
@@ -78,7 +74,6 @@ resourcePolicy:
       derivedRoles:
         - same_organization
       name: admins-update-delete
-
     - actions:
         - delete
       effect: EFFECT_ALLOW
@@ -91,7 +86,6 @@ resourcePolicy:
               - expr: request.resource.attr.status == "draft"
               - expr: request.principal.attr.isActive == true
       name: owner-delete-draft
-
     - actions:
         - assign_referee
       effect: EFFECT_ALLOW
@@ -108,7 +102,6 @@ resourcePolicy:
               - expr: request.principal.attr.isActive == true
               - expr: request.resource.attr.status == "scheduled"
       name: assignors-assign-referees
-
     - actions:
         - unassign_referee
       effect: EFFECT_ALLOW
@@ -125,7 +118,6 @@ resourcePolicy:
               - expr: request.principal.attr.isActive == true
               - expr: request.resource.attr.status != "completed"
       name: assignors-unassign-referees
-
     - actions:
         - change_status
       effect: EFFECT_ALLOW
@@ -139,7 +131,6 @@ resourcePolicy:
         match:
           expr: request.principal.attr.isActive == true
       name: assignors-change-status
-
     - actions:
         - export
       effect: EFFECT_ALLOW
@@ -150,7 +141,6 @@ resourcePolicy:
       derivedRoles:
         - same_organization
       name: assignors-export
-
     - actions:
         - import
       effect: EFFECT_ALLOW
@@ -162,7 +152,6 @@ resourcePolicy:
         match:
           expr: request.principal.attr.isActive == true
       name: assignors-import
-
     - actions:
         - approve
         - reject
@@ -173,3 +162,8 @@ resourcePolicy:
       derivedRoles:
         - same_organization
       name: admins-approve-reject
+    - actions:
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - assignment_manager
