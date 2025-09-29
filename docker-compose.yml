@@ -126,7 +126,7 @@ services:
       - "3593:3593"  # HTTP port
     volumes:
       - ./cerbos/policies:/policies
-      - ./cerbos/config.yaml:/config.yaml
+      - ./cerbos/config/config.yaml:/config.yaml
     command: ["server", "--config=/config.yaml"]
     networks:
       - sports_network
