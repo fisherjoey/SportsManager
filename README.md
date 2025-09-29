@@ -2,28 +2,59 @@
 
 A comprehensive sports management system for organizing leagues, teams, games, and referee assignments.
 
+## Quick Deployment
+
+### One-Command Deploy with Docker
+
+```bash
+# Clone the repository
+git clone [your-repo-url]
+cd sports-manager
+
+# Deploy everything with default settings
+./config/docker/deploy.sh
+```
+
+**That's it!** The application will be running with:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- Database: PostgreSQL (postgres/postgres123)
+- All services configured and ready
+
+### Default Environment Values
+
+The deployment automatically uses these values:
+- **Database**: `postgres` / `postgres123` / `sports_management`
+- **JWT Secret**: `your-secret-key-here`
+- **Redis**: Enabled for caching
+- **Node Environment**: Production mode
+
+To use custom values, edit the `.env` file after first run.
+
 ## Project Structure
 
 ```
 ├── frontend/         # Next.js frontend application
 │   ├── app/         # Next.js App Router pages
 │   ├── components/  # React components
-│   ├── hooks/       # Custom React hooks
-│   ├── lib/         # Utilities and helpers
-│   ├── types/       # TypeScript type definitions
 │   └── public/      # Static assets
 ├── backend/          # Node.js/Express backend API (TypeScript)
 │   ├── src/         # Source code
-│   ├── dist/        # Compiled JavaScript
-│   └── migrations/  # Database migrations
+│   ├── migrations/  # Database migrations
+│   └── seeds/       # Database seeds
+├── cerbos/          # Authorization policies
+├── config/          # Configuration files
+│   ├── docker/      # Docker & deployment configs
+│   └── scripts/     # Utility scripts
 ├── docs/            # Project documentation
 │   ├── architecture/ # System architecture docs
-│   └── guides/      # User and admin guides
-├── scripts/         # Build and utility scripts
-└── .github/         # GitHub workflows and templates
+│   ├── deployment/  # Deployment guides
+│   ├── migration/   # Migration docs
+│   └── testing/     # Test documentation
+└── __tests__/       # Test files and fixtures
 ```
 
-## Getting Started
+## Getting Started (Manual Setup)
 
 ### Prerequisites
 - Node.js 18+
@@ -76,13 +107,40 @@ cd backend && DISABLE_REDIS=true npm start
 cd frontend && npm run dev
 ```
 
+## Docker Deployment Options
+
+### Development Mode
+```bash
+docker-compose -f config/docker/docker-compose.yml up -d
+```
+
+### Production Mode (with Nginx)
+```bash
+docker-compose -f config/docker/docker-compose.prod.yml up -d
+```
+
+### Useful Docker Commands
+```bash
+# View logs
+docker-compose -f config/docker/docker-compose.yml logs -f
+
+# Stop services
+docker-compose -f config/docker/docker-compose.yml down
+
+# Restart services
+docker-compose -f config/docker/docker-compose.yml restart
+
+# Database backup
+docker exec sports_manager_db pg_dump -U postgres sports_management > backup.sql
+```
+
 ## Documentation
 
+- [Project Structure](PROJECT_STRUCTURE.md)
 - [Architecture Overview](docs/architecture/)
-- [API Documentation](backend/docs/API.md)
-- [Database Schema](docs/database-diagram.md)
-- [Testing Guide](docs/testing/TESTING-STANDARDS.md)
-- [Development Guide](docs/development/CLAUDE.md)
+- [Deployment Guide](docs/deployment/)
+- [Database Schema](docs/architecture/database-diagram.md)
+- [Testing Guide](docs/testing/)
 
 ## Tech Stack
 
