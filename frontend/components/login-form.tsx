@@ -24,6 +24,7 @@ export function LoginForm() {
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [shake, setShake] = useState(false)
+  const [showPasswordToggle, setShowPasswordToggle] = useState(false)
   const { login } = useAuth()
   const { toast } = useToast()
 
@@ -72,6 +73,32 @@ export function LoginForm() {
     setEmail(demoEmail)
     setPassword('password')
     setShowDemoAccounts(false)
+    // Don't show password toggle for auto-filled demo passwords
+    setShowPasswordToggle(false)
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value)
+    setLoginError(null)
+    // Only show toggle when user manually types (not autofill)
+    setShowPasswordToggle(true)
+  }
+
+  const handlePasswordInput = () => {
+    // Show toggle on any manual input interaction
+    if (password.length > 0) {
+      setShowPasswordToggle(true)
+    }
+  }
+
+  const handlePasswordFocus = () => {
+    // When field is focused, check if there's content to show toggle
+    // Small delay to distinguish between autofill and manual entry
+    setTimeout(() => {
+      if (password.length > 0 && document.activeElement?.id === 'password') {
+        setShowPasswordToggle(true)
+      }
+    }, 100)
   }
 
   return (
@@ -142,31 +169,35 @@ export function LoginForm() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setLoginError(null)
-                  }}
+                  onChange={handlePasswordChange}
+                  onInput={handlePasswordInput}
+                  onFocus={handlePasswordFocus}
                   disabled={isLoading}
                   required
                   autoComplete="current-password"
                   aria-label="Password"
                   aria-required="true"
                   aria-invalid={!!loginError}
-                  className="pr-10 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded p-0.5"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
+                  className={cn(
+                    "transition-all",
+                    showPasswordToggle && "pr-10"
                   )}
-                </button>
+                />
+                {showPasswordToggle && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded p-0.5"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
