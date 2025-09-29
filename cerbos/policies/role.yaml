@@ -5,7 +5,17 @@ resourcePolicy:
   resource: role
   rules:
     - actions:
+        - "*"  # Super admin can do everything with roles
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions:
         - view
+        - view:list
+        - list
+        - create
+        - update
+        - delete
       effect: EFFECT_ALLOW
       roles:
         - admin
