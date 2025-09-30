@@ -47,7 +47,12 @@ export function requireCerbosPermission(
       console.log('[CERBOS DEBUG] User roles:', user.roles, 'Checking permission for:', resourceType, actions);
 
       // Super admin bypass - they have all permissions
-      if (user.roles?.includes('Super Admin') || user.roles?.includes('super_admin')) {
+      // Check if user has super admin role by checking both name and code properties
+      const isSuperAdmin = user.roles?.some(
+        role => role.name === 'Super Admin' || role.code === 'super_admin'
+      );
+
+      if (isSuperAdmin) {
         console.log('[CERBOS DEBUG] Super admin bypass activated for user:', user.email);
         return next();
       }
