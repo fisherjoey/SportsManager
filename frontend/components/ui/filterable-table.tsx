@@ -117,19 +117,51 @@ export function FilterableTable<T extends Record<string, any>>({
   // Track whether visibility was changed by user or responsive system
   const userChangedVisibilityRef = useRef(false)
 
-  // Calculate maximum visible columns based on screen width
+  // State to track available width (considering sidebar)
+  const [availableWidth, setAvailableWidth] = useState(() => {
+    if (typeof window === 'undefined') return 1920
+    return window.innerWidth
+  })
+
+  // Calculate maximum visible columns based on available width
   const calculateMaxVisibleColumns = useCallback(() => {
     if (maxVisibleColumns === 'auto') {
-      const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
       // Reserve space for padding, scrollbar, and margins (approximately 100px)
-      const availableWidth = screenWidth - 100
+      const effectiveWidth = availableWidth - 100
       // Calculate how many columns can fit
-      const calculatedMax = Math.floor(availableWidth / columnWidthEstimate)
+      const calculatedMax = Math.floor(effectiveWidth / columnWidthEstimate)
       // Always show at least 3 columns, max 12 columns
       return Math.max(3, Math.min(12, calculatedMax))
     }
     return typeof maxVisibleColumns === 'number' ? maxVisibleColumns : columns.length
-  }, [maxVisibleColumns, columnWidthEstimate, columns.length])
+  }, [maxVisibleColumns, columnWidthEstimate, availableWidth, columns.length])
+
+  // Listen for window resize and recalculate available width
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const updateAvailableWidth = () => {
+      setAvailableWidth(window.innerWidth)
+    }
+
+    window.addEventListener('resize', updateAvailableWidth)
+    return () => window.removeEventListener('resize', updateAvailableWidth)
+  }, [])
+
+  // Listen for sidebar state changes via custom event
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleSidebarChange = () => {
+      // Trigger a recalculation after sidebar animation completes
+      setTimeout(() => {
+        setAvailableWidth(window.innerWidth)
+      }, 300) // Wait for sidebar transition
+    }
+
+    window.addEventListener('sidebar-state-changed', handleSidebarChange)
+    return () => window.removeEventListener('sidebar-state-changed', handleSidebarChange)
+  }, [])
 
   // Apply max column limit to visibility settings
   const applyMaxColumnLimit = useCallback((visibility: VisibilityState) => {
@@ -170,7 +202,7 @@ export function FilterableTable<T extends Record<string, any>>({
     return result
   }, [columns, calculateMaxVisibleColumns, initialColumnVisibility])
 
-  // Update column visibility when initialColumnVisibility changes (responsive behavior)
+  // Update column visibility when initialColumnVisibility or availableWidth changes
   // This ensures responsive behavior overrides localStorage
   useEffect(() => {
     if (Object.keys(initialColumnVisibility).length > 0) {
@@ -178,7 +210,18 @@ export function FilterableTable<T extends Record<string, any>>({
       setColumnVisibility(limitedVisibility)
       userChangedVisibilityRef.current = false
     }
-  }, [JSON.stringify(initialColumnVisibility), applyMaxColumnLimit])
+  }, [JSON.stringify(initialColumnVisibility), applyMaxColumnLimit, availableWidth])
+
+  // Also recalculate when maxVisibleColumns is 'auto' and available width changes
+  useEffect(() => {
+    if (maxVisibleColumns === 'auto' && columnVisibility) {
+      const limitedVisibility = applyMaxColumnLimit(columnVisibility)
+      // Only update if the visibility actually changed
+      if (JSON.stringify(limitedVisibility) !== JSON.stringify(columnVisibility)) {
+        setColumnVisibility(limitedVisibility)
+      }
+    }
+  }, [availableWidth, maxVisibleColumns, applyMaxColumnLimit])
 
   // Save state to localStorage whenever it changes (except responsive-triggered changes)
   useEffect(() => {
