@@ -95,7 +95,7 @@ function SortableColumnItem({ id, displayName, isVisible, column, isAtLimit, vis
         disabled={isDisabled}
         className="flex-shrink-0"
       />
-      <span className={\`flex-1 capitalize \${isDisabled ? 'text-muted-foreground' : ''}\`}>{displayName}</span>
+      <span className={`flex-1 capitalize ${isDisabled ? 'text-muted-foreground' : ''}`}>{displayName}</span>
     </div>
   )
 }
@@ -205,7 +205,7 @@ export function DataTableViewOptions<TData>({
           <div className="flex items-center justify-between">
             <span>Toggle & Reorder Columns</span>
             {maxVisibleColumns && (
-              <span className={\`text-xs font-normal \${isAtLimit ? 'text-orange-600' : 'text-muted-foreground'}\`}>
+              <span className={`text-xs font-normal ${isAtLimit ? 'text-orange-600' : 'text-muted-foreground'}`}>
                 {visibleCount}/{maxVisibleColumns}
               </span>
             )}
