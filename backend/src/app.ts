@@ -88,6 +88,7 @@ import adminCerbosPoliciesRoutes from './routes/admin/cerbos-policies';
 import adminPermissionsRoutes from './routes/admin/permissions';
 import unifiedRoleRoutes from './routes/admin/unified-roles';
 import cerbosRoutes from './routes/cerbos';
+import notificationRoutes from './routes/notifications';
 
 const app = express();
 
@@ -195,6 +196,7 @@ app.use('/api/ai-assignment-rules', aiAssignmentRulesRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Expenses API routes
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);

@@ -32,6 +32,7 @@ import { checkAssignmentConflicts } from '../services/conflictDetectionService';
 import AssignmentService from '../services/AssignmentService';
 import emailService from '../services/emailService';
 import smsService, { SMSService } from '../services/smsService';
+import notificationService from '../services/NotificationService';
 const { getOrganizationSettings } = require('../utils/organization-settings');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
@@ -418,6 +419,26 @@ const createAssignment = async (
           console.log('⚠️ SMS notification failed, but assignment created successfully');
         }
       }
+
+      // Create in-app notification
+      try {
+        await notificationService.createNotification({
+          user_id: (assignment as any).referee_id || result.assignment.user_id,
+          type: 'assignment',
+          title: 'New Game Assignment',
+          message: `You've been assigned to ${assignment.home_team_name} vs ${assignment.away_team_name} on ${gameDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          link: `/assignments/${assignment.id}`,
+          metadata: {
+            game_id: assignment.game_id,
+            assignment_id: assignment.id,
+            position: assignment.position_name,
+            calculated_wage: assignment.calculated_wage
+          }
+        });
+        console.log(`✅ In-app notification created for assignment ${assignment.id}`);
+      } catch (notifError) {
+        console.error('Failed to create in-app notification:', notifError);
+      }
     }
   } catch (emailError) {
     // Log error but don't fail the assignment creation
@@ -580,6 +601,31 @@ const updateAssignmentStatus = async (
           });
 
           console.log(`✅ Assignor notification sent to ${assignor.email} - Assignment ${status}`);
+
+          // Create in-app notification for assignor
+          try {
+            const statusIcon = status === 'accepted' ? '✓' : '✗';
+            const declineInfo = decline_reason ? ` - ${decline_reason}` : '';
+
+            await notificationService.createNotification({
+              user_id: assignor.id,
+              type: 'status_change',
+              title: `Assignment ${status === 'accepted' ? 'Accepted' : 'Declined'}`,
+              message: `${assignment.referee_name} ${status} ${assignment.home_team_name} vs ${assignment.away_team_name}${declineInfo}`,
+              link: `/games/${assignment.game_id}`,
+              metadata: {
+                game_id: assignment.game_id,
+                assignment_id: assignment.id,
+                status,
+                referee_name: assignment.referee_name,
+                decline_reason,
+                decline_category
+              }
+            });
+            console.log(`✅ In-app notification created for assignor (assignment ${status})`);
+          } catch (notifError) {
+            console.error('Failed to create in-app notification for assignor:', notifError);
+          }
         }
       }
     } catch (emailError) {
