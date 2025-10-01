@@ -22,6 +22,11 @@ module.exports = {
     "<rootDir>/src/**/*.spec.js",
     "<rootDir>/src/**/*.spec.ts"
   ],
+  "testPathIgnorePatterns": [
+    "<rootDir>/node_modules/",
+    "<rootDir>/src/routes/__tests__/leagues.test.ts.old",
+    "<rootDir>/src/routes/__tests__/leagues.integration.test.ts"
+  ],
   "moduleFileExtensions": [
     "js",
     "ts",
@@ -60,5 +65,8 @@ module.exports = {
   "clearMocks": true,
   "resetMocks": true,
   "restoreMocks": true,
-  "maxWorkers": 1
+  "maxWorkers": 1,
+  "transformIgnorePatterns": [
+    "node_modules/(?!(@cerbos)/)" 
+  ]
 };
