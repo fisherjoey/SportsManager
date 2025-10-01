@@ -57,6 +57,9 @@ interface FilterableTableProps<T> {
   enableCSV?: boolean
   onDataImport?: (newData: T[]) => void
   csvFilename?: string
+  initialColumnVisibility?: Record<string, boolean>
+  maxVisibleColumns?: number | 'auto' // Max columns to show, or 'auto' to calculate based on screen width
+  columnWidthEstimate?: number // Estimated average column width in pixels (default: 150)
 }
 
 export function FilterableTable<T extends Record<string, any>>({
@@ -73,11 +76,14 @@ export function FilterableTable<T extends Record<string, any>>({
   enableViewToggle = true,
   enableCSV = false,
   onDataImport,
-  csvFilename
+  csvFilename,
+  initialColumnVisibility = {},
+  maxVisibleColumns = 'auto',
+  columnWidthEstimate = 150
 }: FilterableTableProps<T>) {
   // Generate storage key based on table type
   const storageKey = `filterable-table-${mobileCardType}-state`
-  
+
   // Load initial state from localStorage
   const loadStoredState = useCallback(() => {
     if (typeof window === 'undefined') return null
@@ -90,10 +96,17 @@ export function FilterableTable<T extends Record<string, any>>({
   }, [storageKey])
 
   const storedState = loadStoredState()
-  
+
   const [sorting, setSorting] = useState<SortingState>(storedState?.sorting || [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(storedState?.columnFilters || [])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(storedState?.columnVisibility || {})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    // Don't use stored columnVisibility if we have responsive settings
+    // This ensures responsive behavior takes priority
+    if (Object.keys(initialColumnVisibility).length > 0) {
+      return initialColumnVisibility
+    }
+    return storedState?.columnVisibility || {}
+  })
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState(storedState?.globalFilter || '')
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(storedState?.viewMode || 'table')
@@ -101,19 +114,86 @@ export function FilterableTable<T extends Record<string, any>>({
   // CSV functionality
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Save state to localStorage whenever it changes
+  // Track whether visibility was changed by user or responsive system
+  const userChangedVisibilityRef = useRef(false)
+
+  // Calculate maximum visible columns based on screen width
+  const calculateMaxVisibleColumns = useCallback(() => {
+    if (maxVisibleColumns === 'auto') {
+      const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+      // Reserve space for padding, scrollbar, and margins (approximately 100px)
+      const availableWidth = screenWidth - 100
+      // Calculate how many columns can fit
+      const calculatedMax = Math.floor(availableWidth / columnWidthEstimate)
+      // Always show at least 3 columns, max 12 columns
+      return Math.max(3, Math.min(12, calculatedMax))
+    }
+    return typeof maxVisibleColumns === 'number' ? maxVisibleColumns : columns.length
+  }, [maxVisibleColumns, columnWidthEstimate, columns.length])
+
+  // Apply max column limit to visibility settings
+  const applyMaxColumnLimit = useCallback((visibility: VisibilityState) => {
+    const maxCols = calculateMaxVisibleColumns()
+
+    // Count currently visible columns
+    const visibleColumns = columns.filter(col => {
+      // Check if column is set to visible (undefined means visible by default)
+      return visibility[col.id] !== false
+    })
+
+    // If we're under the limit, return as-is
+    if (visibleColumns.length <= maxCols) {
+      return visibility
+    }
+
+    // Otherwise, hide columns that are not in initialColumnVisibility and not critical
+    const result = { ...visibility }
+    let visibleCount = visibleColumns.length
+
+    // Priority order: columns explicitly set to visible, then others
+    for (const col of columns) {
+      if (visibleCount <= maxCols) break
+
+      // Don't hide columns that are explicitly set to visible in initialColumnVisibility
+      if (initialColumnVisibility[col.id] === true) continue
+
+      // Don't hide the actions column or columns that can't be hidden
+      if (col.id === 'actions' || col.filterType === 'none') continue
+
+      // If this column is currently visible and not protected, hide it
+      if (result[col.id] !== false) {
+        result[col.id] = false
+        visibleCount--
+      }
+    }
+
+    return result
+  }, [columns, calculateMaxVisibleColumns, initialColumnVisibility])
+
+  // Update column visibility when initialColumnVisibility changes (responsive behavior)
+  // This ensures responsive behavior overrides localStorage
+  useEffect(() => {
+    if (Object.keys(initialColumnVisibility).length > 0) {
+      const limitedVisibility = applyMaxColumnLimit(initialColumnVisibility)
+      setColumnVisibility(limitedVisibility)
+      userChangedVisibilityRef.current = false
+    }
+  }, [JSON.stringify(initialColumnVisibility), applyMaxColumnLimit])
+
+  // Save state to localStorage whenever it changes (except responsive-triggered changes)
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+
+    // Don't save columnVisibility if it was set by responsive system
     const stateToSave = {
       sorting,
       columnFilters,
-      columnVisibility,
+      ...(userChangedVisibilityRef.current ? { columnVisibility } : {}),
       globalFilter,
       viewMode,
       timestamp: Date.now()
     }
-    
+
     try {
       localStorage.setItem(storageKey, JSON.stringify(stateToSave))
     } catch (error) {
@@ -625,7 +705,20 @@ export function FilterableTable<T extends Record<string, any>>({
     enableRowSelection: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      // Intercept column visibility changes to apply max column limit
+      const newVisibility = typeof updater === 'function' ? updater(columnVisibility) : updater
+      const limitedVisibility = applyMaxColumnLimit(newVisibility)
+
+      // Check if we hit the limit
+      const maxCols = calculateMaxVisibleColumns()
+      const visibleCount = Object.keys(limitedVisibility).filter(key => limitedVisibility[key] !== false).length
+
+      // Mark as user-changed only if not hitting the limit
+      userChangedVisibilityRef.current = true
+
+      setColumnVisibility(limitedVisibility)
+    },
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),

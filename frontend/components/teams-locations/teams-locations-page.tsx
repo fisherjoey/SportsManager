@@ -47,16 +47,69 @@ export function TeamsLocationsPage() {
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false)
   const [isCreateLocationOpen, setIsCreateLocationOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [teamColumnVisibility, setTeamColumnVisibility] = useState<Record<string, boolean>>({})
+  const [locationColumnVisibility, setLocationColumnVisibility] = useState<Record<string, boolean>>({})
   // const { showToast } = useNotifications()
 
-  // Mobile detection
+  // Mobile detection and responsive column visibility
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+    const updateResponsiveSettings = () => {
+      const width = window.innerWidth
+      setIsMobile(width < 768)
+
+      // Set column visibility based on screen width for Teams table
+      if (width < 1024) { // Tablet
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false,
+          'rank': false,
+          'contact_phone': false,
+          'game_count': false,
+          'level': false
+        })
+      } else if (width < 1280) { // Small desktop
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false,
+          'rank': false
+        })
+      } else if (width < 1536) { // Medium desktop
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false
+        })
+      } else { // Large desktop
+        setTeamColumnVisibility({})
+      }
+
+      // Set column visibility based on screen width for Locations table
+      if (width < 1024) { // Tablet
+        setLocationColumnVisibility({
+          'capacity': false,
+          'contact': false,
+          'facilities': false,
+          'rate': false
+        })
+      } else if (width < 1280) { // Small desktop
+        setLocationColumnVisibility({
+          'capacity': false,
+          'facilities': false
+        })
+      } else if (width < 1536) { // Medium desktop
+        setLocationColumnVisibility({
+          'facilities': false
+        })
+      } else { // Large desktop
+        setLocationColumnVisibility({})
+      }
     }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+
+    updateResponsiveSettings()
+    window.addEventListener('resize', updateResponsiveSettings)
+    return () => window.removeEventListener('resize', updateResponsiveSettings)
   }, [])
 
   // Fetch teams and locations from backend API
@@ -293,20 +346,20 @@ export function TeamsLocationsPage() {
       accessor: (team) => {
         const teamColors = team.colors || { primary: '#3b82f6', secondary: '#e2e8f0' }
         return (
-          <div className="flex items-center space-x-3">
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: teamColors.primary }} />
-            <div>
-              <p className="font-medium">{team.name}</p>
-              <div className="flex items-center text-xs text-muted-foreground space-x-1">
-                <span>{team.organization}</span>
-                <span>→</span>
-                <span>{team.division}</span>
-                <span>→</span>
-                <span>{team.age_group} {team.gender}</span>
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: teamColors.primary }} />
+            <div className="min-w-0">
+              <p className="font-medium truncate">{team.name}</p>
+              <div className="flex items-center text-xs text-muted-foreground space-x-1 flex-wrap">
+                <span className="whitespace-nowrap">{team.organization}</span>
+                <span className="whitespace-nowrap">→</span>
+                <span className="whitespace-nowrap">{team.division}</span>
+                <span className="whitespace-nowrap">→</span>
+                <span className="whitespace-nowrap">{team.age_group} {team.gender}</span>
                 {team.level && (
                   <>
-                    <span>•</span>
-                    <Badge variant="outline" className="text-xs px-1 py-0">{team.level}</Badge>
+                    <span className="whitespace-nowrap">•</span>
+                    <Badge variant="outline" className="text-xs px-1 py-0 whitespace-nowrap">{team.level}</Badge>
                   </>
                 )}
               </div>
@@ -968,9 +1021,9 @@ export function TeamsLocationsPage() {
                   )}
                 </div>
               ) : (
-                <FilterableTable 
-                  data={filteredTeams} 
-                  columns={teamColumns} 
+                <FilterableTable
+                  data={filteredTeams}
+                  columns={teamColumns}
                   emptyMessage="No teams found matching your criteria."
                   loading={loading}
                   mobileCardType="team"
@@ -978,6 +1031,9 @@ export function TeamsLocationsPage() {
                   enableCSV={true}
                   onDataImport={handleImportTeams}
                   csvFilename="teams-export"
+                  initialColumnVisibility={teamColumnVisibility}
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={180}
                 />
               )}
             </CardContent>
@@ -1050,9 +1106,9 @@ export function TeamsLocationsPage() {
                   )}
                 </div>
               ) : (
-                <FilterableTable 
-                  data={filteredLocations} 
-                  columns={locationColumns} 
+                <FilterableTable
+                  data={filteredLocations}
+                  columns={locationColumns}
                   emptyMessage="No locations found matching your criteria."
                   loading={loading}
                   mobileCardType="location"
@@ -1060,6 +1116,9 @@ export function TeamsLocationsPage() {
                   enableCSV={true}
                   onDataImport={handleImportLocations}
                   csvFilename="locations-export"
+                  initialColumnVisibility={locationColumnVisibility}
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={160}
                 />
               )}
             </CardContent>

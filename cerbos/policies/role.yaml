@@ -5,7 +5,7 @@ resourcePolicy:
   resource: role
   rules:
     - actions:
-        - "*"  # Super admin can do everything with roles
+        - '*'
       effect: EFFECT_ALLOW
       roles:
         - super_admin
@@ -19,3 +19,8 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles:
         - admin
+    - actions:
+        - create
+      effect: EFFECT_ALLOW
+      roles:
+        - basictestrole
