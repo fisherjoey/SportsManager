@@ -899,7 +899,12 @@ export function FilterableTable<T extends Record<string, any>>({
     <div className={`space-y-4 ${className}`}>
       {/* Toolbar with search, filters, and view toggle */}
       <div className="flex items-center justify-between">
-        <DataTableToolbar table={table} globalFilter={globalFilter} setGlobalFilter={setGlobalFilter} />
+        <DataTableToolbar
+          table={table}
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
+          maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
+        />
         
         <div className="flex items-center space-x-2">
           {/* Hidden file input for CSV import */}
@@ -961,14 +966,6 @@ export function FilterableTable<T extends Record<string, any>>({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
-
-          {/* Column Visibility - Embedded in separate button for better UX */}
-          {enableViewToggle && (
-            <DataTableViewOptions
-              table={table}
-              maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
-            />
           )}
         </div>
       </div>
