@@ -913,7 +913,7 @@ export function FilterableTable<T extends Record<string, any>>({
                 <Download className="h-3 w-3 mr-2" />
                 Export CSV
               </Button>
-              
+
               {onDataImport && (
                 <>
                   <Button
@@ -925,7 +925,7 @@ export function FilterableTable<T extends Record<string, any>>({
                     <Upload className="h-3 w-3 mr-2" />
                     Import CSV
                   </Button>
-                  
+
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -938,10 +938,13 @@ export function FilterableTable<T extends Record<string, any>>({
               )}
             </>
           )}
-          
+
           {enableViewToggle && (
             <>
-              <DataTableViewOptions table={table} />
+              <DataTableViewOptions
+                table={table}
+                maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
+              />
               <div className="flex items-center rounded-md border">
                 <Button
                   variant={viewMode === 'table' ? 'default' : 'ghost'}

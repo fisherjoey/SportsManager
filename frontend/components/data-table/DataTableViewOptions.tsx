@@ -35,6 +35,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>
+  maxVisibleColumns?: number
 }
 
 interface ColumnItem {
@@ -84,7 +85,8 @@ function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) 
 }
 
 export function DataTableViewOptions<TData>({
-  table
+  table,
+  maxVisibleColumns
 }: DataTableViewOptionsProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -100,6 +102,10 @@ export function DataTableViewOptions<TData>({
       (column) =>
         typeof column.accessorFn !== 'undefined' && column.getCanHide()
     )
+
+  // Count visible columns
+  const visibleCount = allColumns.filter(col => col.getIsVisible()).length
+  const isAtLimit = maxVisibleColumns ? visibleCount >= maxVisibleColumns : false
 
   // Map column IDs to display names
   const columnNameMap: Record<string, string> = {
@@ -173,7 +179,21 @@ export function DataTableViewOptions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuLabel>Toggle & Reorder Columns</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <div className="flex items-center justify-between">
+            <span>Toggle & Reorder Columns</span>
+            {maxVisibleColumns && (
+              <span className={`text-xs font-normal ${isAtLimit ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                {visibleCount}/{maxVisibleColumns}
+              </span>
+            )}
+          </div>
+        </DropdownMenuLabel>
+        {maxVisibleColumns && isAtLimit && (
+          <div className="px-2 py-1 text-xs text-orange-600 bg-orange-50 border-l-2 border-orange-600 mx-2 mb-2 rounded">
+            Maximum columns reached
+          </div>
+        )}
         <DropdownMenuSeparator />
         <div className="max-h-[300px] overflow-y-auto">
           <DndContext
