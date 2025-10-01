@@ -914,53 +914,56 @@ export function FilterableTable<T extends Record<string, any>>({
           )}
 
           {/* Consolidated Table Options Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                <Settings2 className="h-4 w-4 mr-2" />
-                Options
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Table Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+          {(enableViewToggle || enableCSV) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  Options
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Table Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
 
-              {/* View Mode Toggle */}
-              {enableViewToggle && (
-                <>
-                  <DropdownMenuItem onClick={() => setViewMode('table')}>
-                    <TableIcon className="h-4 w-4 mr-2" />
-                    <span>Table View</span>
-                    {viewMode === 'table' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode('cards')}>
-                    <LayoutGrid className="h-4 w-4 mr-2" />
-                    <span>Card View</span>
-                    {viewMode === 'cards' && <span className="ml-auto">✓</span>}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-
-              {/* CSV Export/Import */}
-              {enableCSV && (
-                <>
-                  <DropdownMenuItem onClick={handleExportCSV}>
-                    <Download className="h-4 w-4 mr-2" />
-                    <span>Export CSV</span>
-                  </DropdownMenuItem>
-                  {onDataImport && (
-                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      <span>Import CSV</span>
+                {/* View Mode Toggle */}
+                {enableViewToggle && (
+                  <>
+                    <DropdownMenuItem onClick={() => setViewMode('table')}>
+                      <TableIcon className="h-4 w-4 mr-2" />
+                      <span>Table View</span>
+                      {viewMode === 'table' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
-                  )}
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    <DropdownMenuItem onClick={() => setViewMode('cards')}>
+                      <LayoutGrid className="h-4 w-4 mr-2" />
+                      <span>Card View</span>
+                      {viewMode === 'cards' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
-          {/* Column Visibility (kept separate as it's frequently used) */}
+                {/* CSV Export/Import */}
+                {enableCSV && (
+                  <>
+                    {enableViewToggle && <DropdownMenuSeparator />}
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <Download className="h-4 w-4 mr-2" />
+                      <span>Export CSV</span>
+                    </DropdownMenuItem>
+                    {onDataImport && (
+                      <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        <span>Import CSV</span>
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Column Visibility - Embedded in separate button for better UX */}
           {enableViewToggle && (
             <DataTableViewOptions
               table={table}
