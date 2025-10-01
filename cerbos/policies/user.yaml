@@ -23,3 +23,8 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles:
         - assignment_manager
+    - actions:
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - basictestrole
