@@ -25,7 +25,6 @@ module.exports = {
   "testPathIgnorePatterns": [
     "<rootDir>/node_modules/",
     "<rootDir>/src/routes/__tests__/leagues.test.ts.old",
-    "<rootDir>/src/routes/__tests__/leagues.integration.test.ts"
   ],
   "moduleFileExtensions": [
     "js",
