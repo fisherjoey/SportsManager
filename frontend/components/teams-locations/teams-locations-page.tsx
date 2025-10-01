@@ -971,43 +971,6 @@ export function TeamsLocationsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search teams..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Division" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Divisions</SelectItem>
-                    <SelectItem value="U10">U10</SelectItem>
-                    <SelectItem value="U12">U12</SelectItem>
-                    <SelectItem value="U14">U14</SelectItem>
-                    <SelectItem value="U16">U16</SelectItem>
-                    <SelectItem value="U18">U18</SelectItem>
-                    <SelectItem value="Senior">Senior</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Teams Table/Cards */}
               {isMobile ? (
                 <div className="space-y-4">
@@ -1058,41 +1021,6 @@ export function TeamsLocationsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search locations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="City" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Cities</SelectItem>
-                    <SelectItem value="Calgary">Calgary</SelectItem>
-                    <SelectItem value="Edmonton">Edmonton</SelectItem>
-                    <SelectItem value="Red Deer">Red Deer</SelectItem>
-                    <SelectItem value="Lethbridge">Lethbridge</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Locations Table/Cards */}
               {isMobile ? (
                 <div className="space-y-4">
