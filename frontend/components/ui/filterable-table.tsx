@@ -60,6 +60,7 @@ interface FilterableTableProps<T> {
   initialColumnVisibility?: Record<string, boolean>
   maxVisibleColumns?: number | 'auto' // Max columns to show, or 'auto' to calculate based on screen width
   columnWidthEstimate?: number // Estimated average column width in pixels (default: 150)
+  customOptionsContent?: React.ReactNode // Custom content to render in Options dropdown
 }
 
 export function FilterableTable<T extends Record<string, any>>({
@@ -79,7 +80,8 @@ export function FilterableTable<T extends Record<string, any>>({
   csvFilename,
   initialColumnVisibility = {},
   maxVisibleColumns = 'auto',
-  columnWidthEstimate = 150
+  columnWidthEstimate = 150,
+  customOptionsContent
 }: FilterableTableProps<T>) {
   // Generate storage key based on table type
   const storageKey = `filterable-table-${mobileCardType}-state`
@@ -974,6 +976,14 @@ export function FilterableTable<T extends Record<string, any>>({
                       <span>Import CSV</span>
                     </DropdownMenuItem>
                   )}
+                </>
+              )}
+
+              {/* Custom Options Content */}
+              {customOptionsContent && (
+                <>
+                  <DropdownMenuSeparator />
+                  {customOptionsContent}
                 </>
               )}
             </DropdownMenuContent>
