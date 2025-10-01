@@ -16,7 +16,7 @@ import {
   getFacetedUniqueValues,
   useReactTable
 } from '@tanstack/react-table'
-import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload } from 'lucide-react'
+import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, MoreVertical, Settings2 } from 'lucide-react'
 import Papa from 'papaparse'
 
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { DataTableToolbar } from '@/components/data-table/DataTableToolbar'
 import { DataTableViewOptions } from '@/components/data-table/DataTableViewOptions'
 import { DataTablePagination } from '@/components/data-table/DataTablePagination'
@@ -901,69 +902,70 @@ export function FilterableTable<T extends Record<string, any>>({
         <DataTableToolbar table={table} globalFilter={globalFilter} setGlobalFilter={setGlobalFilter} />
         
         <div className="flex items-center space-x-2">
-          {/* CSV Export/Import buttons */}
-          {enableCSV && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                className="h-8"
-              >
-                <Download className="h-3 w-3 mr-2" />
-                Export CSV
-              </Button>
-
-              {onDataImport && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-8"
-                  >
-                    <Upload className="h-3 w-3 mr-2" />
-                    Import CSV
-                  </Button>
-
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                  />
-                </>
-              )}
-            </>
+          {/* Hidden file input for CSV import */}
+          {enableCSV && onDataImport && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleImportCSV}
+              className="hidden"
+            />
           )}
 
+          {/* Consolidated Table Options Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Options
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Table Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {/* View Mode Toggle */}
+              {enableViewToggle && (
+                <>
+                  <DropdownMenuItem onClick={() => setViewMode('table')}>
+                    <TableIcon className="h-4 w-4 mr-2" />
+                    <span>Table View</span>
+                    {viewMode === 'table' && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode('cards')}>
+                    <LayoutGrid className="h-4 w-4 mr-2" />
+                    <span>Card View</span>
+                    {viewMode === 'cards' && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* CSV Export/Import */}
+              {enableCSV && (
+                <>
+                  <DropdownMenuItem onClick={handleExportCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    <span>Export CSV</span>
+                  </DropdownMenuItem>
+                  {onDataImport && (
+                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      <span>Import CSV</span>
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Column Visibility (kept separate as it's frequently used) */}
           {enableViewToggle && (
-            <>
-              <DataTableViewOptions
-                table={table}
-                maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
-              />
-              <div className="flex items-center rounded-md border">
-                <Button
-                  variant={viewMode === 'table' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('table')}
-                  className="rounded-r-none"
-                >
-                  <TableIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('cards')}
-                  className="rounded-l-none"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
+            <DataTableViewOptions
+              table={table}
+              maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
+            />
           )}
         </div>
       </div>
