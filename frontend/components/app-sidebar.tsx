@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout, Bell } from 'lucide-react'
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout, Bell, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import { NotificationsBell } from '@/components/notifications-bell'
@@ -50,6 +50,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const [interactionMode, setInteractionMode] = useState<'hover' | 'click'>('hover')
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const sidebarRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const hoverIntentRef = useRef<boolean>(false)
@@ -61,16 +62,25 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   useEffect(() => {
     const savedPinned = localStorage.getItem('sidebar-pinned')
     const savedMode = localStorage.getItem('sidebar-mode') as 'hover' | 'click'
-    
+    const savedCollapsed = localStorage.getItem('sidebar-collapsed-sections')
+
     if (savedPinned === 'true') {
       setIsPinned(true)
       if (state === 'collapsed') {
         setOpen(true)
       }
     }
-    
+
     if (savedMode) {
       setInteractionMode(savedMode)
+    }
+
+    if (savedCollapsed) {
+      try {
+        setCollapsedSections(JSON.parse(savedCollapsed))
+      } catch (e) {
+        console.error('Failed to parse collapsed sections:', e)
+      }
     }
   }, [])
 
@@ -378,6 +388,16 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     return filterItemsByPermissions(items)
   }
 
+  // Toggle section collapsed state
+  const toggleSection = (sectionName: string) => {
+    const newCollapsedSections = {
+      ...collapsedSections,
+      [sectionName]: !collapsedSections[sectionName]
+    }
+    setCollapsedSections(newCollapsedSections)
+    localStorage.setItem('sidebar-collapsed-sections', JSON.stringify(newCollapsedSections))
+  }
+
   // Build navigation sections based on user role and permissions
   const buildNavigationSections = () => {
     if (!user) return []
@@ -518,16 +538,39 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         )}
         {navigationSections.length > 0 ? (
           <>
-            {navigationSections.map((section) => (
-              <SidebarGroup key={section.section}>
-                <SidebarGroupLabel className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
-                  {section.section}
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu className="space-y-0">
-                    {section.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton 
+            {navigationSections.map((section) => {
+              const isCollapsed = collapsedSections[section.section]
+              return (
+                <SidebarGroup key={section.section}>
+                  <div
+                    className="flex items-center justify-between px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center cursor-pointer hover:bg-sidebar-accent/50 transition-colors rounded-md mx-1"
+                    onClick={() => {
+                      if (state !== 'collapsed') {
+                        toggleSection(section.section)
+                      }
+                    }}
+                  >
+                    <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden cursor-pointer m-0 p-0">
+                      {section.section}
+                    </SidebarGroupLabel>
+                    {state !== 'collapsed' && (
+                      <button
+                        className="text-muted-foreground hover:text-foreground transition-colors group-data-[collapsible=icon]:hidden"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleSection(section.section)
+                        }}
+                      >
+                        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                  {!isCollapsed && (
+                    <SidebarGroupContent>
+                      <SidebarMenu className="space-y-0">
+                        {section.items.map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton 
                           onMouseEnter={(e) => {
                             hoveredItemRef.current = e.currentTarget
                           }}
@@ -564,8 +607,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
+                  )}
               </SidebarGroup>
-            ))}
+              )
+            })}
           </>
         ) : (
           // If no sections available, show a basic menu for referee role
