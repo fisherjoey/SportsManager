@@ -131,7 +131,7 @@ export function FilterableTable<T extends Record<string, any>>({
       // Calculate how many columns can fit
       const calculatedMax = Math.floor(effectiveWidth / columnWidthEstimate) - 1
       // Always show at least 3 columns, max 12 columns
-      return Math.max(3, Math.min(12, calculatedMax))
+      return Math.max(3, Math.min(columns.length, calculatedMax, 12))
     }
     return typeof maxVisibleColumns === 'number' ? maxVisibleColumns : columns.length
   }, [maxVisibleColumns, columnWidthEstimate, availableWidth, columns.length])
