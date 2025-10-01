@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import app from './app';
 import db from './config/database';
 import { initializeRBACScanner  } from './startup/rbac-scanner-init';
+import reminderScheduler from './services/reminderScheduler';
 
 const PORT = process.env.PORT || 3001;
 
@@ -34,6 +35,18 @@ server.listen(PORT, () => {
   } else {
     console.log('ℹ️  RBAC scanner disabled by environment variable');
   }
+
+  // Start reminder scheduler (game reminders via SMS)
+  if (process.env.DISABLE_REMINDER_SCHEDULER !== 'true') {
+    try {
+      reminderScheduler.start();
+    } catch (error) {
+      console.error('⚠️  Reminder scheduler failed to start:', error);
+      // Server continues normally - reminders are optional
+    }
+  } else {
+    console.log('ℹ️  Reminder scheduler disabled by environment variable');
+  }
 });
 
 server.on('error', (error) => {
@@ -48,6 +61,10 @@ const gracefulShutdown = async (signal: string) => {
     console.log('✓ HTTP server closed');
 
     try {
+      // Stop reminder scheduler
+      reminderScheduler.stop();
+      console.log('✓ Reminder scheduler stopped');
+
       await db.destroy();
       console.log('✓ Database connections closed');
       console.log('✅ Graceful shutdown complete');
