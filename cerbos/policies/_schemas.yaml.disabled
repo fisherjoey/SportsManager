@@ -1,0 +1,263 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: |-
+  Common schemas for Sports Manager resources and principals.
+  Defines the structure and validation rules for all entities.
+
+schemas:
+  principal.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - roles
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      roles:
+        type: array
+        items:
+          type: string
+          enum:
+            - admin
+            - super_admin
+            - assignor
+            - referee
+            - coach
+            - guest
+        minItems: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+          - regionIds
+          - permissions
+          - isActive
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          primaryRegionId:
+            type: string
+          regionIds:
+            type: array
+            items:
+              type: string
+            uniqueItems: true
+          permissions:
+            type: array
+            items:
+              type: string
+            uniqueItems: true
+          email:
+            type: string
+            format: email
+          isActive:
+            type: boolean
+          certificationLevel:
+            type: string
+
+  resource.game.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          regionId:
+            type: string
+          createdBy:
+            type: string
+          ownerId:
+            type: string
+          status:
+            type: string
+            enum:
+              - draft
+              - scheduled
+              - in_progress
+              - completed
+              - cancelled
+          level:
+            type: string
+          division:
+            type: string
+          ageGroup:
+            type: string
+          type:
+            type: string
+          homeTeamId:
+            type: string
+          awayTeamId:
+            type: string
+          requiresCertifiedReferee:
+            type: boolean
+          isPublic:
+            type: boolean
+
+  resource.assignment.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+          - gameId
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          gameId:
+            type: string
+            minLength: 1
+          refereeId:
+            type: string
+          createdBy:
+            type: string
+          status:
+            type: string
+            enum:
+              - pending
+              - offered
+              - accepted
+              - declined
+              - confirmed
+              - completed
+              - cancelled
+          position:
+            type: string
+          wage:
+            type: number
+            minimum: 0
+
+  resource.referee.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+          - userId
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          userId:
+            type: string
+            minLength: 1
+          certificationLevel:
+            type: string
+          primaryRegionId:
+            type: string
+          isAvailable:
+            type: boolean
+          maxDistance:
+            type: number
+          experienceYears:
+            type: number
+            minimum: 0
+
+  resource.user.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          primaryRegionId:
+            type: string
+          email:
+            type: string
+            format: email
+          role:
+            type: string
+          isActive:
+            type: boolean
+
+  resource.organization.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        properties:
+          name:
+            type: string
+          slug:
+            type: string
+          isActive:
+            type: boolean
+
+  resource.region.yaml: |
+    ---
+    "$schema": http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - id
+      - attr
+    properties:
+      id:
+        type: string
+        minLength: 1
+      attr:
+        type: object
+        required:
+          - organizationId
+        properties:
+          organizationId:
+            type: string
+            minLength: 1
+          parentRegionId:
+            type: string
+          name:
+            type: string

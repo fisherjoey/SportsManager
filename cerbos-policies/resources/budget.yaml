@@ -1,0 +1,22 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for budget resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "budget"
+  rules:
+    - actions: ['view:utilization', 'view:categories']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

@@ -266,7 +266,7 @@ class GameStateService {
             game_id: gameId,
             user_id: assignment.user_id,
             position_id: assignment.position_id
-          });
+          } as any);
 
           if (conflictAnalysis.hasConflicts) {
             issues.push({
@@ -450,7 +450,7 @@ class GameStateService {
       let conflictAnalysis = { hasConflicts: false, conflicts: [], warnings: [], isQualified: true };
 
       try {
-        conflictAnalysis = await checkAssignmentConflicts(assignmentData);
+        conflictAnalysis = await checkAssignmentConflicts(assignmentData) as any;
 
         if (conflictAnalysis.hasConflicts) {
           errors.push(...(conflictAnalysis as any).errors || []);

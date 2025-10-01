@@ -47,16 +47,69 @@ export function TeamsLocationsPage() {
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false)
   const [isCreateLocationOpen, setIsCreateLocationOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [teamColumnVisibility, setTeamColumnVisibility] = useState<Record<string, boolean>>({})
+  const [locationColumnVisibility, setLocationColumnVisibility] = useState<Record<string, boolean>>({})
   // const { showToast } = useNotifications()
 
-  // Mobile detection
+  // Mobile detection and responsive column visibility
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+    const updateResponsiveSettings = () => {
+      const width = window.innerWidth
+      setIsMobile(width < 768)
+
+      // Set column visibility based on screen width for Teams table
+      if (width < 1024) { // Tablet
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false,
+          'rank': false,
+          'contact_phone': false,
+          'game_count': false,
+          'level': false
+        })
+      } else if (width < 1280) { // Small desktop
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false,
+          'rank': false
+        })
+      } else if (width < 1536) { // Medium desktop
+        setTeamColumnVisibility({
+          'organization': false,
+          'age_group': false,
+          'gender': false
+        })
+      } else { // Large desktop
+        setTeamColumnVisibility({})
+      }
+
+      // Set column visibility based on screen width for Locations table
+      if (width < 1024) { // Tablet
+        setLocationColumnVisibility({
+          'capacity': false,
+          'contact': false,
+          'facilities': false,
+          'rate': false
+        })
+      } else if (width < 1280) { // Small desktop
+        setLocationColumnVisibility({
+          'capacity': false,
+          'facilities': false
+        })
+      } else if (width < 1536) { // Medium desktop
+        setLocationColumnVisibility({
+          'facilities': false
+        })
+      } else { // Large desktop
+        setLocationColumnVisibility({})
+      }
     }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+
+    updateResponsiveSettings()
+    window.addEventListener('resize', updateResponsiveSettings)
+    return () => window.removeEventListener('resize', updateResponsiveSettings)
   }, [])
 
   // Fetch teams and locations from backend API
@@ -97,36 +150,19 @@ export function TeamsLocationsPage() {
         }
 
         // Fetch locations
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-        console.log('Fetching locations from', `${API_BASE_URL}/locations`)
-
-        const locationsResponse = await fetch(`${API_BASE_URL}/locations`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
-        console.log('Locations response status:', locationsResponse.status)
-
-        if (locationsResponse.ok) {
-          const locationsData = await locationsResponse.json()
-          console.log('Locations loaded successfully:', locationsData.length, 'locations')
-          console.log('First few locations:', locationsData.slice(0, 3))
-          setLocations(locationsData)
-        } else {
-          const errorText = await locationsResponse.text()
-          console.error('Failed to fetch locations:', locationsResponse.status, locationsResponse.statusText, errorText)
-
+        try {
+          const locationsResponse = await apiClient.request('/locations')
+          setLocations(locationsResponse.data || locationsResponse || [])
+          console.log('Locations loaded:', locationsResponse.data?.length || locationsResponse?.length || 0)
+        } catch (locationsError) {
+          console.error('Failed to fetch locations:', locationsError)
           // Check if it's an authentication error
-          if (locationsResponse.status === 401 || locationsResponse.status === 403) {
+          if (locationsError.message && (locationsError.message.includes('401') || locationsError.message.includes('403') || locationsError.message.includes('Invalid or expired token'))) {
             setError('Your session has expired. Please log in again.')
             localStorage.removeItem('auth_token')
-            // Optional: Redirect to login page
-            // window.location.href = '/login'
             return
           }
-
-          setError(`Failed to fetch locations: ${locationsResponse.statusText}`)
+          throw locationsError
         }
       } catch (err) {
         console.error('Failed to fetch data:', err)
@@ -310,20 +346,20 @@ export function TeamsLocationsPage() {
       accessor: (team) => {
         const teamColors = team.colors || { primary: '#3b82f6', secondary: '#e2e8f0' }
         return (
-          <div className="flex items-center space-x-3">
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: teamColors.primary }} />
-            <div>
-              <p className="font-medium">{team.name}</p>
-              <div className="flex items-center text-xs text-muted-foreground space-x-1">
-                <span>{team.organization}</span>
-                <span>→</span>
-                <span>{team.division}</span>
-                <span>→</span>
-                <span>{team.age_group} {team.gender}</span>
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: teamColors.primary }} />
+            <div className="min-w-0">
+              <p className="font-medium truncate">{team.name}</p>
+              <div className="flex items-center text-xs text-muted-foreground space-x-1 flex-wrap">
+                <span className="whitespace-nowrap">{team.organization}</span>
+                <span className="whitespace-nowrap">→</span>
+                <span className="whitespace-nowrap">{team.division}</span>
+                <span className="whitespace-nowrap">→</span>
+                <span className="whitespace-nowrap">{team.age_group} {team.gender}</span>
                 {team.level && (
                   <>
-                    <span>•</span>
-                    <Badge variant="outline" className="text-xs px-1 py-0">{team.level}</Badge>
+                    <span className="whitespace-nowrap">•</span>
+                    <Badge variant="outline" className="text-xs px-1 py-0 whitespace-nowrap">{team.level}</Badge>
                   </>
                 )}
               </div>
@@ -935,43 +971,6 @@ export function TeamsLocationsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search teams..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Division" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Divisions</SelectItem>
-                    <SelectItem value="U10">U10</SelectItem>
-                    <SelectItem value="U12">U12</SelectItem>
-                    <SelectItem value="U14">U14</SelectItem>
-                    <SelectItem value="U16">U16</SelectItem>
-                    <SelectItem value="U18">U18</SelectItem>
-                    <SelectItem value="Senior">Senior</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Teams Table/Cards */}
               {isMobile ? (
                 <div className="space-y-4">
@@ -985,9 +984,9 @@ export function TeamsLocationsPage() {
                   )}
                 </div>
               ) : (
-                <FilterableTable 
-                  data={filteredTeams} 
-                  columns={teamColumns} 
+                <FilterableTable
+                  data={filteredTeams}
+                  columns={teamColumns}
                   emptyMessage="No teams found matching your criteria."
                   loading={loading}
                   mobileCardType="team"
@@ -995,6 +994,9 @@ export function TeamsLocationsPage() {
                   enableCSV={true}
                   onDataImport={handleImportTeams}
                   csvFilename="teams-export"
+                  initialColumnVisibility={teamColumnVisibility}
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={180}
                 />
               )}
             </CardContent>
@@ -1019,41 +1021,6 @@ export function TeamsLocationsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search locations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="City" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Cities</SelectItem>
-                    <SelectItem value="Calgary">Calgary</SelectItem>
-                    <SelectItem value="Edmonton">Edmonton</SelectItem>
-                    <SelectItem value="Red Deer">Red Deer</SelectItem>
-                    <SelectItem value="Lethbridge">Lethbridge</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Locations Table/Cards */}
               {isMobile ? (
                 <div className="space-y-4">
@@ -1067,9 +1034,9 @@ export function TeamsLocationsPage() {
                   )}
                 </div>
               ) : (
-                <FilterableTable 
-                  data={filteredLocations} 
-                  columns={locationColumns} 
+                <FilterableTable
+                  data={filteredLocations}
+                  columns={locationColumns}
                   emptyMessage="No locations found matching your criteria."
                   loading={loading}
                   mobileCardType="location"
@@ -1077,6 +1044,9 @@ export function TeamsLocationsPage() {
                   enableCSV={true}
                   onDataImport={handleImportLocations}
                   csvFilename="locations-export"
+                  initialColumnVisibility={locationColumnVisibility}
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={160}
                 />
               )}
             </CardContent>

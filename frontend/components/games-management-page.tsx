@@ -18,6 +18,7 @@ import { StatsGrid } from '@/components/ui/stats-grid'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 import { usePermissions } from '@/hooks/usePermissions'
+import { CERBOS_PERMISSIONS } from '@/lib/permissions'
 import { MenteeSelector } from '@/components/MenteeSelector'
 import { MenteeGamesView } from '@/components/MenteeGamesView'
 import CalendarUpload from '@/components/calendar-upload'
@@ -447,8 +448,8 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const { isAuthenticated } = useAuth()
   const { hasPermission, hasAnyPermission } = usePermissions()
 
-  // Check if user has mentorship permissions
-  const isMentor = hasAnyPermission(['mentorships:read', 'mentorships:manage'])
+  // Check if user has mentorship permissions (now mapped to referee management)
+  const isMentor = hasAnyPermission([CERBOS_PERMISSIONS.REFEREES.VIEW_LIST, CERBOS_PERMISSIONS.REFEREES.UPDATE])
 
   // Fetch mentees for mentor dropdown
   useEffect(() => {
@@ -728,7 +729,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           <Button variant="ghost" size="sm">
             <Edit className="h-4 w-4" />
           </Button>
-          {hasPermission('games:delete') && (
+          {hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE) && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -834,61 +835,6 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
             </div>
           )}
 
-          {/* Regular filters - only show when not viewing mentee games */}
-          {!selectedMenteeId && (
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search games..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="Recreational">Recreational</SelectItem>
-                <SelectItem value="Competitive">Competitive</SelectItem>
-                <SelectItem value="Elite">Elite</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="up-for-grabs">Up for Grabs</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="relative">
-              <Input
-                type="date"
-                placeholder="Filter by date"
-                value={selectedDate === 'all' ? '' : selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value || 'all')}
-                className={`w-[150px] ${
-                  selectedDate !== 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
-                }`}
-              />
-              {selectedDate !== 'all' && (
-                <Badge 
-                  variant="secondary" 
-                  className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
-                >
-                  Active
-                </Badge>
-              )}
-            </div>
-            </div>
-          )}
 
           {/* Regular Games Table - only show when not viewing mentee games */}
           {!selectedMenteeId && (
@@ -901,7 +847,17 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
                   </div>
                 </div>
               ) : (
-                <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+                <FilterableTable
+                  data={filteredGames}
+                  columns={columns}
+                  emptyMessage="No games found matching your criteria."
+                  enableViewToggle={true}
+                  enableCSV={true}
+                  csvFilename="games-export.csv"
+                  mobileCardType="game"
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={180}
+                />
               )}
             </>
           )}

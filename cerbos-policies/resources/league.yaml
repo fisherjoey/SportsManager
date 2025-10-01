@@ -1,0 +1,38 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for league resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "league"
+  rules:
+    # Admin rules - full access within their organization
+    - actions: ['view:list', 'view:details', 'create', 'update', 'delete', 'bulk_create']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    # Assignor rules - can view leagues in their organization
+    - actions: ['view:list', 'view:details']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+
+    # Referee rules - can view leagues in their organization
+    - actions: ['view:list', 'view:details']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      derivedRoles:
+        - same_organization
+
+    # Guest rules - no access
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

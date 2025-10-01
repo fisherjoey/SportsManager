@@ -53,6 +53,7 @@ export interface RefereeLevelEntity extends BaseEntity {
 // Role and Permission entities (RBAC system)
 export interface RoleEntity extends BaseEntity {
   name: string;
+  code: string; // Cerbos-compatible role identifier (e.g., 'super_admin')
   description?: string;
   is_system: boolean;
   is_active: boolean;

@@ -6,7 +6,7 @@
  * @date 2025-01-23
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import knex from '../config/database';
 import {
@@ -93,7 +93,7 @@ export class EncryptionService implements IEncryptionService {
   public encryptWithMasterKey(data: Buffer): Buffer {
     try {
       const iv = crypto.randomBytes(this.ivLength);
-      const cipher = crypto.createCipherGCM(this.algorithm, this.masterKey, iv);
+      const cipher = (crypto as any).createCipherGCM(this.algorithm, this.masterKey, iv);
 
       let encrypted = cipher.update(data);
       encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -124,7 +124,7 @@ export class EncryptionService implements IEncryptionService {
       const tag = encryptedData.slice(this.ivLength, this.ivLength + this.tagLength);
       const encrypted = encryptedData.slice(this.ivLength + this.tagLength);
 
-      const decipher = crypto.createDecipherGCM(this.algorithm, this.masterKey, iv);
+      const decipher = (crypto as any).createDecipherGCM(this.algorithm, this.masterKey, iv);
       decipher.setAuthTag(tag);
 
       let decrypted = decipher.update(encrypted);
@@ -169,7 +169,7 @@ export class EncryptionService implements IEncryptionService {
 
       // Encrypt the data
       const iv = crypto.randomBytes(this.ivLength);
-      const cipher = crypto.createCipherGCM(this.algorithm, dataKey, iv);
+      const cipher = (crypto as any).createCipherGCM(this.algorithm, dataKey, iv);
 
       let encrypted = cipher.update(Buffer.from(plaintext, 'utf8'));
       encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -191,13 +191,13 @@ export class EncryptionService implements IEncryptionService {
           encryption_key_id: keyInfo.keyId,
           created_at: new Date(),
           updated_at: new Date()
-        })
+        } as any)
         .onConflict(['table_name', 'field_name', 'record_id'])
         .merge({
           encrypted_value: encryptedValue,
           encryption_key_id: keyInfo.keyId,
           updated_at: new Date()
-        });
+        } as any);
 
       return {
         encrypted: true,
@@ -233,8 +233,8 @@ export class EncryptionService implements IEncryptionService {
           table_name: tableName,
           field_name: fieldName,
           record_id: recordId.toString()
-        })
-        .first() as EncryptedFieldRecord | undefined;
+        } as any)
+        .first() as unknown as EncryptedFieldRecord | undefined;
 
       if (!encryptedField) {
         return null;
@@ -260,7 +260,7 @@ export class EncryptionService implements IEncryptionService {
       const tag = encryptedBuffer.slice(this.ivLength, this.ivLength + this.tagLength);
       const encrypted = encryptedBuffer.slice(this.ivLength + this.tagLength);
 
-      const decipher = crypto.createDecipherGCM(this.algorithm, dataKey, iv);
+      const decipher = (crypto as any).createDecipherGCM(this.algorithm, dataKey, iv);
       decipher.setAuthTag(tag);
 
       let decrypted = decipher.update(encrypted);
@@ -452,7 +452,7 @@ export class EncryptionService implements IEncryptionService {
       }
 
       const iv = crypto.randomBytes(this.ivLength);
-      const cipher = crypto.createCipherGCM(this.algorithm, dataKey, iv);
+      const cipher = (crypto as any).createCipherGCM(this.algorithm, dataKey, iv);
 
       let encrypted = cipher.update(fileBuffer);
       encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -508,7 +508,7 @@ export class EncryptionService implements IEncryptionService {
       const tag = encryptedBuffer.slice(this.ivLength, this.ivLength + this.tagLength);
       const encrypted = encryptedBuffer.slice(this.ivLength + this.tagLength);
 
-      const decipher = crypto.createDecipherGCM(this.algorithm, dataKey, iv);
+      const decipher = (crypto as any).createDecipherGCM(this.algorithm, dataKey, iv);
       decipher.setAuthTag(tag);
 
       let decrypted = decipher.update(encrypted);
@@ -592,7 +592,7 @@ export class EncryptionService implements IEncryptionService {
         query = query.where('field_name', fieldName);
       }
 
-      const encryptedFields = await query.limit(100) as EncryptedFieldRecord[]; // Process in batches
+      const encryptedFields = await query.limit(100) as unknown as EncryptedFieldRecord[]; // Process in batches
 
       let validCount = 0;
       let invalidCount = 0;

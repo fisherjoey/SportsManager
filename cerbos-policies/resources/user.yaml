@@ -1,0 +1,31 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for user resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "user"
+  rules:
+    - actions: ['view:list', 'view:details', 'view:roles', 'create', 'update', 'delete']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:details']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - referee
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          expr: request.resource.id == request.principal.id
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

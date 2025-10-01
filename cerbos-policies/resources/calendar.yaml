@@ -1,0 +1,35 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for calendar resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "calendar"
+  rules:
+    - actions: ['admin:configure_sync', 'admin:view_sync_status', 'admin:disable_sync']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:games_calendar', 'admin:upload_calendar']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - assignor
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:games_calendar']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      derivedRoles:
+        - same_organization
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

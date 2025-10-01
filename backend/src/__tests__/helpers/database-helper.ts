@@ -840,5 +840,3 @@ export const createDatabaseTestHelper = (config?: Partial<DatabaseTestConfig>): 
   return new DatabaseTestHelper({ ...defaultConfig, ...config });
 };
 
-// Export types for use in tests
-export type { ConcurrencyTestConfig, PerformanceMetrics, TransactionTestResult };

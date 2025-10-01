@@ -22,12 +22,14 @@ interface DataTableToolbarProps<TData> {
   table: Table<TData>
   globalFilter: string
   setGlobalFilter: (value: string) => void
+  maxVisibleColumns?: number
 }
 
 export function DataTableToolbar<TData>({
   table,
   globalFilter,
-  setGlobalFilter
+  setGlobalFilter,
+  maxVisibleColumns
 }: DataTableToolbarProps<TData>) {
   const [startDate, setStartDate] = React.useState<Date | undefined>()
   const [endDate, setEndDate] = React.useState<Date | undefined>()
@@ -122,7 +124,7 @@ export function DataTableToolbar<TData>({
         </div>
 
         {/* View options */}
-        <DataTableViewOptions table={table} />
+        <DataTableViewOptions table={table} maxVisibleColumns={maxVisibleColumns} />
       </div>
 
       {/* Active filters summary */}

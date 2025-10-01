@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import express from 'express';
 const router = express.Router();
 import { Pool  } from 'pg';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
-import Joi from 'joi';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+import * as Joi from 'joi';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
@@ -132,7 +131,7 @@ router.get('/departments', authenticateToken, async (req, res) => {
 });
 
 // Create new department
-router.post('/departments', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.post('/departments', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'create' }), async (req: any, res: any) => {
   try {
     const { error, value } = departmentSchema.validate(req.body);
     if (error) {
@@ -160,7 +159,7 @@ router.post('/departments', authenticateToken, requireAnyRole('admin', 'hr'), as
 });
 
 // Update department
-router.put('/departments/:id', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.put('/departments/:id', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'update' }), async (req: any, res: any) => {
   try {
     const { error, value } = departmentSchema.validate(req.body);
     if (error) {
@@ -236,7 +235,7 @@ router.get('/positions', authenticateToken, async (req, res) => {
 });
 
 // Create new position
-router.post('/positions', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.post('/positions', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'create' }), async (req: any, res: any) => {
   try {
     const { error, value } = positionSchema.validate(req.body);
     if (error) {
@@ -435,7 +434,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new employee
-router.post('/', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'create' }), async (req: any, res: any) => {
   try {
     const { error, value } = employeeSchema.validate(req.body);
     if (error) {
@@ -476,9 +475,9 @@ router.post('/', authenticateToken, requireAnyRole('admin', 'hr'), async (req, r
 });
 
 // Update employee
-router.put('/:id', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'update' }), async (req: any, res: any) => {
   try {
-    const { error, value } = employeeSchema.partial().validate(req.body);
+    const { error, value } = employeeSchema.validate(req.body, { allowUnknown: false, stripUnknown: true });
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -552,7 +551,7 @@ router.get('/:id/evaluations', authenticateToken, async (req, res) => {
 });
 
 // Create new evaluation
-router.post('/:id/evaluations', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/evaluations', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'create' }), async (req: any, res: any) => {
   try {
     const { error, value } = evaluationSchema.validate({
       ...req.body,
@@ -627,7 +626,7 @@ router.get('/:id/training', authenticateToken, async (req, res) => {
 });
 
 // Create new training record
-router.post('/:id/training', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/training', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'create' }), async (req: any, res: any) => {
   try {
     const { error, value } = trainingSchema.validate({
       ...req.body,
@@ -673,9 +672,9 @@ router.post('/:id/training', authenticateToken, requireAnyRole('admin', 'hr', 'm
 });
 
 // Update training record
-router.put('/training/:trainingId', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.put('/training/:trainingId', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'update' }), async (req: any, res: any) => {
   try {
-    const { error, value } = trainingSchema.partial().validate(req.body);
+    const { error, value } = trainingSchema.validate(req.body, { allowUnknown: false, stripUnknown: true });
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -720,7 +719,7 @@ router.put('/training/:trainingId', authenticateToken, requireAnyRole('admin', '
 });
 
 // Get organization-wide employee statistics
-router.get('/stats/overview', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/stats/overview', authenticateToken, requireCerbosPermission({ resource: 'employee', action: 'view:stats' }), async (req: any, res: any) => {
   try {
     const query = `
       SELECT 

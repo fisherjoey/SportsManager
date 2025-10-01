@@ -1,0 +1,35 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for report resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "report"
+  rules:
+    - actions: ['view:financial_summary']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:referee_performance', 'view:assignment_patterns', 'view:availability_gaps']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - assignor
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:referee_performance']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      derivedRoles:
+        - same_organization
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

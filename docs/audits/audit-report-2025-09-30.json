@@ -1,0 +1,397 @@
+{
+  "timestamp": "2025-09-30T06:45:28.645Z",
+  "database": "sports_management",
+  "summary": {
+    "score": 88,
+    "critical": [],
+    "warnings": [
+      "14 foreign keys without indexes",
+      "14 tables without audit timestamps",
+      "22 JSONB columns without GIN indexes",
+      "17 timestamp columns without timezone"
+    ],
+    "recommendations": [],
+    "passed": [
+      "All tables have primary keys",
+      "No duplicate indexes found",
+      "1 password columns properly named with '_hash'",
+      "All tables have healthy dead tuple ratios"
+    ]
+  },
+  "details": {
+    "schemaStructure": [
+      {
+        "severity": "warning",
+        "message": "14 foreign keys without indexes",
+        "details": [
+          {
+            "table_name": "workflow_definitions",
+            "column_name": "created_by"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "workflow_definition_id"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "started_by"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "workflow_instance_id"
+          },
+          {
+            "table_name": "workflow_approvals",
+            "column_name": "workflow_instance_id"
+          },
+          {
+            "table_name": "workflow_approvals",
+            "column_name": "step_execution_id"
+          },
+          {
+            "table_name": "content_versions",
+            "column_name": "created_by"
+          },
+          {
+            "table_name": "content_attachments",
+            "column_name": "uploaded_by"
+          },
+          {
+            "table_name": "content_permissions",
+            "column_name": "granted_by"
+          },
+          {
+            "table_name": "content_analytics",
+            "column_name": "user_id"
+          },
+          {
+            "table_name": "user_roles",
+            "column_name": "assigned_by"
+          },
+          {
+            "table_name": "resources",
+            "column_name": "created_by"
+          },
+          {
+            "table_name": "resources",
+            "column_name": "updated_by"
+          },
+          {
+            "table_name": "user_region_assignments",
+            "column_name": "assigned_by"
+          }
+        ],
+        "recommendation": "Add indexes on foreign key columns for better join performance"
+      }
+    ],
+    "dataIntegrity": [
+      {
+        "severity": "info",
+        "message": "45 nullable foreign keys (may be intentional)",
+        "count": 45,
+        "recommendation": "Review if these foreign keys should be required (NOT NULL)"
+      }
+    ],
+    "largestTables": [
+      {
+        "schemaname": "public",
+        "tablename": "audit_logs",
+        "size": "1680 kB",
+        "size_bytes": "1720320",
+        "n_live_tup": "2659"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "rbac_scan_history",
+        "size": "1000 kB",
+        "size_bytes": "1024000",
+        "n_live_tup": "396"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "games",
+        "size": "416 kB",
+        "size_bytes": "425984",
+        "n_live_tup": "239"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "rbac_endpoints",
+        "size": "184 kB",
+        "size_bytes": "188416",
+        "n_live_tup": "0"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "access_control_audit",
+        "size": "184 kB",
+        "size_bytes": "188416",
+        "n_live_tup": "1"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "roles",
+        "size": "184 kB",
+        "size_bytes": "188416",
+        "n_live_tup": "18"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "content_items",
+        "size": "176 kB",
+        "size_bytes": "180224",
+        "n_live_tup": "0"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "rbac_functions",
+        "size": "168 kB",
+        "size_bytes": "172032",
+        "n_live_tup": "0"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "teams",
+        "size": "160 kB",
+        "size_bytes": "163840",
+        "n_live_tup": "72"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "role_page_access",
+        "size": "160 kB",
+        "size_bytes": "163840",
+        "n_live_tup": "60"
+      }
+    ],
+    "performance": [
+      {
+        "severity": "info",
+        "message": "Performance audit partially completed",
+        "recommendation": "Some performance checks were skipped due to database version or permissions"
+      }
+    ],
+    "security": [
+      {
+        "severity": "warning",
+        "message": "14 tables without audit timestamps",
+        "tables": [
+          "access_control_audit",
+          "audit_logs",
+          "communication_recipients",
+          "content_analytics",
+          "content_analytics_monthly",
+          "content_permissions",
+          "content_search_index",
+          "content_versions",
+          "mentorship_documents",
+          "post_reads",
+          "resource_access_logs",
+          "user_region_assignments",
+          "user_roles",
+          "workflow_approvals"
+        ],
+        "recommendation": "Add created_at and updated_at columns for audit trail"
+      }
+    ],
+    "maintenance": [
+      {
+        "severity": "info",
+        "message": "1 tables not vacuumed recently",
+        "count": 1,
+        "recommendation": "Ensure autovacuum is running or schedule manual VACUUM"
+      }
+    ],
+    "scalability": [
+      {
+        "severity": "warning",
+        "message": "22 JSONB columns without GIN indexes",
+        "details": [
+          {
+            "table_name": "internal_communications",
+            "column_name": "target_audience"
+          },
+          {
+            "table_name": "internal_communications",
+            "column_name": "attachments"
+          },
+          {
+            "table_name": "internal_communications",
+            "column_name": "tags"
+          },
+          {
+            "table_name": "workflow_definitions",
+            "column_name": "steps"
+          },
+          {
+            "table_name": "workflow_definitions",
+            "column_name": "conditions"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "context"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "input_data"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "output_data"
+          },
+          {
+            "table_name": "roles",
+            "column_name": "referee_config"
+          },
+          {
+            "table_name": "resources",
+            "column_name": "metadata"
+          },
+          {
+            "table_name": "role_page_access",
+            "column_name": "conditions"
+          },
+          {
+            "table_name": "role_api_access",
+            "column_name": "conditions"
+          },
+          {
+            "table_name": "role_features",
+            "column_name": "configuration"
+          },
+          {
+            "table_name": "role_data_scopes",
+            "column_name": "conditions"
+          },
+          {
+            "table_name": "access_control_audit",
+            "column_name": "old_value"
+          },
+          {
+            "table_name": "access_control_audit",
+            "column_name": "new_value"
+          },
+          {
+            "table_name": "referee_profiles",
+            "column_name": "preferred_positions"
+          },
+          {
+            "table_name": "referee_profiles",
+            "column_name": "availability_pattern"
+          },
+          {
+            "table_name": "referee_profiles",
+            "column_name": "emergency_contact"
+          },
+          {
+            "table_name": "referee_profiles",
+            "column_name": "special_qualifications"
+          },
+          {
+            "table_name": "organizations",
+            "column_name": "settings"
+          },
+          {
+            "table_name": "regions",
+            "column_name": "settings"
+          }
+        ],
+        "recommendation": "Add GIN indexes on JSONB columns for better query performance"
+      }
+    ],
+    "bestPractices": [
+      {
+        "severity": "warning",
+        "message": "17 timestamp columns without timezone",
+        "details": [
+          {
+            "table_name": "workflow_definitions",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_definitions",
+            "column_name": "updated_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "started_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "completed_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_instances",
+            "column_name": "updated_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "started_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "completed_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_step_executions",
+            "column_name": "updated_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "workflow_approvals",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "organizations",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "organizations",
+            "column_name": "updated_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "regions",
+            "column_name": "created_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "regions",
+            "column_name": "updated_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "user_region_assignments",
+            "column_name": "assigned_at",
+            "data_type": "timestamp without time zone"
+          },
+          {
+            "table_name": "user_region_assignments",
+            "column_name": "expires_at",
+            "data_type": "timestamp without time zone"
+          }
+        ],
+        "recommendation": "Use TIMESTAMP WITH TIME ZONE for proper timezone handling"
+      }
+    ]
+  }
+}

@@ -1,177 +1,252 @@
 /**
- * @fileoverview Comprehensive unit tests for Games routes
- * @description Tests all game management endpoints with proper mocking, validation,
- * authorization, error handling, and edge cases
+ * @fileoverview Games Routes Integration Tests
+ *
+ * Comprehensive test suite for the games routes following TDD approach.
+ * Tests all endpoints with proper authentication, authorization, and data validation.
  */
 
 import request from 'supertest';
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import { jest } from '@jest/globals';
 
 // Mock dependencies
-const mockDb = {
-  where: jest.fn(() => mockDb),
-  whereIn: jest.fn(() => mockDb),
-  whereNotIn: jest.fn(() => mockDb),
-  join: jest.fn(() => mockDb),
-  leftJoin: jest.fn(() => mockDb),
-  select: jest.fn(() => mockDb),
-  orderBy: jest.fn(() => mockDb),
-  groupBy: jest.fn(() => mockDb),
-  first: jest.fn(),
-  update: jest.fn(),
-  insert: jest.fn(),
-  del: jest.fn(),
-  count: jest.fn(),
-  clone: jest.fn(() => mockDb),
-  clearSelect: jest.fn(() => mockDb),
-  clearOrder: jest.fn(() => mockDb),
-  returning: jest.fn(() => mockDb),
-  transaction: jest.fn(),
-  // For the main query method
-  then: jest.fn(),
-  // Raw queries
-  raw: jest.fn()
+const mockDb: any = {
+  select: (jest.fn() as any).mockReturnThis(),
+  where: (jest.fn() as any).mockReturnThis(),
+  whereIn: (jest.fn() as any).mockReturnThis(),
+  whereNotIn: (jest.fn() as any).mockReturnThis(),
+  orWhere: (jest.fn() as any).mockReturnThis(),
+  join: (jest.fn() as any).mockReturnThis(),
+  leftJoin: (jest.fn() as any).mockReturnThis(),
+  orderBy: (jest.fn() as any).mockReturnThis(),
+  groupBy: (jest.fn() as any).mockReturnThis(),
+  first: (jest.fn() as any).mockResolvedValue(null),
+  insert: (jest.fn() as any).mockReturnThis(),
+  update: (jest.fn() as any).mockReturnThis(),
+  del: (jest.fn() as any).mockResolvedValue(1),
+  returning: (jest.fn() as any).mockResolvedValue([]),
+  count: (jest.fn() as any).mockReturnThis(),
+  clone: (jest.fn() as any).mockReturnThis(),
+  clearSelect: (jest.fn() as any).mockReturnThis(),
+  clearOrder: (jest.fn() as any).mockReturnThis(),
+  pluck: (jest.fn() as any).mockResolvedValue([]),
+  raw: jest.fn() as any,
+  transaction: jest.fn() as any,
+  then: jest.fn() as any
 };
 
 const mockTransaction = {
-  commit: jest.fn(),
-  rollback: jest.fn(),
+  commit: (jest.fn() as any).mockResolvedValue(undefined),
+  rollback: (jest.fn() as any).mockResolvedValue(undefined),
   where: jest.fn(() => mockTransaction),
-  insert: jest.fn(() => mockTransaction),
+  insert: (jest.fn() as any).mockResolvedValue([{ id: 'new-game-1' }]),
   update: jest.fn(() => mockTransaction),
   returning: jest.fn(() => mockTransaction),
   first: jest.fn()
 };
 
-const mockAuthMiddleware = {
-  authenticateToken: jest.fn((req: any, res: any, next: any) => {
-    req.user = {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      roles: ['admin'],
-      permissions: ['games:create', 'games:update', 'games:delete', 'games:manage']
-    };
-    next();
-  }),
-  requirePermission: jest.fn((permission: string) => (req: any, res: any, next: any) => next()),
-  requireAnyPermission: jest.fn((permissions: string[]) => (req: any, res: any, next: any) => next())
-};
-
-const mockValidationMiddleware = {
-  validateQuery: jest.fn((schema: string) => (req: any, res: any, next: any) => next()),
-  validateIdParam: jest.fn((req: any, res: any, next: any) => next()),
-  validateBody: jest.fn((schema: any) => (req: any, res: any, next: any) => next()),
-  validateParams: jest.fn((schema: any) => (req: any, res: any, next: any) => next())
-};
-
-const mockErrorHandling = {
-  enhancedAsyncHandler: jest.fn((handler: any) => handler)
-};
-
-const mockConflictService = {
-  checkGameSchedulingConflicts: jest.fn()
-};
-
-const mockQueryBuilder = {
-  validatePaginationParams: jest.fn(),
-  applyCommonFilters: jest.fn(),
-  applyDateRange: jest.fn(),
-  applyPagination: jest.fn()
-};
-
-const mockQueryCache = {
-  generateKey: jest.fn(),
-  get: jest.fn(),
-  set: jest.fn()
-};
-
-const mockCacheHelpers = {
-  cachePaginatedQuery: jest.fn()
+const mockCacheHelpers: any = {
+  cacheAggregation: (jest.fn() as any).mockResolvedValue({ games: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } }),
+  cachePaginatedQuery: (jest.fn() as any).mockResolvedValue(null),
+  cacheLookupData: (jest.fn() as any).mockResolvedValue([])
 };
 
 const mockCacheInvalidation = {
   invalidateGames: jest.fn()
 };
 
-const mockResponseFormatter = {
-  sendCreated: jest.fn()
+const mockQueryBuilder = {
+  validatePaginationParams: jest.fn().mockImplementation((params: any) => ({
+    page: parseInt(params.page) || 1,
+    limit: parseInt(params.limit) || 50
+  })),
+  applyCommonFilters: jest.fn().mockReturnValue(mockDb),
+  buildCountQuery: jest.fn().mockReturnValue(Promise.resolve([{ count: 0 }])),
+  applyPagination: jest.fn().mockReturnValue(mockDb),
+  applyDateRange: jest.fn().mockReturnValue(mockDb)
 };
 
+const mockAuth = {
+  authenticateToken: jest.fn().mockImplementation((req: any, res: any, next: any) => {
+    req.user = { id: 'test-user-id', role: 'admin' };
+    next();
+  })
+};
+
+const mockCerbos = {
+  requireCerbosPermission: jest.fn().mockImplementation(() => (req: any, res: any, next: any) => next())
+};
+
+const mockValidation = {
+  validateBody: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateParams: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateQuery: jest.fn().mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateIdParam: jest.fn().mockImplementation((req: any, res: any, next: any) => next())
+};
+
+const mockResponseFormatter = {
+  sendSuccess: jest.fn().mockImplementation((res: any, data: any, message?: string) => {
+    res.json({ success: true, data, message });
+  }),
+  sendCreated: jest.fn().mockImplementation((res: any, data: any, message?: string, location?: string) => {
+    res.status(201).json({ success: true, data, message });
+  }),
+  sendError: jest.fn().mockImplementation((res: any, error: any, statusCode: number) => {
+    res.status(statusCode).json({ error: error.message || error });
+  })
+};
+
+const mockEnhancedAsyncHandler = jest.fn().mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+  try {
+    await fn(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
 const mockErrorFactory = {
-  notFound: jest.fn()
+  badRequest: (jest.fn() as any)((message: string) => new Error(message)),
+  notFound: (jest.fn() as any)((message: string) => new Error(message)),
+  conflict: (jest.fn() as any)((message: string) => new Error(message))
+};
+
+const mockConflictService = {
+  checkGameSchedulingConflicts: (jest.fn() as any).mockResolvedValue({
+    hasConflicts: false,
+    errors: []
+  })
+};
+
+const mockQueryCache = {
+  generateKey: jest.fn().mockReturnValue('test-cache-key'),
+  get: jest.fn().mockReturnValue(null),
+  set: jest.fn()
 };
 
 // Mock modules
-jest.unstable_mockModule('../../config/database', () => ({
-  default: mockDb
-}));
-
-jest.unstable_mockModule('../../middleware/auth', () => ({
-  authenticateToken: mockAuthMiddleware.authenticateToken,
-  requirePermission: mockAuthMiddleware.requirePermission,
-  requireAnyPermission: mockAuthMiddleware.requireAnyPermission
-}));
-
-jest.unstable_mockModule('../../middleware/sanitization', () => ({
-  validateQuery: mockValidationMiddleware.validateQuery,
-  validateIdParam: mockValidationMiddleware.validateIdParam
-}));
-
-jest.unstable_mockModule('../../middleware/enhanced-error-handling', () => ({
-  enhancedAsyncHandler: mockErrorHandling.enhancedAsyncHandler
-}));
-
-jest.unstable_mockModule('../../middleware/validation', () => ({
-  validateBody: mockValidationMiddleware.validateBody,
-  validateParams: mockValidationMiddleware.validateParams,
-  validateQuery: mockValidationMiddleware.validateQuery
-}));
-
-jest.unstable_mockModule('../../services/conflictDetectionService', () => ({
-  checkGameSchedulingConflicts: mockConflictService.checkGameSchedulingConflicts
-}));
-
-jest.unstable_mockModule('../../utils/query-builders', () => ({
-  QueryBuilder: mockQueryBuilder,
-  QueryHelpers: { getGameFilterMap: jest.fn(() => ({})) }
-}));
-
-jest.unstable_mockModule('../../utils/query-cache', () => ({
+jest.mock('../../config/database', () => mockDb);
+jest.mock('../../utils/query-cache', () => ({
   queryCache: mockQueryCache,
   CacheHelpers: mockCacheHelpers,
   CacheInvalidation: mockCacheInvalidation
 }));
-
-jest.unstable_mockModule('../../utils/response-formatters', () => ({
-  ResponseFormatter: mockResponseFormatter
+jest.mock('../../utils/query-builders', () => ({
+  QueryBuilder: mockQueryBuilder,
+  QueryHelpers: { getGameFilterMap: jest.fn(() => ({})) }
 }));
-
-jest.unstable_mockModule('../../utils/errors', () => ({
-  ErrorFactory: mockErrorFactory
+jest.mock('../../middleware/auth', () => mockAuth);
+jest.mock('../../middleware/requireCerbosPermission', () => mockCerbos);
+jest.mock('../../middleware/sanitization', () => ({
+  validateQuery: mockValidation.validateQuery,
+  validateIdParam: mockValidation.validateIdParam
 }));
-
-jest.unstable_mockModule('../../utils/validation-schemas', () => ({
+jest.mock('../../middleware/validation', () => mockValidation);
+jest.mock('../../utils/response-formatters', () => ({ ResponseFormatter: mockResponseFormatter }));
+jest.mock('../../middleware/enhanced-error-handling', () => ({ enhancedAsyncHandler: mockEnhancedAsyncHandler }));
+jest.mock('../../utils/errors', () => ({ ErrorFactory: mockErrorFactory }));
+jest.mock('../../services/conflictDetectionService', () => ({
+  checkGameSchedulingConflicts: mockConflictService.checkGameSchedulingConflicts
+}));
+jest.mock('../../utils/validation-schemas', () => ({
   IdParamSchema: {}
 }));
-
-jest.unstable_mockModule('../../middleware/auditTrail', () => ({
+jest.mock('../../middleware/auditTrail', () => ({
   createAuditLog: jest.fn(),
   AUDIT_EVENTS: { GAME_CREATED: 'game_created' }
 }));
+jest.mock('joi', () => {
+  // Create a comprehensive chainable mock that handles all Joi methods
+  const createChainableMock = (): any => {
+    const mock: any = {};
 
-// Create mock app
-const app = express();
-app.use(express.json());
+    // Define all Joi methods that need to be chainable
+    const chainableMethods = [
+      'string', 'number', 'boolean', 'array', 'object', 'date', 'binary',
+      'required', 'optional', 'allow', 'valid', 'invalid', 'default',
+      'min', 'max', 'length', 'email', 'uri', 'uuid', 'integer',
+      'positive', 'negative', 'items', 'keys', 'pattern', 'regex',
+      'alphanum', 'token', 'hex', 'base64', 'lowercase', 'uppercase',
+      'trim', 'replace', 'truncate', 'normalize', 'when', 'alternatives',
+      'alt', 'concat', 'raw', 'empty', 'strip', 'label', 'description',
+      'notes', 'tags', 'meta', 'example', 'unit', 'messages', 'prefs',
+      'preferences', 'strict', 'options', 'fork', 'validate'
+    ];
 
-// Import the router after mocking
-const gamesRouter = (await import('../games.js')).default;
-app.use('/api/games', gamesRouter);
+    // Create mock functions for all chainable methods
+    chainableMethods.forEach(method => {
+      if (method === 'validate') {
+        mock[method] = jest.fn().mockReturnValue({ error: null, value: {} });
+      } else {
+        mock[method] = jest.fn().mockReturnValue(mock); // Return self for chaining
+      }
+    });
 
-describe('Games Routes', () => {
+    return mock;
+  };
+
+  // Create the main Joi mock
+  const joiMock = createChainableMock();
+
+  // Override specific methods that return schemas
+  joiMock.object = jest.fn().mockImplementation((schema?: any) => {
+    const schemaMock = createChainableMock();
+    return schemaMock;
+  });
+
+  joiMock.array = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.string = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.number = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.boolean = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.date = jest.fn().mockImplementation(() => createChainableMock());
+
+  return {
+    default: joiMock,
+    __esModule: true
+  };
+});
+
+describe('Games Routes Integration Tests', () => {
+  let app: express.Application;
+  let gamesRouter: express.Router;
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Restore default mock implementations after clearAllMocks
+    mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      req.user = { id: 'test-user-id', role: 'admin' };
+      next();
+    });
+    mockCerbos.requireCerbosPermission.mockImplementation(() => (req: any, res: any, next: any) => next());
+    mockValidation.validateBody.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateParams.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateQuery.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateIdParam.mockImplementation((req: any, res: any, next: any) => next());
+    mockEnhancedAsyncHandler.mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+      try {
+        await fn(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    });
+    mockQueryBuilder.validatePaginationParams.mockImplementation((params: any) => ({
+      page: parseInt(params.page) || 1,
+      limit: parseInt(params.limit) || 50
+    }));
+    mockQueryBuilder.applyCommonFilters.mockReturnValue(mockDb);
+    mockQueryBuilder.buildCountQuery.mockReturnValue(Promise.resolve([{ count: 0 }]));
+    mockQueryBuilder.applyPagination.mockReturnValue(mockDb);
+    mockQueryBuilder.applyDateRange.mockReturnValue(mockDb);
+    mockCacheHelpers.cacheAggregation.mockResolvedValue({ games: [], pagination: { page: 1, limit: 50, total: 0, pages: 0 } });
+    mockCacheHelpers.cachePaginatedQuery.mockResolvedValue(null);
+    mockCacheHelpers.cacheLookupData.mockResolvedValue([]);
+    mockQueryCache.generateKey.mockReturnValue('test-cache-key');
+    mockQueryCache.get.mockReturnValue(null);
+    (mockConflictService.checkGameSchedulingConflicts as any).mockResolvedValue({
+      hasConflicts: false,
+      errors: []
+    });
+
     // Reset mock database to return empty results by default
     mockDb.first.mockResolvedValue(null);
     mockDb.update.mockResolvedValue([]);
@@ -185,20 +260,25 @@ describe('Games Routes', () => {
     mockDb.transaction.mockResolvedValue(mockTransaction);
     mockDb.then.mockImplementation((callback: Function) => callback([]));
 
-    // Reset query builder mocks
-    mockQueryBuilder.validatePaginationParams.mockReturnValue({ page: 1, limit: 10 });
-    mockQueryBuilder.applyCommonFilters.mockReturnValue(mockDb);
-    mockQueryBuilder.applyDateRange.mockReturnValue(mockDb);
-    mockQueryBuilder.applyPagination.mockReturnValue(mockDb);
+    app = express();
+    app.use(express.json());
 
-    // Reset cache mocks
-    mockQueryCache.generateKey.mockReturnValue('test-cache-key');
-    mockQueryCache.get.mockReturnValue(null);
+    // Import the router after mocks are set up
+    gamesRouter = require('../games').default;
+    app.use('/api/games', gamesRouter);
+  });
 
-    // Reset conflict service
-    mockConflictService.checkGameSchedulingConflicts.mockResolvedValue({
-      hasConflicts: false,
-      errors: []
+  describe('Route Module Structure', () => {
+    it('should be able to import the games routes module', () => {
+      expect(() => {
+        require('../games');
+      }).not.toThrow();
+    });
+
+    it('should export an express router', () => {
+      const routeModule = require('../games').default;
+      expect(routeModule).toBeDefined();
+      expect(typeof routeModule).toBe('function'); // Express router is a function
     });
   });
 
@@ -258,6 +338,18 @@ describe('Games Routes', () => {
         gender: 'Boys'
       }
     ];
+
+    it('should require authentication and permissions', async () => {
+      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+        res.status(401).json({ error: 'Authentication required' });
+      });
+
+      const response = await request(app)
+        .get('/api/games')
+        .expect(401);
+
+      expect(response.body.error).toBe('Authentication required');
+    });
 
     it('should get games with filters and pagination', async () => {
       // Setup mocks for successful query
@@ -351,18 +443,6 @@ describe('Games Routes', () => {
       );
     });
 
-    it('should require authentication', async () => {
-      mockAuthMiddleware.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        res.status(401).json({ error: 'Access token required' });
-      });
-
-      const response = await request(app)
-        .get('/api/games')
-        .expect(401);
-
-      expect(response.body.error).toBe('Access token required');
-    });
-
     it('should handle database errors', async () => {
       mockDb.then.mockRejectedValue(new Error('Database error'));
 
@@ -433,7 +513,7 @@ describe('Games Routes', () => {
     });
 
     it('should validate ID parameter format', async () => {
-      mockValidationMiddleware.validateIdParam.mockImplementation((req: any, res: any, next: any) => {
+      mockValidation.validateIdParam.mockImplementation((req: any, res: any, next: any) => {
         res.status(400).json({ error: 'Invalid ID format' });
       });
 
@@ -499,6 +579,21 @@ describe('Games Routes', () => {
     const mockHomeTeam = { id: 'team-1', name: 'Home Team' };
     const mockAwayTeam = { id: 'team-2', name: 'Away Team' };
 
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
+        (req: any, res: any, next: any) => {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+      );
+
+      const response = await request(app)
+        .post('/api/games')
+        .send(validGameData)
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
+
     it('should create new game with valid data', async () => {
       // Setup mocks for successful creation
       mockDb.first
@@ -549,7 +644,7 @@ describe('Games Routes', () => {
     });
 
     it('should check for venue conflicts', async () => {
-      mockConflictService.checkGameSchedulingConflicts.mockResolvedValue({
+      (mockConflictService.checkGameSchedulingConflicts as any).mockResolvedValue({
         hasConflicts: true,
         errors: ['Venue already booked'],
         conflicts: [{ time: '18:00', venue: 'Field 1' }]
@@ -570,26 +665,8 @@ describe('Games Routes', () => {
       });
     });
 
-    it('should require games:create permission', async () => {
-      mockAuthMiddleware.requirePermission.mockImplementation((permission: string) =>
-        (req: any, res: any, next: any) => {
-          if (permission === 'games:create') {
-            return res.status(403).json({ error: 'Insufficient permissions' });
-          }
-          next();
-        }
-      );
-
-      const response = await request(app)
-        .post('/api/games')
-        .send(validGameData)
-        .expect(403);
-
-      expect(response.body.error).toBe('Insufficient permissions');
-    });
-
     it('should validate request body', async () => {
-      mockValidationMiddleware.validateBody.mockImplementation((schema: any) =>
+      mockValidation.validateBody.mockImplementation((schema: any) =>
         (req: any, res: any, next: any) => {
           res.status(400).json({ error: 'Validation failed', details: 'Missing required fields' });
         }
@@ -633,6 +710,21 @@ describe('Games Routes', () => {
       ...updateData,
       updated_at: new Date()
     };
+
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
+        (req: any, res: any, next: any) => {
+          res.status(403).json({ error: 'Forbidden' });
+        }
+      );
+
+      const response = await request(app)
+        .put('/api/games/game-1')
+        .send(updateData)
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
 
     it('should update game with valid data', async () => {
       mockDb.first.mockResolvedValue(mockCurrentGame);
@@ -681,23 +773,8 @@ describe('Games Routes', () => {
       expect(response.body.error).toBe('Game not found');
     });
 
-    it('should require games:update or games:manage permission', async () => {
-      mockAuthMiddleware.requireAnyPermission.mockImplementation((permissions: string[]) =>
-        (req: any, res: any, next: any) => {
-          res.status(403).json({ error: 'Insufficient permissions' });
-        }
-      );
-
-      const response = await request(app)
-        .put('/api/games/game-1')
-        .send(updateData)
-        .expect(403);
-
-      expect(response.body.error).toBe('Insufficient permissions');
-    });
-
     it('should include conflict warnings in response', async () => {
-      mockConflictService.checkGameSchedulingConflicts.mockResolvedValue({
+      (mockConflictService.checkGameSchedulingConflicts as any).mockResolvedValue({
         hasConflicts: true,
         errors: ['Time conflict detected'],
         conflicts: [{ venue: 'Updated Field', time: '20:00' }]
@@ -722,6 +799,21 @@ describe('Games Routes', () => {
       status: 'assigned',
       updated_at: new Date()
     };
+
+    it('should require appropriate permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
+        (req: any, res: any, next: any) => {
+          res.status(403).json({ error: 'Forbidden' });
+        }
+      );
+
+      const response = await request(app)
+        .patch('/api/games/game-1/status')
+        .send({ status: 'completed' })
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
 
     it('should update game status', async () => {
       mockDb.update.mockResolvedValue([mockGame]);
@@ -757,24 +849,23 @@ describe('Games Routes', () => {
 
       expect(response.body.error).toBe('Game not found');
     });
+  });
 
-    it('should require appropriate permissions', async () => {
-      mockAuthMiddleware.requireAnyPermission.mockImplementation((permissions: string[]) =>
+  describe('DELETE /api/games/:id', () => {
+    it('should require proper permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
-          res.status(403).json({ error: 'Insufficient permissions' });
+          return res.status(403).json({ error: 'Forbidden' });
         }
       );
 
       const response = await request(app)
-        .patch('/api/games/game-1/status')
-        .send({ status: 'completed' })
+        .delete('/api/games/game-1')
         .expect(403);
 
-      expect(response.body.error).toBe('Insufficient permissions');
+      expect(response.body.error).toBe('Forbidden');
     });
-  });
 
-  describe('DELETE /api/games/:id', () => {
     it('should delete game successfully', async () => {
       mockDb.del.mockResolvedValue(1);
 
@@ -797,23 +888,6 @@ describe('Games Routes', () => {
         .expect(404);
 
       expect(response.body.error).toBe('Game not found');
-    });
-
-    it('should require games:delete permission', async () => {
-      mockAuthMiddleware.requirePermission.mockImplementation((permission: string) =>
-        (req: any, res: any, next: any) => {
-          if (permission === 'games:delete') {
-            return res.status(403).json({ error: 'Insufficient permissions' });
-          }
-          next();
-        }
-      );
-
-      const response = await request(app)
-        .delete('/api/games/game-1')
-        .expect(403);
-
-      expect(response.body.error).toBe('Insufficient permissions');
     });
 
     it('should handle database errors during deletion', async () => {
@@ -846,10 +920,25 @@ describe('Games Routes', () => {
       ]
     };
 
+    it('should require appropriate permissions', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
+        (req: any, res: any, next: any) => {
+          res.status(403).json({ error: 'Forbidden' });
+        }
+      );
+
+      const response = await request(app)
+        .post('/api/games/bulk-import')
+        .send(validBulkData)
+        .expect(403);
+
+      expect(response.body.error).toBe('Forbidden');
+    });
+
     it('should bulk import games successfully', async () => {
       mockDb.transaction.mockResolvedValue(mockTransaction);
-      mockTransaction.commit.mockResolvedValue();
-      mockTransaction.insert.mockResolvedValue([{ id: 'new-game-1' }]);
+      (mockTransaction.commit as any).mockResolvedValue();
+      (mockTransaction.insert as any).mockResolvedValue([{ id: 'new-game-1' }]);
 
       const response = await request(app)
         .post('/api/games/bulk-import')
@@ -883,26 +972,11 @@ describe('Games Routes', () => {
       expect(response.body.error).toBe('Maximum 100 games can be imported at once');
     });
 
-    it('should require appropriate permissions', async () => {
-      mockAuthMiddleware.requireAnyPermission.mockImplementation((permissions: string[]) =>
-        (req: any, res: any, next: any) => {
-          res.status(403).json({ error: 'Insufficient permissions' });
-        }
-      );
-
-      const response = await request(app)
-        .post('/api/games/bulk-import')
-        .send(validBulkData)
-        .expect(403);
-
-      expect(response.body.error).toBe('Insufficient permissions');
-    });
-
     it('should handle partial success with warnings', async () => {
       mockDb.transaction.mockResolvedValue(mockTransaction);
-      mockTransaction.commit.mockResolvedValue();
+      (mockTransaction.commit as any).mockResolvedValue();
       // Mock some games succeeding and some failing
-      mockTransaction.insert
+      (mockTransaction.insert as any)
         .mockResolvedValueOnce([{ id: 'game-1' }])
         .mockRejectedValueOnce(new Error('Duplicate game'));
 
@@ -921,9 +995,9 @@ describe('Games Routes', () => {
 
     it('should rollback transaction on complete failure', async () => {
       mockDb.transaction.mockResolvedValue(mockTransaction);
-      mockTransaction.rollback.mockResolvedValue();
+      (mockTransaction.rollback as any).mockResolvedValue();
       // Mock all operations failing
-      mockTransaction.insert.mockRejectedValue(new Error('Database error'));
+      (mockTransaction.insert as any).mockRejectedValue(new Error('Database error'));
 
       await request(app)
         .post('/api/games/bulk-import')
@@ -937,11 +1011,11 @@ describe('Games Routes', () => {
   describe('Error Handling', () => {
     it('should handle async handler wrapping', async () => {
       // Verify that all route handlers are wrapped with enhancedAsyncHandler
-      expect(mockErrorHandling.enhancedAsyncHandler).toHaveBeenCalledTimes(6); // 6 route handlers
+      expect(mockEnhancedAsyncHandler).toHaveBeenCalledTimes(6); // 6 route handlers
     });
 
     it('should handle validation middleware errors', async () => {
-      mockValidationMiddleware.validateQuery.mockImplementation((schema: string) =>
+      mockValidation.validateQuery.mockImplementation((schema: string) =>
         (req: any, res: any, next: any) => {
           res.status(400).json({ error: 'Query validation failed' });
         }
@@ -956,7 +1030,7 @@ describe('Games Routes', () => {
     });
 
     it('should handle authentication errors', async () => {
-      mockAuthMiddleware.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
         res.status(401).json({ error: 'Token expired' });
       });
 
@@ -968,7 +1042,7 @@ describe('Games Routes', () => {
     });
 
     it('should handle authorization errors', async () => {
-      mockAuthMiddleware.requirePermission.mockImplementation((permission: string) =>
+      mockCerbos.requireCerbosPermission.mockImplementation(() =>
         (req: any, res: any, next: any) => {
           res.status(403).json({ error: 'Access denied' });
         }

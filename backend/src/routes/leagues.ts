@@ -7,13 +7,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { Database, UUID, AuthenticatedRequest, PaginatedResult } from '../types';
-import { authenticateToken, requireRole, requirePermission } from '../middleware/auth';
-import { ResponseFormatter } from '../utils/response-formatters';
-import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
-import { validateBody, validateParams, validateQuery } from '../middleware/validation';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
+const { ResponseFormatter } = require('../utils/response-formatters');
+const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
 import { ErrorFactory } from '../utils/errors';
-import { QueryBuilder, QueryHelpers } from '../utils/query-builders';
-import { queryCache, CacheHelpers, CacheInvalidation } from '../utils/query-cache';
+const { QueryBuilder, QueryHelpers } = require('../utils/query-builders');
+const { queryCache, CacheHelpers, CacheInvalidation } = require('../utils/query-cache');
+import db from '../config/database';
 
 const router = express.Router();
 
@@ -114,15 +116,6 @@ interface FilterOptions {
   levels: string[];
 }
 
-// Initialize database connection (will be injected)
-let db: Database;
-
-// Route initialization function
-export function initializeRoutes(database: Database): express.Router {
-  db = database;
-  return router;
-}
-
 // Validation schemas
 const leagueSchema = Joi.object<LeagueCreateBody>({
   organization: Joi.string().required(),
@@ -160,10 +153,13 @@ const idParamSchema = Joi.object({
 // GET /api/leagues - Get all leagues with optional filtering
 router.get('/',
   authenticateToken,
-  requirePermission('leagues:read'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:list',
+  }),
   validateQuery(leagueQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, LeagueQueryParams>, res: Response): Promise<void> => {
-    const { page = 1, limit = 50, ...filters } = req.query;
+    const { page = 1, limit = 50, ...filters } = (req as any).query;
 
     // Use cached aggregation for expensive league count queries
     const result = await CacheHelpers.cacheAggregation(
@@ -194,7 +190,7 @@ router.get('/',
         const leagues: LeagueWithCounts[] = await paginatedQuery;
 
         // Get counts using separate optimized queries instead of expensive JOINs
-        const leagueIds = leagues.map(league => league.id);
+        const leagueIds = leagues.map(league => (league as any).id);
 
         // Optimized team counts using idx_teams_league_rank index
         const teamCounts = leagueIds.length > 0 ? await db('teams')
@@ -221,8 +217,8 @@ router.get('/',
 
         const enhancedLeagues: LeagueWithCounts[] = leagues.map(league => ({
           ...league,
-          team_count: teamCountMap[league.id] || 0,
-          game_count: gameCountMap[league.id] || 0
+          team_count: teamCountMap[(league as any).id] || 0,
+          game_count: gameCountMap[(league as any).id] || 0
         }));
 
         return {
@@ -246,9 +242,15 @@ router.get('/',
 
 // GET /api/leagues/:id - Get specific league with teams
 router.get('/:id',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:details',
+    getResourceId: (req) => (req as any).params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: Request<{ id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
+    const leagueId = (req as any).params.id;
 
     // Cache league details for 10 minutes
     const result = await CacheHelpers.cachePaginatedQuery(
@@ -280,8 +282,8 @@ router.get('/:id',
         const upcoming_games = games.filter(g => new Date(g.game_date) > now).length;
 
         return {
-          league,
-          teams,
+          league: league as any,
+          teams: teams as any,
           games,
           stats: {
             team_count: teams.length,
@@ -307,10 +309,13 @@ router.get('/:id',
 // POST /api/leagues - Create new league
 router.post('/',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'create',
+  }),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, LeagueCreateBody>, res: Response): Promise<void> => {
-    const value = req.body;
+    const value = (req as any).body;
 
     // Check if league already exists
     const existingLeague = await db('leagues')
@@ -320,7 +325,7 @@ router.post('/',
         gender: value.gender,
         division: value.division,
         season: value.season
-      })
+      } as any)
       .first();
 
     if (existingLeague) {
@@ -336,7 +341,7 @@ router.post('/',
       res,
       { league },
       'League created successfully',
-      `/api/leagues/${league.id}`
+      `/api/leagues/${(league as any).id}`
     );
   })
 );
@@ -344,10 +349,13 @@ router.post('/',
 // POST /api/leagues/bulk - Create multiple leagues
 router.post('/bulk',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'bulk_create',
+  }),
   validateBody(bulkLeagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkLeagueCreateBody>, res: Response): Promise<void> => {
-    const { organization, age_groups, genders, divisions, season, level } = req.body;
+    const { organization, age_groups, genders, divisions, season, level } = (req as any).body;
     const leaguesToCreate: LeagueCreateBody[] = [];
     const duplicates: string[] = [];
 
@@ -381,7 +389,7 @@ router.post('/bulk',
     // Create new leagues
     const createdLeagues: any[] = [];
     if (leaguesToCreate.length > 0) {
-      const leagues = await db('leagues').insert(leaguesToCreate).returning('*');
+      const leagues = await db('leagues').insert(leaguesToCreate as any).returning('*');
       createdLeagues.push(...leagues);
 
       // Invalidate related caches
@@ -407,12 +415,16 @@ router.post('/bulk',
 // PUT /api/leagues/:id - Update league
 router.put('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'update',
+    getResourceId: (req) => (req as any).params.id,
+  }),
   validateParams(idParamSchema),
   validateBody(leagueSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, LeagueUpdateBody>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
-    const value = req.body;
+    const leagueId = (req as any).params.id;
+    const value = (req as any).body;
 
     const [league] = await db('leagues')
       .where('id', leagueId)
@@ -433,10 +445,14 @@ router.put('/:id',
 // DELETE /api/leagues/:id - Delete league
 router.delete('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'delete',
+    getResourceId: (req) => (req as any).params.id,
+  }),
   validateParams(idParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }>, res: Response): Promise<void> => {
-    const leagueId = req.params.id;
+    const leagueId = (req as any).params.id;
 
     const league = await db('leagues').where('id', leagueId).first();
     if (!league) {
@@ -447,10 +463,10 @@ router.delete('/:id',
     const teamCount = await db('teams').where('league_id', leagueId).count('* as count').first();
     const gameCount = await db('games').where('league_id', leagueId).count('* as count').first();
 
-    if (parseInt(teamCount!.count.toString()) > 0 || parseInt(gameCount!.count.toString()) > 0) {
+    if (parseInt((teamCount as any).count.toString()) > 0 || parseInt((gameCount as any).count.toString()) > 0) {
       throw ErrorFactory.conflict('Cannot delete league with existing teams or games', {
-        teams: parseInt(teamCount!.count.toString()),
-        games: parseInt(gameCount!.count.toString())
+        teams: parseInt((teamCount as any).count.toString()),
+        games: parseInt((gameCount as any).count.toString())
       });
     }
 
@@ -465,35 +481,44 @@ router.delete('/:id',
 
 // GET /api/leagues/options/filters - Get filter options for dropdowns
 router.get('/options/filters',
-  enhancedAsyncHandler(async (req: Request, res: Response): Promise<void> => {
-    // Cache filter options for 30 minutes as they change infrequently
-    const result = await CacheHelpers.cacheLookupData(
-      async (): Promise<FilterOptions> => {
-        // Use Promise.all for parallel execution of independent queries
-        const [organizations, age_groups, genders, divisions, seasons, levels] = await Promise.all([
-          db('leagues').distinct('organization').orderBy('organization'),
-          db('leagues').distinct('age_group').orderBy('age_group'),
-          db('leagues').distinct('gender').orderBy('gender'),
-          db('leagues').distinct('division').orderBy('division'),
-          db('leagues').distinct('season').orderBy('season', 'desc'),
-          db('leagues').distinct('level').orderBy('level')
-        ]);
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'league',
+    action: 'view:list',
+  }),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Use Promise.all for parallel execution of independent queries
+      const [organizations, age_groups, genders, divisions, seasons] = await Promise.all([
+        db('leagues').distinct('organization').orderBy('organization'),
+        db('leagues').distinct('age_group').orderBy('age_group'),
+        db('leagues').distinct('gender').orderBy('gender'),
+        db('leagues').distinct('division').orderBy('division'),
+        db('leagues').distinct('season').orderBy('season', 'desc')
+      ]);
 
-        return {
-          organizations: organizations.map(o => o.organization),
-          age_groups: age_groups.map(a => a.age_group),
-          genders: genders.map(g => g.gender),
-          divisions: divisions.map(d => d.division),
-          seasons: seasons.map(s => s.season),
-          levels: levels.map(l => l.level)
-        };
-      },
-      'filter_options',
-      30 * 60 * 1000 // Cache for 30 minutes
-    );
+      const result = {
+        organizations: organizations.map((o: any) => o.organization).filter(Boolean),
+        age_groups: age_groups.map((a: any) => a.age_group).filter(Boolean),
+        genders: genders.map((g: any) => g.gender).filter(Boolean),
+        divisions: divisions.map((d: any) => d.division).filter(Boolean),
+        seasons: seasons.map((s: any) => s.season).filter(Boolean),
+        levels: [] // Leagues table doesn't have a level column
+      };
 
-    ResponseFormatter.sendSuccess(res, result, 'Filter options retrieved successfully');
-  })
+      res.json({
+        success: true,
+        data: result,
+        message: 'Filter options retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch filter options'
+      });
+    }
+  }
 );
 
 export default router;

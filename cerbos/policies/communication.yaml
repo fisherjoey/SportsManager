@@ -1,0 +1,13 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "communication"
+  rules:
+    - actions:
+        - "*"
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      name: admins-full-access

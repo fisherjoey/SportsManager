@@ -29,6 +29,7 @@ import {
   UserInfo,
   DeliveryStatus
 } from '../types/communication';
+import notificationService from './NotificationService';
 
 export class CommunicationService {
   private pool: Pool;
@@ -217,9 +218,14 @@ export class CommunicationService {
       // Get target recipients
       const recipients = await this.getTargetRecipients(target_audience);
 
-      // Send to recipients
+      // Send to recipients with notification creation
       if (recipients.length > 0) {
-        await this.sendToRecipients(client, communication.id, recipients);
+        await this.sendToRecipients(client, communication.id, recipients, false, {
+          title,
+          content,
+          type,
+          priority
+        });
       }
 
       // Update status to published if publish_date is now or in the past
@@ -343,9 +349,14 @@ export class CommunicationService {
       // Get target recipients
       const recipients = await this.getTargetRecipients(targetAudience);
 
-      // Send to recipients
+      // Send to recipients with notification creation
       if (recipients.length > 0) {
-        await this.sendToRecipients(client, communicationId, recipients, true);
+        await this.sendToRecipients(client, communicationId, recipients, true, {
+          title: communication.title,
+          content: communication.content,
+          type: communication.type,
+          priority: communication.priority
+        });
       }
 
       // Update status to published
@@ -675,7 +686,8 @@ export class CommunicationService {
     client: PoolClient,
     communicationId: string,
     recipients: string[],
-    onConflictDoNothing: boolean = false
+    onConflictDoNothing: boolean = false,
+    communicationData?: { title: string; content: string; type: string; priority: string }
   ): Promise<void> {
     if (recipients.length === 0) {
       return;
@@ -696,6 +708,39 @@ export class CommunicationService {
     `;
 
     await client.query(query, [communicationId, ...recipients]);
+
+    // Create in-app notifications for each recipient
+    if (communicationData) {
+      const { title, content, type, priority } = communicationData;
+
+      // Determine notification type based on communication type
+      let notificationType: 'assignment' | 'status_change' | 'reminder' | 'system' = 'system';
+      if (type === 'emergency') {
+        notificationType = 'system';
+      }
+
+      // Create notifications for all recipients (in parallel for performance)
+      const notificationPromises = recipients.map(recipientId =>
+        notificationService.createNotification({
+          user_id: recipientId,
+          type: notificationType,
+          title: `${priority === 'urgent' || priority === 'high' ? '🔴 ' : ''}${title}`,
+          message: content.substring(0, 200) + (content.length > 200 ? '...' : ''), // Truncate long content
+          link: `/communications/${communicationId}`,
+          metadata: {
+            communication_id: communicationId,
+            communication_type: type,
+            priority: priority
+          }
+        }).catch(err => {
+          console.error(`Failed to create notification for user ${recipientId}:`, err);
+          // Don't throw - let other notifications continue
+        })
+      );
+
+      await Promise.allSettled(notificationPromises);
+      console.log(`✅ Created ${recipients.length} in-app notifications for communication ${communicationId}`);
+    }
   }
 
   /**

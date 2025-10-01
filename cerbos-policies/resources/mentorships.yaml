@@ -1,0 +1,57 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for mentorships resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "mentorships"
+  rules:
+    # Admin rules - full access within their organization
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    # Assignor rules - basic access
+    - actions: ['view', 'list']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+
+    - actions: ['create']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - actions: ['manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    # Referee rules - limited access
+    - actions: ['view', 'list']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    # Guest rules - no access
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

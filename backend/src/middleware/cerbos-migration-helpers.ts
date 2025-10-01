@@ -91,7 +91,7 @@ export async function getRefereeResourceAttributes(refereeId: string) {
     isAvailable: referee.is_available,
     isActive: referee.is_active,
     profileVisibility: referee.profile_visibility || 'private',
-    activeAssignments: parseInt(String(activeAssignments?.count || 0)),
+    activeAssignments: parseInt(String((activeAssignments as any)?.count || 0)),
   };
 }
 

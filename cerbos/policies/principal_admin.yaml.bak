@@ -1,0 +1,31 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: |-
+  Principal policy for admin and super_admin roles.
+  Grants full access to all resources in the system.
+
+principalPolicy:
+  principal: admin
+  version: "default"
+  rules:
+    - resource: "*"
+      actions:
+        - name: "*"
+          action: EFFECT_ALLOW
+          effect: EFFECT_ALLOW
+
+---
+apiVersion: api.cerbos.dev/v1
+description: |-
+  Principal policy for super_admin role.
+  Grants full access to all resources in the system.
+
+principalPolicy:
+  principal: super_admin
+  version: "default"
+  rules:
+    - resource: "*"
+      actions:
+        - name: "*"
+          action: EFFECT_ALLOW
+          effect: EFFECT_ALLOW

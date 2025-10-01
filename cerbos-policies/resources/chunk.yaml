@@ -1,0 +1,22 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for chunk resource (game groupings for bulk assignment)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "chunk"
+  rules:
+    - actions: ['view:list', 'view:details', 'create', 'update', 'delete', 'assign', 'auto_create']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

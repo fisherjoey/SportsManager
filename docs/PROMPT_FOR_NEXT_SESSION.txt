@@ -1,0 +1,38 @@
+I need you to complete the Cerbos policy creation for my SportsManager application.
+
+CONTEXT:
+Super Admin was getting "403 Forbidden" on API calls. We fixed the root cause (Cerbos was using SQLite instead of loading YAML files) and now it's working for 3 resources (user, game, assignment). But 38 other resources still need policy files created.
+
+YOUR TASK:
+1. Read the file SESSION_SUMMARY.md to understand what was fixed
+2. Run the script: ./create_cerbos_policies.sh
+3. Verify all 41 policies are loaded
+4. Test that the API endpoints work
+
+The script will automatically:
+- Create 38 individual YAML policy files in cerbos/policies/
+- Restart Cerbos
+- Show you the policy count
+
+VERIFICATION:
+After running the script, confirm:
+- Cerbos shows "Found 41 executable policies"
+- API endpoints return data (not 403 errors)
+- Run this test command:
+
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzYjViOTRmMy1hNzAwLTRjNTktYTI5Ny01ZGNiNTQzZDM3MmQiLCJlbWFpbCI6ImFkbWluQHJlZmFzc2lnbi5jb20iLCJyb2xlcyI6WyJTdXBlciBBZG1pbiIsIkFkbWluIl0sImlhdCI6MTc1OTAwNzQzMCwiZXhwIjoxNzU5NjEyMjMwfQ.kWjM3-7HEnRKs4FCWW6Nm59nx66bWUZAPOp9xcn7gV8"
+curl -s "http://localhost:3001/api/teams" -H "Authorization: Bearer $TOKEN"
+
+Should return JSON data, not a 403 error.
+
+DOCUMENTATION:
+All details are in these files:
+- SESSION_SUMMARY.md - What was fixed and current state
+- QUICK_START.md - Quick reference
+- CERBOS_POLICY_CREATION_PLAN.md - Complete technical guide
+- README_CERBOS_FIX.md - Overview and index
+
+PROJECT LOCATION:
+C:\Users\School\OneDrive\Desktop\SportsManager-pre-typescript
+
+Just run the script and verify it worked. The script is ready to go.

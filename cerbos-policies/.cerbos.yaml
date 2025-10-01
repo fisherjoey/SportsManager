@@ -17,6 +17,3 @@ audit:
 
 schema:
   enforcement: reject
-
-compile:
-  errorOnDuplicateDefs: true

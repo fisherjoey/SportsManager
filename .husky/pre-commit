@@ -1,0 +1,22 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run Cerbos policy coverage validation before commit
+echo "🔍 Validating Cerbos policy coverage..."
+
+cd backend && npm run cerbos:validate
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Cerbos policy coverage check failed!"
+  echo "   Some endpoints are missing Cerbos policies."
+  echo ""
+  echo "   Run 'npm run cerbos:validate:verbose' for details."
+  echo ""
+  echo "   To skip this check (not recommended):"
+  echo "   git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Cerbos policy coverage validated"

@@ -3,14 +3,18 @@
 import express from 'express';
 const router = express.Router();
 import db from '../config/database';
-import { authenticateToken, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler  } from '../middleware/errorHandling';
 
 /**
  * GET /api/budgets/utilization
  * Get current budget utilization data - simplified version of financial dashboard logic
  */
-router.get('/utilization', authenticateToken, requireAnyRole(['admin', 'finance']), asyncHandler(async (req, res) => {
+router.get('/utilization', authenticateToken, requireCerbosPermission({
+  resource: 'budget',
+  action: 'view:utilization',
+}), asyncHandler(async (req, res) => {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   
@@ -122,7 +126,10 @@ router.get('/utilization', authenticateToken, requireAnyRole(['admin', 'finance'
  * GET /api/budgets/categories
  * Get simplified budget categories list
  */
-router.get('/categories', authenticateToken, requireAnyRole(['admin', 'finance']), asyncHandler(async (req, res) => {
+router.get('/categories', authenticateToken, requireCerbosPermission({
+  resource: 'budget',
+  action: 'view:categories',
+}), asyncHandler(async (req, res) => {
   const categories = [
     { id: 1, name: 'Referee Wages', description: 'Payment to referees for completed games' },
     { id: 2, name: 'Operations', description: 'Day-to-day operational expenses' },

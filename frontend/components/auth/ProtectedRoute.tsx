@@ -13,8 +13,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
-import { usePermissions } from '@/hooks/usePermissions'
-import { getPagePermissions, getRoleConfig, isViewAllowedForRole } from '@/lib/rbac-config'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -51,9 +49,7 @@ export function ProtectedRoute({
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
-  const { hasPermission, hasAnyPermission, hasAllPermissions, permissions } = usePermissions()
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
-  const [requiredPerms, setRequiredPerms] = useState<string[]>([])
 
   useEffect(() => {
     if (authLoading) return
@@ -64,73 +60,46 @@ export function ProtectedRoute({
       return
     }
 
-    // Determine required permissions
-    let permsToCheck: string[] = []
-    
-    if (requiredPermissions) {
-      // Use explicitly provided permissions
-      permsToCheck = requiredPermissions
-    } else if (isDashboardView && viewName) {
-      // Check dashboard view permissions
-      const viewKey = `dashboard-view:${viewName}`
-      permsToCheck = getPagePermissions(viewKey)
-      
-      // Also check if the view is allowed for the user's role
-      if (user?.role) {
-        const roleConfig = getRoleConfig(user.role)
-        if (roleConfig && !isViewAllowedForRole(user.role, viewName)) {
+    // Check page access via backend API
+    const checkAccess = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-page-access`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ page: pathname })
+        })
+
+        if (!response.ok) {
           setIsAuthorized(false)
-          setRequiredPerms(permsToCheck)
           if (onAccessDenied) onAccessDenied()
           return
         }
+
+        const data = await response.json()
+        const hasAccess = data.data?.hasAccess || false
+
+        setIsAuthorized(hasAccess)
+
+        if (!hasAccess && onAccessDenied) {
+          onAccessDenied()
+        }
+      } catch (error) {
+        console.error('Failed to check page access:', error)
+        setIsAuthorized(false)
+        if (onAccessDenied) onAccessDenied()
       }
-    } else {
-      // Auto-detect permissions based on pathname
-      permsToCheck = getPagePermissions(pathname)
     }
 
-    setRequiredPerms(permsToCheck)
-
-    // If no permissions required, allow access
-    if (permsToCheck.length === 0) {
-      setIsAuthorized(true)
-      return
-    }
-
-    // Admin always has access
-    if (user?.role === 'admin') {
-      setIsAuthorized(true)
-      return
-    }
-
-    // Check permissions
-    let hasAccess = false
-    if (requireAll) {
-      hasAccess = hasAllPermissions(permsToCheck)
-    } else {
-      hasAccess = hasAnyPermission(permsToCheck)
-    }
-
-    setIsAuthorized(hasAccess)
-    
-    if (!hasAccess && onAccessDenied) {
-      onAccessDenied()
-    }
+    checkAccess()
   }, [
     authLoading,
     isAuthenticated,
     pathname,
-    requiredPermissions,
-    requireAll,
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    user,
     router,
-    onAccessDenied,
-    isDashboardView,
-    viewName
+    onAccessDenied
   ])
 
   // Show loading state
@@ -186,23 +155,16 @@ export function ProtectedRoute({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {requiredPerms.length > 0 && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Required Permissions</AlertTitle>
-                <AlertDescription>
-                  <div className="mt-2 space-y-1">
-                    <p className="text-sm">This page requires {requireAll ? 'all' : 'one'} of the following permissions:</p>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground">
-                      {requiredPerms.map(perm => (
-                        <li key={perm}>{perm}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-            
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Insufficient Access</AlertTitle>
+              <AlertDescription>
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm">Your account does not have access to this page. Please contact an administrator if you believe this is an error.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button 
                 variant="outline" 

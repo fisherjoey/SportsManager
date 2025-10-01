@@ -3,11 +3,15 @@
 import express from 'express';
 const router = express.Router();
 import db from '../config/database';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { clearSettingsCache  } from '../utils/organization-settings';
 
 // Get organization settings
-router.get('/settings', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/settings', authenticateToken, requireCerbosPermission({
+  resource: 'organization',
+  action: 'view:settings',
+}), async (req, res) => {
   try {
     const result = await db('organization_settings')
       .select('id', 'organization_name', 'payment_model', 'default_game_rate', 'availability_strategy', 'created_at', 'updated_at')
@@ -45,7 +49,10 @@ router.get('/settings', authenticateToken, requireRole('admin'), async (req, res
 });
 
 // Update organization settings
-router.put('/settings', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/settings', authenticateToken, requireCerbosPermission({
+  resource: 'organization',
+  action: 'update:settings',
+}), async (req, res) => {
   try {
     const { organization_name, payment_model, default_game_rate, availability_strategy } = req.body;
     

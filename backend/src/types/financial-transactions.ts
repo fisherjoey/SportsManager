@@ -1,17 +1,5 @@
 import { Request, Response } from 'express';
 
-// Base interfaces
-export interface AuthenticatedUser {
-  id: number;
-  organization_id?: number;
-  role: string;
-  email: string;
-}
-
-export interface AuthenticatedRequest extends Request {
-  user: AuthenticatedUser;
-}
-
 // Database models
 export interface FinancialTransaction {
   id: number;

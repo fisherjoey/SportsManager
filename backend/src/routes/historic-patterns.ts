@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Validation schemas
 const applyPatternSchema = Joi.object({
@@ -215,7 +216,10 @@ class HistoricPatternService {
 }
 
 // GET /api/assignments/patterns - Get historic patterns
-router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'historic_pattern',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const { 
       referee_id, 
@@ -286,7 +290,10 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // POST /api/assignments/patterns/apply - Apply pattern to games
-router.post('/apply', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/apply', authenticateToken, requireCerbosPermission({
+  resource: 'historic_pattern',
+  action: 'apply',
+}), async (req, res) => {
   try {
     const { error, value } = applyPatternSchema.validate(req.body);
     if (error) {
@@ -397,7 +404,10 @@ router.post('/apply', authenticateToken, requireRole('admin'), async (req, res) 
 });
 
 // POST /api/assignments/patterns/analyze - Analyze patterns
-router.post('/analyze', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/analyze', authenticateToken, requireCerbosPermission({
+  resource: 'historic_pattern',
+  action: 'analyze',
+}), async (req, res) => {
   try {
     const { error, value } = analyzePatternSchema.validate(req.body);
     if (error) {
@@ -496,7 +506,11 @@ router.post('/analyze', authenticateToken, requireRole('admin'), async (req, res
 });
 
 // GET /api/assignments/patterns/:id - Get specific pattern
-router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'historic_pattern',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -559,7 +573,11 @@ router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // DELETE /api/assignments/patterns/:id - Delete pattern
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'historic_pattern',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 

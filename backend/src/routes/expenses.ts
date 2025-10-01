@@ -36,12 +36,9 @@ const router = express.Router();
 // Import dependencies
 import db from '../config/database';
 import {
-  authenticateToken,
-  requireRole,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
+  authenticateToken
 } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import {
   receiptUploader,
   fileUploadSecurity,
@@ -49,7 +46,7 @@ import {
   virusScan
 } from '../middleware/fileUpload';
 import receiptProcessingService from '../services/receiptProcessingService';
-import approvalWorkflowService from '../services/approvalWorkflowService';
+import approvalWorkflowService from '../services/ApprovalWorkflowService';
 import paymentMethodService from '../services/paymentMethodService';
 import { referenceCache, clearUserCache } from '../middleware/responseCache';
 import { createQueue } from '../config/queue';
@@ -68,7 +65,7 @@ const receiptQueue = createQueue('receipt processing', {
 });
 
 // Process receipt jobs
-receiptQueue.process(async (job: QueueJob) => {
+receiptQueue.process(async (job: any) => {
   const { receiptId } = job.data;
   console.log(`Processing receipt job: ${receiptId}`);
 
@@ -204,10 +201,10 @@ const formatReceipt = (receipt: any): FormattedReceipt => {
 router.post('/receipts/upload',
   (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     console.log('=== UPLOAD ROUTE START ===');
-    console.log('Request method:', req.method);
-    console.log('Request path:', req.path);
-    console.log('Content-Type:', req.headers['content-type']);
-    console.log('Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
+    console.log('Request method:', (req as any).method);
+    console.log('Request path:', (req as any).path);
+    console.log('Content-Type:', (req as any).headers['content-type']);
+    console.log('Authorization header:', (req as any).headers.authorization ? 'Present' : 'Missing');
     next();
   },
   authenticateToken,
@@ -227,7 +224,7 @@ router.post('/receipts/upload',
     try {
       console.log('Upload route - User:', req.user?.id || 'undefined');
       console.log('Upload route - File:', req.file ? req.file.originalname : 'no file');
-      console.log('Upload route - Body:', req.body);
+      console.log('Upload route - Body:', (req as any).body);
 
       if (!req.file) {
         console.log('Upload route - No file provided');
@@ -239,8 +236,8 @@ router.post('/receipts/upload',
       }
 
       // Validate additional fields
-      console.log('Validating req.body:', req.body);
-      const { error, value } = uploadSchema.validate(req.body);
+      console.log('Validating req.body:', (req as any).body);
+      const { error, value } = uploadSchema.validate((req as any).body);
       if (error) {
         console.log('Validation error:', error.details[0].message);
         res.status(400).json({
@@ -255,21 +252,22 @@ router.post('/receipts/upload',
       const receiptId = crypto.randomUUID();
 
       // Calculate file hash asynchronously for better performance
-      const fileHash = await calculateFileHash(req.file.path);
+      const fileHash = await calculateFileHash((req as any).file.path);
 
       // Check for duplicate receipts
       try {
         const existingReceipt = await db('expense_receipts')
-          .where({ file_hash: fileHash, user_id: req.user.id })
+          .where('file_hash', fileHash)
+          .where('user_id', (req as any).user.id)
           .first();
 
         if (existingReceipt) {
           // Clean up uploaded file
-          await fs.remove(req.file.path);
+          await fs.remove((req as any).file.path);
           res.status(409).json({
             error: 'Duplicate receipt',
             message: 'This receipt has already been uploaded',
-            existingReceiptId: existingReceipt.id
+            existingReceiptId: (existingReceipt as any).id
           });
           return;
         }
@@ -278,17 +276,17 @@ router.post('/receipts/upload',
         // Continue with upload but log the error
       }
 
-      let receipt: ExpenseReceipt;
+      let receipt: any;
       try {
         [receipt] = await db('expense_receipts').insert({
           id: receiptId,
-          user_id: req.user.id,
-          organization_id: req.user.organization_id || req.user.id,
-          original_filename: req.file.originalname,
-          file_path: req.file.path,
-          file_type: req.file.mimetype.startsWith('image/') ? 'image' : 'pdf',
-          mime_type: req.file.mimetype,
-          file_size: req.file.size,
+          user_id: (req as any).user.id,
+          organization_id: (req as any).user.organization_id || (req as any).user.id,
+          original_filename: (req as any).file.originalname,
+          file_path: (req as any).file.path,
+          file_type: (req as any).file.mimetype.startsWith('image/') ? 'image' : 'pdf',
+          mime_type: (req as any).file.mimetype,
+          file_size: (req as any).file.size,
           file_hash: fileHash,
           processing_status: 'uploaded',
           processing_metadata: JSON.stringify({
@@ -302,11 +300,11 @@ router.post('/receipts/upload',
             expense_urgency: value.expenseUrgency || 'normal',
             urgency_justification: value.urgencyJustification || null
           })
-        }).returning('*');
+        } as any).returning('*');
       } catch (dbError) {
         console.error('Database insert failed:', dbError);
         // Clean up uploaded file on database failure
-        await fs.remove(req.file.path);
+        await fs.remove((req as any).file.path);
         res.status(500).json({
           error: 'Database error',
           message: 'Failed to save receipt information'
@@ -335,7 +333,7 @@ router.post('/receipts/upload',
             : 'failed';
 
         // PERFORMANCE OPTIMIZATION: Clear user cache when new receipt is added
-        clearUserCache(req.user.id);
+        clearUserCache((req as any).user.id);
 
         const response: ReceiptUploadResponse = {
           message: 'Receipt uploaded and processed successfully',
@@ -368,7 +366,7 @@ router.post('/receipts/upload',
               processing_status: 'failed',
               processing_notes: `Processing failed: ${(processingError as Error).message}`,
               processed_at: new Date()
-            });
+            } as any);
         } catch (updateError) {
           console.error('Failed to update receipt status after processing error:', updateError);
         }
@@ -419,12 +417,15 @@ router.post('/receipts/upload',
  */
 router.get('/receipts',
   authenticateToken,
-  requirePermission('expenses:read'),
+  requireCerbosPermission({
+    resource: 'expense',
+    action: 'view:list',
+  }),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      console.log('GET /receipts - User:', req.user.id);
+      console.log('GET /receipts - User:', (req as any).user.id);
 
-      const { error, value } = querySchema.validate(req.query);
+      const { error, value } = querySchema.validate((req as any).query);
       if (error) {
         res.status(400).json({
           error: 'Invalid query parameters',
@@ -439,7 +440,7 @@ router.get('/receipts',
       // PERFORMANCE OPTIMIZATION: Use more efficient query structure
       // Start with the most selective filter first (user_id)
       let baseQuery = db('expense_receipts')
-        .where('expense_receipts.user_id', req.user.id);
+        .where('expense_receipts.user_id', (req as any).user.id);
 
       // Apply status filter early for better index usage
       if (status) {
@@ -533,7 +534,7 @@ router.get('/receipts',
       // Execute queries in parallel
       const [countResult, receipts] = await Promise.all([countPromise, dataPromise]);
 
-      const total = parseInt(countResult.count as string);
+      const total = parseInt((countResult as any).count as string);
       const totalPages = Math.ceil(total / limit!);
 
       // OPTIMIZATION: Efficient data transformation with minimal parsing
@@ -569,7 +570,7 @@ router.get('/receipts/:id',
   authenticateToken,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const receiptId = req.params.id;
+      const receiptId = (req as any).params.id;
 
       // Handle temporary receipt IDs (from simulated uploads)
       if (receiptId.startsWith('temp-receipt-')) {
@@ -601,7 +602,7 @@ router.get('/receipts/:id',
         .leftJoin('expense_categories', 'expense_data.category_id', 'expense_categories.id')
         .leftJoin('expense_approvals', 'expense_data.id', 'expense_approvals.expense_data_id')
         .where('expense_receipts.id', receiptId)
-        .where('expense_receipts.user_id', req.user.id)
+        .where('expense_receipts.user_id', (req as any).user.id)
         .select(
           'expense_receipts.*',
           'expense_data.*',

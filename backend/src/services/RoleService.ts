@@ -11,6 +11,7 @@
 
 import { BaseService, QueryOptions } from './BaseService';
 import { Database, UUID, RoleEntity, PermissionEntity, UserRoleAssignment, PaginatedResult, User, Knex } from '../types';
+import axios from 'axios';
 
 // Role-specific interfaces extending base types
 export interface Role extends Omit<RoleEntity, 'permissions'> {
@@ -51,6 +52,7 @@ export interface RoleDeletionCheck {
 // Role creation and update interfaces
 export interface CreateRoleData {
   name: string;
+  code?: string;
   description?: string;
   is_system?: boolean;
   is_active?: boolean;
@@ -74,6 +76,8 @@ export interface RoleOperationOptions {
 }
 
 class RoleService extends BaseService<Role> {
+  private cerbosAdminUrl = process.env.CERBOS_ADMIN_URL || 'http://localhost:3592/admin';
+
   constructor(db: Database) {
     super('roles', db, {
       defaultOrderBy: 'name',
@@ -99,84 +103,80 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get role with its permissions
+   * Get role with its permissions (DEPRECATED - Permissions now managed by Cerbos)
    * @param roleId - Role ID
    * @param options - Options including transaction
-   * @returns Role with permissions
+   * @returns Role without permissions
    */
   async getRoleWithPermissions(roleId: UUID, options: RoleOperationOptions = {}): Promise<Role> {
-    const db = options.transaction || this.db;
-    
-    try {
-      const role = await (db as any)('roles')
-        .leftJoin('role_permissions', 'roles.id', 'role_permissions.role_id')
-        .leftJoin('permissions', 'role_permissions.permission_id', 'permissions.id')
-        .select(
-          'roles.*',
-          (db as any).raw('COALESCE(JSON_AGG(DISTINCT permissions.*) FILTER (WHERE permissions.id IS NOT NULL), \'[]\') as permissions')
-        )
-        .where('roles.id', roleId)
-        .groupBy('roles.id')
-        .first() as Role & { permissions: string | Permission[] };
+    console.warn('DEPRECATED: getRoleWithPermissions() - Permissions are now managed by Cerbos policies');
 
+    try {
+      const role = await this.getRoleById(roleId);
       if (!role) {
         throw new Error(`Role not found with id: ${roleId}`);
       }
 
-      // Parse permissions JSON
-      role.permissions = typeof role.permissions === 'string' 
-        ? JSON.parse(role.permissions) as Permission[]
-        : (role.permissions as Permission[]) || [];
-
-      return role;
+      // Return role without permissions since they're managed by Cerbos
+      return {
+        ...role,
+        permissions: []
+      };
     } catch (error) {
-      console.error('Error getting role with permissions:', error);
-      throw new Error(`Failed to get role with permissions: ${(error as Error).message}`);
+      console.error('Error getting role:', error);
+      throw new Error(`Failed to get role: ${(error as Error).message}`);
     }
   }
 
   /**
    * Create a new role
    * @param roleData - Role data
-   * @param permissions - Permission IDs to assign
-   * @returns Created role with permissions
+   * @returns Created role
    */
-  async createRole(roleData: CreateRoleData, permissions: UUID[] = []): Promise<Role> {
+  async createRole(roleData: CreateRoleData): Promise<Role> {
     return await this.withTransaction(async (trx) => {
+      // Generate code from name if not provided
+      const dataWithCode = {
+        ...roleData,
+        code: roleData.code || roleData.name
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]/g, ''),
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
       // Create the role
       const [role] = await (trx as any)('roles')
-        .insert({
-          ...roleData,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
+        .insert(dataWithCode)
         .returning('*') as Role[];
 
-      // Assign permissions if provided
-      if (permissions && permissions.length > 0) {
-        await this.assignPermissionsToRole(role.id, permissions, { transaction: trx });
+      // Sync role with Cerbos Admin API (optional - doesn't fail DB operation)
+      try {
+        await this.syncRoleWithCerbos(role.name);
+      } catch (error) {
+        console.error(`Failed to sync created role '${role.name}' with Cerbos:`, error);
       }
 
-      // Return role with permissions
-      return await this.getRoleWithPermissions(role.id, { transaction: trx });
+      console.log(`Created role: ${role.name} and synced with Cerbos.`);
+      return role;
     });
   }
 
   /**
-   * Update role and optionally its permissions
+   * Update role
    * @param roleId - Role ID
    * @param roleData - Updated role data
-   * @param permissions - Permission IDs (optional)
-   * @returns Updated role with permissions
+   * @returns Updated role
    */
-  async updateRole(roleId: UUID, roleData: UpdateRoleData, permissions: UUID[] | null = null): Promise<Role> {
+  async updateRole(roleId: UUID, roleData: UpdateRoleData): Promise<Role> {
     return await this.withTransaction(async (trx) => {
       // Check if trying to update Super Admin
       const existingRole = await trx('roles').where('id', roleId).first() as Role;
       if (!existingRole) {
         throw new Error(`Role not found with id: ${roleId}`);
       }
-      
+
       if (existingRole.name === 'Super Admin') {
         throw new Error('Super Admin role cannot be modified');
       }
@@ -194,92 +194,32 @@ class RoleService extends BaseService<Role> {
         throw new Error(`Role not found with id: ${roleId}`);
       }
 
-      // Update permissions if provided
-      if (permissions !== null && Array.isArray(permissions)) {
-        // Remove existing permissions
-        await trx('role_permissions').where('role_id', roleId).del();
-        
-        // Add new permissions
-        if (permissions.length > 0) {
-          await this.assignPermissionsToRole(roleId, permissions, { transaction: trx });
-        }
+      // Sync role with Cerbos Admin API (optional - doesn't fail DB operation)
+      try {
+        await this.syncRoleWithCerbos(role.name);
+      } catch (error) {
+        console.error(`Failed to sync updated role '${role.name}' with Cerbos:`, error);
       }
 
-      // Return updated role with permissions
-      return await this.getRoleWithPermissions(roleId, { transaction: trx });
+      console.log(`Updated role: ${role.name} and synced with Cerbos.`);
+      return role;
     });
   }
 
   /**
-   * Assign permissions to a role
-   * @param roleId - Role ID
-   * @param permissionIds - Permission IDs
-   * @param options - Options
+   * Assign permissions to a role (DEPRECATED - Use Cerbos policies)
    */
   async assignPermissionsToRole(roleId: UUID, permissionIds: UUID[], options: RoleOperationOptions = {}): Promise<void> {
-    const trx = options.transaction || this.db;
-
-    try {
-      // Validate role exists
-      const role = await trx('roles').where('id', roleId).first() as Role;
-      if (!role) {
-        throw new Error(`Role not found with id: ${roleId}`);
-      }
-
-      // Prevent modifying Super Admin permissions
-      if (role.name === 'Super Admin') {
-        throw new Error('Super Admin permissions cannot be modified');
-      }
-
-      // Validate permissions exist
-      if (permissionIds.length > 0) {
-        const existingPermissions = await (trx as any)('permissions')
-          .whereIn('id', permissionIds)
-          .pluck('id') as UUID[];
-        
-        const invalidPermissions = permissionIds.filter(id => !existingPermissions.includes(id));
-        if (invalidPermissions.length > 0) {
-          throw new Error(`Invalid permission IDs: ${invalidPermissions.join(', ')}`);
-        }
-
-        // Insert role-permission relationships
-        const rolePermissions: RolePermissionAssignment[] = permissionIds.map(permissionId => ({
-          role_id: roleId,
-          permission_id: permissionId,
-          created_at: new Date()
-        }));
-
-        await (trx as any)('role_permissions')
-          .insert(rolePermissions)
-          .onConflict(['role_id', 'permission_id'])
-          .ignore();
-      }
-    } catch (error) {
-      console.error('Error assigning permissions to role:', error);
-      throw new Error(`Failed to assign permissions to role: ${(error as Error).message}`);
-    }
+    console.warn('DEPRECATED: assignPermissionsToRole() - Use Cerbos policies instead');
+    throw new Error('Permission assignment is now handled by Cerbos policies. Please update the corresponding policy YAML files.');
   }
 
   /**
-   * Remove permissions from a role
-   * @param roleId - Role ID
-   * @param permissionIds - Permission IDs
-   * @param options - Options
+   * Remove permissions from a role (DEPRECATED - Use Cerbos policies)
    */
   async removePermissionsFromRole(roleId: UUID, permissionIds: UUID[], options: RoleOperationOptions = {}): Promise<number> {
-    const trx = options.transaction || this.db;
-
-    try {
-      const deletedCount = await trx('role_permissions')
-        .where('role_id', roleId)
-        .whereIn('permission_id', permissionIds)
-        .del();
-
-      return deletedCount;
-    } catch (error) {
-      console.error('Error removing permissions from role:', error);
-      throw new Error(`Failed to remove permissions from role: ${(error as Error).message}`);
-    }
+    console.warn('DEPRECATED: removePermissionsFromRole() - Use Cerbos policies instead');
+    throw new Error('Permission removal is now handled by Cerbos policies. Please update the corresponding policy YAML files.');
   }
 
   /**
@@ -354,7 +294,7 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get all available roles with permission counts
+   * Get all available roles with metadata
    * @param options - Query options
    * @returns Roles with metadata
    */
@@ -363,11 +303,10 @@ class RoleService extends BaseService<Role> {
       const { includeInactive = false } = options;
 
       let query = (this.db as any)('roles')
-        .leftJoin('role_permissions', 'roles.id', 'role_permissions.role_id')
         .leftJoin('user_roles', 'roles.id', 'user_roles.role_id')
         .select(
           'roles.*',
-          (this.db as any).raw('COUNT(DISTINCT role_permissions.permission_id) as permission_count'),
+          (this.db as any).raw('0 as permission_count'), // Permissions managed by Cerbos
           (this.db as any).raw('COUNT(DISTINCT user_roles.user_id) as user_count')
         )
         .groupBy('roles.id')
@@ -382,7 +321,7 @@ class RoleService extends BaseService<Role> {
       // Convert counts to integers
       return roles.map(role => ({
         ...role,
-        permission_count: parseInt(role.permission_count) || 0,
+        permission_count: 0, // Permissions are managed by Cerbos
         user_count: parseInt(role.user_count) || 0
       }));
     } catch (error) {
@@ -502,8 +441,11 @@ class RoleService extends BaseService<Role> {
         throw new Error(safetyCheck.reason || 'Cannot delete role');
       }
 
-      // Remove role-permission relationships
-      await trx('role_permissions').where('role_id', roleId).del();
+      // Get role name before deletion for Cerbos sync
+      const roleToDelete = await trx('roles').where('id', roleId).first() as Role;
+      if (!roleToDelete) {
+        throw new Error(`Role not found with id: ${roleId}`);
+      }
 
       // Remove user-role relationships (if forcing)
       if (options.force) {
@@ -512,6 +454,17 @@ class RoleService extends BaseService<Role> {
 
       // Delete the role
       const deletedCount = await trx('roles').where('id', roleId).del();
+
+      if (deletedCount > 0) {
+        // Remove role from Cerbos Admin API (optional - doesn't fail DB operation)
+        try {
+          await this.removeRoleFromCerbos(roleToDelete.name);
+        } catch (error) {
+          console.error(`Failed to remove deleted role '${roleToDelete.name}' from Cerbos:`, error);
+        }
+
+        console.log(`Deleted role ${roleToDelete.name} and removed from Cerbos.`);
+      }
 
       return deletedCount > 0;
     });
@@ -604,22 +557,15 @@ class RoleService extends BaseService<Role> {
   }
 
   /**
-   * Get role permissions (security-critical method)
+   * Get role permissions (DEPRECATED - Use Cerbos policies)
    * @param roleId - Role ID
-   * @returns Array of permissions for the role
+   * @returns Empty array (permissions managed by Cerbos)
    */
   async getRolePermissions(roleId: UUID): Promise<Permission[]> {
-    try {
-      const permissions = await (this.db as any)('permissions')
-        .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
-        .where('role_permissions.role_id', roleId)
-        .select('permissions.*') as Permission[];
+    console.warn('DEPRECATED: getRolePermissions() - Permissions are now managed by Cerbos policies');
 
-      return permissions;
-    } catch (error) {
-      console.error('Error getting role permissions:', error);
-      throw new Error(`Failed to get role permissions: ${(error as Error).message}`);
-    }
+    // Return empty array since permissions are managed by Cerbos
+    return [];
   }
 
   /**
@@ -649,6 +595,168 @@ class RoleService extends BaseService<Role> {
     } catch (error) {
       console.error('Error revoking user role:', error);
       throw new Error(`Failed to revoke user role: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Convert database role name to Cerbos format
+   * @param dbRoleName - Database role name (e.g., "Senior Referee")
+   * @returns Cerbos-formatted role name (e.g., "senior_referee")
+   */
+  private toCerbosRoleName(dbRoleName: string): string {
+    return dbRoleName.toLowerCase().replace(/\s+/g, '_');
+  }
+
+  /**
+   * Get all roles from Cerbos Admin API
+   * @returns Array of Cerbos role names
+   */
+  async getAllCerbosRoles(): Promise<string[]> {
+    try {
+      const authHeader = 'Basic ' + Buffer.from('cerbos:cerbosAdmin').toString('base64');
+
+      const response = await axios.get(`${this.cerbosAdminUrl}/policy`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Extract roles from the common_roles policy
+      const policies = response.data;
+      const commonRolesPolicy = policies.find((policy: any) =>
+        policy.metadata?.sourceFile?.includes('common_roles') ||
+        policy.policyId === 'common_roles'
+      );
+
+      if (!commonRolesPolicy) {
+        console.warn('Common roles policy not found in Cerbos');
+        return [];
+      }
+
+      // Extract role names from the policy structure
+      const roles = commonRolesPolicy.roles || commonRolesPolicy.data?.roles || [];
+      return Object.keys(roles);
+    } catch (error) {
+      console.error('Error fetching Cerbos roles:', error);
+      throw new Error(`Failed to fetch Cerbos roles: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Sync role changes with Cerbos Admin API
+   * @param roleName - Database role name to sync
+   * @returns Success status
+   */
+  async syncRoleWithCerbos(roleName: string): Promise<boolean> {
+    try {
+      const cerbosRoleName = this.toCerbosRoleName(roleName);
+      const authHeader = 'Basic ' + Buffer.from('cerbos:cerbosAdmin').toString('base64');
+
+      // Get current common_roles policy
+      const getPolicyResponse = await axios.get(`${this.cerbosAdminUrl}/policy`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const policies = getPolicyResponse.data;
+      let commonRolesPolicy = policies.find((policy: any) =>
+        policy.metadata?.sourceFile?.includes('common_roles') ||
+        policy.policyId === 'common_roles'
+      );
+
+      if (!commonRolesPolicy) {
+        // Create new common_roles policy if it doesn't exist
+        commonRolesPolicy = {
+          policyId: 'common_roles',
+          roles: {},
+          metadata: {
+            sourceFile: 'common_roles.yaml'
+          }
+        };
+      }
+
+      // Ensure roles object exists
+      if (!commonRolesPolicy.roles) {
+        commonRolesPolicy.roles = {};
+      }
+
+      // Add/update the role in the policy
+      commonRolesPolicy.roles[cerbosRoleName] = {
+        name: roleName,
+        description: `Automatically synced role: ${roleName}`
+      };
+
+      // Update the policy via Admin API
+      await axios.put(`${this.cerbosAdminUrl}/policy/common_roles`, commonRolesPolicy, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(`Successfully synced role '${roleName}' to Cerbos as '${cerbosRoleName}'`);
+      return true;
+    } catch (error) {
+      console.error(`Error syncing role '${roleName}' with Cerbos:`, error);
+      // Don't throw - sync failures shouldn't break DB operations
+      return false;
+    }
+  }
+
+  /**
+   * Remove role from Cerbos Admin API
+   * @param roleName - Database role name to remove
+   * @returns Success status
+   */
+  async removeRoleFromCerbos(roleName: string): Promise<boolean> {
+    try {
+      const cerbosRoleName = this.toCerbosRoleName(roleName);
+      const authHeader = 'Basic ' + Buffer.from('cerbos:cerbosAdmin').toString('base64');
+
+      // Get current common_roles policy
+      const getPolicyResponse = await axios.get(`${this.cerbosAdminUrl}/policy`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const policies = getPolicyResponse.data;
+      const commonRolesPolicy = policies.find((policy: any) =>
+        policy.metadata?.sourceFile?.includes('common_roles') ||
+        policy.policyId === 'common_roles'
+      );
+
+      if (!commonRolesPolicy || !commonRolesPolicy.roles) {
+        console.warn(`Common roles policy not found when trying to remove '${roleName}'`);
+        return true; // Role doesn't exist in Cerbos, consider it successfully removed
+      }
+
+      // Remove the role from the policy
+      if (commonRolesPolicy.roles[cerbosRoleName]) {
+        delete commonRolesPolicy.roles[cerbosRoleName];
+
+        // Update the policy via Admin API
+        await axios.put(`${this.cerbosAdminUrl}/policy/common_roles`, commonRolesPolicy, {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log(`Successfully removed role '${roleName}' from Cerbos (was '${cerbosRoleName}')`);
+      } else {
+        console.log(`Role '${roleName}' (${cerbosRoleName}) was not found in Cerbos policy`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`Error removing role '${roleName}' from Cerbos:`, error);
+      // Don't throw - sync failures shouldn't break DB operations
+      return false;
     }
   }
 }

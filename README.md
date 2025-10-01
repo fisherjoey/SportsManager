@@ -1,104 +1,61 @@
-# Sports Manager Application
+# Sports Manager - Quick Start
 
-A comprehensive sports management system for organizing leagues, teams, games, and referee assignments.
+## Start Development
 
-## Project Structure
+**One command to start everything:**
 
-```
-├── frontend/         # Next.js frontend application
-│   ├── app/         # Next.js App Router pages
-│   ├── components/  # React components
-│   ├── hooks/       # Custom React hooks
-│   ├── lib/         # Utilities and helpers
-│   ├── types/       # TypeScript type definitions
-│   └── public/      # Static assets
-├── backend/          # Node.js/Express backend API (TypeScript)
-│   ├── src/         # Source code
-│   ├── dist/        # Compiled JavaScript
-│   └── migrations/  # Database migrations
-├── docs/            # Project documentation
-│   ├── architecture/ # System architecture docs
-│   └── guides/      # User and admin guides
-├── scripts/         # Build and utility scripts
-└── .github/         # GitHub workflows and templates
-```
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- Redis (optional, can use DISABLE_REDIS=true)
-
-### Installation
-
-1. Clone the repository
-2. Install all dependencies:
-   ```bash
-   npm run install:all
-   ```
-   Or manually:
-   ```bash
-   npm install
-   cd frontend && npm install
-   cd ../backend && npm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp backend/.env.example backend/.env
-   # Edit backend/.env with your database credentials
-   ```
-
-4. Run database migrations:
-   ```bash
-   cd backend && npm run migrate
-   ```
-
-### Development
-
-Start both frontend and backend concurrently:
 ```bash
 npm run dev
 ```
 
-Or start them separately:
+This starts:
+- ✅ Cerbos (authorization) on http://localhost:3592
+- ✅ Backend API on http://localhost:3001  
+- ✅ Frontend on http://localhost:3000
 
-**Backend:**
+## First Time Setup
+
 ```bash
-cd backend && npm run dev
-# Or with Redis disabled:
-cd backend && DISABLE_REDIS=true npm start
+# 1. Install dependencies
+npm run install:all
+
+# 2. Setup environment
+cp backend/.env.example backend/.env
+# Edit backend/.env with your database credentials
+
+# 3. Run migrations
+cd backend && npm run migrate
+
+# 4. Start everything
+npm run dev
 ```
 
-**Frontend:**
+## Useful Commands
+
 ```bash
-cd frontend && npm run dev
+npm run dev              # Start all (Cerbos + Backend + Frontend)
+npm run dev:backend      # Start backend only
+npm run dev:frontend     # Start frontend only
+npm run start:cerbos     # Start Cerbos in background
+npm run stop:cerbos      # Stop Cerbos
+npm run test:all         # Run all tests
+npm run build:all        # Build all
 ```
 
-## Documentation
+## Services
 
-- [Architecture Overview](docs/architecture/)
-- [API Documentation](backend/docs/API.md)
-- [Database Schema](docs/database-diagram.md)
-- [Testing Guide](docs/testing/TESTING-STANDARDS.md)
-- [Development Guide](docs/development/CLAUDE.md)
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:3001 |
+| Cerbos | http://localhost:3592 |
 
-## Tech Stack
+## Troubleshooting
 
-### Backend
-- Node.js with Express
-- TypeScript (migration in progress)
-- PostgreSQL database
-- Redis for caching
-- JWT authentication
+**"Docker not running"**: Start Docker Desktop first, then run `npm run dev`
 
-### Frontend
-- Next.js 14
-- React with TypeScript
-- Tailwind CSS
-- shadcn/ui components
+**Permission errors**: Make sure Cerbos is running: `npm run start:cerbos`
 
-## License
+**Port in use**: Kill the process or change ports in `.env` files
 
-Private repository - All rights reserved
+Full documentation in `/docs`

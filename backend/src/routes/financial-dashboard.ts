@@ -5,12 +5,8 @@
 
 import express, { Response } from 'express';
 import db from '../config/database';
-import {
-  authenticateToken,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
-} from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler } from '../middleware/errorHandling';
 
 import { AuthenticatedRequest } from '../types/auth.types';
@@ -60,9 +56,9 @@ const router = express.Router();
  */
 router.get('/',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({ resource: 'financial_dashboard', action: 'view' }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response<DashboardResponse | ErrorResponse>) => {
-    const validation = validateDashboardQuery(req.query);
+    const validation = validateDashboardQuery((req as any).query);
     if (!validation.isValid) {
       return res.status(400).json({
         error: 'Invalid query parameters',
@@ -115,7 +111,7 @@ router.get('/',
 async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<SummaryMetrics> {
   try {
     // Calculate total referee wages
-    const wageResult = await db('game_assignments as ga')
+    const wageResult = await (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .whereBetween('g.date', [startDate, endDate])
@@ -126,7 +122,7 @@ async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<Summar
     // Calculate total expenses - handle the case where no expenses exist
     let expenseResult: any = null;
     try {
-      expenseResult = await db('expense_data')
+      expenseResult = await (db as any)('expense_data')
         .whereBetween('transaction_date', [startDate, endDate])
         .where('payment_status', 'approved')
         .sum('total_amount as total_expenses')
@@ -139,7 +135,7 @@ async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<Summar
     // Calculate game fees (revenue) - use actual fees from database
     let totalRevenue = 0;
     try {
-      const gameFeeResult = await db('game_fees as gf')
+      const gameFeeResult = await (db as any)('game_fees as gf')
         .leftJoin('games as g', 'gf.game_id', 'g.id')
         .whereBetween('g.game_date', [startDate, endDate])
         .where('gf.payment_status', 'paid')
@@ -150,7 +146,7 @@ async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<Summar
     } catch (error) {
       console.log('No game fees data found, using estimated revenue:', (error as Error).message);
       // Fallback to estimated revenue based on game count
-      const gameCount = await db('games')
+      const gameCount = await (db as any)('games')
         .whereBetween('game_date', [startDate, endDate])
         .count('id as count')
         .first() as any;
@@ -163,7 +159,7 @@ async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<Summar
     const netIncome = calculateNetIncome(totalRevenue, totalWages, totalExpenses);
 
     // Get game count for reporting
-    const gameCount = await db('games')
+    const gameCount = await (db as any)('games')
       .whereBetween('game_date', [startDate, endDate])
       .count('id as count')
       .first() as any;
@@ -186,7 +182,7 @@ async function getSummaryMetrics(startDate: Date, endDate: Date): Promise<Summar
  */
 async function getRefereeWages(startDate: Date, endDate: Date): Promise<RefereeWages> {
   try {
-    const wages = await db('game_assignments as ga')
+    const wages = await (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .whereBetween('g.date', [startDate, endDate])
@@ -203,7 +199,7 @@ async function getRefereeWages(startDate: Date, endDate: Date): Promise<RefereeW
       .orderBy('total_wages', 'desc')
       .limit(DEFAULT_TOP_REFEREES_LIMIT) as any as TopReferee[];
 
-    const totalWages = await db('game_assignments as ga')
+    const totalWages = await (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .whereBetween('g.date', [startDate, endDate])
@@ -211,7 +207,7 @@ async function getRefereeWages(startDate: Date, endDate: Date): Promise<RefereeW
       .sum('u.wage_per_game as total')
       .first() as any;
 
-    const pendingWages = await db('game_assignments as ga')
+    const pendingWages = await (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .whereBetween('g.date', [startDate, endDate])
@@ -240,7 +236,7 @@ async function getRefereeWages(startDate: Date, endDate: Date): Promise<RefereeW
  */
 async function getExpenseBreakdown(startDate: Date, endDate: Date): Promise<ExpenseCategory[]> {
   try {
-    const categories = await db('expense_data as ed')
+    const categories = await (db as any)('expense_data as ed')
       .leftJoin('expense_categories as ec', 'ed.category_id', 'ec.id')
       .whereBetween('ed.transaction_date', [startDate, endDate])
       .where('ed.payment_status', 'approved')
@@ -256,7 +252,7 @@ async function getExpenseBreakdown(startDate: Date, endDate: Date): Promise<Expe
       .orderBy('total_amount', 'desc') as any[];
 
     // Calculate uncategorized expenses
-    const uncategorized = await db('expense_data')
+    const uncategorized = await (db as any)('expense_data')
       .whereBetween('transaction_date', [startDate, endDate])
       .where('payment_status', 'approved')
       .whereNull('category_id')
@@ -302,7 +298,7 @@ async function getRecentTransactions(limit: number = DEFAULT_RECENT_TRANSACTION_
     // Get recent expenses
     let expenses: Transaction[] = [];
     try {
-      const expenseResults = await db('expense_data as ed')
+      const expenseResults = await (db as any)('expense_data as ed')
         .leftJoin('expense_categories as ec', 'ed.category_id', 'ec.id')
         .leftJoin('users as u', 'ed.user_id', 'u.id')
         .select(
@@ -335,7 +331,7 @@ async function getRecentTransactions(limit: number = DEFAULT_RECENT_TRANSACTION_
     // Get recent referee payments (from completed assignments)
     let payments: Transaction[] = [];
     try {
-      const paymentResults = await db('game_assignments as ga')
+      const paymentResults = await (db as any)('game_assignments as ga')
         .join('games as g', 'ga.game_id', 'g.id')
         .join('users as u', 'ga.referee_id', 'u.id')
         .where('ga.status', 'completed')
@@ -381,7 +377,7 @@ async function getRevenueTrends(startDate: Date, endDate: Date): Promise<Revenue
     // Get daily revenue from actual game fees
     let dailyRevenue: any[] = [];
     try {
-      dailyRevenue = await db('game_fees as gf')
+      dailyRevenue = await (db as any)('game_fees as gf')
         .leftJoin('games as g', 'gf.game_id', 'g.id')
         .whereBetween('g.game_date', [startDate, endDate])
         .where('gf.payment_status', 'paid')
@@ -395,7 +391,7 @@ async function getRevenueTrends(startDate: Date, endDate: Date): Promise<Revenue
     } catch (error) {
       console.log('No game fees data found, using estimated revenue:', (error as Error).message);
       // Fallback to estimated revenue based on game count
-      dailyRevenue = await db('games')
+      dailyRevenue = await (db as any)('games')
         .whereBetween('game_date', [startDate, endDate])
         .groupBy('game_date')
         .select(
@@ -409,7 +405,7 @@ async function getRevenueTrends(startDate: Date, endDate: Date): Promise<Revenue
     // Get daily expenses - handle missing table gracefully
     let dailyExpenses: any[] = [];
     try {
-      dailyExpenses = await db('expense_data')
+      dailyExpenses = await (db as any)('expense_data')
         .whereBetween('transaction_date', [startDate, endDate])
         .where('payment_status', 'approved')
         .groupBy('transaction_date')
@@ -423,7 +419,7 @@ async function getRevenueTrends(startDate: Date, endDate: Date): Promise<Revenue
     }
 
     // Get daily referee wages
-    const dailyWages = await db('game_assignments as ga')
+    const dailyWages = await (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .whereBetween('g.date', [startDate, endDate])
@@ -477,7 +473,7 @@ async function getBudgetUtilization(): Promise<BudgetUtilization> {
 
     // Calculate actual spending for each category
     try {
-      const wageSpending = await db('game_assignments as ga')
+      const wageSpending = await (db as any)('game_assignments as ga')
         .join('games as g', 'ga.game_id', 'g.id')
         .join('users as u', 'ga.referee_id', 'u.id')
         .whereRaw('EXTRACT(MONTH FROM g.date) = ?', [currentMonth])
@@ -497,7 +493,7 @@ async function getBudgetUtilization(): Promise<BudgetUtilization> {
 
     // Get expense spending by category - handle missing tables gracefully
     try {
-      const expenseSpending = await db('expense_data as ed')
+      const expenseSpending = await (db as any)('expense_data as ed')
         .leftJoin('expense_categories as ec', 'ed.category_id', 'ec.id')
         .whereRaw('EXTRACT(MONTH FROM ed.transaction_date) = ?', [currentMonth])
         .whereRaw('EXTRACT(YEAR FROM ed.transaction_date) = ?', [currentYear])
@@ -544,7 +540,7 @@ async function getPendingApprovals(): Promise<PendingApprovals> {
   try {
     let expenseCount = 0;
     try {
-      const expenseApprovals = await db('expense_data')
+      const expenseApprovals = await (db as any)('expense_data')
         .where('payment_status', 'pending')
         .count('id as count')
         .first() as any;
@@ -555,7 +551,7 @@ async function getPendingApprovals(): Promise<PendingApprovals> {
 
     let assignmentCount = 0;
     try {
-      const assignmentApprovals = await db('game_assignments')
+      const assignmentApprovals = await (db as any)('game_assignments')
         .where('status', 'pending')
         .count('id as count')
         .first() as any;
@@ -582,9 +578,9 @@ async function getPendingApprovals(): Promise<PendingApprovals> {
  */
 router.get('/referee-payments',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({ resource: 'financial_dashboard', action: 'view:referee_payments' }),
   asyncHandler(async (req: AuthenticatedRequest, res: Response<RefereePaymentResponse | ErrorResponse>) => {
-    const validation = validateRefereePaymentQuery(req.query);
+    const validation = validateRefereePaymentQuery((req as any).query);
     if (!validation.isValid) {
       return res.status(400).json({
         error: 'Invalid query parameters',
@@ -594,7 +590,7 @@ router.get('/referee-payments',
 
     const { startDate, endDate, refereeId, status = 'all' } = validation.parsed;
 
-    let query = db('game_assignments as ga')
+    let query = (db as any)('game_assignments as ga')
       .join('games as g', 'ga.game_id', 'g.id')
       .join('users as u', 'ga.referee_id', 'u.id')
       .leftJoin('leagues as l', 'g.league_id', 'l.id')

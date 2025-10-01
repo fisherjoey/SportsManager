@@ -407,7 +407,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
       };
 
       const [approval] = await db('expense_approvals')
-        .insert(approvalData)
+        .insert(approvalData as any)
         .returning('*');
 
       // Update expense status
@@ -416,10 +416,10 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .update({
           payment_status: 'approved',
           updated_at: new Date()
-        });
+        } as any);
 
       console.log(`Auto-approved expense ${expenseDataId}: ${workflow.autoApprovalReason}`);
-      return [approval];
+      return [approval as unknown as ApprovalRecord];
     } catch (error) {
       throw new WorkflowError(
         WorkflowErrorType.DATABASE_ERROR,
@@ -452,7 +452,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         );
       }
 
-      if (approval.stage_status !== 'pending') {
+      if ((approval as any).stage_status !== 'pending') {
         throw new WorkflowError(
           WorkflowErrorType.WORKFLOW_ALREADY_PROCESSED,
           'Approval has already been processed'
@@ -460,7 +460,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
       }
 
       // Validate approver has permission
-      const requiredApprovers = JSON.parse(approval.required_approvers || '[]');
+      const requiredApprovers = JSON.parse((approval as any).required_approvers || '[]');
       const approverIds = requiredApprovers.map((a: Approver) => a.id);
 
       if (!approverIds.includes(approver.id)) {
@@ -474,7 +474,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         stage_status: action,
         approver_id: approver.id,
         approval_notes: notes || null,
-        approved_amount: approvedAmount || approval.requested_amount || null,
+        approved_amount: approvedAmount || (approval as any).requested_amount || null,
         rejection_reason: rejectionReason || null,
         required_information: requiredInformation ? JSON.stringify(requiredInformation) : null,
         updated_at: new Date()
@@ -489,7 +489,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
       // Update approval record
       await db('expense_approvals')
         .where('id', approvalId)
-        .update(updateData);
+        .update(updateData as any);
 
       const updatedApproval = await db('expense_approvals')
         .where('id', approvalId)
@@ -497,13 +497,13 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
 
       // Process workflow progression
       if (action === 'approved') {
-        await this.progressWorkflow(updatedApproval);
+        await this.progressWorkflow(updatedApproval as unknown as ApprovalRecord);
       } else if (action === 'rejected') {
-        await this.rejectWorkflow(updatedApproval);
+        await this.rejectWorkflow(updatedApproval as unknown as ApprovalRecord);
       }
 
       console.log(`Processed approval decision: ${action} for approval ${approvalId} by ${approver.id}`);
-      return updatedApproval;
+      return updatedApproval as unknown as ApprovalRecord;
     } catch (error) {
       if (error instanceof WorkflowError) {
         throw error;
@@ -543,7 +543,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .update({
           payment_status: 'approved',
           updated_at: new Date()
-        });
+        } as any);
 
       // Update overall approval status
       await db('expense_approvals')
@@ -551,7 +551,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .update({
           status: 'approved',
           updated_at: new Date()
-        });
+        } as any);
 
       console.log(`Completed workflow for expense ${approval.expense_data_id}`);
     } catch (error) {
@@ -577,23 +577,23 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .first();
 
       if (nextStage) {
-        const deadlineHours = nextStage.escalation_hours || this.ESCALATION_TIMEOUT_HOURS;
+        const deadlineHours = (nextStage as any).escalation_hours || this.ESCALATION_TIMEOUT_HOURS;
 
         await db('expense_approvals')
-          .where('id', nextStage.id)
+          .where('id', (nextStage as any).id)
           .update({
             stage_status: 'pending',
             stage_started_at: new Date(),
             stage_deadline: new Date(Date.now() + (deadlineHours * 60 * 60 * 1000)),
             updated_at: new Date()
-          });
+          } as any);
 
         // Send notification for next stage
         const updatedNextStage = await db('expense_approvals')
-          .where('id', nextStage.id)
+          .where('id', (nextStage as any).id)
           .first();
 
-        await this.sendApprovalNotification(updatedNextStage);
+        await this.sendApprovalNotification(updatedNextStage as unknown as ApprovalRecord);
 
         console.log(`Started next approval stage ${nextStageNumber} for expense ${currentApproval.expense_data_id}`);
       }
@@ -618,7 +618,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .update({
           payment_status: 'rejected',
           updated_at: new Date()
-        });
+        } as any);
 
       // Update all approval stages to rejected
       await db('expense_approvals')
@@ -627,7 +627,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
           status: 'rejected',
           stage_status: 'rejected',
           updated_at: new Date()
-        });
+        } as any);
 
       console.log(`Rejected workflow for expense ${approval.expense_data_id}`);
     } catch (error) {
@@ -661,22 +661,22 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
 
       await db('expense_approvals')
         .where('id', approvalId)
-        .update(updateData);
+        .update(updateData as any);
 
       // Update required approvers to include delegate
       const approval = await db('expense_approvals')
         .where('id', approvalId)
         .first();
 
-      const requiredApprovers = JSON.parse(approval.required_approvers || '[]');
+      const requiredApprovers = JSON.parse((approval as any).required_approvers || '[]');
       const delegateUser = await db('users').where('id', delegateTo).first();
 
       if (delegateUser && !requiredApprovers.find((a: Approver) => a.id === delegateTo)) {
         requiredApprovers.push({
-          id: delegateUser.id,
-          name: `${delegateUser.first_name} ${delegateUser.last_name}`,
-          email: delegateUser.email,
-          role: delegateUser.role,
+          id: (delegateUser as any).id,
+          name: `${(delegateUser as any).first_name} ${(delegateUser as any).last_name}`,
+          email: (delegateUser as any).email,
+          role: (delegateUser as any).role,
           delegated: true
         });
 
@@ -685,7 +685,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
           .update({
             required_approvers: JSON.stringify(requiredApprovers),
             stage_status: 'pending' // Reset to pending for delegate
-          });
+          } as any);
       }
 
       // Send notification to delegate
@@ -693,10 +693,10 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
         .where('id', approvalId)
         .first();
 
-      await this.sendApprovalNotification(updatedApproval, delegateUser);
+      await this.sendApprovalNotification(updatedApproval as unknown as ApprovalRecord, delegateUser as unknown as WorkflowUser);
 
       console.log(`Delegated approval ${approvalId} from ${delegatedBy} to ${delegateTo}`);
-      return updatedApproval;
+      return updatedApproval as unknown as ApprovalRecord;
     } catch (error) {
       throw new WorkflowError(
         WorkflowErrorType.DELEGATION_FAILED,
@@ -721,10 +721,10 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
 
       for (const approval of overdueApprovals) {
         try {
-          await this.escalateApproval(approval);
+          await this.escalateApproval(approval as unknown as ApprovalRecord);
           escalatedCount++;
         } catch (error) {
-          console.error(`Failed to escalate approval ${approval.id}:`, error);
+          console.error(`Failed to escalate approval ${(approval as any).id}:`, error);
         }
       }
 
@@ -762,7 +762,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
           escalation_reason: `Approval overdue by ${overdueHours} hours`,
           stage_status: 'escalated',
           updated_at: new Date()
-        });
+        } as any);
 
       // Send escalation notification
       await this.sendEscalationNotification(approval, escalationTarget);
@@ -887,7 +887,7 @@ export class ApprovalWorkflowService implements IApprovalWorkflowService {
           .where('role', 'admin')
           .where('organization_id', approval.organization_id)
           .first();
-        return admin;
+        return admin as unknown as WorkflowUser;
       }
 
       return null;

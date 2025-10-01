@@ -13,22 +13,25 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 const router = express.Router();
-import { authenticateToken, requireRole  } from '../../middleware/auth';
+import { authenticateToken } from '../../middleware/auth';
+import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { createCleanupRoutes, auditCleanupJob  } from '../../jobs/auditLogCleanup';
 import { enhancedAsyncHandler  } from '../../middleware/enhanced-error-handling';
 import { ResponseFormatter  } from '../../utils/response-formatters';
 import logger from '../../utils/logger';
 const db = require('../../config/database');
 
-// Apply admin authentication to all routes
+// Apply authentication to all routes
 router.use(authenticateToken);
-router.use(requireRole('admin'));
 
 /**
  * GET /api/admin/maintenance/status
  * Get overall system maintenance status
  */
-router.get('/status', enhancedAsyncHandler(async (req, res) => {
+router.get('/status', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'view:stats'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     
     const maintenanceStatus = {
@@ -56,7 +59,10 @@ router.get('/status', enhancedAsyncHandler(async (req, res) => {
  * POST /api/admin/maintenance/gc
  * Trigger garbage collection (if exposed)
  */
-router.post('/gc', enhancedAsyncHandler(async (req, res) => {
+router.post('/gc', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'manage'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     const beforeMemory = process.memoryUsage();
     
@@ -92,7 +98,10 @@ router.post('/gc', enhancedAsyncHandler(async (req, res) => {
  * GET /api/admin/maintenance/logs/size
  * Get log file sizes and information
  */
-router.get('/logs/size', enhancedAsyncHandler(async (req, res) => {
+router.get('/logs/size', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'view:stats'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     
     const logInfo = {
@@ -142,7 +151,10 @@ router.get('/logs/size', enhancedAsyncHandler(async (req, res) => {
  * POST /api/admin/maintenance/logs/rotate
  * Rotate log files (if supported)
  */
-router.post('/logs/rotate', enhancedAsyncHandler(async (req, res) => {
+router.post('/logs/rotate', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'manage'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     // This would typically integrate with your logging system
     // For now, just provide a placeholder response
@@ -166,7 +178,10 @@ router.post('/logs/rotate', enhancedAsyncHandler(async (req, res) => {
  * GET /api/admin/maintenance/database/stats
  * Get basic database statistics
  */
-router.get('/database/stats', enhancedAsyncHandler(async (req, res) => {
+router.get('/database/stats', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'view:stats'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     
     // Get table row counts (sample of important tables)
@@ -225,7 +240,10 @@ createCleanupRoutes(router);
  * GET /api/admin/maintenance/health
  * Comprehensive system health check
  */
-router.get('/health', enhancedAsyncHandler(async (req, res) => {
+router.get('/health', requireCerbosPermission({
+  resource: 'maintenance',
+  action: 'view:stats'
+}), enhancedAsyncHandler(async (req, res) => {
   try {
     const healthData = {
       timestamp: new Date().toISOString(),

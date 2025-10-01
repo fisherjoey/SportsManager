@@ -5,8 +5,9 @@
  */
 
 import express, { Request, Response } from 'express';
-import Joi from 'joi';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import * as Joi from 'joi';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import db from '../config/database';
 import {
   generateRoundRobin,
@@ -127,7 +128,10 @@ function getRefereeCountForLevel(level: string): number {
 /**
  * POST /api/tournaments/generate - Generate tournament schedule
  */
-router.post('/generate', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/generate', authenticateToken, requireCerbosPermission({
+  resource: 'tournament',
+  action: 'generate',
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = tournamentSchema.validate(req.body);
     if (error) {
@@ -152,7 +156,7 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
     } = tournamentRequest;
 
     // Verify league exists
-    const league: LeagueEntity | undefined = await db('leagues').where('id', league_id).first();
+    const league: LeagueEntity | undefined = await db('leagues').where('id', league_id).first() as unknown as LeagueEntity | undefined;
     if (!league) {
       return res.status(404).json({ error: 'League not found' });
     }
@@ -161,7 +165,7 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
     const teams: TeamEntity[] = await db('teams')
       .whereIn('id', team_ids)
       .where('league_id', league_id)
-      .orderBy('rank', 'asc');
+      .orderBy('rank', 'asc') as unknown as TeamEntity[];
 
     if (teams.length !== team_ids.length) {
       return res.status(400).json({
@@ -188,26 +192,26 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
 
     switch (tournament_type) {
       case TournamentType.ROUND_ROBIN:
-        tournament = generateRoundRobin(teams, options);
+        tournament = { ...generateRoundRobin(teams, options), type: TournamentType.ROUND_ROBIN } as TournamentResult;
         break;
 
       case TournamentType.SINGLE_ELIMINATION:
-        tournament = generateSingleElimination(teams, options);
+        tournament = { ...generateSingleElimination(teams, options), type: TournamentType.SINGLE_ELIMINATION } as TournamentResult;
         break;
 
       case TournamentType.SWISS_SYSTEM:
-        tournament = generateSwissSystem(teams, {
+        tournament = { ...generateSwissSystem(teams, {
           ...options,
           rounds: rounds || Math.ceil(Math.log2(teams.length)) + 1
-        });
+        }), type: TournamentType.SWISS_SYSTEM } as TournamentResult;
         break;
 
       case TournamentType.GROUP_STAGE_PLAYOFFS:
-        tournament = generateGroupStagePlayoffs(teams, {
+        tournament = { ...generateGroupStagePlayoffs(teams, {
           ...options,
           groupSize: group_size || 4,
           advancePerGroup: advance_per_group || 2
-        });
+        }), type: TournamentType.GROUP_STAGE_PLAYOFFS } as TournamentResult;
         break;
 
       default:
@@ -219,9 +223,9 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
       ...game,
       league_id,
       tournament_name: name,
-      level: league.level || 'Recreational',
-      pay_rate: getPayRateForLevel(league.level || 'Recreational'),
-      refs_needed: getRefereeCountForLevel(league.level || 'Recreational'),
+      level: (league as any).level || 'Recreational',
+      pay_rate: getPayRateForLevel((league as any).level || 'Recreational'),
+      refs_needed: getRefereeCountForLevel((league as any).level || 'Recreational'),
       status: 'unassigned',
       postal_code: 'T0T0T0'
     }));
@@ -258,7 +262,10 @@ router.post('/generate', authenticateToken, requireRole('admin'), async (req: Re
 /**
  * POST /api/tournaments/create-games - Create actual games from tournament
  */
-router.post('/create-games', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/create-games', authenticateToken, requireCerbosPermission({
+  resource: 'tournament',
+  action: 'create:games',
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = createGamesSchema.validate(req.body);
     if (error) {

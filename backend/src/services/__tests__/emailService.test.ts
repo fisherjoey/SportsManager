@@ -196,6 +196,83 @@ class MockEmailService {
       };
     }
   }
+
+  async sendAssignmentEmail(data: any): Promise<any> {
+    if (!this.isConfigured || !this.resend) {
+      console.log('Email service not configured - assignment details:');
+      console.log(`To: ${data.email}`);
+      return { success: true, message: 'Email service not configured - assignment logged to console' };
+    }
+
+    try {
+      const wageInfo = data.game.wageMultiplier && data.game.wageMultiplier !== 1.0
+        ? `Base Pay Rate: $${data.game.payRate} × ${data.game.wageMultiplier} (${data.game.wageMultiplierReason || 'Special rate'})`
+        : `Pay Rate: $${data.game.payRate}`;
+
+      const result = await this.resend.emails.send({
+        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        to: data.email,
+        subject: `New Game Assignment: ${data.game.homeTeam} vs ${data.game.awayTeam}`,
+        html: `Assignment email for ${data.firstName} ${data.lastName}, ${data.game.homeTeam} vs ${data.game.awayTeam}, ${data.game.date}, ${data.game.time}, ${data.game.location}, ${data.assignment.position}, ${data.game.level}, $${data.assignment.calculatedWage.toFixed(2)}, ${wageInfo}, ${data.assignor.name}, ${data.assignor.email}, ${data.acceptLink}, ${data.declineLink}`,
+        text: `Assignment for ${data.firstName} ${data.lastName}, ${data.acceptLink}, ${data.declineLink}`,
+      });
+
+      if (result.error) {
+        return {
+          success: false,
+          error: result.error.message || 'Failed to send assignment email',
+          logged: true
+        };
+      }
+
+      return { success: true, data: result.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        logged: true
+      };
+    }
+  }
+
+  async sendAssignorNotificationEmail(data: any): Promise<any> {
+    if (!this.isConfigured || !this.resend) {
+      console.log('Email service not configured - assignor notification:');
+      return { success: true, message: 'Email service not configured - notification logged to console' };
+    }
+
+    try {
+      const statusColor = data.status === 'accepted' ? '#28a745' : '#dc3545';
+      const statusText = data.status === 'accepted' ? 'ACCEPTED' : 'DECLINED';
+      const declineInfo = data.declineReason
+        ? `Decline Reason: ${data.declineCategory ? `Category: ${data.declineCategory}, ` : ''}${data.declineReason}`
+        : '';
+
+      const result = await this.resend.emails.send({
+        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        to: data.email,
+        subject: `Assignment ${data.status === 'accepted' ? 'Accepted' : 'Declined'}: ${data.game.homeTeam} vs ${data.game.awayTeam}`,
+        html: `${statusText}, ${data.referee.name}, ${data.referee.email}, ${data.game.homeTeam} vs ${data.game.awayTeam}, ${data.game.date}, ${data.game.time}, ${statusColor}, ${declineInfo}`,
+        text: `${statusText}, ${data.referee.name}, ${declineInfo}`,
+      });
+
+      if (result.error) {
+        return {
+          success: false,
+          error: result.error.message || 'Failed to send notification',
+          logged: true
+        };
+      }
+
+      return { success: true, data: result.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        logged: true
+      };
+    }
+  }
 }
 
 let EmailService: MockEmailService;
@@ -752,6 +829,400 @@ describe('EmailService', () => {
         logged: true,
         invitationLink: 'https://example.com/invite',
         recipientEmail: 'test@example.com'
+      });
+    });
+  });
+
+  describe('Assignment Email Notifications', () => {
+    beforeEach(() => {
+      // Ensure RESEND_API_KEY is set for these tests
+      process.env.RESEND_API_KEY = 'test-api-key';
+      EmailService.reinitialize();
+    });
+
+    describe('sendAssignmentEmail', () => {
+      const mockAssignmentData = {
+        email: 'referee@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        assignment: {
+          id: 'assignment-123',
+          position: 'Head Referee',
+          calculatedWage: 85.00
+        },
+        game: {
+          id: 'game-123',
+          homeTeam: 'Lakers',
+          awayTeam: 'Warriors',
+          date: 'October 15, 2025',
+          time: '7:00 PM',
+          location: 'Staples Center',
+          level: 'Varsity',
+          payRate: 75.00,
+          wageMultiplier: 1.13,
+          wageMultiplierReason: 'Playoff game'
+        },
+        assignor: {
+          name: 'Sarah Admin',
+          email: 'admin@example.com'
+        },
+        acceptLink: 'https://example.com/assignments/assignment-123/accept',
+        declineLink: 'https://example.com/assignments/assignment-123/decline'
+      };
+
+      it('should send assignment email successfully', async () => {
+        const mockResponse = {
+          data: { id: 'email-123' }
+        };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        const result = await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        expect(mockResend.emails.send).toHaveBeenCalledWith(
+          expect.objectContaining({
+            from: expect.any(String),
+            to: 'referee@example.com',
+            subject: 'New Game Assignment: Lakers vs Warriors',
+            html: expect.stringContaining('John Doe'),
+            text: expect.stringContaining('John Doe')
+          })
+        );
+
+        expect(result).toEqual({
+          success: true,
+          data: { id: 'email-123' }
+        });
+      });
+
+      it('should include game details in email', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('Lakers vs Warriors');
+        expect(callArgs.html).toContain('October 15, 2025');
+        expect(callArgs.html).toContain('7:00 PM');
+        expect(callArgs.html).toContain('Staples Center');
+        expect(callArgs.html).toContain('Head Referee');
+        expect(callArgs.html).toContain('Varsity');
+        expect(callArgs.html).toContain('$85.00');
+      });
+
+      it('should include wage multiplier information when present', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('1.13');
+        expect(callArgs.html).toContain('Playoff game');
+      });
+
+      it('should include accept and decline links', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain(mockAssignmentData.acceptLink);
+        expect(callArgs.html).toContain(mockAssignmentData.declineLink);
+        expect(callArgs.text).toContain(mockAssignmentData.acceptLink);
+        expect(callArgs.text).toContain(mockAssignmentData.declineLink);
+      });
+
+      it('should include assignor contact information', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('Sarah Admin');
+        expect(callArgs.html).toContain('admin@example.com');
+      });
+
+      it('should log to console when email service not configured', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        const originalKey = process.env.RESEND_API_KEY;
+        delete process.env.RESEND_API_KEY;
+
+        const unconfiguredService = new MockEmailService();
+        const result = await unconfiguredService.sendAssignmentEmail(mockAssignmentData);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Email service not configured - assignment details:');
+        expect(consoleSpy).toHaveBeenCalledWith(`To: ${mockAssignmentData.email}`);
+        expect(result).toEqual({
+          success: true,
+          message: 'Email service not configured - assignment logged to console'
+        });
+
+        consoleSpy.mockRestore();
+        if (originalKey) process.env.RESEND_API_KEY = originalKey;
+      });
+
+      it('should handle email sending errors gracefully', async () => {
+        mockResend.emails.send.mockRejectedValue(new Error('SMTP connection failed'));
+
+        const result = await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        expect(result).toEqual({
+          success: false,
+          error: 'SMTP connection failed',
+          logged: true
+        });
+      });
+
+      it('should handle Resend API errors', async () => {
+        const mockResponse = {
+          error: {
+            statusCode: 400,
+            message: 'Invalid email address'
+          }
+        };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        const result = await EmailService.sendAssignmentEmail(mockAssignmentData);
+
+        expect(result).toEqual({
+          success: false,
+          error: 'Invalid email address',
+          logged: true
+        });
+      });
+
+      it('should work without wage multiplier', async () => {
+        const dataWithoutMultiplier = {
+          ...mockAssignmentData,
+          game: {
+            ...mockAssignmentData.game,
+            wageMultiplier: 1.0,
+            wageMultiplierReason: undefined
+          }
+        };
+
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignmentEmail(dataWithoutMultiplier);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('Pay Rate');
+        expect(callArgs.html).not.toContain('Base Pay Rate');
+      });
+    });
+
+    describe('sendAssignorNotificationEmail', () => {
+      const mockAcceptedNotificationData = {
+        email: 'assignor@example.com',
+        name: 'Sarah Admin',
+        referee: {
+          name: 'John Doe',
+          email: 'referee@example.com'
+        },
+        game: {
+          homeTeam: 'Lakers',
+          awayTeam: 'Warriors',
+          date: 'October 15, 2025',
+          time: '7:00 PM'
+        },
+        status: 'accepted' as const
+      };
+
+      const mockDeclinedNotificationData = {
+        ...mockAcceptedNotificationData,
+        status: 'declined' as const,
+        declineReason: 'I have a family commitment that evening',
+        declineCategory: 'unavailable'
+      };
+
+      it('should send accepted notification successfully', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        const result = await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        expect(mockResend.emails.send).toHaveBeenCalledWith(
+          expect.objectContaining({
+            from: expect.any(String),
+            to: 'assignor@example.com',
+            subject: 'Assignment Accepted: Lakers vs Warriors',
+            html: expect.stringContaining('ACCEPTED'),
+            text: expect.stringContaining('ACCEPTED')
+          })
+        );
+
+        expect(result).toEqual({
+          success: true,
+          data: { id: 'email-123' }
+        });
+      });
+
+      it('should send declined notification with reason', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        const result = await EmailService.sendAssignorNotificationEmail(mockDeclinedNotificationData);
+
+        expect(mockResend.emails.send).toHaveBeenCalledWith(
+          expect.objectContaining({
+            from: expect.any(String),
+            to: 'assignor@example.com',
+            subject: 'Assignment Declined: Lakers vs Warriors'
+          })
+        );
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('DECLINED');
+        expect(callArgs.html).toContain('I have a family commitment that evening');
+        expect(callArgs.html).toContain('unavailable');
+
+        expect(result).toEqual({
+          success: true,
+          data: { id: 'email-123' }
+        });
+      });
+
+      it('should include referee contact information', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('John Doe');
+        expect(callArgs.html).toContain('referee@example.com');
+      });
+
+      it('should include game details', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('Lakers vs Warriors');
+        expect(callArgs.html).toContain('October 15, 2025');
+        expect(callArgs.html).toContain('7:00 PM');
+      });
+
+      it('should not show decline reason section when accepted', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).not.toContain('Decline Reason');
+        expect(callArgs.html).not.toContain('Category:');
+      });
+
+      it('should show decline reason section when declined', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(mockDeclinedNotificationData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('Decline Reason');
+        expect(callArgs.html).toContain('Category:');
+        expect(callArgs.html).toContain('unavailable');
+      });
+
+      it('should use correct status colors in HTML', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        // Test accepted color (green)
+        await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+        let callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('#28a745'); // Green color
+
+        // Test declined color (red)
+        await EmailService.sendAssignorNotificationEmail(mockDeclinedNotificationData);
+        callArgs = mockResend.emails.send.mock.calls[1][0];
+        expect(callArgs.html).toContain('#dc3545'); // Red color
+      });
+
+      it('should log to console when email service not configured', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        const originalKey = process.env.RESEND_API_KEY;
+        delete process.env.RESEND_API_KEY;
+
+        const unconfiguredService = new MockEmailService();
+        const result = await unconfiguredService.sendAssignorNotificationEmail(mockDeclinedNotificationData);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Email service not configured - assignor notification:');
+        expect(result).toEqual({
+          success: true,
+          message: 'Email service not configured - notification logged to console'
+        });
+
+        consoleSpy.mockRestore();
+        if (originalKey) process.env.RESEND_API_KEY = originalKey;
+      });
+
+      it('should handle email sending errors gracefully', async () => {
+        mockResend.emails.send.mockRejectedValue(new Error('Network timeout'));
+
+        const result = await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        expect(result).toEqual({
+          success: false,
+          error: 'Network timeout',
+          logged: true
+        });
+      });
+
+      it('should handle Resend API errors', async () => {
+        const mockResponse = {
+          error: {
+            statusCode: 429,
+            message: 'Rate limit exceeded'
+          }
+        };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        const result = await EmailService.sendAssignorNotificationEmail(mockAcceptedNotificationData);
+
+        expect(result).toEqual({
+          success: false,
+          error: 'Rate limit exceeded',
+          logged: true
+        });
+      });
+
+      it('should handle decline without category', async () => {
+        const dataWithoutCategory = {
+          ...mockDeclinedNotificationData,
+          declineCategory: undefined
+        };
+
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(dataWithoutCategory);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toContain('I have a family commitment that evening');
+        expect(callArgs.html).not.toContain('Category:');
+      });
+
+      it('should include both HTML and text versions', async () => {
+        const mockResponse = { data: { id: 'email-123' } };
+        mockResend.emails.send.mockResolvedValue(mockResponse);
+
+        await EmailService.sendAssignorNotificationEmail(mockDeclinedNotificationData);
+
+        const callArgs = mockResend.emails.send.mock.calls[0][0];
+        expect(callArgs.html).toBeTruthy();
+        expect(callArgs.text).toBeTruthy();
+        expect(callArgs.text).toContain('John Doe');
+        expect(callArgs.text).toContain('unavailable');
+        expect(callArgs.text).toContain('I have a family commitment that evening');
       });
     });
   });

@@ -3,7 +3,8 @@
 import express from 'express';
 const router = express.Router();
 import { Pool  } from 'pg';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken, } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import Joi from 'joi';
 
 const pool = new Pool({
@@ -59,7 +60,10 @@ function getDateRanges(startDate, endDate) {
 // EMPLOYEE ANALYTICS ENDPOINTS
 
 // Get comprehensive employee performance dashboard
-router.get('/employees/performance', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.get('/employees/performance', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     const { start_date, end_date, departments, positions } = req.query;
     
@@ -135,7 +139,10 @@ router.get('/employees/performance', authenticateToken, requireAnyRole('admin', 
 });
 
 // Get employee retention and turnover analytics
-router.get('/employees/retention', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/employees/retention', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     const { start_date, end_date, departments } = req.query;
     
@@ -232,7 +239,10 @@ router.get('/employees/retention', authenticateToken, requireAnyRole('admin', 'h
 });
 
 // Get training and development analytics
-router.get('/employees/training', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.get('/employees/training', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     const { start_date, end_date, departments } = req.query;
     
@@ -321,7 +331,10 @@ router.get('/employees/training', authenticateToken, requireAnyRole('admin', 'hr
 // ORGANIZATIONAL HEALTH METRICS
 
 // Get overall organizational health dashboard
-router.get('/health/overview', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/health/overview', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     // Employee satisfaction proxy (based on performance ratings)
     const satisfactionQuery = `
@@ -451,7 +464,10 @@ function calculateHealthScore(metrics) {
 // PREDICTIVE ANALYTICS
 
 // Get staffing predictions
-router.get('/predictions/staffing', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/predictions/staffing', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     // Turnover prediction based on historical data
     const turnoverPredictionQuery = `
@@ -530,7 +546,10 @@ router.get('/predictions/staffing', authenticateToken, requireAnyRole('admin', '
 });
 
 // Get performance trends and predictions
-router.get('/predictions/performance', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/predictions/performance', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     // Performance trend analysis
     const performanceTrendQuery = `
@@ -592,7 +611,10 @@ router.get('/predictions/performance', authenticateToken, requireAnyRole('admin'
 // COST ANALYTICS
 
 // Get cost per employee analysis
-router.get('/costs/per-employee', authenticateToken, requireAnyRole('admin', 'hr'), async (req, res) => {
+router.get('/costs/per-employee', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view'
+}), async (req, res) => {
   try {
     const { start_date, end_date, departments } = req.query;
     
@@ -670,7 +692,10 @@ router.get('/costs/per-employee', authenticateToken, requireAnyRole('admin', 'hr
 });
 
 // Get comprehensive organizational dashboard
-router.get('/dashboard/executive', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/dashboard/executive', authenticateToken, requireCerbosPermission({
+  resource: 'organizational_analytics',
+  action: 'view:executive'
+}), async (req, res) => {
   try {
     // Key metrics summary
     const keyMetricsQuery = `

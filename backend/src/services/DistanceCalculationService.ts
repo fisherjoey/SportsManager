@@ -228,7 +228,7 @@ class DistanceCalculationService {
         drive_time_text: distanceResult.duration,
         drive_time_minutes: Math.round(distanceResult.durationValue / 60),
         calculation_provider: 'openrouteservice',
-        calculated_at: this.db.fn.now(),
+        calculated_at: this.db.fn.now() as any,
         route_data: JSON.stringify({
           origin,
           destination,
@@ -237,7 +237,7 @@ class DistanceCalculationService {
         calculation_successful: true,
         calculation_error: null,
         calculation_attempts: 1,
-        last_calculation_attempt: this.db.fn.now(),
+        last_calculation_attempt: this.db.fn.now() as any,
         needs_recalculation: false
       };
 
@@ -448,7 +448,7 @@ class DistanceCalculationService {
             calculation_successful: false,
             calculation_error: errorMessage,
             calculation_attempts: existingRecord.calculation_attempts + 1,
-            last_calculation_attempt: this.db.fn.now(),
+            last_calculation_attempt: this.db.fn.now() as any,
             needs_recalculation: true,
             updated_at: this.db.fn.now()
           });
@@ -460,7 +460,7 @@ class DistanceCalculationService {
             calculation_successful: false,
             calculation_error: errorMessage,
             calculation_attempts: 1,
-            last_calculation_attempt: this.db.fn.now(),
+            last_calculation_attempt: this.db.fn.now() as any,
             needs_recalculation: true
           });
       }
@@ -545,7 +545,7 @@ class DistanceCalculationService {
           this.db.raw('AVG(drive_time_minutes) FILTER (WHERE calculation_successful = true) as avg_drive_time_minutes'),
           this.db.raw('AVG(distance_meters) FILTER (WHERE calculation_successful = true) as avg_distance_meters')
         )
-        .first() as {
+        .first() as unknown as {
           total_calculations: string;
           successful_calculations: string;
           failed_calculations: string;

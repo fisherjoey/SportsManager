@@ -1,0 +1,21 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for organizational_analytics resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "organizational_analytics"
+  rules:
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

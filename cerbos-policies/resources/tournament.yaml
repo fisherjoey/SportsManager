@@ -1,0 +1,22 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for tournament resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "tournament"
+  rules:
+    - actions: ['generate', 'create:games']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

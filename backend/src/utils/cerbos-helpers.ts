@@ -5,15 +5,39 @@ import type {
   ResourceType,
 } from '../types/cerbos.types';
 
+function normalizeCerbosRole(roleName: string): string {
+  // Preserve granular roles - just convert to lowercase and replace spaces/hyphens with underscores
+  return roleName.toLowerCase().replace(/[\s-]+/g, '_');
+}
+
 export function toPrincipal(
   user: AuthenticatedUser,
   organizationId: string,
   primaryRegionId?: string,
   regionIds: string[] = []
 ): CerbosPrincipal {
-  const roles = user.roles && user.roles.length > 0
-    ? Array.from(new Set(user.roles.map((r) => r.name)))
-    : [user.role];
+  let roles: string[] = [];
+
+  if (user.roles && user.roles.length > 0) {
+    roles = user.roles
+      .map((r: any) => {
+        if (typeof r === 'string') return r;
+        if (r && r.name) return r.name;
+        return null;
+      })
+      .filter(Boolean)
+      .map((r: string) => normalizeCerbosRole(r));
+  } else if (user.role) {
+    roles = [normalizeCerbosRole(user.role)];
+  }
+
+  if (roles.length === 0) {
+    roles = ['guest'];
+  }
+
+  roles = Array.from(new Set(roles));
+
+  console.log('[CERBOS DEBUG] Principal roles:', roles, 'for user:', user.email);
 
   return {
     id: user.id,

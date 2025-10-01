@@ -5,8 +5,10 @@
  */
 
 import express, { Router, Response } from 'express';
-import Joi from 'joi';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import * as Joi from 'joi';
+import { randomUUID } from 'crypto';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { logger } from '../utils/logger';
 import { pool } from '../config/database';
 import {
@@ -71,7 +73,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Generate AI-powered referee assignment suggestions
    */
-  static async generateSuggestions(
+  async generateSuggestions(
     games: GameData[],
     referees: RefereeData[],
     factors: AISuggestionFactors = {}
@@ -121,7 +123,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Get available referees for games (excluding conflicts)
    */
-  static async getAvailableReferees(games: GameData[]): Promise<RefereeData[]> {
+  async getAvailableReferees(games: GameData[]): Promise<RefereeData[]> {
     try {
       const gameIds = games.map(g => g.id);
       const gameStart = Math.min(...games.map(g => new Date(g.game_date).getTime()));
@@ -182,7 +184,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
         ...unavailableReferees.rows.map((a: any) => a.user_id)
       ];
 
-      const uniqueConflictingUserIds = [...new Set(allConflictingUserIds)];
+      const uniqueConflictingUserIds = Array.from(new Set(allConflictingUserIds));
 
       const availableRefereesQuery = `
         SELECT u.id, u.name, u.email, u.phone, r.level, r.postal_code, r.is_available
@@ -219,7 +221,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Check for referee conflicts and warnings
    */
-  static async checkRefereeConflicts(game: GameData, referee: RefereeData): Promise<RefereeConflictCheck> {
+  async checkRefereeConflicts(game: GameData, referee: RefereeData): Promise<RefereeConflictCheck> {
     const warnings: string[] = [];
     let hasConflict = false;
 
@@ -314,7 +316,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate comprehensive suggestion score
    */
-  static async calculateSuggestion(
+  async calculateSuggestion(
     game: GameData,
     referee: RefereeData,
     factors: AISuggestionFactors
@@ -345,7 +347,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
     );
 
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       game_id: game.id,
       referee_id: referee.id,
       confidence_score: Math.min(1, Math.max(0, confidenceScore)),
@@ -363,7 +365,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate proximity score based on postal codes
    */
-  static async calculateProximityScore(game: GameData, referee: RefereeData): Promise<number> {
+  async calculateProximityScore(game: GameData, referee: RefereeData): Promise<number> {
     if (!referee.postal_code || !game.postal_code) {
       return 0.5;
     }
@@ -393,7 +395,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate availability score
    */
-  static async calculateAvailabilityScore(game: GameData, referee: RefereeData): Promise<number> {
+  async calculateAvailabilityScore(game: GameData, referee: RefereeData): Promise<number> {
     try {
       const availabilityQuery = `
         SELECT start_time, end_time, is_available
@@ -433,7 +435,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate experience score
    */
-  static calculateExperienceScore(game: GameData, referee: RefereeData): number {
+  calculateExperienceScore(game: GameData, referee: RefereeData): number {
     const levelMapping: Record<string, number> = {
       'Rookie': 1, 'Junior': 2, 'Senior': 3, 'Elite': 4
     };
@@ -452,7 +454,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate performance score
    */
-  static async calculatePerformanceScore(referee: RefereeData): Promise<number> {
+  async calculatePerformanceScore(referee: RefereeData): Promise<number> {
     try {
       const performanceQuery = `
         SELECT AVG(rating) as avg_rating, COUNT(*) as assignment_count
@@ -482,7 +484,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Calculate historical pattern bonus
    */
-  static async calculateHistoricalPatternBonus(game: GameData, referee: RefereeData): Promise<number> {
+  async calculateHistoricalPatternBonus(game: GameData, referee: RefereeData): Promise<number> {
     try {
       const patternQuery = `
         SELECT
@@ -515,7 +517,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   /**
    * Generate enhanced reasoning text
    */
-  static generateEnhancedReasoning(
+  generateEnhancedReasoning(
     proximityScore: number,
     availabilityScore: number,
     experienceScore: number,
@@ -547,6 +549,9 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
     return `Recommended based on: ${factors.join(', ')}`;
   }
 }
+
+// Create service instance
+const aiAssignmentService = new AIAssignmentService();
 
 /**
  * Helper function to build suggestions query with filters
@@ -681,7 +686,10 @@ async function buildSuggestionsQuery(params: SuggestionQueryParams): Promise<Sug
 /**
  * POST /api/ai-suggestions - Generate AI suggestions
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSuggestionsRequestBody, res: Response<GenerateSuggestionsResponse>) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'generate',
+}), async (req: GenerateSuggestionsRequestBody, res: Response<GenerateSuggestionsResponse>) => {
   const requestId = generateRequestId();
 
   try {
@@ -724,7 +732,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSu
     }
 
     // Get available referees
-    const referees = await AIAssignmentService.getAvailableReferees(games);
+    const referees = await aiAssignmentService.getAvailableReferees(games);
 
     if (referees.length === 0) {
       return res.status(404).json({
@@ -734,7 +742,7 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSu
     }
 
     // Generate suggestions
-    const suggestions = await AIAssignmentService.generateSuggestions(games, referees, factors);
+    const suggestions = await aiAssignmentService.generateSuggestions(games, referees, factors);
 
     // Store suggestions in database
     if (suggestions.length > 0) {
@@ -792,7 +800,10 @@ router.post('/', authenticateToken, requireRole('admin'), async (req: GenerateSu
 /**
  * GET /api/ai-suggestions - Retrieve suggestions with filtering and pagination
  */
-router.get('/', authenticateToken, requireRole('admin'), async (req: GetSuggestionsRequest, res: Response<GetSuggestionsResponse>) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'view:list',
+}), async (req: GetSuggestionsRequest, res: Response<GetSuggestionsResponse>) => {
   try {
     const { error, value } = suggestionsQuerySchema.validate(req.query);
 
@@ -834,7 +845,11 @@ router.get('/', authenticateToken, requireRole('admin'), async (req: GetSuggesti
 /**
  * PUT /api/ai-suggestions/:id/accept - Accept suggestion and create assignment
  */
-router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req: AcceptSuggestionRequest, res: Response<AcceptSuggestionResponse>) => {
+router.put('/:id/accept', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'accept',
+  getResourceId: (req) => req.params.id,
+}), async (req: AcceptSuggestionRequest, res: Response<AcceptSuggestionResponse>) => {
   try {
     const { id } = req.params;
 
@@ -872,7 +887,7 @@ router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req: A
     try {
       // Create assignment
       const assignmentData = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         game_id: suggestion.game_id,
         user_id: suggestion.referee_id,
         position_id: 'e468e96b-4ae8-448d-b0f7-86f688f3402b',
@@ -951,7 +966,11 @@ router.put('/:id/accept', authenticateToken, requireRole('admin'), async (req: A
 /**
  * PUT /api/ai-suggestions/:id/reject - Reject suggestion with optional reason
  */
-router.put('/:id/reject', authenticateToken, requireRole('admin'), async (req: RejectSuggestionRequestBody, res: Response<RejectSuggestionResponse>) => {
+router.put('/:id/reject', authenticateToken, requireCerbosPermission({
+  resource: 'ai_suggestion',
+  action: 'reject',
+  getResourceId: (req) => req.params.id,
+}), async (req: RejectSuggestionRequestBody, res: Response<RejectSuggestionResponse>) => {
   try {
     const { id } = req.params;
     const { error, value } = rejectSuggestionSchema.validate(req.body);

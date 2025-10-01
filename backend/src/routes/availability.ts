@@ -7,7 +7,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { Database, UUID, AuthenticatedRequest } from '../types';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter } from '../utils/response-formatters';
 import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
@@ -172,7 +173,7 @@ const canModifyAvailability = async (req: AuthenticatedRequest, refereeId: UUID)
 
   if (isReferee) {
     // Get the referee record for this user to compare referee_id
-    const referee = await db('referees').where('user_id', req.user.userId).first();
+    const referee = await db('referees').where('user_id', (req.user as any).userId).first();
     return referee && referee.id === refereeId;
   }
 
@@ -219,8 +220,8 @@ router.get('/referees/:id',
   validateParams(idParamSchema),
   validateQuery(availabilityQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, any, AvailabilityQueryParams>, res: Response): Promise<void> => {
-    const { startDate, endDate } = req.query;
-    const refereeId = req.params.id;
+    const { startDate, endDate } = (req as any).query;
+    const refereeId = (req as any).params.id;
 
     let query = db('referee_availability')
       .where('referee_id', refereeId)
@@ -248,12 +249,16 @@ router.get('/referees/:id',
 // POST /api/availability/referees/:id - Create availability window
 router.post('/referees/:id',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+    getResourceId: (req) => (req as any).params.id,
+  }),
   validateParams(idParamSchema),
   validateBody(availabilityCreateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ id: UUID }, any, AvailabilityCreateBody>, res: Response): Promise<void> => {
-    const refereeId = req.params.id;
-    const { date, start_time, end_time, is_available = true, reason } = req.body;
+    const refereeId = (req as any).params.id;
+    const { date, start_time, end_time, is_available = true, reason } = (req as any).body;
 
     // Verify referee exists
     const referee = await db('referees').where('id', refereeId).first();
@@ -299,12 +304,15 @@ router.post('/referees/:id',
 // PUT /api/availability/:windowId - Update availability window
 router.put('/:windowId',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateParams(windowIdParamSchema),
   validateBody(availabilityUpdateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ windowId: UUID }, any, AvailabilityUpdateBody>, res: Response): Promise<void> => {
-    const windowId = req.params.windowId;
-    const { date, start_time, end_time, is_available, reason } = req.body;
+    const windowId = (req as any).params.windowId;
+    const { date, start_time, end_time, is_available, reason } = (req as any).body;
 
     // Get existing window
     const existingWindow = await db('referee_availability').where('id', windowId).first();
@@ -355,10 +363,13 @@ router.put('/:windowId',
 // DELETE /api/availability/:windowId - Delete availability window
 router.delete('/:windowId',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateParams(windowIdParamSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<{ windowId: UUID }>, res: Response): Promise<void> => {
-    const windowId = req.params.windowId;
+    const windowId = (req as any).params.windowId;
 
     // Get existing window for authorization
     const existingWindow = await db('referee_availability').where('id', windowId).first();
@@ -380,10 +391,13 @@ router.delete('/:windowId',
 // GET /api/availability/conflicts - Check for scheduling conflicts
 router.get('/conflicts',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'view:list',
+  }),
   validateQuery(conflictQuerySchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, any, ConflictQueryParams>, res: Response): Promise<void> => {
-    const { date, start_time, end_time, referee_id } = req.query;
+    const { date, start_time, end_time, referee_id } = (req as any).query;
 
     let availabilityQuery = db('referee_availability as ra')
       .join('referees as r', 'ra.referee_id', 'r.id')
@@ -438,10 +452,13 @@ router.get('/conflicts',
 // POST /api/availability/bulk - Bulk create availability windows
 router.post('/bulk',
   authenticateToken,
-  requireAnyRole('admin', 'referee'),
+  requireCerbosPermission({
+    resource: 'referee',
+    action: 'update',
+  }),
   validateBody(bulkCreateSchema),
   enhancedAsyncHandler(async (req: AuthenticatedRequest<any, any, BulkAvailabilityCreateBody>, res: Response): Promise<void> => {
-    const { referee_id, windows } = req.body;
+    const { referee_id, windows } = (req as any).body;
 
     // Verify referee exists
     const referee = await db('referees').where('id', referee_id).first();

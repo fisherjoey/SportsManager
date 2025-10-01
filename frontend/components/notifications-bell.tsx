@@ -1,235 +1,210 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Bell, BellDot, X, Check, AlertCircle, Info, Megaphone } from 'lucide-react'
-import { format } from 'date-fns'
-import { toast } from 'sonner'
-
-import { Button } from '@/components/ui/button'
+import React, { useState, useEffect } from 'react';
+import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { apiClient, Communication } from '@/lib/api'
-import { useAuth } from '@/components/auth-provider'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { notificationsApi, Notification } from '@/lib/notifications-api';
+import { formatDistanceToNow } from 'date-fns';
 
-export function NotificationsBell() {
-  const { user, isAuthenticated } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Communication[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await apiClient.getUnreadCommunicationsCount()
-      if (response.success) {
-        setUnreadCount(response.data.unreadCount || 0)
-      }
-    } catch (error) {
-      console.error('Error fetching unread count:', error)
-    }
+/**
+ * Get icon for notification type
+ */
+function getNotificationIcon(type: Notification['type']): string {
+  switch (type) {
+    case 'assignment':
+      return '📋';
+    case 'status_change':
+      return '🔄';
+    case 'reminder':
+      return '⏰';
+    case 'system':
+      return '⚙️';
+    default:
+      return '📢';
   }
+}
 
+/**
+ * NotificationBell Component
+ *
+ * Displays a bell icon with unread count badge in the header.
+ * Shows a dropdown with recent notifications when clicked.
+ * Polls for new notifications every 60 seconds.
+ */
+export function NotificationsBell() {
+  const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  /**
+   * Fetch unread count and recent notifications
+   */
   const fetchNotifications = async () => {
     try {
-      setLoading(true)
-      const response = await apiClient.getCommunications({
-        status: 'published',
-        limit: 10
-      })
-      if (response.communications) {
-        setNotifications(response.communications)
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-      toast.error('Failed to load notifications')
-    } finally {
-      setLoading(false)
-    }
-  }
+      const [count, notificationData] = await Promise.all([
+        notificationsApi.getUnreadCount(),
+        notificationsApi.getNotifications({ limit: 5 })
+      ]);
 
-  const handleAcknowledge = async (id: string) => {
+      setUnreadCount(count);
+      setRecentNotifications(notificationData.notifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  /**
+   * Handle notification click
+   */
+  const handleNotificationClick = async (notification: Notification) => {
     try {
-      await apiClient.acknowledgeCommunication(id, { acknowledged: true })
-      setNotifications(prev => 
-        prev.map(n => n.id === id 
-          ? { ...n, acknowledgment_count: (n.acknowledgment_count || 0) + 1 }
-          : n
-        )
-      )
-      fetchUnreadCount() // Refresh count
-      toast.success('Notification acknowledged')
+      setIsLoading(true);
+
+      // Mark as read
+      if (!notification.is_read) {
+        await notificationsApi.markAsRead(notification.id);
+
+        // Update local state
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        setRecentNotifications(prev =>
+          prev.map(n =>
+            n.id === notification.id ? { ...n, is_read: true } : n
+          )
+        );
+      }
+
+      // Navigate to link if available
+      if (notification.link) {
+        router.push(notification.link);
+      }
+
+      setIsOpen(false);
     } catch (error) {
-      console.error('Error acknowledging notification:', error)
-      toast.error('Failed to acknowledge notification')
+      console.error('Error marking notification as read:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority.toLowerCase()) {
-    case 'urgent':
-    case 'high':
-      return <AlertCircle className="h-4 w-4 text-red-500" />
-    case 'medium':
-      return <Info className="h-4 w-4 text-yellow-500" />
-    case 'low':
-      return <Info className="h-4 w-4 text-blue-500" />
-    default:
-      return <Info className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const getTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-    case 'announcement':
-      return <Megaphone className="h-4 w-4" />
-    case 'assignment':
-      return <Bell className="h-4 w-4" />
-    default:
-      return <Info className="h-4 w-4" />
-    }
-  }
-
+  /**
+   * Initial fetch and polling setup
+   */
   useEffect(() => {
-    if (user && isAuthenticated) {
-      fetchUnreadCount()
-      // Refresh unread count every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000)
-      return () => clearInterval(interval)
-    }
-  }, [user, isAuthenticated])
+    fetchNotifications();
 
+    // Poll every 60 seconds
+    const interval = setInterval(fetchNotifications, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  /**
+   * Refresh when dropdown opens
+   */
   useEffect(() => {
-    if (open && notifications.length === 0 && isAuthenticated) {
-      fetchNotifications()
+    if (isOpen) {
+      fetchNotifications();
     }
-  }, [open, isAuthenticated])
-
-  if (!user || !isAuthenticated) return null
+  }, [isOpen]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          {unreadCount > 0 ? (
-            <BellDot className="h-5 w-5" />
-          ) : (
-            <Bell className="h-5 w-5" />
-          )}
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        >
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-80 p-0" 
-        align="end"
-        sideOffset={8}
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <h4 className="font-semibold">Notifications</h4>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between px-2 py-2">
+          <h3 className="font-semibold text-sm">Notifications</h3>
+          {unreadCount > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {unreadCount} new
+            </Badge>
+          )}
         </div>
-        
-        <ScrollArea className="h-[400px]">
-          {loading ? (
-            <div className="p-4 text-center text-muted-foreground">
-              Loading notifications...
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
+
+        <DropdownMenuSeparator />
+
+        <div className="max-h-[400px] overflow-y-auto">
+          {recentNotifications.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No notifications</p>
+              <p>No notifications yet</p>
             </div>
           ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => (
-                <div key={notification.id} className="p-4 hover:bg-muted/50">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {getTypeIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h5 className="font-medium text-sm leading-tight">
-                          {notification.title}
-                        </h5>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {getPriorityIcon(notification.priority)}
-                          <Badge variant="outline" className="text-xs">
-                            {notification.type}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {notification.content.replace(/<[^>]*>/g, '').substring(0, 100)}
-                        {notification.content.length > 100 && '...'}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-xs text-muted-foreground">
-                          {notification.sent_at 
-                            ? format(new Date(notification.sent_at), 'MMM d, h:mm a')
-                            : format(new Date(notification.created_at || ''), 'MMM d, h:mm a')
-                          }
-                        </span>
-                        
-                        {notification.requires_acknowledgment && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAcknowledge(notification.id)}
-                            className="h-7 px-2 text-xs"
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Acknowledge
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-        
-        {notifications.length > 0 && (
-          <>
-            <Separator />
-            <div className="p-2">
-              <Button 
-                variant="ghost" 
-                className="w-full text-sm"
-                onClick={() => {
-                  setOpen(false)
-                  // Navigate to full communications view
-                  // This would be handled by the parent component
-                }}
+            recentNotifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${
+                  !notification.is_read ? 'bg-accent/50' : ''
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+                disabled={isLoading}
               >
-                View All Notifications
-              </Button>
-            </div>
-          </>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
+                <div className="flex items-start gap-2 w-full">
+                  <span className="text-lg flex-shrink-0">
+                    {getNotificationIcon(notification.type)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-tight">
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(notification.created_at), {
+                        addSuffix: true
+                      })}
+                    </p>
+                  </div>
+                  {!notification.is_read && (
+                    <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))
+          )}
+        </div>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className="text-center justify-center cursor-pointer text-sm font-medium text-primary"
+          onClick={() => {
+            router.push('/notifications');
+            setIsOpen(false);
+          }}
+        >
+          View All Notifications
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

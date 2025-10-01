@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:latest
+    container_name: sportsmanager-cerbos
+    ports:
+      - "3592:3592"
+      - "3593:3593"
+    volumes:
+      - ../../cerbos/policies:/policies:ro
+      - ../../cerbos/config:/config:ro
+      - cerbos-data:/data
+    command: server --config=/config/config.yaml
+    environment:
+      - CERBOS_LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3592/_cerbos/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  cerbos-data:

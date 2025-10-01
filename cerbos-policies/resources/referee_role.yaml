@@ -1,0 +1,29 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for referee_role resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "referee_role"
+  rules:
+    - actions: ['create', 'update', 'delete', 'admin:assign_role', 'admin:remove_role', 'admin:view_permissions_summary']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:list', 'view:details', 'view:user_roles']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - assignor
+        - referee
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest
