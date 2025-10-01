@@ -39,6 +39,26 @@ export interface NotificationPreferences {
   updated_at?: string;
 }
 
+export interface BroadcastNotificationData {
+  title: string;
+  message: string;
+  type?: 'assignment' | 'status_change' | 'reminder' | 'system';
+  link?: string;
+  target_audience: {
+    roles?: string[];
+    specific_users?: string[];
+    all_users?: boolean;
+  };
+  metadata?: any;
+}
+
+export interface BroadcastResponse {
+  success: true;
+  recipientCount: number;
+  createdCount: number;
+  message: string;
+}
+
 interface ApiResponse<T> {
   success?: boolean;
   data?: T;
@@ -216,6 +236,27 @@ class NotificationsApiClient {
       }
     );
     return response.data || preferences as NotificationPreferences;
+  }
+
+  /**
+   * Broadcast notification to multiple users (Admin only)
+   */
+  async broadcastNotification(
+    data: BroadcastNotificationData
+  ): Promise<BroadcastResponse> {
+    const response = await this.request<ApiResponse<BroadcastResponse>>(
+      '/notifications/broadcast',
+      {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }
+    );
+
+    if (!response.data) {
+      throw new Error('Invalid response from broadcast API');
+    }
+
+    return response.data;
   }
 }
 
