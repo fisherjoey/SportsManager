@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // output: 'standalone', // Disabled due to API routes conflict
   eslint: {
     ignoreDuringBuilds: true,
   },

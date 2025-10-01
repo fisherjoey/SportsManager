@@ -58,8 +58,8 @@
     "alerts:check": "node scripts/monitoring/alerts.js --check-health",
     "alerts:test": "node scripts/monitoring/alerts.js --test-alert warning",
     "setup:maintenance": "./scripts/setup-maintenance.sh",
-    "cerbos:validate": "node ../scripts/validate-cerbos-coverage.js",
-    "cerbos:validate:verbose": "node ../scripts/validate-cerbos-coverage.js --verbose"
+    "cerbos:validate": "cd .. && node scripts/validate-cerbos-coverage.js",
+    "cerbos:validate:verbose": "cd .. && node scripts/validate-cerbos-coverage.js --verbose"
   },
   "dependencies": {
     "@cerbos/grpc": "^0.23.1",
