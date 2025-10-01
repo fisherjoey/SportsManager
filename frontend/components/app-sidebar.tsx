@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout } from 'lucide-react'
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout, Bell } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import { NotificationsBell } from '@/components/notifications-bell'
@@ -304,6 +304,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       title: 'Access Control',
       url: 'admin-access-control',
       icon: ShieldIcon
+    },
+    {
+      title: 'Broadcast Notification',
+      url: 'admin/notifications/broadcast',
+      icon: Bell
     },
     {
       title: 'Workflow Management',
