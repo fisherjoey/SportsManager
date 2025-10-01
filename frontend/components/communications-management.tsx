@@ -103,8 +103,9 @@ export function CommunicationsManagement() {
   const fetchCommunications = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.getCommunications()
-      setCommunications(response.communications || [])
+      // TODO: Implement a proper communications history endpoint
+      // For now, communications are sent via notifications/broadcast and not stored separately
+      setCommunications([])
     } catch (error) {
       console.error('Error fetching communications:', error)
       setError('Failed to load communications')
@@ -116,12 +117,23 @@ export function CommunicationsManagement() {
 
   const handleCreateCommunication = async () => {
     try {
-      const response = await apiClient.createCommunication(formData)
+      // Use the notifications broadcast endpoint
+      const response = await apiClient.broadcastNotification({
+        title: formData.title,
+        message: formData.content,
+        type: formData.type as 'assignment' | 'status_change' | 'reminder' | 'system',
+        link: undefined,
+        target_audience: formData.target_audience,
+        metadata: {
+          priority: formData.priority,
+          requires_acknowledgment: formData.requires_acknowledgment
+        }
+      })
+
       if (response.success) {
-        setCommunications([response.data, ...communications])
         setIsCreateDialogOpen(false)
         resetForm()
-        toast.success('Communication created successfully')
+        toast.success(`Communication broadcast to ${response.recipientCount} users`)
       }
     } catch (error) {
       console.error('Error creating communication:', error)

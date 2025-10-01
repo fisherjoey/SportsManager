@@ -129,7 +129,7 @@ export function FilterableTable<T extends Record<string, any>>({
       // Reserve space for padding, scrollbar, and margins (approximately 100px)
       const effectiveWidth = availableWidth - 100
       // Calculate how many columns can fit
-      const calculatedMax = Math.floor(effectiveWidth / columnWidthEstimate)
+      const calculatedMax = Math.floor(effectiveWidth / columnWidthEstimate) - 1
       // Always show at least 3 columns, max 12 columns
       return Math.max(3, Math.min(12, calculatedMax))
     }
@@ -213,8 +213,9 @@ export function FilterableTable<T extends Record<string, any>>({
   }, [JSON.stringify(initialColumnVisibility), applyMaxColumnLimit, availableWidth])
 
   // Also recalculate when maxVisibleColumns is 'auto' and available width changes
+  // But don't enforce limits if user has manually changed visibility
   useEffect(() => {
-    if (maxVisibleColumns === 'auto' && columnVisibility) {
+    if (maxVisibleColumns === 'auto' && columnVisibility && !userChangedVisibilityRef.current) {
       const limitedVisibility = applyMaxColumnLimit(columnVisibility)
       // Only update if the visibility actually changed
       if (JSON.stringify(limitedVisibility) !== JSON.stringify(columnVisibility)) {
@@ -749,19 +750,28 @@ export function FilterableTable<T extends Record<string, any>>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: (updater) => {
-      // Intercept column visibility changes to apply max column limit
+      // Allow user to manually override column visibility without limit enforcement
       const newVisibility = typeof updater === 'function' ? updater(columnVisibility) : updater
-      const limitedVisibility = applyMaxColumnLimit(newVisibility)
 
-      // Check if we hit the limit
-      const maxCols = calculateMaxVisibleColumns()
-      const visibleCount = Object.keys(limitedVisibility).filter(key => limitedVisibility[key] !== false).length
-
-      // Mark as user-changed only if not hitting the limit
+      // Mark as user-changed
       userChangedVisibilityRef.current = true
 
-      setColumnVisibility(limitedVisibility)
+      setColumnVisibility(newVisibility)
     },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
