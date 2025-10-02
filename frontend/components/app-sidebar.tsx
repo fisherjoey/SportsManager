@@ -453,8 +453,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       className="flex flex-col h-screen transition-none"
       data-no-transition="true"
     >
-      <SidebarHeader className="border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-3 px-6 py-6 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
+      <SidebarHeader className="border-b border-sidebar-border flex-shrink-0 h-16">
+        <div className="flex items-center justify-between gap-3 px-6 h-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img
               src="/sportsync-icon.svg"
@@ -462,13 +462,13 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               className="h-7 w-7 object-contain transition-all duration-150 group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6"
             />
             <div className="group-data-[collapsible=icon]:hidden overflow-hidden transition-all duration-150">
-              <h2 className="text-lg font-bold text-foreground">SyncedSport</h2>
+              <h2 className="text-lg font-bold text-foreground leading-none">SyncedSport</h2>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="group-data-[collapsible=icon]:hidden ml-auto p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-100"
+                className="group-data-[collapsible=icon]:hidden p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-100"
                 title="Sidebar settings"
               >
                 <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
@@ -514,20 +514,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="px-6 pb-4 group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{user?.name?.split(' ')[0] || 'User'}</span>
-            </div>
-            <NotificationsBell />
-          </div>
-        </div>
       </SidebarHeader>
-      <SidebarContent 
+      <SidebarContent
         ref={contentRef}
         className="px-0 pt-3 pb-2 overflow-y-scroll overflow-x-hidden relative flex-grow min-h-0 max-h-full [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-sidebar-border/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-sidebar-border group-data-[collapsible=icon]:[&::-webkit-scrollbar]:w-[3px]"
-        style={{ height: 'calc(100vh - 200px)' }}
       >
         {/* Scroll indicators - subtle gradients */}
         {showScrollTop && (

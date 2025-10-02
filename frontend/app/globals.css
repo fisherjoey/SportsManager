@@ -54,6 +54,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 91%; /* Light gray border #E8E8E8 */
     --input: 0 0% 98%; /* Very light gray for inputs #FAFAFA */
+    --input-foreground: 0 0% 15%; /* Dark text for readability #262626 */
     --ring: 217 100% 38%; /* Cloudflare Blue focus ring */
 
     /* Chart colors - Cloudflare palette */
@@ -102,7 +103,8 @@
     --destructive: 0 72% 60%; /* Brighter red for dark mode */
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 25%; /* Dark border */
-    --input: 0 0% 20%;
+    --input: 217 33% 17%; /* Lighter dark gray for better contrast #2a3544 */
+    --input-foreground: 210 40% 98%; /* Near white for readability #f9fafb */
     --ring: 217 100% 60%; /* Cloudflare Blue ring */
 
     /* Chart colors - Cloudflare palette dark mode */

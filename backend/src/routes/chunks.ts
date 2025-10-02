@@ -55,12 +55,12 @@ class ChunkService {
       throw new Error('One or more games not found');
     }
 
-    // Check if games are at same location and date
-    const locations = [...new Set(games.map(g => g.location))];
+    // Check if games are on the same date (required)
+    // Mixed locations are allowed (frontend shows warning)
     const dates = [...new Set(games.map(g => g.game_date))];
 
-    if (locations.length > 1 || dates.length > 1) {
-      throw new Error('All games must be at the same location and date to be chunked together');
+    if (dates.length > 1) {
+      throw new Error('All games must be on the same date to be chunked together');
     }
 
     // Sort games by time

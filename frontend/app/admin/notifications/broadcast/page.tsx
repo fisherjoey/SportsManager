@@ -572,26 +572,59 @@ export default function BroadcastNotificationPage() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Broadcast</AlertDialogTitle>
+            <AlertDialogTitle>
+              {formData.sendToAll ? (
+                <span className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  Send to All Users?
+                </span>
+              ) : (
+                'Confirm Broadcast'
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to send this notification?
-              <div className="mt-4 p-3 bg-accent rounded-md space-y-2">
-                <p className="font-medium text-foreground">
-                  Title: {formData.title}
-                </p>
-                <p className="text-sm">
-                  Target: {getTargetDescription()}
-                </p>
-              </div>
-              <p className="mt-3 text-sm">
-                This action cannot be undone. The notification will be sent immediately.
-              </p>
+              {formData.sendToAll ? (
+                <div className="space-y-3">
+                  <p className="text-base font-medium text-amber-600 dark:text-amber-500">
+                    This will send the notification to EVERY user in the system.
+                  </p>
+                  <div className="p-3 bg-accent rounded-md space-y-2">
+                    <p className="font-medium text-foreground">
+                      Title: {formData.title}
+                    </p>
+                    <p className="text-sm">
+                      Target: <span className="font-semibold text-amber-600 dark:text-amber-500">All Users</span>
+                    </p>
+                  </div>
+                  <p className="text-sm font-medium">
+                    ⚠️ This action cannot be undone. The notification will be sent immediately to all users.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p>Are you sure you want to send this notification?</p>
+                  <div className="p-3 bg-accent rounded-md space-y-2">
+                    <p className="font-medium text-foreground">
+                      Title: {formData.title}
+                    </p>
+                    <p className="text-sm">
+                      Target: {getTargetDescription()}
+                    </p>
+                  </div>
+                  <p className="text-sm">
+                    This action cannot be undone. The notification will be sent immediately.
+                  </p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAndSend}>
-              Send Notification
+            <AlertDialogAction
+              onClick={confirmAndSend}
+              className={formData.sendToAll ? 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-600' : ''}
+            >
+              {formData.sendToAll ? 'Send to All Users' : 'Send Notification'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -70,6 +70,15 @@ export interface AssignorNotificationData {
   declineCategory?: string;
 }
 
+export interface GenericNotificationEmailData {
+  email: string;
+  firstName: string;
+  title: string;
+  message: string;
+  link?: string;
+  type: 'assignment' | 'status_change' | 'reminder' | 'system';
+}
+
 export interface EmailResult {
   success: boolean;
   message?: string;
@@ -841,6 +850,166 @@ Date: ${data.game.date}
 Time: ${data.game.time}${declineInfo}
 
 Referee Contact: ${data.referee.email}
+    `.trim();
+  }
+
+  /**
+   * Send generic notification email
+   */
+  async sendGenericNotificationEmail(data: GenericNotificationEmailData): Promise<EmailResult> {
+    try {
+      if (!this.isConfigured || !this.resend) {
+        console.log('Email service not configured - notification details:');
+        console.log(`To: ${data.email}`);
+        console.log(`Title: ${data.title}`);
+        console.log(`Message: ${data.message}`);
+        if (data.link) console.log(`Link: ${data.link}`);
+        return {
+          success: true,
+          message: 'Email service not configured - notification logged to console'
+        };
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📧 Sending notification email to: ${data.email}`);
+        console.log(`📋 Type: ${data.type}, Title: ${data.title}`);
+      }
+
+      const subject = data.title;
+      const htmlContent = this.generateGenericNotificationHtml(data);
+      const textContent = this.generateGenericNotificationText(data);
+
+      const result = await this.resend.emails.send({
+        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        to: data.email,
+        subject: subject,
+        html: htmlContent,
+        text: textContent,
+      }) as ResendResponse;
+
+      if (result.error) {
+        console.error('Notification email error:', result.error);
+        return {
+          success: false,
+          error: result.error.message || 'Failed to send notification email',
+          logged: true
+        };
+      }
+
+      console.log('Notification email sent successfully:', result.data?.id);
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+      return {
+        success: false,
+        error: (error as Error).message,
+        logged: true
+      };
+    }
+  }
+
+  /**
+   * Generate HTML content for generic notification
+   */
+  private generateGenericNotificationHtml(data: GenericNotificationEmailData): string {
+    const typeColors = {
+      assignment: '#007bff',
+      status_change: '#ffc107',
+      reminder: '#ff9800',
+      system: '#6c757d'
+    };
+
+    const typeIcons = {
+      assignment: '📋',
+      status_change: '🔄',
+      reminder: '⏰',
+      system: 'ℹ️'
+    };
+
+    const color = typeColors[data.type] || '#007bff';
+    const icon = typeIcons[data.type] || 'ℹ️';
+
+    const actionButton = data.link
+      ? `
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${data.link}" class="button" style="background-color: ${color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            View Details
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #666;">
+          Or copy and paste this link: ${data.link}
+        </p>
+      `
+      : '';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${data.title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: ${color}; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .content { padding: 20px 0; }
+          .message-box { background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${icon} ${data.title}</h1>
+          </div>
+
+          <div class="content">
+            <p>Hello ${data.firstName},</p>
+
+            <div class="message-box">
+              ${data.message}
+            </div>
+
+            ${actionButton}
+          </div>
+
+          <div class="footer">
+            <p>This is an automated notification from Sports Management System.</p>
+            <p>For support, please contact your system administrator.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate text content for generic notification
+   */
+  private generateGenericNotificationText(data: GenericNotificationEmailData): string {
+    const actionText = data.link
+      ? `\n\nView Details: ${data.link}`
+      : '';
+
+    return `
+${data.title}
+
+Hello ${data.firstName},
+
+${data.message}${actionText}
+
+---
+This is an automated notification from Sports Management System.
     `.trim();
   }
 }

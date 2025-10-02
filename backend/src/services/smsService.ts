@@ -24,6 +24,13 @@ export interface ReminderSMSData {
   hoursUntilGame: number;
 }
 
+export interface GenericNotificationSMSData {
+  phoneNumber: string;
+  firstName: string;
+  message: string;
+  type: 'assignment' | 'status_change' | 'reminder' | 'system';
+}
+
 export interface SMSResult {
   success: boolean;
   messageId?: string;
@@ -172,6 +179,73 @@ export class SMSService {
     // E.164 format: +[country code][number]
     const e164Regex = /^\+[1-9]\d{1,14}$/;
     return e164Regex.test(phoneNumber);
+  }
+
+  /**
+   * Send generic notification SMS
+   */
+  async sendGenericNotificationSMS(data: GenericNotificationSMSData): Promise<SMSResult> {
+    try {
+      if (!this.isConfigured || !this.client) {
+        console.log('SMS service not configured - notification SMS logged:');
+        console.log(`To: ${data.phoneNumber}`);
+        console.log(`Message: ${data.message}`);
+        return {
+          success: true,
+          logged: true
+        };
+      }
+
+      if (!this.isValidPhoneNumber(data.phoneNumber)) {
+        return {
+          success: false,
+          error: 'Invalid phone number format'
+        };
+      }
+
+      const message = this.formatGenericNotificationSMS(data);
+
+      const result = await this.client.messages.create({
+        to: data.phoneNumber,
+        from: this.fromNumber,
+        body: message
+      });
+
+      console.log(`✅ Notification SMS sent to ${data.phoneNumber}: ${result.sid}`);
+      return {
+        success: true,
+        messageId: result.sid
+      };
+
+    } catch (error: any) {
+      console.error('Failed to send notification SMS:', error);
+      return {
+        success: false,
+        error: error.message,
+        logged: true
+      };
+    }
+  }
+
+  /**
+   * Format generic notification SMS
+   */
+  private formatGenericNotificationSMS(data: GenericNotificationSMSData): string {
+    const typeEmojis = {
+      assignment: '📋',
+      status_change: '🔄',
+      reminder: '⏰',
+      system: 'ℹ️'
+    };
+
+    const emoji = typeEmojis[data.type] || 'ℹ️';
+
+    // Keep SMS messages under 160 characters when possible
+    const shortMessage = data.message.length > 120
+      ? data.message.substring(0, 120) + '...'
+      : data.message;
+
+    return `${emoji} Hi ${data.firstName}, ${shortMessage}`;
   }
 
   /**

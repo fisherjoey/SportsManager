@@ -31,15 +31,18 @@ import { DataTablePagination } from '@/components/data-table/DataTablePagination
 import { GameMobileCard } from '@/components/data-table/GameMobileCard'
 import { RefereeMobileCard } from '@/components/data-table/RefereeMobileCard'
 import { UserMobileCard } from '@/components/data-table/UserMobileCard'
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter'
 import { getTeamSearchTerms } from '@/lib/team-utils'
 
 export interface ColumnDef<T> {
   id: string
   title: string
   accessor: keyof T | ((item: T) => React.ReactNode)
-  filterType?: 'search' | 'select' | 'none'
+  filterType?: 'search' | 'select' | 'multiselect' | 'none'
   filterOptions?: { value: string; label: string }[]
   className?: string
+  enableDynamicFilter?: boolean // Auto-extract unique values from data
+  getFilterValue?: (item: T) => string | string[] // Custom function to extract filter value
 }
 
 interface FilterableTableProps<T> {
@@ -250,26 +253,73 @@ export function FilterableTable<T extends Record<string, any>>({
   // Column-level filters state (for the dropdown popovers)
   const [columnLevelFilters, setColumnLevelFilters] = useState<Record<string, string | string[] | Date | undefined>>(() => {
     const initialFilters: Record<string, string | string[] | Date | undefined> = {}
-    
+
     // Initialize from columnFilters state to maintain sync
     columnFilters.forEach(filter => {
       initialFilters[filter.id] = filter.value as string | string[] | Date | undefined
     })
-    
+
     // Set defaults for columns that don't have filters yet
     columns.forEach(col => {
       if (!(col.id in initialFilters)) {
         if (col.filterType === 'search') {
           initialFilters[col.id] = ''
-        } else if (col.filterType === 'select') {
+        } else if (col.filterType === 'select' || col.filterType === 'multiselect') {
           initialFilters[col.id] = []
         }
       }
     })
-    
+
     return initialFilters
   })
 
+  // Dynamic filter options - extract unique values from data
+  const dynamicFilterOptions = useMemo(() => {
+    const options: Record<string, { value: string; label: string; count: number }[]> = {}
+
+    columns.forEach(col => {
+      if ((col.filterType === 'select' || col.filterType === 'multiselect') && col.enableDynamicFilter) {
+        const valueMap = new Map<string, number>()
+
+        data.forEach(item => {
+          let value: string | string[] | null = null
+
+          // Extract value using custom function if provided
+          if (col.getFilterValue) {
+            const extracted = col.getFilterValue(item)
+            value = Array.isArray(extracted) ? extracted : [extracted]
+          }
+          // Use accessor if it's a string key
+          else if (typeof col.accessor === 'string') {
+            const rawValue = item[col.accessor]
+            value = rawValue !== null && rawValue !== undefined ? [String(rawValue)] : null
+          }
+          // Use column id as fallback
+          else {
+            const rawValue = item[col.id]
+            value = rawValue !== null && rawValue !== undefined ? [String(rawValue)] : null
+          }
+
+          // Count occurrences
+          if (value) {
+            const values = Array.isArray(value) ? value : [value]
+            values.forEach(v => {
+              if (v && v.trim()) {
+                valueMap.set(v, (valueMap.get(v) || 0) + 1)
+              }
+            })
+          }
+        })
+
+        // Convert to options array and sort by label
+        options[col.id] = Array.from(valueMap.entries())
+          .map(([value, count]) => ({ value, label: value, count }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+      }
+    })
+
+    return options
+  }, [data, columns])
 
   // CSV Export functionality
   const handleExportCSV = () => {
@@ -634,8 +684,9 @@ export function FilterableTable<T extends Record<string, any>>({
         const originalData = row.original as any
         
         // Handle different filter types
-        if (colDef.filterType === 'select') {
+        if (colDef.filterType === 'select' || colDef.filterType === 'multiselect') {
           // For select filters, we need the raw value from the data
+          // For select/multiselect filters, we need the raw value from the data
           // The columnId usually matches the data property name
           let rawValue: string = ''
           
@@ -919,6 +970,32 @@ export function FilterableTable<T extends Record<string, any>>({
             onChange={(event) => setGlobalFilter(event.target.value)}
             className="pl-8 h-8"
           />
+        </div>
+
+        {/* Middle: Multi-select filters */}
+        <div className="flex items-center gap-2">
+          {columns
+            .filter(col => col.filterType === 'multiselect' && (col.enableDynamicFilter || col.filterOptions))
+            .map(col => {
+              const options = col.enableDynamicFilter
+                ? dynamicFilterOptions[col.id] || []
+                : (col.filterOptions || []).map(opt => ({ ...opt, count: undefined }))
+
+              const selectedValues = (table.getColumn(col.id)?.getFilterValue() as string[]) || []
+
+              return (
+                <MultiSelectFilter
+                  key={col.id}
+                  title={col.title}
+                  options={options}
+                  selectedValues={selectedValues}
+                  onSelectedChange={(values) => {
+                    table.getColumn(col.id)?.setFilterValue(values.length > 0 ? values : undefined)
+                  }}
+                  searchPlaceholder={`Search ${col.title.toLowerCase()}...`}
+                />
+              )
+            })}
         </div>
 
         {/* Right: Action buttons */}

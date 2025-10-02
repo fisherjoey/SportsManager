@@ -89,6 +89,7 @@ import adminPermissionsRoutes from './routes/admin/permissions';
 import unifiedRoleRoutes from './routes/admin/unified-roles';
 import cerbosRoutes from './routes/cerbos';
 import notificationRoutes from './routes/notifications';
+import pagesRoutes from './routes/pages';
 
 const app = express();
 
@@ -240,6 +241,9 @@ app.use('/api/test-roles', testRoleRoutes);
 
 // Cerbos policy management routes
 app.use('/api/cerbos', cerbosRoutes);
+
+// Page permission routes
+app.use('/api/pages', pagesRoutes);
 
 // Performance monitoring routes (admin only)
 app.use('/api/performance', performanceRoutes);
