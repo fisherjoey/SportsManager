@@ -39,9 +39,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
-  const { user, logout } = useAuth()
+  const { user, logout, canAccessPage } = useAuth()
   const { hasAnyPermission } = usePermissions()
-  const { hasPageAccess, accessiblePages } = usePageAccess()
   const { state, toggleSidebar, setOpen } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
@@ -379,7 +378,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const filterItemsByPermissions = (items: any[]) => {
     return items.filter(item => {
       // Use database-driven access check
-      return hasPageAccess(item.url)
+      return canAccessPage(item.url)
     })
   }
 

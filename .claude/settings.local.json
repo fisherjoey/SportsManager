@@ -2,7 +2,17 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add Cerbos page policy and Next.js middleware (Phases 2 & 5)\n\nComplete Phases 2 and 5 of Cerbos page access control implementation.\n\n## Phase 2: Cerbos Page Policy\n- Create comprehensive page.yaml policy covering all 25 pages\n- Define granular access rules for public, admin, financial, core, and demo pages\n- Implement organization scoping for financial pages\n- Add permission-based access controls (e.g., finance:view, roles:manage)\n- Include environment-aware rules for demo pages\n- Add comprehensive audit rules for sensitive pages\n- Support actions: view, access, manage, edit, update, delete, export, broadcast\n\n## Phase 5: Next.js Middleware\n- Implement server-side route protection middleware\n- Create cookie utility module for client/server cookie management\n- Add authentication check before page render\n- Implement automatic redirect to login with return URL preservation\n- Configure public route bypass (login, signup, unauthorized)\n- Exclude static assets and API routes from checks\n- Add placeholders for future JWT validation and security headers\n\n## Documentation\n- Add complete middleware implementation guide\n- Create step-by-step cookie migration guide (localStorage → cookies)\n- Add middleware quick reference for developers\n- Create visual flow diagrams for request handling\n- Add comprehensive Phase 5 summary\n\n## Next Steps\n- Migrate auth from localStorage to cookies (required for middleware)\n- Implement page-level guards using PageAccessGuard component\n- Update navigation components with permission checks\n- Add comprehensive testing suite\n\nThe infrastructure is now ready for page-level Cerbos authorization.\nMiddleware currently requires cookie migration to function properly.\nEOF\n)\")",
+      "Bash(npm run logs:*)",
+      "Bash(where:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker run:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []

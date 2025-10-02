@@ -14,7 +14,7 @@ description: |-
   - Resources pages: Content management with category-based permissions
 
 resourcePolicy:
-  version: "1.0"
+  version: "default"
   resource: "page"
   importDerivedRoles:
     - common_roles
@@ -320,6 +320,8 @@ resourcePolicy:
     - name: resources-category-manager
       actions: ['view', 'access', 'manage']
       effect: EFFECT_ALLOW
+      derivedRoles:
+        - active_user
       condition:
         match:
           all:
@@ -429,48 +431,6 @@ resourcePolicy:
         match:
           expr: request.principal.attr.isActive == true
 
-  # ============================================================================
-  # AUDIT RULES - Log access to sensitive pages
-  # ============================================================================
-
-  auditInfo:
-    # Log all admin page access attempts
-    - name: audit-admin-pages
-      actions:
-        - view
-        - access
-        - manage
-      condition:
-        match:
-          expr: request.resource.id.startsWith('admin_') || request.resource.id.startsWith('admin-')
-
-    # Log all financial page access
-    - name: audit-financial-pages
-      actions:
-        - view
-        - access
-        - export
-      condition:
-        match:
-          expr: request.resource.id.startsWith('financial') || request.resource.id == 'budget'
-
-    # Log broadcast notification page access
-    - name: audit-broadcast-notifications
-      actions:
-        - view
-        - access
-        - send
-        - broadcast
-      condition:
-        match:
-          expr: request.resource.id == 'admin_notifications_broadcast'
-
-    # Log audit log page access (meta-audit)
-    - name: audit-audit-logs-access
-      actions:
-        - view
-        - access
-        - export
-      condition:
-        match:
-          expr: request.resource.id == 'admin_audit_logs'
+  # NOTE: Audit logging is configured at the Cerbos server level (config.yaml)
+  # and applies automatically to all policy decisions. Individual resource policies
+  # do not require audit rule definitions.

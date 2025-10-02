@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:latest
+    container_name: sportsmanager-cerbos
+    command: server --config=/config/config.yaml
+    ports:
+      - "3592:3592"  # HTTP API
+      - "3593:3593"  # gRPC API
+    volumes:
+      - ./cerbos/policies:/policies:ro
+      - ./cerbos/config:/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3592/_cerbos/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
