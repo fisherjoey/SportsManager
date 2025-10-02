@@ -26,6 +26,11 @@ import { apiClient } from '@/lib/api'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatsGrid } from '@/components/ui/stats-grid'
+import { VenueInfoSummary } from '@/components/ui/venue-info-summary'
+import { VenueContactCard } from '@/components/ui/venue-contact-card'
+import { VenueFacilitiesDisplay } from '@/components/ui/venue-facilities-display'
+import { VenueCapacityDisplay } from '@/components/ui/venue-capacity-display'
+import { VenueCostDisplay } from '@/components/ui/venue-cost-display'
 
 // import { useNotifications } from "@/providers/notification-provider"
 import { TeamDetailsDialog } from './team-details-dialog'
@@ -88,19 +93,18 @@ export function TeamsLocationsPage() {
       // Set column visibility based on screen width for Locations table
       if (width < 1024) { // Tablet
         setLocationColumnVisibility({
-          'capacity': false,
+          'address': false,
           'contact': false,
-          'facilities': false,
-          'rate': false
+          'details': false
         })
       } else if (width < 1280) { // Small desktop
         setLocationColumnVisibility({
-          'capacity': false,
-          'facilities': false
+          'address': false,
+          'details': false
         })
       } else if (width < 1536) { // Medium desktop
         setLocationColumnVisibility({
-          'facilities': false
+          'details': false
         })
       } else { // Large desktop
         setLocationColumnVisibility({})
@@ -523,18 +527,21 @@ export function TeamsLocationsPage() {
     }
   ]
 
-  // Column definitions for locations table
+  // Column definitions for locations table - REDUCED from 8 to 5 columns for better spacing
   const locationColumns: ColumnDef<any>[] = [
     {
       id: 'venue',
       title: 'Venue',
       filterType: 'search',
       accessor: (location) => (
-        <div>
-          <p className="font-medium">{location.name}</p>
-          <p className="text-sm text-muted-foreground">
-            {location.city}, {location.province}
-          </p>
+        <div className="py-2">
+          <VenueInfoSummary
+            name={location.name}
+            city={location.city}
+            province={location.province}
+            isActive={location.is_active}
+            showStatus={true}
+          />
         </div>
       )
     },
@@ -543,29 +550,17 @@ export function TeamsLocationsPage() {
       title: 'Address',
       filterType: 'search',
       accessor: (location) => (
-        <LocationWithDistance
-          location={location.name}
-          address={location.address}
-          city={location.city}
-          province={location.province}
-          postalCode={location.postal_code}
-          showDistance={true}
-          showMapLink={true}
-          compact={true}
-        />
-      )
-    },
-    {
-      id: 'capacity',
-      title: 'Capacity',
-      filterType: 'search',
-      accessor: (location) => (
-        <div className="flex items-center text-sm">
-          <Users className="h-4 w-4 mr-1 text-muted-foreground" />
-          <span>{location.capacity || 'Not specified'}</span>
-          {location.parking_spaces && (
-            <span className="text-muted-foreground ml-2">• {location.parking_spaces} parking</span>
-          )}
+        <div className="py-2 min-w-[200px]">
+          <LocationWithDistance
+            location={location.name}
+            address={location.address}
+            city={location.city}
+            province={location.province}
+            postalCode={location.postal_code}
+            showDistance={true}
+            showMapLink={true}
+            compact={true}
+          />
         </div>
       )
     },
@@ -573,116 +568,48 @@ export function TeamsLocationsPage() {
       id: 'contact',
       title: 'Contact',
       filterType: 'search',
-      accessor: (location) => {
-        const formatPhoneNumber = (phone: string) => {
-          if (!phone) return null
-          const cleaned = phone.replace(/\D/g, '')
-          if (cleaned.length === 10) {
-            return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`
-          }
-          return phone
-        }
-        
-        return (
-          <div className="text-sm space-y-1">
-            {location.contact_name && (
-              <div className="font-medium">{location.contact_name}</div>
-            )}
-            {location.contact_phone && (
-              <div className="flex items-center gap-1">
-                <Phone className="h-3 w-3 text-muted-foreground" />
-                <a href={`tel:${location.contact_phone}`} className="text-blue-600 hover:underline text-xs">
-                  {formatPhoneNumber(location.contact_phone)}
-                </a>
-              </div>
-            )}
-            {location.contact_email && (
-              <div className="flex items-center gap-1">
-                <Mail className="h-3 w-3 text-muted-foreground" />
-                <a href={`mailto:${location.contact_email}`} className="text-blue-600 hover:underline text-xs">
-                  {location.contact_email}
-                </a>
-              </div>
-            )}
-            {!location.contact_name && !location.contact_phone && !location.contact_email && (
-              <span className="text-muted-foreground">No contact info</span>
-            )}
-          </div>
-        )
-      }
+      accessor: (location) => (
+        <div className="py-2 min-w-[180px]">
+          <VenueContactCard
+            contactName={location.contact_name}
+            contactPhone={location.contact_phone}
+            contactEmail={location.contact_email}
+            compact={true}
+          />
+        </div>
+      )
     },
     {
-      id: 'facilities',
-      title: 'Facilities',
+      id: 'details',
+      title: 'Details',
       filterType: 'search',
-      accessor: (location) => {
-        const facilities = Array.isArray(location.facilities) ? location.facilities : 
-          (location.facilities ? JSON.parse(location.facilities) : [])
-        return (
-          <div className="flex flex-wrap gap-1">
-            {facilities?.slice(0, 2).map((facility, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs">
-                {facility}
-              </Badge>
-            ))}
-            {facilities?.length > 2 && (
-              <Badge variant="outline" className="text-xs">
-                +{facilities.length - 2} more
-              </Badge>
-            )}
-          </div>
-        )
-      }
+      accessor: (location) => (
+        <div className="py-2 space-y-2 min-w-[220px]">
+          <VenueCapacityDisplay
+            capacity={location.capacity}
+            parkingSpaces={location.parking_spaces}
+            layout="row"
+          />
+          <VenueFacilitiesDisplay
+            facilities={location.facilities}
+            maxVisible={3}
+          />
+        </div>
+      )
     },
     {
       id: 'rate',
-      title: 'Cost',
+      title: 'Pricing',
       filterType: 'search',
-      accessor: (location) => {
-        const hourlyRate = location.hourly_rate
-        const gameRate = location.game_rate
-        
-        return (
-          <div className="text-sm space-y-1">
-            {hourlyRate && (
-              <div className="flex items-center">
-                <DollarSign className="h-3 w-3 mr-1 text-green-600" />
-                <span className="font-medium">${parseFloat(hourlyRate).toFixed(2)}</span>
-                <span className="text-muted-foreground ml-1">/hr</span>
-              </div>
-            )}
-            {gameRate && (
-              <div className="flex items-center">
-                <DollarSign className="h-3 w-3 mr-1 text-blue-600" />
-                <span className="font-medium">${parseFloat(gameRate).toFixed(2)}</span>
-                <span className="text-muted-foreground ml-1">/game</span>
-              </div>
-            )}
-            {!hourlyRate && !gameRate && (
-              <span className="text-muted-foreground">No cost set</span>
-            )}
-            {location.cost_notes && (
-              <div className="text-xs text-muted-foreground italic">
-                {location.cost_notes}
-              </div>
-            )}
-          </div>
-        )
-      }
-    },
-    {
-      id: 'status',
-      title: 'Status',
-      filterType: 'select',
-      filterOptions: [
-        { value: 'all', label: 'All Status' },
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' }
-      ],
       accessor: (location) => (
-        <Badge variant={location.is_active ? 'default' : 'secondary'}>
-          {location.is_active ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="py-2 min-w-[140px]">
+          <VenueCostDisplay
+            hourlyRate={location.hourly_rate}
+            gameRate={location.game_rate}
+            costNotes={location.cost_notes}
+            layout="column"
+          />
+        </div>
       )
     },
     {
@@ -690,10 +617,12 @@ export function TeamsLocationsPage() {
       title: 'Actions',
       filterType: 'none',
       accessor: (location) => (
-        <Button variant="ghost" size="sm" onClick={() => setSelectedLocation(location.id)}>
-          <Eye className="h-4 w-4 mr-1" />
-          View
-        </Button>
+        <div className="py-2">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLocation(location.id)}>
+            <Eye className="h-4 w-4 mr-1" />
+            View
+          </Button>
+        </div>
       )
     }
   ]
@@ -797,62 +726,32 @@ export function TeamsLocationsPage() {
   }
 
   const LocationCard: React.FC<{ location: any }> = ({ location }) => {
-    const facilities = Array.isArray(location.facilities) ? location.facilities : 
-      (location.facilities ? JSON.parse(location.facilities) : [])
-    
-    const formatPhoneNumber = (phone: string) => {
-      if (!phone) return null
-      // Format phone number as (XXX) XXX-XXXX if 10 digits
-      const cleaned = phone.replace(/\D/g, '')
-      if (cleaned.length === 10) {
-        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`
-      }
-      return phone
-    }
-    
     return (
       <Card className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="font-medium">{location.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {location.city}, {location.province}
-            </p>
-          </div>
-          <Badge variant={location.is_active ? 'default' : 'secondary'}>
-            {location.is_active ? 'Active' : 'Inactive'}
-          </Badge>
+        <div className="mb-3">
+          <VenueInfoSummary
+            name={location.name}
+            city={location.city}
+            province={location.province}
+            isActive={location.is_active}
+            showStatus={true}
+          />
         </div>
-        
+
         {/* Location Cost Display */}
         {(location.hourly_rate || location.game_rate) && (
           <div className="mb-3 p-2 bg-gray-50 rounded-md">
             <div className="text-xs font-medium text-muted-foreground mb-1">Cost Information</div>
-            <div className="flex flex-wrap gap-2 items-center">
-              {location.hourly_rate && (
-                <div className="flex items-center text-sm">
-                  <DollarSign className="h-3 w-3 mr-1 text-green-600" />
-                  <span className="font-medium">${parseFloat(location.hourly_rate).toFixed(2)}</span>
-                  <span className="text-muted-foreground text-xs ml-1">/hour</span>
-                </div>
-              )}
-              {location.game_rate && (
-                <div className="flex items-center text-sm">
-                  <DollarSign className="h-3 w-3 mr-1 text-blue-600" />
-                  <span className="font-medium">${parseFloat(location.game_rate).toFixed(2)}</span>
-                  <span className="text-muted-foreground text-xs ml-1">/game</span>
-                </div>
-              )}
-            </div>
-            {location.cost_notes && (
-              <div className="text-xs text-muted-foreground italic mt-1">
-                {location.cost_notes}
-              </div>
-            )}
+            <VenueCostDisplay
+              hourlyRate={location.hourly_rate}
+              gameRate={location.game_rate}
+              costNotes={location.cost_notes}
+              layout="row"
+            />
           </div>
         )}
-        
-        <div className="space-y-2 text-sm">
+
+        <div className="space-y-3 text-sm">
           <div className="flex items-start gap-2">
             <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
             <div className="flex-1">
@@ -862,58 +761,36 @@ export function TeamsLocationsPage() {
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Users className="h-3 w-3 text-muted-foreground" />
-            <span>{location.capacity || 0} capacity</span>
-            {location.parking_spaces && (
-              <span className="text-muted-foreground">• {location.parking_spaces} parking</span>
-            )}
-          </div>
-          
+
+          <VenueCapacityDisplay
+            capacity={location.capacity}
+            parkingSpaces={location.parking_spaces}
+            layout="row"
+          />
+
           {/* Contact Information */}
           {(location.contact_name || location.contact_phone || location.contact_email) && (
-            <div className="pt-1 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100">
               <div className="text-xs font-medium text-muted-foreground mb-1">Contact</div>
-              {location.contact_name && (
-                <div className="text-xs">{location.contact_name}</div>
-              )}
-              {location.contact_phone && (
-                <div className="flex items-center gap-1 text-xs">
-                  <Phone className="h-3 w-3 text-muted-foreground" />
-                  <a href={`tel:${location.contact_phone}`} className="text-blue-600 hover:underline">
-                    {formatPhoneNumber(location.contact_phone)}
-                  </a>
-                </div>
-              )}
-              {location.contact_email && (
-                <div className="flex items-center gap-1 text-xs">
-                  <Mail className="h-3 w-3 text-muted-foreground" />
-                  <a href={`mailto:${location.contact_email}`} className="text-blue-600 hover:underline">
-                    {location.contact_email}
-                  </a>
-                </div>
-              )}
+              <VenueContactCard
+                contactName={location.contact_name}
+                contactPhone={location.contact_phone}
+                contactEmail={location.contact_email}
+                compact={true}
+              />
             </div>
           )}
-          
+
           {/* Facilities */}
-          {facilities && facilities.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {facilities.slice(0, 3).map((facility: string, idx: number) => (
-                <Badge key={idx} variant="outline" className="text-xs">
-                  {facility}
-                </Badge>
-              ))}
-              {facilities.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{facilities.length - 3} more
-                </Badge>
-              )}
-            </div>
-          )}
+          <div className="pt-2 border-t border-gray-100">
+            <div className="text-xs font-medium text-muted-foreground mb-1">Facilities</div>
+            <VenueFacilitiesDisplay
+              facilities={location.facilities}
+              maxVisible={3}
+            />
+          </div>
         </div>
-        
+
         <div className="flex justify-end mt-3">
           <Button variant="ghost" size="sm" onClick={() => setSelectedLocation(location.id)}>
             <Eye className="h-4 w-4 mr-1" />
@@ -1046,7 +923,7 @@ export function TeamsLocationsPage() {
                   csvFilename="locations-export"
                   initialColumnVisibility={locationColumnVisibility}
                   maxVisibleColumns="auto"
-                  columnWidthEstimate={160}
+                  columnWidthEstimate={200}
                 />
               )}
             </CardContent>
