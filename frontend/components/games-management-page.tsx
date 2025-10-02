@@ -697,7 +697,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       )
     },
     {
-      id: 'referees',
+      id: 'referees_status',
       title: 'Referees',
       filterType: 'select',
       filterOptions: [
