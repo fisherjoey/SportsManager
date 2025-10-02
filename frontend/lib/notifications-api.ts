@@ -7,6 +7,8 @@
  * @module lib/notifications-api
  */
 
+import { getAuthToken } from './cookies'
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -91,7 +93,7 @@ class NotificationsApiClient {
 
   private getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_token');
+    return getAuthToken();
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

@@ -9,6 +9,7 @@
  */
 
 import { AvailabilityWindow, AvailabilityResponse, PagePermissionsResponse, PageAccessCheckResponse } from './types'
+import { setAuthToken, getAuthToken, deleteAuthToken } from './cookies'
 
 interface ApiResponse<T> {
   data?: T;
@@ -35,7 +36,7 @@ class ApiClient {
    * Create an API client instance
    */
   constructor() {
-    this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    this.token = typeof window !== 'undefined' ? getAuthToken() : null
   }
 
   /**
@@ -77,13 +78,17 @@ class ApiClient {
   setToken(token: string) {
     this.token = token
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token)
+      // Use cookie utility for consistent cookie management
+      setAuthToken(token, {
+        maxAge: 604800, // 7 days (matches JWT expiry)
+        sameSite: 'lax',
+      })
     }
   }
 
   initializeToken() {
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token')
+      const storedToken = getAuthToken()
       if (storedToken) {
         this.token = storedToken
       }
@@ -93,7 +98,7 @@ class ApiClient {
   removeToken() {
     this.token = null
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
+      deleteAuthToken()
     }
   }
 
@@ -105,9 +110,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Always check for the latest token from localStorage
+    // Always check for the latest token from cookies
     if (typeof window !== 'undefined') {
-      const currentToken = localStorage.getItem('auth_token')
+      const currentToken = getAuthToken()
       if (currentToken !== this.token) {
         this.token = currentToken
       }

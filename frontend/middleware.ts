@@ -133,17 +133,6 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
 
   // ============================================================================
-  // TEMPORARY: MIDDLEWARE DISABLED PENDING COOKIE MIGRATION
-  // ============================================================================
-  // The middleware requires cookies, but the app currently uses localStorage.
-  // Middleware is disabled until cookie migration is complete.
-  // See: docs/COOKIE_MIGRATION_GUIDE.md
-  //
-  // TODO: Remove this bypass after completing cookie migration
-  console.log('[Middleware] DISABLED - Bypassing all checks until cookie migration')
-  return NextResponse.next()
-
-  // ============================================================================
   // STEP 1: Exclude routes that don't need middleware processing
   // ============================================================================
   // Skip middleware for API routes, static assets, and Next.js internals

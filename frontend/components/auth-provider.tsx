@@ -17,6 +17,7 @@ import { apiClient, type User, type Permission } from '@/lib/api'
 import type { PagePermission } from '@/lib/types'
 import { useToast } from '@/components/ui/use-toast'
 import PermissionUtils from '@/lib/permissions'
+import { getAuthToken, deleteAuthToken } from '@/lib/cookies'
 
 /**
  * Type definition for the Authentication Context
@@ -132,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isClient) return
 
     // Check for stored auth on mount
-    const storedToken = localStorage.getItem('auth_token')
+    const storedToken = getAuthToken()
     if (storedToken) {
       apiClient.setToken(storedToken)
       // Verify token by fetching user profile and permissions
@@ -152,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .catch((error) => {
           console.error('[AuthProvider] Failed to get profile:', error)
           // Token invalid, clear storage
-          localStorage.removeItem('auth_token')
+          deleteAuthToken()
           apiClient.removeToken()
           setUser(null)
           setIsAuthenticated(false)
