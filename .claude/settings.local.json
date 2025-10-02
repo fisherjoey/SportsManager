@@ -14,7 +14,9 @@
       "Bash(docker run:*)",
       "Bash(docker compose:*)",
       "Bash(git commit:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker start:*)"
     ],
     "deny": [],
     "ask": []
