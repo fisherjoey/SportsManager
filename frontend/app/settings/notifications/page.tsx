@@ -1,7 +1,7 @@
 'use client';
 
+import { PageAccessGuard } from '@/components/page-access-guard';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 /**
  * Notification Settings Page
@@ -11,8 +11,8 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
  */
 export default function NotificationSettingsPage() {
   return (
-    <ProtectedRoute>
+    <PageAccessGuard pageId="settings_notifications">
       <NotificationPreferences />
-    </ProtectedRoute>
+    </PageAccessGuard>
   );
 }

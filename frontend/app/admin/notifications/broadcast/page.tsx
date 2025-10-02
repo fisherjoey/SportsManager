@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { PageAccessGuard } from '@/components/page-access-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -60,7 +61,7 @@ interface FormErrors {
   targetAudience?: string;
 }
 
-export default function BroadcastNotificationPage() {
+function BroadcastNotificationPageContent() {
   const [formData, setFormData] = useState<FormData>({
     title: '',
     message: '',
@@ -630,5 +631,13 @@ export default function BroadcastNotificationPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+export default function BroadcastNotificationPage() {
+  return (
+    <PageAccessGuard pageId="admin_notifications_broadcast">
+      <BroadcastNotificationPageContent />
+    </PageAccessGuard>
   )
 }

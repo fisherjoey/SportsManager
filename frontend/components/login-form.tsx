@@ -22,6 +22,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [shake, setShake] = useState(false)
   const [showPasswordToggle, setShowPasswordToggle] = useState(false)
@@ -157,6 +158,7 @@ export function LoginForm() {
                 <Label htmlFor="password">Password</Label>
                 <button
                   type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-xs text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
                   tabIndex={-1}
                 >
