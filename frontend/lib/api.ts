@@ -3338,7 +3338,7 @@ class ApiClient {
   }
 
   async checkPageAccess(pageId: string) {
-    return this.request<PageAccessCheckResponse>('/admin/access/check-page', {
+    return this.request<PageAccessCheckResponse>('/pages/check-access', {
       method: 'POST',
       body: JSON.stringify({ pageId })
     })
@@ -3396,7 +3396,7 @@ class ApiClient {
   }
 
   async getPagePermissions() {
-    return this.request<PagePermissionsResponse>('/admin/access/page-permissions')
+    return this.request<PagePermissionsResponse>('/pages/permissions')
   }
 
   async getRole(roleId: string) {
