@@ -83,7 +83,7 @@ export function CerbosRoleEditor({ role, open, onClose, onSuccess }: CerbosRoleE
   useEffect(() => {
     const fetchAvailableRoles = async () => {
       try {
-        const response = await apiClient.getUserRoles()
+        const response = await apiClient.getAvailableRoles()
         if (response?.data?.roles) {
           setAvailableRoles(response.data.roles.map(r => r.name))
         }

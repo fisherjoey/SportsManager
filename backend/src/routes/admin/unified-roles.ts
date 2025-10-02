@@ -26,6 +26,7 @@ interface UnifiedRole {
   name: string;
   description?: string;
   permissions: string[];
+  pages?: string[];
   userCount?: number;
   color?: string;
   source: 'cerbos' | 'database' | 'both';
@@ -35,12 +36,14 @@ interface RoleCreateData {
   name: string;
   description?: string;
   permissions: string[];
+  pages?: string[];
   color?: string;
 }
 
 interface RoleUpdateData {
   description?: string;
   permissions?: string[];
+  pages?: string[];
   color?: string;
 }
 
@@ -51,12 +54,14 @@ const createRoleSchema = Joi.object({
     .message('Role name must be lowercase with underscores only (e.g., super_admin)'),
   description: Joi.string().max(500).allow('', null),
   permissions: Joi.array().items(Joi.string()).default([]),
+  pages: Joi.array().items(Joi.string()).default([]),
   color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).default('#6B7280').allow('', null)
 });
 
 const updateRoleSchema = Joi.object({
   description: Joi.string().max(500).allow('', null),
   permissions: Joi.array().items(Joi.string()),
+  pages: Joi.array().items(Joi.string()),
   color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null)
 }).min(1);
 
@@ -330,6 +335,7 @@ router.get('/',
           name: roleName,
           description: metadata?.description || `${roleName} role`,
           permissions,
+          pages: [], // TODO: Fetch from role_pages table when implemented
           userCount: countMap.get(roleName) || 0,
           color: metadata?.color || '#6B7280',
           source: metadata ? 'both' : 'cerbos'
@@ -343,6 +349,7 @@ router.get('/',
             name: dbRole.name,
             description: dbRole.description || '',
             permissions: [],
+            pages: [], // TODO: Fetch from role_pages table when implemented
             userCount: countMap.get(dbRole.name) || 0,
             color: dbRole.color || '#6B7280',
             source: 'database'
@@ -361,6 +368,77 @@ router.get('/',
       logger.error('Error getting unified roles:', error);
       res.status(500).json({
         error: 'Failed to retrieve roles',
+        details: error.message
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/unified-roles/available-permissions - Get all available permissions from Cerbos
+ */
+router.get('/available-permissions',
+  authenticateToken,
+  requireCerbosPermission({
+    resource: 'role',
+    action: 'view',
+  }),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const allPermissions: string[] = [];
+      const permissionsByResource: Record<string, string[]> = {};
+
+      // Read all policy files to extract all possible permissions
+      const files = await fs.readdir(CERBOS_POLICIES_DIR);
+      const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+
+      for (const file of yamlFiles) {
+        try {
+          const filePath = path.join(CERBOS_POLICIES_DIR, file);
+          const content = await fs.readFile(filePath, 'utf-8');
+          const policy = yaml.load(content) as any;
+
+          // Extract all actions from resource policies
+          if (policy?.resourcePolicy) {
+            const resource = policy.resourcePolicy.resource;
+            const rules = policy.resourcePolicy.rules || [];
+            const actionsSet = new Set<string>();
+
+            for (const rule of rules) {
+              if (rule.actions) {
+                rule.actions.forEach((action: string) => actionsSet.add(action));
+              }
+            }
+
+            // Build resource:action permissions
+            const resourcePermissions: string[] = [];
+            for (const action of actionsSet) {
+              const permission = `${resource}:${action}`;
+              allPermissions.push(permission);
+              resourcePermissions.push(permission);
+            }
+
+            if (resourcePermissions.length > 0) {
+              permissionsByResource[resource] = resourcePermissions.sort();
+            }
+          }
+        } catch (err) {
+          logger.warn(`Failed to read policy file ${file}:`, err);
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          permissions: [...new Set(allPermissions)].sort(),
+          groupedByResource: permissionsByResource
+        },
+        message: 'Available permissions retrieved successfully'
+      });
+    } catch (error: any) {
+      logger.error('Error getting available permissions:', error);
+      res.status(500).json({
+        error: 'Failed to retrieve available permissions',
         details: error.message
       });
     }
@@ -399,6 +477,7 @@ router.get('/:name',
         name,
         description: dbRole?.description || `${name} role`,
         permissions,
+        pages: [], // TODO: Fetch from role_pages table when implemented
         userCount: parseInt(userCount?.count || '0'),
         color: dbRole?.color || '#6B7280',
         source: dbRole ? 'both' : 'cerbos'
@@ -439,7 +518,16 @@ router.post('/',
         return;
       }
 
-      const { name, description, permissions, color } = value as RoleCreateData;
+      const { name, description, permissions, pages, color } = value as RoleCreateData;
+
+      // TODO: Save pages to role_pages junction table
+      // See: docs/ROLE_PAGES_BACKEND_INTEGRATION.md
+      if (pages && pages.length > 0) {
+        logger.info(`Role '${name}' has ${pages.length} page assignments (not yet saved to DB)`);
+        // Future implementation:
+        // const pageRecords = pages.map(pageId => ({ role_name: name, page_id: pageId }));
+        // await db('role_pages').insert(pageRecords);
+      }
 
       // Check if role already exists in database
       const existingRole = await (db as any)('roles')
@@ -478,6 +566,7 @@ router.post('/',
             name: newRole.name,
             description: newRole.description,
             permissions,
+            pages: pages || [], // TODO: Fetch from role_pages table when implemented
             color: newRole.color,
             userCount: 0,
             source: 'both'
@@ -517,11 +606,23 @@ router.put('/:name',
         return;
       }
 
-      const { description, permissions, color } = value as RoleUpdateData;
+      const { description, permissions, pages, color } = value as RoleUpdateData;
 
       // Update permissions in Cerbos if provided
       if (permissions !== undefined) {
         await updateCerbosPermissions(name, permissions);
+      }
+
+      // TODO: Update pages in role_pages junction table
+      // See: docs/ROLE_PAGES_BACKEND_INTEGRATION.md
+      if (pages !== undefined) {
+        logger.info(`Role '${name}' pages being updated to ${pages.length} pages (not yet saved to DB)`);
+        // Future implementation:
+        // await db('role_pages').where({ role_name: name }).delete();
+        // if (pages.length > 0) {
+        //   const pageRecords = pages.map(pageId => ({ role_name: name, page_id: pageId }));
+        //   await db('role_pages').insert(pageRecords);
+        // }
       }
 
       // Update or create metadata in database
@@ -563,6 +664,7 @@ router.put('/:name',
             name,
             description: description || existingRole?.description || `${name} role`,
             permissions: updatedPermissions,
+            pages: pages || [], // TODO: Fetch from role_pages table when implemented
             color: color || existingRole?.color || '#6B7280',
             source: 'both'
           }

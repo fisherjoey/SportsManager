@@ -3221,7 +3221,7 @@ class ApiClient {
   }
 
   // Get available roles for user assignment
-  async getUserRoles() {
+  async getAvailableRoles() {
     return this.request<{
       success: boolean;
       data: { roles: any[] };
@@ -3772,6 +3772,17 @@ class ApiClient {
     }>(`/admin/unified-roles/${name}${force ? '?force=true' : ''}`, {
       method: 'DELETE'
     })
+  }
+
+  async getAvailablePermissions() {
+    return this.request<{
+      success: boolean;
+      data: {
+        permissions: string[];
+        groupedByResource: Record<string, string[]>;
+      };
+      message: string;
+    }>('/admin/unified-roles/available-permissions')
   }
 
   // Generic HTTP methods for resources and other endpoints
