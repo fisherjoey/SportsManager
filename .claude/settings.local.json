@@ -16,7 +16,13 @@
       "Bash(git commit:*)",
       "Bash(npm run:*)",
       "Bash(docker exec:*)",
-      "Bash(docker start:*)"
+      "Bash(docker start:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist)",
+      "Bash(net stop:*)",
+      "Bash(sc stop:*)",
+      "Bash(sc query:*)"
     ],
     "deny": [],
     "ask": []
