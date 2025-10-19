@@ -14,7 +14,7 @@ env:
 jobs:
   pre-deployment-checks:
     name: Pre-deployment Validation
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     outputs:
       should-deploy: ${{ steps.checks.outputs.should-deploy }}
@@ -48,7 +48,7 @@ jobs:
 
   deploy-production:
     name: Deploy to Production (Proxmox CT102)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: pre-deployment-checks
     environment: production
     if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
@@ -176,7 +176,7 @@ jobs:
 
   post-deployment:
     name: Post-deployment Tasks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: deploy-production
     if: success()
 
