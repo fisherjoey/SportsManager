@@ -110,9 +110,9 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3004
 
-      # API Configuration
-      NEXT_PUBLIC_API_URL: http://10.0.0.108:3001/api
-      NEXT_PUBLIC_API_BASE_URL: http://10.0.0.108:3001/api
+      # API Configuration - use domain for public access via Cloudflare Tunnel
+      NEXT_PUBLIC_API_URL: https://syncedsport.com/api
+      NEXT_PUBLIC_API_BASE_URL: https://syncedsport.com/api
 
       # Environment
       NEXT_PUBLIC_ENV: ${NODE_ENV:-development}
