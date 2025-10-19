@@ -48,6 +48,8 @@
     "maintenance:daily": "npm run quality:full && npm run db:cleanup",
     "maintenance:full": "npm run clean && npm run quality:full && npm run test:coverage && npm run audit",
     "ci:quality": "npm run type-check && npm run lint && npm run format:check && npm run quality:check",
+    "schema:docs": "node ../scripts/generate-schema-docs.js",
+    "db:audit": "node ../scripts/audit-database.js",
     "ci:test": "npm run test:coverage --ci --coverage --watchAll=false",
     "ci:security": "npm run audit && npm run test -- --testPathPattern=\"tests/security\"",
     "ci:performance": "npm run performance:benchmark --base-url http://localhost:3000",
@@ -55,7 +57,9 @@
     "dashboard:static": "node scripts/monitoring/dashboard.js --static",
     "alerts:check": "node scripts/monitoring/alerts.js --check-health",
     "alerts:test": "node scripts/monitoring/alerts.js --test-alert warning",
-    "setup:maintenance": "./scripts/setup-maintenance.sh"
+    "setup:maintenance": "./scripts/setup-maintenance.sh",
+    "cerbos:validate": "cd .. && node scripts/validate-cerbos-coverage.js",
+    "cerbos:validate:verbose": "cd .. && node scripts/validate-cerbos-coverage.js --verbose"
   },
   "dependencies": {
     "@cerbos/grpc": "^0.23.1",
@@ -95,11 +99,13 @@
     "resend": "^4.7.0",
     "sharp": "^0.34.3",
     "speakeasy": "^2.0.0",
+    "twilio": "^5.10.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.6.0",
     "@types/jest": "^30.0.0",
+    "@types/node-cron": "^3.0.11",
     "audit-ci": "^7.1.0",
     "c8": "^10.1.3",
     "concurrently": "^9.2.0",

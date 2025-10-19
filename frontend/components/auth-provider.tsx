@@ -14,16 +14,19 @@ import type React from 'react'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
 import { apiClient, type User, type Permission } from '@/lib/api'
+import type { PagePermission } from '@/lib/types'
 import { useToast } from '@/components/ui/use-toast'
 import PermissionUtils from '@/lib/permissions'
+import { getAuthToken, deleteAuthToken } from '@/lib/cookies'
 
 /**
  * Type definition for the Authentication Context
- * 
+ *
  * @typedef {Object} AuthContextType
  * @property {User | null} user - Current authenticated user object or null if not authenticated
  * @property {boolean} isAuthenticated - Boolean indicating if user is currently authenticated
  * @property {Permission[]} permissions - Array of user permissions from RBAC system
+ * @property {Map<string, { view: boolean, access: boolean }>} pagePermissions - Map of page permissions by page ID
  * @property {Function} login - Function to authenticate user with email and password
  * @property {Function} logout - Function to logout user and clear authentication state
  * @property {Function} updateProfile - Function to update user profile information
@@ -33,11 +36,14 @@ import PermissionUtils from '@/lib/permissions'
  * @property {Function} hasAnyPermission - Function to check if user has any of the specified permissions
  * @property {Function} hasAllPermissions - Function to check if user has all of the specified permissions
  * @property {Function} refreshPermissions - Function to refresh user permissions from server
+ * @property {Function} canAccessPage - Function to check if user can access a specific page
+ * @property {Function} refreshPagePermissions - Function to refresh page permissions from server
  */
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   permissions: Permission[]
+  pagePermissions: Map<string, { view: boolean, access: boolean }>
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   updateProfile: (updates: Partial<User>) => Promise<void>
@@ -47,6 +53,8 @@ interface AuthContextType {
   hasAnyPermission: (permissions: string[]) => boolean
   hasAllPermissions: (permissions: string[]) => boolean
   refreshPermissions: () => Promise<void>
+  canAccessPage: (pageId: string) => boolean
+  refreshPagePermissions: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -74,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [pagePermissions, setPagePermissions] = useState<Map<string, { view: boolean, access: boolean }>>(new Map())
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -95,11 +104,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Helper function to fetch and set page permissions
+  const fetchPagePermissions = useCallback(async (): Promise<void> => {
+    try {
+      const response = await apiClient.getPagePermissions()
+      if (response.success && response.permissions) {
+        const permissionsMap = new Map<string, { view: boolean, access: boolean }>()
+        response.permissions.forEach((perm: PagePermission) => {
+          permissionsMap.set(perm.page_id, {
+            view: perm.view,
+            access: perm.access
+          })
+          // Also index by page_path for convenience
+          permissionsMap.set(perm.page_path, {
+            view: perm.view,
+            access: perm.access
+          })
+        })
+        setPagePermissions(permissionsMap)
+      }
+    } catch (error) {
+      console.warn('Failed to fetch page permissions:', error)
+      setPagePermissions(new Map())
+    }
+  }, [])
+
   useEffect(() => {
     if (!isClient) return
-    
+
     // Check for stored auth on mount
-    const storedToken = localStorage.getItem('auth_token')
+    const storedToken = getAuthToken()
     if (storedToken) {
       apiClient.setToken(storedToken)
       // Verify token by fetching user profile and permissions
@@ -109,21 +143,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (response.user) {
             setUser(response.user)
             setIsAuthenticated(true)
-            // Fetch user permissions
-            await fetchUserPermissions(response.user.id)
+            // Fetch user permissions and page permissions in parallel
+            await Promise.all([
+              fetchUserPermissions(response.user.id),
+              fetchPagePermissions()
+            ])
           }
         })
         .catch((error) => {
           console.error('[AuthProvider] Failed to get profile:', error)
           // Token invalid, clear storage
-          localStorage.removeItem('auth_token')
+          deleteAuthToken()
           apiClient.removeToken()
           setUser(null)
           setIsAuthenticated(false)
           setPermissions([])
+          setPagePermissions(new Map())
         })
     }
-  }, [isClient, fetchUserPermissions])
+  }, [isClient, fetchUserPermissions, fetchPagePermissions])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -137,9 +175,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(response.user)
         setIsAuthenticated(true)
 
-        // Fetch user permissions after successful login
+        // Fetch user permissions and page permissions after successful login
         console.log('[AuthProvider] Fetching permissions for user:', response.user.id)
-        await fetchUserPermissions(response.user.id)
+        await Promise.all([
+          fetchUserPermissions(response.user.id),
+          fetchPagePermissions()
+        ])
 
         return true
       }
@@ -160,6 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setIsAuthenticated(false)
     setPermissions([])
+    setPagePermissions(new Map())
   }
 
   const updateProfile = async (updates: Partial<User>) => {
@@ -258,20 +300,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUserPermissions(user.id)
   }, [user, fetchUserPermissions])
 
+  const canAccessPage = useCallback((pageId: string): boolean => {
+    if (!user || !isAuthenticated) return false
+
+    // Super Admin and Admin always have access to all pages
+    const userRoles = user.roles || []
+    if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
+      return true
+    }
+
+    // Check page permissions map
+    const permission = pagePermissions.get(pageId)
+    return permission?.access ?? false
+  }, [user, isAuthenticated, pagePermissions])
+
+  const refreshPagePermissions = useCallback(async (): Promise<void> => {
+    await fetchPagePermissions()
+  }, [fetchPagePermissions])
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
       permissions,
-      login, 
-      logout, 
-      updateProfile, 
-      hasRole, 
+      pagePermissions,
+      login,
+      logout,
+      updateProfile,
+      hasRole,
       hasAnyRole,
       hasPermission,
       hasAnyPermission,
       hasAllPermissions,
-      refreshPermissions
+      refreshPermissions,
+      canAccessPage,
+      refreshPagePermissions
     }}>
       {children}
     </AuthContext.Provider>

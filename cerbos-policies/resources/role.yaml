@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "role"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['view:available', 'admin:update_user_roles', 'admin:view_user_roles']
       effect: EFFECT_ALLOW
       roles:

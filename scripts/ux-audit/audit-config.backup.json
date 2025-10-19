@@ -1,0 +1,214 @@
+{
+  "app": {
+    "url": "http://localhost:3000",
+    "loginPath": "/login",
+    "credentials": {
+      "email": "admin@refassign.com",
+      "password": "password"
+    },
+    "waitAfterLogin": 3000,
+    "waitBetweenPages": 2000,
+    "screenshotDelay": 1000
+  },
+  "routes": [
+    {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/games",
+      "name": "Games Management",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/teams",
+      "name": "Teams",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/locations",
+      "name": "Locations",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/referees",
+      "name": "Referee Management",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/users",
+      "name": "User Management",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/mentorship",
+      "name": "Mentorship",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/profile",
+      "name": "Profile",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/notifications",
+      "name": "Notifications",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/communications",
+      "name": "Communications",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    },
+    {
+      "path": "/settings",
+      "name": "Settings",
+      "requiresAuth": true,
+      "viewports": ["desktop", "tablet", "mobile"]
+    }
+  ],
+  "viewportSizes": {
+    "desktop": { "width": 1920, "height": 1080 },
+    "tablet": { "width": 768, "height": 1024 },
+    "mobile": { "width": 375, "height": 667 }
+  },
+  "auditCriteria": {
+    "accessibility": [
+      "All interactive elements have proper ARIA labels",
+      "Color contrast meets WCAG AA standards (4.5:1 for text)",
+      "Focus indicators are visible on all focusable elements",
+      "Alt text present on all images",
+      "Form inputs have associated labels",
+      "Headings follow proper hierarchy (h1, h2, h3, etc.)",
+      "Skip navigation links present",
+      "Keyboard navigation works throughout the page"
+    ],
+    "typography": [
+      "Font sizes are readable (min 14px for body text)",
+      "Line height provides adequate spacing (1.5 for body)",
+      "Text is not justified (left-aligned preferred)",
+      "Sufficient letter spacing for readability",
+      "Consistent font family usage",
+      "Font weights used appropriately for hierarchy",
+      "No more than 3 font sizes per page",
+      "Headings clearly distinguish content sections"
+    ],
+    "spacing": [
+      "Consistent padding/margin values (8px grid system)",
+      "Adequate whitespace between sections",
+      "No cramped or cluttered layouts",
+      "Touch targets are at least 44x44px (mobile)",
+      "Proper spacing between interactive elements",
+      "Consistent gap spacing in flex/grid layouts"
+    ],
+    "colors": [
+      "Consistent color palette usage",
+      "Primary/secondary colors clearly defined",
+      "Semantic colors (success, error, warning, info) used appropriately",
+      "Background/foreground combinations are readable",
+      "Color is not the only indicator of state",
+      "Hover/focus states use appropriate color changes",
+      "Dark mode support (if applicable)"
+    ],
+    "layout": [
+      "Responsive design works across all breakpoints",
+      "Content doesn't overflow containers",
+      "Sidebar/navigation behaves correctly on mobile",
+      "Tables are responsive or horizontally scrollable",
+      "Cards/components align properly in grids",
+      "No horizontal scrolling on mobile (unless intentional)",
+      "Sticky headers/footers work correctly",
+      "Z-index stacking is correct (modals, dropdowns, etc.)"
+    ],
+    "components": [
+      "Buttons have consistent sizing and styling",
+      "Form inputs have consistent styling",
+      "Dropdowns/selects are properly styled",
+      "Modals/dialogs center correctly and have backdrop",
+      "Tooltips appear in correct position",
+      "Loading states are visible and appropriate",
+      "Error states are clearly indicated",
+      "Success states provide feedback",
+      "Disabled states are visually distinct",
+      "Icons are consistent size and style"
+    ],
+    "navigation": [
+      "Navigation is intuitive and findable",
+      "Active page is clearly indicated in navigation",
+      "Breadcrumbs present where appropriate",
+      "Back buttons work correctly",
+      "Links are clearly distinguishable from text",
+      "Navigation doesn't jump/shift on page load",
+      "Mobile menu works smoothly",
+      "Search functionality is accessible"
+    ],
+    "tables": [
+      "Headers are sticky/fixed when scrolling",
+      "Alternating row colors for readability",
+      "Sortable columns clearly indicated",
+      "Filters are accessible and clear",
+      "Column resizing works smoothly (if applicable)",
+      "Row actions are consistently positioned",
+      "Empty states are informative",
+      "Pagination is clear and functional",
+      "Mobile view uses cards or horizontal scroll appropriately"
+    ],
+    "forms": [
+      "Labels are clearly associated with inputs",
+      "Required fields are marked",
+      "Validation messages are clear and helpful",
+      "Error states highlight the problematic field",
+      "Submit buttons have loading states",
+      "Inputs have appropriate types (email, tel, number, etc.)",
+      "Placeholder text is not used as labels",
+      "Multi-step forms show progress",
+      "Auto-focus on first field (where appropriate)"
+    ],
+    "performance": [
+      "Images are optimized (WebP, proper sizing)",
+      "No layout shift on page load (CLS)",
+      "Smooth animations (60fps)",
+      "No janky scrolling",
+      "Lazy loading used appropriately",
+      "Fonts loaded efficiently",
+      "Bundle size is reasonable",
+      "Time to interactive is fast"
+    ],
+    "consistency": [
+      "Design system followed throughout",
+      "Spacing is consistent across pages",
+      "Button styles are consistent",
+      "Typography hierarchy is consistent",
+      "Color usage is consistent",
+      "Icon usage is consistent",
+      "Component patterns are reused",
+      "Terminology is consistent"
+    ],
+    "feedback": [
+      "Loading states for async operations",
+      "Success messages after actions",
+      "Error messages are descriptive",
+      "Confirmation dialogs for destructive actions",
+      "Toast/notification positioning is consistent",
+      "Progress indicators for long operations",
+      "Optimistic UI updates where appropriate",
+      "Clear disabled/enabled states"
+    ]
+  },
+  "output": {
+    "screenshotDir": "./scripts/ux-audit/screenshots",
+    "reportDir": "./scripts/ux-audit/reports",
+    "timestamp": true
+  }
+}

@@ -21,6 +21,7 @@ interface Role {
   is_active: boolean
   user_count: number
   permission_count: number
+  pages?: string[]
   created_at: string
   updated_at: string
 }

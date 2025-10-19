@@ -28,10 +28,12 @@ export type ResourceType =
   | 'ai_suggestion'
   | 'financial_dashboard'
   | 'employee'
-  | 'maintenance';
+  | 'maintenance'
+  | 'page';
 
 export type ResourceAction =
   | 'view'
+  | 'access'
   | 'view:list'
   | 'list'
   | 'view:details'

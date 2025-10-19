@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { PageAccessGuard } from '@/components/page-access-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -42,7 +43,7 @@ interface AuditLogsPageState {
   isAdmin: boolean
 }
 
-export default function AuditLogsPage() {
+function AuditLogsPageContent() {
   const [state, setState] = useState<AuditLogsPageState>({
     entries: [],
     stats: null,
@@ -530,5 +531,13 @@ export default function AuditLogsPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function AuditLogsPage() {
+  return (
+    <PageAccessGuard pageId="admin_audit_logs">
+      <AuditLogsPageContent />
+    </PageAccessGuard>
   )
 }

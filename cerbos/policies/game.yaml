@@ -6,6 +6,13 @@ resourcePolicy:
   importDerivedRoles:
     - common_roles
   rules:
+    # Super Admin has full access to all game actions
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+      name: super-admin-full-access
+
     - actions:
         - view
         - view:list

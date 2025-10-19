@@ -76,22 +76,10 @@ export function UnifiedAccessControlDashboard() {
       description: 'Create and manage roles with specific permissions'
     },
     {
-      id: 'permissions',
-      label: 'Permissions',
-      icon: <Key className="h-4 w-4" />,
-      description: 'View and manage system permissions'
-    },
-    {
       id: 'page-access',
       label: 'Page Access',
       icon: <Layout className="h-4 w-4" />,
       description: 'Configure page-level access for different roles'
-    },
-    {
-      id: 'api-access',
-      label: 'API Access',
-      icon: <Globe className="h-4 w-4" />,
-      description: 'Manage API endpoint permissions and rate limits'
     },
     {
       id: 'mentorships',
@@ -167,31 +155,22 @@ export function UnifiedAccessControlDashboard() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Security Score</CardTitle>
-              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+              <UserCog className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">92%</div>
+              <div className="text-2xl font-bold">{stats.activeSessionCount}</div>
               <p className="text-xs text-muted-foreground">
-                Good standing
+                Currently logged in
               </p>
             </CardContent>
           </Card>
         </div>
-
-        {/* Info Alert */}
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            This unified dashboard provides complete control over your application's access management.
-            Navigate between tabs to manage different aspects of security and permissions.
-          </AlertDescription>
-        </Alert>
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           {tabs.map(tab => (
             <TabsTrigger 
               key={tab.id} 
@@ -208,20 +187,6 @@ export function UnifiedAccessControlDashboard() {
             </TabsTrigger>
           ))}
         </TabsList>
-
-        {/* Tab Descriptions */}
-        <Card className="border-muted">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-sm">
-              {tabs.find(t => t.id === activeTab)?.icon}
-              <span className="font-medium">{tabs.find(t => t.id === activeTab)?.label}:</span>
-              <span className="text-muted-foreground">
-                {tabs.find(t => t.id === activeTab)?.description}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Tab Content */}
         <TabsContent value="users" className="space-y-4">
           <UserManagementDashboard />
@@ -231,37 +196,8 @@ export function UnifiedAccessControlDashboard() {
           <RoleManagementDashboard />
         </TabsContent>
 
-        <TabsContent value="permissions" className="space-y-4">
-          <PermissionManagementDashboard />
-        </TabsContent>
-
         <TabsContent value="page-access" className="space-y-4">
           <RolePageAccessManager />
-        </TabsContent>
-
-        <TabsContent value="api-access" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                API Access Control
-              </CardTitle>
-              <CardDescription>
-                Configure API endpoint permissions, rate limits, and access policies
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Globe className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">API Access Management</h3>
-                <p className="text-muted-foreground max-w-md">
-                  This feature will allow you to configure fine-grained permissions for API endpoints,
-                  set rate limits per role, and manage API keys.
-                </p>
-                <Badge variant="secondary" className="mt-4">Coming Soon</Badge>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="mentorships" className="space-y-4">

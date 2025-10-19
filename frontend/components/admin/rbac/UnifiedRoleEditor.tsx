@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Shield, Users, Settings } from 'lucide-react'
+import { Loader2, Shield, Users, Settings, FileText } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -32,6 +32,7 @@ interface UnifiedRoleEditorProps {
     name: string
     description?: string
     permissions?: string[]
+    pages?: string[]
     userCount?: number
     color?: string
   } | null
@@ -99,16 +100,70 @@ const PERMISSION_GROUPS = {
   ],
 }
 
+// Available pages grouped by category
+const PAGE_GROUPS = {
+  'Admin Pages': [
+    { id: 'admin_audit_logs', label: 'Audit Logs' },
+    { id: 'admin_permissions', label: 'Permission Management' },
+    { id: 'admin_page_access', label: 'Page Access Control' },
+    { id: 'admin_notifications_broadcast', label: 'Broadcast Notifications' },
+    { id: 'admin_users', label: 'User Management' },
+    { id: 'admin_roles', label: 'Role Management' },
+    { id: 'admin_settings', label: 'System Settings' },
+  ],
+  'Financial Pages': [
+    { id: 'financial_dashboard', label: 'Financial Dashboard' },
+    { id: 'financial_budgets', label: 'Budget Management' },
+    { id: 'budget', label: 'Budget Overview' },
+  ],
+  'Core Pages': [
+    { id: 'games', label: 'Games Management' },
+    { id: 'resources', label: 'Resource Centre' },
+    { id: 'notifications', label: 'Notifications' },
+  ],
+  'Settings Pages': [
+    { id: 'settings_notifications', label: 'Notification Settings' },
+  ],
+}
+
 export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRoleEditorProps) {
   const [loading, setLoading] = useState(false)
+  const [loadingPermissions, setLoadingPermissions] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     color: '#6B7280',
   })
   const [permissions, setPermissions] = useState<string[]>([])
+  const [selectedPages, setSelectedPages] = useState<string[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [availablePermissions, setAvailablePermissions] = useState<Record<string, string[]>>({})
+  const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
+
+  // Fetch available permissions from backend
+  useEffect(() => {
+    const fetchAvailablePermissions = async () => {
+      try {
+        setLoadingPermissions(true)
+        const response = await apiClient.getAvailablePermissions()
+        if (response.success && response.data) {
+          setAvailablePermissions(response.data.groupedByResource)
+        }
+      } catch (error) {
+        console.error('Failed to fetch available permissions:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to load available permissions',
+          variant: 'destructive'
+        })
+      } finally {
+        setLoadingPermissions(false)
+      }
+    }
+
+    fetchAvailablePermissions()
+  }, [])
 
   useEffect(() => {
     if (role) {
@@ -118,11 +173,12 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
         color: role.color || '#6B7280',
       })
       setPermissions(role.permissions || [])
+      setSelectedPages(role.pages || [])
       // Expand groups that have selected permissions
       const groupsToExpand = new Set<string>()
-      for (const [group, perms] of Object.entries(PERMISSION_GROUPS)) {
-        if (perms.some(p => role.permissions?.includes(p.id))) {
-          groupsToExpand.add(group)
+      for (const [resource, perms] of Object.entries(availablePermissions)) {
+        if (perms.some(p => role.permissions?.includes(p))) {
+          groupsToExpand.add(resource)
         }
       }
       setExpandedGroups(groupsToExpand)
@@ -133,9 +189,10 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
         color: '#6B7280',
       })
       setPermissions([])
+      setSelectedPages([])
       setExpandedGroups(new Set())
     }
-  }, [role])
+  }, [role, availablePermissions])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -167,6 +224,7 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
         const payload = {
           description: formData.description || `${formData.name} role`,
           permissions,
+          pages: selectedPages,
           color: formData.color
         }
 
@@ -174,7 +232,7 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
         await apiClient.updateUnifiedRole(role.id || role.name, payload)
         toast({
           title: 'Role Updated',
-          description: `Successfully updated role "${formData.name}" with ${permissions.length} permissions`,
+          description: `Successfully updated role "${formData.name}" with ${permissions.length} permissions and ${selectedPages.length} pages`,
           duration: 3000
         })
       } else {
@@ -183,13 +241,14 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
           name: formData.name,
           description: formData.description || `${formData.name} role`,
           permissions,
+          pages: selectedPages,
           color: formData.color
         }
 
         await apiClient.createUnifiedRole(payload)
         toast({
           title: 'Role Created',
-          description: `Successfully created role "${formData.name}" with ${permissions.length} permissions`,
+          description: `Successfully created role "${formData.name}" with ${permissions.length} permissions and ${selectedPages.length} pages`,
           duration: 3000
         })
       }
@@ -217,6 +276,14 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
     )
   }
 
+  const togglePage = (pageId: string) => {
+    setSelectedPages(prev =>
+      prev.includes(pageId)
+        ? prev.filter(p => p !== pageId)
+        : [...prev, pageId]
+    )
+  }
+
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev)
@@ -229,26 +296,48 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
     })
   }
 
-  const selectAllInGroup = (group: string) => {
-    const groupPermissions = PERMISSION_GROUPS[group as keyof typeof PERMISSION_GROUPS]
-    const allGroupPermIds = groupPermissions.map(p => p.id)
-    const hasAll = allGroupPermIds.every(id => permissions.includes(id))
+  const selectAllInGroup = (resource: string) => {
+    const resourcePermissions = availablePermissions[resource] || []
+    const hasAll = resourcePermissions.every(perm => permissions.includes(perm))
 
     if (hasAll) {
       // Deselect all in group
-      setPermissions(prev => prev.filter(p => !allGroupPermIds.includes(p)))
+      setPermissions(prev => prev.filter(p => !resourcePermissions.includes(p)))
     } else {
       // Select all in group
-      setPermissions(prev => [...new Set([...prev, ...allGroupPermIds])])
+      setPermissions(prev => [...new Set([...prev, ...resourcePermissions])])
     }
   }
 
-  const getGroupSelectionState = (group: string) => {
-    const groupPermissions = PERMISSION_GROUPS[group as keyof typeof PERMISSION_GROUPS]
-    const selectedCount = groupPermissions.filter(p => permissions.includes(p.id)).length
+  const selectAllPagesInGroup = (group: string) => {
+    const groupPages = PAGE_GROUPS[group as keyof typeof PAGE_GROUPS]
+    const allGroupPageIds = groupPages.map(p => p.id)
+    const hasAll = allGroupPageIds.every(id => selectedPages.includes(id))
+
+    if (hasAll) {
+      // Deselect all in group
+      setSelectedPages(prev => prev.filter(p => !allGroupPageIds.includes(p)))
+    } else {
+      // Select all in group
+      setSelectedPages(prev => [...new Set([...prev, ...allGroupPageIds])])
+    }
+  }
+
+  const getGroupSelectionState = (resource: string) => {
+    const resourcePermissions = availablePermissions[resource] || []
+    const selectedCount = resourcePermissions.filter(perm => permissions.includes(perm)).length
 
     if (selectedCount === 0) return 'none'
-    if (selectedCount === groupPermissions.length) return 'all'
+    if (selectedCount === resourcePermissions.length) return 'all'
+    return 'some'
+  }
+
+  const getPageGroupSelectionState = (group: string) => {
+    const groupPages = PAGE_GROUPS[group as keyof typeof PAGE_GROUPS]
+    const selectedCount = groupPages.filter(p => selectedPages.includes(p.id)).length
+
+    if (selectedCount === 0) return 'none'
+    if (selectedCount === groupPages.length) return 'all'
     return 'some'
   }
 
@@ -267,7 +356,7 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
           </DialogHeader>
 
           <Tabs defaultValue="details" className="mt-4">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="details">
                 <Settings className="h-4 w-4 mr-2" />
                 Role Details
@@ -275,6 +364,10 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
               <TabsTrigger value="permissions">
                 <Shield className="h-4 w-4 mr-2" />
                 Permissions ({permissions.length})
+              </TabsTrigger>
+              <TabsTrigger value="pages">
+                <FileText className="h-4 w-4 mr-2" />
+                Pages ({selectedPages.length})
               </TabsTrigger>
             </TabsList>
 
@@ -350,72 +443,180 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
             </TabsContent>
 
             <TabsContent value="permissions" className="mt-4">
-              <ScrollArea className="h-[400px] rounded-md border p-4">
-                <div className="space-y-4">
-                  {Object.entries(PERMISSION_GROUPS).map(([group, groupPermissions]) => {
-                    const isExpanded = expandedGroups.has(group)
-                    const selectionState = getGroupSelectionState(group)
-
-                    return (
-                      <div key={group} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={() => toggleGroup(group)}
-                            className="flex items-center gap-2 font-medium hover:text-primary transition-colors"
-                          >
-                            <span className="text-sm">
-                              {isExpanded ? '▼' : '▶'}
-                            </span>
-                            {group}
-                            <Badge variant="outline" className="ml-1">
-                              {groupPermissions.filter(p => permissions.includes(p.id)).length}/{groupPermissions.length}
-                            </Badge>
-                          </button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => selectAllInGroup(group)}
-                            className="text-xs"
-                          >
-                            {selectionState === 'all' ? 'Deselect All' : 'Select All'}
-                          </Button>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="ml-6 space-y-2">
-                            {groupPermissions.map((permission) => (
-                              <label
-                                key={permission.id}
-                                className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded-md transition-colors"
-                              >
-                                <Checkbox
-                                  checked={permissions.includes(permission.id)}
-                                  onCheckedChange={() => togglePermission(permission.id)}
-                                  disabled={loading}
-                                />
-                                <div className="flex-1">
-                                  <span className="text-sm">{permission.label}</span>
-                                  <code className="ml-2 text-xs text-muted-foreground">
-                                    {permission.id}
-                                  </code>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+              {loadingPermissions ? (
+                <div className="flex items-center justify-center h-[400px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              </ScrollArea>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <Input
+                      placeholder="Search permissions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                  <ScrollArea className="h-[400px] rounded-md border p-4">
+                    <div className="space-y-4">
+                      {Object.entries(availablePermissions)
+                        .filter(([resource, perms]) => {
+                          if (!searchQuery) return true
+                          const query = searchQuery.toLowerCase()
+                          return resource.toLowerCase().includes(query) ||
+                            perms.some(p => p.toLowerCase().includes(query))
+                        })
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([resource, resourcePermissions]) => {
+                          const isExpanded = expandedGroups.has(resource)
+                          const selectionState = getGroupSelectionState(resource)
+                          const filteredPermissions = searchQuery
+                            ? resourcePermissions.filter(p => p.toLowerCase().includes(searchQuery.toLowerCase()))
+                            : resourcePermissions
+
+                          if (filteredPermissions.length === 0) return null
+
+                          return (
+                            <div key={resource} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleGroup(resource)}
+                                  className="flex items-center gap-2 font-medium hover:text-primary transition-colors"
+                                >
+                                  <span className="text-sm">
+                                    {isExpanded ? '▼' : '▶'}
+                                  </span>
+                                  <span className="capitalize">{resource.replace('_', ' ')}</span>
+                                  <Badge variant="outline" className="ml-1">
+                                    {resourcePermissions.filter(p => permissions.includes(p)).length}/{resourcePermissions.length}
+                                  </Badge>
+                                </button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => selectAllInGroup(resource)}
+                                  className="text-xs"
+                                >
+                                  {selectionState === 'all' ? 'Deselect All' : 'Select All'}
+                                </Button>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="ml-6 space-y-2">
+                                  {filteredPermissions.map((permission) => {
+                                    const action = permission.split(':').slice(1).join(':')
+                                    return (
+                                      <label
+                                        key={permission}
+                                        className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded-md transition-colors"
+                                      >
+                                        <Checkbox
+                                          checked={permissions.includes(permission)}
+                                          onCheckedChange={() => togglePermission(permission)}
+                                          disabled={loading}
+                                        />
+                                        <div className="flex-1">
+                                          <span className="text-sm capitalize">{action.replace(/[_:]/g, ' ')}</span>
+                                          <code className="ml-2 text-xs text-muted-foreground">
+                                            {permission}
+                                          </code>
+                                        </div>
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </ScrollArea>
+                </>
+              )}
 
               <div className="mt-4 p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   <strong>{permissions.length}</strong> permission{permissions.length !== 1 ? 's' : ''} selected.
                   These permissions define what users with this role can do in the system.
                 </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pages" className="mt-4">
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Control which pages users with this role can access in the application.
+                </p>
+
+                <ScrollArea className="h-[400px] rounded-md border p-4">
+                  <div className="space-y-4">
+                    {Object.entries(PAGE_GROUPS).map(([group, groupPages]) => {
+                      const isExpanded = expandedGroups.has(group)
+                      const selectionState = getPageGroupSelectionState(group)
+
+                      return (
+                        <div key={group} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => toggleGroup(group)}
+                              className="flex items-center gap-2 font-medium hover:text-primary transition-colors"
+                            >
+                              <span className="text-sm">
+                                {isExpanded ? '▼' : '▶'}
+                              </span>
+                              {group}
+                              <Badge variant="outline" className="ml-1">
+                                {groupPages.filter(p => selectedPages.includes(p.id)).length}/{groupPages.length}
+                              </Badge>
+                            </button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => selectAllPagesInGroup(group)}
+                              className="text-xs"
+                            >
+                              {selectionState === 'all' ? 'Deselect All' : 'Select All'}
+                            </Button>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="ml-6 space-y-2">
+                              {groupPages.map((page) => (
+                                <label
+                                  key={page.id}
+                                  className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded-md transition-colors"
+                                >
+                                  <Checkbox
+                                    checked={selectedPages.includes(page.id)}
+                                    onCheckedChange={() => togglePage(page.id)}
+                                    disabled={loading}
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-sm">{page.label}</span>
+                                    <code className="ml-2 text-xs text-muted-foreground">
+                                      {page.id}
+                                    </code>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </ScrollArea>
+
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{selectedPages.length}</strong> page{selectedPages.length !== 1 ? 's' : ''} selected.
+                    These pages will be accessible to users with this role.
+                  </p>
+                </div>
               </div>
             </TabsContent>
           </Tabs>

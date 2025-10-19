@@ -8,7 +8,8 @@
  * @module lib/api
  */
 
-import { AvailabilityWindow, AvailabilityResponse } from './types'
+import { AvailabilityWindow, AvailabilityResponse, PagePermissionsResponse, PageAccessCheckResponse } from './types'
+import { setAuthToken, getAuthToken, deleteAuthToken } from './cookies'
 
 interface ApiResponse<T> {
   data?: T;
@@ -35,7 +36,7 @@ class ApiClient {
    * Create an API client instance
    */
   constructor() {
-    this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    this.token = typeof window !== 'undefined' ? getAuthToken() : null
   }
 
   /**
@@ -77,13 +78,17 @@ class ApiClient {
   setToken(token: string) {
     this.token = token
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token)
+      // Use cookie utility for consistent cookie management
+      setAuthToken(token, {
+        maxAge: 604800, // 7 days (matches JWT expiry)
+        sameSite: 'lax',
+      })
     }
   }
 
   initializeToken() {
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token')
+      const storedToken = getAuthToken()
       if (storedToken) {
         this.token = storedToken
       }
@@ -93,7 +98,7 @@ class ApiClient {
   removeToken() {
     this.token = null
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
+      deleteAuthToken()
     }
   }
 
@@ -105,9 +110,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Always check for the latest token from localStorage
+    // Always check for the latest token from cookies
     if (typeof window !== 'undefined') {
-      const currentToken = localStorage.getItem('auth_token')
+      const currentToken = getAuthToken()
       if (currentToken !== this.token) {
         this.token = currentToken
       }
@@ -2711,6 +2716,30 @@ class ApiClient {
     });
   }
 
+  // Notification broadcast endpoint
+  async broadcastNotification(notificationData: {
+    title: string;
+    message: string;
+    type: 'assignment' | 'status_change' | 'reminder' | 'system';
+    link?: string;
+    target_audience: {
+      roles?: string[];
+      specific_users?: string[];
+      all_users?: boolean;
+    };
+    metadata?: any;
+  }) {
+    return this.request<{
+      success: boolean;
+      recipientCount: number;
+      createdCount: number;
+      message: string;
+    }>('/notifications/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(notificationData)
+    })
+  }
+
   // Employee Management API
   async getEmployees(params?: {
     department?: string;
@@ -3192,7 +3221,7 @@ class ApiClient {
   }
 
   // Get available roles for user assignment
-  async getUserRoles() {
+  async getAvailableRoles() {
     return this.request<{
       success: boolean;
       data: { roles: any[] };
@@ -3313,13 +3342,10 @@ class ApiClient {
     })
   }
 
-  async checkPageAccess(page: string) {
-    return this.request<{
-      success: boolean;
-      hasAccess: boolean;
-    }>('/admin/access/check-page', {
+  async checkPageAccess(pageId: string) {
+    return this.request<PageAccessCheckResponse>('/pages/check-access', {
       method: 'POST',
-      body: JSON.stringify({ page })
+      body: JSON.stringify({ pageId })
     })
   }
 
@@ -3372,6 +3398,10 @@ class ApiClient {
         endpoint_category: string;
       }>;
     }>('/admin/access/my-apis')
+  }
+
+  async getPagePermissions() {
+    return this.request<PagePermissionsResponse>('/pages/permissions')
   }
 
   async getRole(roleId: string) {
@@ -3744,6 +3774,17 @@ class ApiClient {
     })
   }
 
+  async getAvailablePermissions() {
+    return this.request<{
+      success: boolean;
+      data: {
+        permissions: string[];
+        groupedByResource: Record<string, string[]>;
+      };
+      message: string;
+    }>('/admin/unified-roles/available-permissions')
+  }
+
   // Generic HTTP methods for resources and other endpoints
   async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, {
@@ -3926,6 +3967,78 @@ class ApiClient {
     return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`);
   }
 
+  // ==================== CHUNK METHODS ====================
+
+  /**
+   * Get list of game chunks
+   */
+  async getChunks(params?: {
+    location?: string
+    date?: string
+    status?: string
+    page?: number
+    limit?: number
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    return this.request<import('./types/chunks').ChunkListResponse>(`/chunks${queryString ? `?${queryString}` : ''}`)
+  }
+
+  /**
+   * Get chunk details with games
+   */
+  async getChunk(id: string) {
+    return this.request<import('./types/chunks').ChunkDetailsResponse>(`/chunks/${id}`)
+  }
+
+  /**
+   * Create a new chunk
+   */
+  async createChunk(data: import('./types/chunks').CreateChunkRequest) {
+    return this.request<{ chunk: import('./types/chunks').GameChunk }>(`/chunks`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Update an existing chunk
+   */
+  async updateChunk(id: string, data: import('./types/chunks').UpdateChunkRequest) {
+    return this.request<{ chunk: import('./types/chunks').GameChunk }>(`/chunks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Delete a chunk
+   */
+  async deleteChunk(id: string, force?: boolean) {
+    const queryString = force ? '?force=true' : ''
+    return this.request<{ assignments_removed: number }>(`/chunks/${id}${queryString}`, {
+      method: 'DELETE'
+    })
+  }
+
+  /**
+   * Assign a chunk to a referee
+   */
+  async assignChunk(id: string, data: import('./types/chunks').AssignChunkRequest) {
+    return this.request<import('./types/chunks').AssignChunkResponse>(`/chunks/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Auto-create chunks based on criteria
+   */
+  async autoCreateChunks(data: import('./types/chunks').AutoCreateChunksRequest) {
+    return this.request<{ chunks_created: number; chunks: import('./types/chunks').GameChunk[] }>(`/chunks/auto-create`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
 }
 
 // Types (updated to match backend schema)

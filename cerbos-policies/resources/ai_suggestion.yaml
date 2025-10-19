@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "ai_suggestion"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['generate', 'view:list', 'accept', 'reject']
       effect: EFFECT_ALLOW
       roles:

@@ -105,7 +105,7 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await apiClient.getUserRoles()
+        const response = await apiClient.getAvailableRoles()
         console.log('Roles response:', response)
 
         // The backend returns { success: true, data: { roles: [...] } }

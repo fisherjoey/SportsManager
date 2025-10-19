@@ -16,7 +16,7 @@ import {
   getFacetedUniqueValues,
   useReactTable
 } from '@tanstack/react-table'
-import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload } from 'lucide-react'
+import { Search, ChevronDown, Filter, X, LayoutGrid, Table as TableIcon, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, MoreVertical, Settings2 } from 'lucide-react'
 import Papa from 'papaparse'
 
 import { Button } from '@/components/ui/button'
@@ -25,21 +25,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { DataTableToolbar } from '@/components/data-table/DataTableToolbar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { DataTableViewOptions } from '@/components/data-table/DataTableViewOptions'
 import { DataTablePagination } from '@/components/data-table/DataTablePagination'
 import { GameMobileCard } from '@/components/data-table/GameMobileCard'
 import { RefereeMobileCard } from '@/components/data-table/RefereeMobileCard'
 import { UserMobileCard } from '@/components/data-table/UserMobileCard'
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter'
 import { getTeamSearchTerms } from '@/lib/team-utils'
 
 export interface ColumnDef<T> {
   id: string
   title: string
   accessor: keyof T | ((item: T) => React.ReactNode)
-  filterType?: 'search' | 'select' | 'none'
+  filterType?: 'search' | 'select' | 'multiselect' | 'none'
   filterOptions?: { value: string; label: string }[]
   className?: string
+  enableDynamicFilter?: boolean // Auto-extract unique values from data
+  getFilterValue?: (item: T) => string | string[] // Custom function to extract filter value
 }
 
 interface FilterableTableProps<T> {
@@ -57,6 +60,10 @@ interface FilterableTableProps<T> {
   enableCSV?: boolean
   onDataImport?: (newData: T[]) => void
   csvFilename?: string
+  initialColumnVisibility?: Record<string, boolean>
+  maxVisibleColumns?: number | 'auto' // Max columns to show, or 'auto' to calculate based on screen width
+  columnWidthEstimate?: number // Estimated average column width in pixels (default: 150)
+  customOptionsContent?: React.ReactNode // Custom content to render in Options dropdown
 }
 
 export function FilterableTable<T extends Record<string, any>>({
@@ -73,11 +80,15 @@ export function FilterableTable<T extends Record<string, any>>({
   enableViewToggle = true,
   enableCSV = false,
   onDataImport,
-  csvFilename
+  csvFilename,
+  initialColumnVisibility = {},
+  maxVisibleColumns = 'auto',
+  columnWidthEstimate = 150,
+  customOptionsContent
 }: FilterableTableProps<T>) {
   // Generate storage key based on table type
   const storageKey = `filterable-table-${mobileCardType}-state`
-  
+
   // Load initial state from localStorage
   const loadStoredState = useCallback(() => {
     if (typeof window === 'undefined') return null
@@ -90,10 +101,17 @@ export function FilterableTable<T extends Record<string, any>>({
   }, [storageKey])
 
   const storedState = loadStoredState()
-  
+
   const [sorting, setSorting] = useState<SortingState>(storedState?.sorting || [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(storedState?.columnFilters || [])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(storedState?.columnVisibility || {})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    // Don't use stored columnVisibility if we have responsive settings
+    // This ensures responsive behavior takes priority
+    if (Object.keys(initialColumnVisibility).length > 0) {
+      return initialColumnVisibility
+    }
+    return storedState?.columnVisibility || {}
+  })
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState(storedState?.globalFilter || '')
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(storedState?.viewMode || 'table')
@@ -101,19 +119,130 @@ export function FilterableTable<T extends Record<string, any>>({
   // CSV functionality
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Save state to localStorage whenever it changes
+  // Track whether visibility was changed by user or responsive system
+  const userChangedVisibilityRef = useRef(false)
+
+  // State to track available width (considering sidebar)
+  const [availableWidth, setAvailableWidth] = useState(() => {
+    if (typeof window === 'undefined') return 1920
+    return window.innerWidth
+  })
+
+  // Calculate maximum visible columns based on available width
+  const calculateMaxVisibleColumns = useCallback(() => {
+    if (maxVisibleColumns === 'auto') {
+      // Reserve space for padding, scrollbar, and margins (approximately 100px)
+      const effectiveWidth = availableWidth - 100
+      // Calculate how many columns can fit
+      const calculatedMax = Math.floor(effectiveWidth / columnWidthEstimate) - 1
+      // Always show at least 3 columns, max 12 columns
+      return Math.max(3, Math.min(columns.length, calculatedMax, 12))
+    }
+    return typeof maxVisibleColumns === 'number' ? maxVisibleColumns : columns.length
+  }, [maxVisibleColumns, columnWidthEstimate, availableWidth, columns.length])
+
+  // Listen for window resize and recalculate available width
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+
+    const updateAvailableWidth = () => {
+      setAvailableWidth(window.innerWidth)
+    }
+
+    window.addEventListener('resize', updateAvailableWidth)
+    return () => window.removeEventListener('resize', updateAvailableWidth)
+  }, [])
+
+  // Listen for sidebar state changes via custom event
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleSidebarChange = () => {
+      // Trigger a recalculation after sidebar animation completes
+      setTimeout(() => {
+        setAvailableWidth(window.innerWidth)
+      }, 300) // Wait for sidebar transition
+    }
+
+    window.addEventListener('sidebar-state-changed', handleSidebarChange)
+    return () => window.removeEventListener('sidebar-state-changed', handleSidebarChange)
+  }, [])
+
+  // Apply max column limit to visibility settings
+  const applyMaxColumnLimit = useCallback((visibility: VisibilityState) => {
+    const maxCols = calculateMaxVisibleColumns()
+
+    // Count currently visible columns
+    const visibleColumns = columns.filter(col => {
+      // Check if column is set to visible (undefined means visible by default)
+      return visibility[col.id] !== false
+    })
+
+    // If we're under the limit, return as-is
+    if (visibleColumns.length <= maxCols) {
+      return visibility
+    }
+
+    // Otherwise, hide columns that are not in initialColumnVisibility and not critical
+    const result = { ...visibility }
+    let visibleCount = visibleColumns.length
+
+    // Priority order: columns explicitly set to visible, then others
+    for (const col of columns) {
+      if (visibleCount <= maxCols) break
+
+      // Don't hide columns that are explicitly set to visible in initialColumnVisibility
+      if (initialColumnVisibility[col.id] === true) continue
+
+      // Don't hide the actions column or columns that can't be hidden
+      if (col.id === 'actions' || col.filterType === 'none') continue
+
+      // If this column is currently visible and not protected, hide it
+      if (result[col.id] !== false) {
+        result[col.id] = false
+        visibleCount--
+      }
+    }
+
+    return result
+  }, [columns, calculateMaxVisibleColumns, initialColumnVisibility])
+
+  // Update column visibility when initialColumnVisibility or availableWidth changes
+  // This ensures responsive behavior overrides localStorage
+  useEffect(() => {
+    if (Object.keys(initialColumnVisibility).length > 0) {
+      const limitedVisibility = applyMaxColumnLimit(initialColumnVisibility)
+      setColumnVisibility(limitedVisibility)
+      userChangedVisibilityRef.current = false
+    }
+  }, [JSON.stringify(initialColumnVisibility), applyMaxColumnLimit, availableWidth])
+
+  // Also recalculate when maxVisibleColumns is 'auto' and available width changes
+  // But don't enforce limits if user has manually changed visibility
+  useEffect(() => {
+    if (maxVisibleColumns === 'auto' && columnVisibility && !userChangedVisibilityRef.current) {
+      const limitedVisibility = applyMaxColumnLimit(columnVisibility)
+      // Only update if the visibility actually changed
+      if (JSON.stringify(limitedVisibility) !== JSON.stringify(columnVisibility)) {
+        setColumnVisibility(limitedVisibility)
+      }
+    }
+  }, [availableWidth, maxVisibleColumns, applyMaxColumnLimit])
+
+  // Save state to localStorage whenever it changes (except responsive-triggered changes)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Don't save columnVisibility if it was set by responsive system
     const stateToSave = {
       sorting,
       columnFilters,
-      columnVisibility,
+      ...(userChangedVisibilityRef.current ? { columnVisibility } : {}),
       globalFilter,
       viewMode,
       timestamp: Date.now()
     }
-    
+
     try {
       localStorage.setItem(storageKey, JSON.stringify(stateToSave))
     } catch (error) {
@@ -124,26 +253,73 @@ export function FilterableTable<T extends Record<string, any>>({
   // Column-level filters state (for the dropdown popovers)
   const [columnLevelFilters, setColumnLevelFilters] = useState<Record<string, string | string[] | Date | undefined>>(() => {
     const initialFilters: Record<string, string | string[] | Date | undefined> = {}
-    
+
     // Initialize from columnFilters state to maintain sync
     columnFilters.forEach(filter => {
       initialFilters[filter.id] = filter.value as string | string[] | Date | undefined
     })
-    
+
     // Set defaults for columns that don't have filters yet
     columns.forEach(col => {
       if (!(col.id in initialFilters)) {
         if (col.filterType === 'search') {
           initialFilters[col.id] = ''
-        } else if (col.filterType === 'select') {
+        } else if (col.filterType === 'select' || col.filterType === 'multiselect') {
           initialFilters[col.id] = []
         }
       }
     })
-    
+
     return initialFilters
   })
 
+  // Dynamic filter options - extract unique values from data
+  const dynamicFilterOptions = useMemo(() => {
+    const options: Record<string, { value: string; label: string; count: number }[]> = {}
+
+    columns.forEach(col => {
+      if ((col.filterType === 'select' || col.filterType === 'multiselect') && col.enableDynamicFilter) {
+        const valueMap = new Map<string, number>()
+
+        data.forEach(item => {
+          let value: string | string[] | null = null
+
+          // Extract value using custom function if provided
+          if (col.getFilterValue) {
+            const extracted = col.getFilterValue(item)
+            value = Array.isArray(extracted) ? extracted : [extracted]
+          }
+          // Use accessor if it's a string key
+          else if (typeof col.accessor === 'string') {
+            const rawValue = item[col.accessor]
+            value = rawValue !== null && rawValue !== undefined ? [String(rawValue)] : null
+          }
+          // Use column id as fallback
+          else {
+            const rawValue = item[col.id]
+            value = rawValue !== null && rawValue !== undefined ? [String(rawValue)] : null
+          }
+
+          // Count occurrences
+          if (value) {
+            const values = Array.isArray(value) ? value : [value]
+            values.forEach(v => {
+              if (v && v.trim()) {
+                valueMap.set(v, (valueMap.get(v) || 0) + 1)
+              }
+            })
+          }
+        })
+
+        // Convert to options array and sort by label
+        options[col.id] = Array.from(valueMap.entries())
+          .map(([value, count]) => ({ value, label: value, count }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+      }
+    })
+
+    return options
+  }, [data, columns])
 
   // CSV Export functionality
   const handleExportCSV = () => {
@@ -508,8 +684,9 @@ export function FilterableTable<T extends Record<string, any>>({
         const originalData = row.original as any
         
         // Handle different filter types
-        if (colDef.filterType === 'select') {
+        if (colDef.filterType === 'select' || colDef.filterType === 'multiselect') {
           // For select filters, we need the raw value from the data
+          // For select/multiselect filters, we need the raw value from the data
           // The columnId usually matches the data property name
           let rawValue: string = ''
           
@@ -625,7 +802,29 @@ export function FilterableTable<T extends Record<string, any>>({
     enableRowSelection: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      // Allow user to manually override column visibility without limit enforcement
+      const newVisibility = typeof updater === 'function' ? updater(columnVisibility) : updater
+
+      // Mark as user-changed
+      userChangedVisibilityRef.current = true
+
+      setColumnVisibility(newVisibility)
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
@@ -760,71 +959,119 @@ export function FilterableTable<T extends Record<string, any>>({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Toolbar with search, filters, and view toggle */}
-      <div className="flex items-center justify-between">
-        <DataTableToolbar table={table} globalFilter={globalFilter} setGlobalFilter={setGlobalFilter} />
-        
-        <div className="flex items-center space-x-2">
-          {/* CSV Export/Import buttons */}
-          {enableCSV && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                className="h-8"
-              >
-                <Download className="h-3 w-3 mr-2" />
-                Export CSV
+      {/* Toolbar - Single Row Layout */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Left: Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search across all columns..."
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className="pl-8 h-8"
+          />
+        </div>
+
+        {/* Middle: Multi-select filters */}
+        <div className="flex items-center gap-2">
+          {columns
+            .filter(col => col.filterType === 'multiselect' && (col.enableDynamicFilter || col.filterOptions))
+            .map(col => {
+              const options = col.enableDynamicFilter
+                ? dynamicFilterOptions[col.id] || []
+                : (col.filterOptions || []).map(opt => ({ ...opt, count: undefined }))
+
+              const selectedValues = (table.getColumn(col.id)?.getFilterValue() as string[]) || []
+
+              return (
+                <MultiSelectFilter
+                  key={col.id}
+                  title={col.title}
+                  options={options}
+                  selectedValues={selectedValues}
+                  onSelectedChange={(values) => {
+                    table.getColumn(col.id)?.setFilterValue(values.length > 0 ? values : undefined)
+                  }}
+                  searchPlaceholder={`Search ${col.title.toLowerCase()}...`}
+                />
+              )
+            })}
+        </div>
+
+        {/* Right: Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Hidden file input for CSV import */}
+          {enableCSV && onDataImport && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleImportCSV}
+              className="hidden"
+            />
+          )}
+
+          {/* Options Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Options
               </Button>
-              
-              {onDataImport && (
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Table Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              {/* View Mode Toggle */}
+              {enableViewToggle && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-8"
-                  >
-                    <Upload className="h-3 w-3 mr-2" />
-                    Import CSV
-                  </Button>
-                  
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                  />
+                  <DropdownMenuItem onClick={() => setViewMode('table')}>
+                    <TableIcon className="h-4 w-4 mr-2" />
+                    <span>Table View</span>
+                    {viewMode === 'table' && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode('cards')}>
+                    <LayoutGrid className="h-4 w-4 mr-2" />
+                    <span>Card View</span>
+                    {viewMode === 'cards' && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                 </>
               )}
-            </>
-          )}
-          
+
+              {/* CSV Export/Import */}
+              {enableCSV && (
+                <>
+                  <DropdownMenuItem onClick={handleExportCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    <span>Export CSV</span>
+                  </DropdownMenuItem>
+                  {onDataImport && (
+                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      <span>Import CSV</span>
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+
+              {/* Custom Options Content */}
+              {customOptionsContent && (
+                <>
+                  <DropdownMenuSeparator />
+                  {customOptionsContent}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Columns Button */}
           {enableViewToggle && (
-            <>
-              <DataTableViewOptions table={table} />
-              <div className="flex items-center rounded-md border">
-                <Button
-                  variant={viewMode === 'table' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('table')}
-                  className="rounded-r-none"
-                >
-                  <TableIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('cards')}
-                  className="rounded-l-none"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
+            <DataTableViewOptions
+              table={table}
+              maxVisibleColumns={maxVisibleColumns !== 'auto' ? maxVisibleColumns : calculateMaxVisibleColumns()}
+            />
           )}
         </div>
       </div>

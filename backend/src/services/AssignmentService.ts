@@ -70,6 +70,8 @@ export interface BulkUpdateData {
   assignment_id: UUID;
   status: AssignmentStatus;
   calculated_wage?: number;
+  decline_reason?: string;
+  decline_category?: string;
 }
 
 export interface BulkUpdateResult {
@@ -324,7 +326,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
 
       for (const updateData of updates) {
         try {
-          const { assignment_id, status, calculated_wage } = updateData;
+          const { assignment_id, status, calculated_wage, decline_reason, decline_category } = updateData;
 
           if (!assignment_id || !status) {
             results.updateErrors.push({
@@ -358,13 +360,23 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
           }
 
           // Prepare update data
-          const updateFields: Partial<AssignmentEntity> = {
+          const updateFields: any = {
             status,
             updated_at: new Date()
           };
 
           if (calculated_wage !== undefined) {
             updateFields.calculated_wage = calculated_wage;
+          }
+
+          // Add decline fields if status is declined
+          if (status === 'declined') {
+            if (decline_reason) {
+              updateFields.decline_reason = decline_reason;
+            }
+            if (decline_category) {
+              updateFields.decline_category = decline_category;
+            }
           }
 
           // Update assignment
@@ -459,18 +471,19 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
         query = query.where('game_assignments.status', filters.status);
       }
       if (filters.date_from) {
-        query = query.where('games.date_time', '>=', filters.date_from);
+        query = query.where('games.game_date', '>=', filters.date_from);
       }
       if (filters.date_to) {
-        query = query.where('games.date_time', '<=', filters.date_to);
+        query = query.where('games.game_date', '<=', filters.date_to);
       }
 
       // Get total count
       const countQuery = query.clone().clearSelect().count('* as total').first();
-      
+
       // Apply pagination and ordering
       query = query
-        .orderBy('games.date_time', 'asc')
+        .orderBy('games.game_date', 'asc')
+        .orderBy('games.game_time', 'asc')
         .limit(limit)
         .offset(offset);
 

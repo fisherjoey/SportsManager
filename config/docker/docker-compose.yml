@@ -12,7 +12,7 @@ services:
       POSTGRES_DB: ${DB_NAME:-sports_management}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/seeds:/docker-entrypoint-initdb.d
+      - ../../backend/seeds:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     networks:
@@ -41,7 +41,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ../../backend
       dockerfile: Dockerfile
       target: ${BUILD_TARGET:-dev}
     container_name: sports_manager_backend
@@ -71,7 +71,7 @@ services:
       MAPBOX_ACCESS_TOKEN: ${MAPBOX_ACCESS_TOKEN:-}
       OPENROUTE_API_KEY: ${OPENROUTE_API_KEY:-}
     volumes:
-      - ./backend:/app
+      - ../../backend:/app
       - /app/node_modules
       - /app/dist
     ports:
@@ -96,7 +96,7 @@ services:
   # Frontend Application
   frontend:
     build:
-      context: ./frontend
+      context: ../../frontend
       dockerfile: Dockerfile
       target: ${BUILD_TARGET:-dev}
     container_name: sports_manager_frontend
@@ -106,7 +106,7 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     volumes:
-      - ./frontend:/app
+      - ../../frontend:/app
       - /app/node_modules
       - /app/.next
     ports:
@@ -125,8 +125,8 @@ services:
       - "3592:3592"  # gRPC port
       - "3593:3593"  # HTTP port
     volumes:
-      - ./cerbos/policies:/policies
-      - ./cerbos/config/config.yaml:/config.yaml
+      - ../../cerbos/policies:/policies
+      - ../../cerbos/config/config.yaml:/config.yaml
     command: ["server", "--config=/config.yaml"]
     networks:
       - sports_network

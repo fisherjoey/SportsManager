@@ -22,6 +22,8 @@ import { CERBOS_PERMISSIONS } from '@/lib/permissions'
 import { MenteeSelector } from '@/components/MenteeSelector'
 import { MenteeGamesView } from '@/components/MenteeGamesView'
 import CalendarUpload from '@/components/calendar-upload'
+import { getAssignmentStatus, getRefCountDisplay } from '@/lib/utils/assignment-status'
+import { ActionMenu, type Action } from '@/components/ui/action-menu'
 import {
   Dialog,
   DialogContent,
@@ -695,24 +697,55 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       )
     },
     {
+      id: 'referees_status',
+      title: 'Referees',
+      filterType: 'select',
+      filterOptions: [
+        { value: 'all', label: 'All' },
+        { value: 'unassigned', label: 'Unassigned' },
+        { value: 'partial', label: 'Partial' },
+        { value: 'assigned', label: 'Fully Assigned' }
+      ],
+      accessor: (game) => {
+        const assignedCount = game.assignedReferees?.length || game.assignments?.length || 0
+        const requiredCount = game.refsNeeded || 0
+        const statusInfo = getAssignmentStatus(assignedCount, requiredCount)
+
+        return (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">
+              {getRefCountDisplay(assignedCount, requiredCount)}
+            </div>
+            <Badge variant={statusInfo.variant}>
+              {statusInfo.label}
+            </Badge>
+          </div>
+        )
+      }
+    },
+    {
       id: 'status',
-      title: 'Status',
+      title: 'Game Status',
       filterType: 'select',
       filterOptions: [
         { value: 'all', label: 'All Status' },
         { value: 'unassigned', label: 'Unassigned' },
         { value: 'assigned', label: 'Assigned' },
-        { value: 'up-for-grabs', label: 'Up for Grabs' }
+        { value: 'up-for-grabs', label: 'Up for Grabs' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' }
       ],
       accessor: (game) => (
         <Badge
           variant={
-            game.status === 'assigned' ? 'default' :
-              game.status === 'unassigned' ? 'destructive' :
-                'secondary'
+            game.status === 'completed' ? 'success' :
+              game.status === 'assigned' ? 'default' :
+                game.status === 'unassigned' ? 'secondary' :
+                  game.status === 'cancelled' ? 'destructive' :
+                    'secondary'
           }
         >
-          {game.status === 'up-for-grabs' ? 'Up for Grabs' : 
+          {game.status === 'up-for-grabs' ? 'Up for Grabs' :
             game.status.charAt(0).toUpperCase() + game.status.slice(1)}
         </Badge>
       )
@@ -721,26 +754,45 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       id: 'actions',
       title: 'Actions',
       filterType: 'none',
-      accessor: (game) => (
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-          {hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE) && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => openDeleteDialog(game)}
-              className="hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )
+      accessor: (game) => {
+        const actions: Action[] = [
+          {
+            label: 'View Details',
+            icon: Eye,
+            onClick: () => {
+              // TODO: Implement view game details
+              toast({
+                title: 'View Game',
+                description: 'Game details view coming soon'
+              })
+            }
+          },
+          {
+            label: 'Edit Game',
+            icon: Edit,
+            onClick: () => {
+              // TODO: Implement edit game
+              toast({
+                title: 'Edit Game',
+                description: 'Game editing coming soon'
+              })
+            }
+          }
+        ]
+
+        // Only add delete action if user has permission
+        if (hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE)) {
+          actions.push({
+            label: 'Delete Game',
+            icon: Trash2,
+            onClick: () => openDeleteDialog(game),
+            variant: 'destructive',
+            separator: true
+          })
+        }
+
+        return <ActionMenu actions={actions} triggerLabel="Game actions" />
+      }
     }
   ]
 
@@ -816,80 +868,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Mentorship Selector - only show for mentors */}
-          {isMentor && (
-            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-sm">Mentorship View</h4>
-                  <p className="text-xs text-muted-foreground">
-                    View games for your mentees or switch to all games view
-                  </p>
-                </div>
-                <MenteeSelector
-                  selectedMenteeId={selectedMenteeId}
-                  onMenteeChange={handleMenteeChange}
-                  placeholder="Select a mentee..."
-                />
-              </div>
-            </div>
-          )}
 
-          {/* Regular filters - only show when not viewing mentee games */}
-          {!selectedMenteeId && (
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search games..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="Recreational">Recreational</SelectItem>
-                <SelectItem value="Competitive">Competitive</SelectItem>
-                <SelectItem value="Elite">Elite</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="up-for-grabs">Up for Grabs</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="relative">
-              <Input
-                type="date"
-                placeholder="Filter by date"
-                value={selectedDate === 'all' ? '' : selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value || 'all')}
-                className={`w-[150px] ${
-                  selectedDate !== 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
-                }`}
-              />
-              {selectedDate !== 'all' && (
-                <Badge 
-                  variant="secondary" 
-                  className="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-xs px-1 py-0"
-                >
-                  Active
-                </Badge>
-              )}
-            </div>
-            </div>
-          )}
 
           {/* Regular Games Table - only show when not viewing mentee games */}
           {!selectedMenteeId && (
@@ -902,7 +881,31 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
                   </div>
                 </div>
               ) : (
-                <FilterableTable data={filteredGames} columns={columns} emptyMessage="No games found matching your criteria." />
+                <FilterableTable
+                  data={filteredGames}
+                  columns={columns}
+                  emptyMessage="No games found matching your criteria."
+                  enableViewToggle={true}
+                  enableCSV={true}
+                  csvFilename="games-export.csv"
+                  mobileCardType="game"
+                  maxVisibleColumns="auto"
+                  columnWidthEstimate={180}
+                  customOptionsContent={
+                    isMentor && (
+                      <div className="px-2 py-1.5">
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Mentorship View
+                        </label>
+                        <MenteeSelector
+                          selectedMenteeId={selectedMenteeId}
+                          onMenteeChange={handleMenteeChange}
+                          placeholder="Select a mentee..."
+                        />
+                      </div>
+                    )
+                  }
+                />
               )}
             </>
           )}

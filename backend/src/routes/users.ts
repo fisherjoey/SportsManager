@@ -186,7 +186,6 @@ const createUser = async (
       max_distance: 25,
       is_available: true,
       white_whistle: false,
-      availability_strategy: AvailabilityStrategy.WHITELIST,
       wage_per_game: null,
       referee_level_id: null,
       is_active: true,

@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "settings"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     # Admin rules - full access within their organization
     - actions: ['*']
       effect: EFFECT_ALLOW

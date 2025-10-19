@@ -227,24 +227,31 @@ export function PermissionConfigurationDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Permission Configuration</h1>
-          <p className="text-muted-foreground">
-            Define and manage all system permissions and their assignments
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={checkForUnconfiguredItems} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Scan for New
-          </Button>
-          <Button onClick={() => setShowNewPermissionForm(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Permission
-          </Button>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Permission Configuration
+              </CardTitle>
+              <CardDescription>
+                Define and manage all system permissions and their assignments
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={checkForUnconfiguredItems} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Scan for New
+              </Button>
+              <Button onClick={() => setShowNewPermissionForm(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Permission
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
 
       {/* Alerts for unconfigured items */}
       {unconfiguredItems.length > 0 && (
@@ -577,6 +584,8 @@ export function PermissionConfigurationDashboard() {
           )}
         </TabsContent>
       </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }

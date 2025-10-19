@@ -59,7 +59,6 @@ export interface CreateRefereeData {
   phone?: string;
   max_distance?: number;
   wage_per_game?: number;
-  availability_strategy?: AvailabilityStrategy;
 }
 
 export class UserService extends BaseService<User> {
@@ -582,10 +581,9 @@ export class UserService extends BaseService<User> {
         is_available: true,
         max_distance: 25,
         wage_per_game: 0,
-        availability_strategy: AvailabilityStrategy.WHITELIST,
         ...refereeData,
         // Hash password if provided, otherwise set a temporary one
-        password_hash: refereeData.password 
+        password_hash: refereeData.password
           ? await bcrypt.hash(refereeData.password, 12)
           : await bcrypt.hash(`temp_password_${Date.now()}`, 12)
       };

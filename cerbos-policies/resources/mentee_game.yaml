@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "mentee_game"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['view:list', 'view:upcoming', 'view:history', 'view:analytics']
       effect: EFFECT_ALLOW
       roles:

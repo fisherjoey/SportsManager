@@ -1,0 +1,39 @@
+
+> sports-management-api@1.0.0 db:audit
+> node ../scripts/audit-database.js
+
+🔍 Starting Comprehensive Database Audit...
+
+📐 Auditing Schema Structure...
+  ✓ Found 1 schema issues
+🔒 Auditing Data Integrity...
+  ✓ Found 1 data integrity issues
+⚡ Auditing Performance...
+  ⚠️  Performance audit had errors: relation "public.pg_statistic" does not exist
+  ✓ Found 1 performance issues
+🔐 Auditing Security...
+  ✓ Found 1 security issues
+🔧 Auditing Maintenance & Health...
+❌ Audit failed: error: column "tablename" does not exist
+    at C:\Users\School\OneDrive\Desktop\SportsManager-pre-typescript\backend\node_modules\pg\lib\client.js:545:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async auditMaintenance (C:\Users\School\OneDrive\Desktop\SportsManager-pre-typescript\scripts\audit-database.js:477:23)
+    at async runDatabaseAudit (C:\Users\School\OneDrive\Desktop\SportsManager-pre-typescript\scripts\audit-database.js:58:3) {
+  length: 109,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3721',
+  routine: 'errorMissingColumn'
+}

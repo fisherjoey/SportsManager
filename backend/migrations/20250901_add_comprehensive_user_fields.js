@@ -11,64 +11,54 @@
 exports.up = async function(knex) {
   console.log('Adding comprehensive user fields...');
 
+  // Get existing columns
+  const existingColumns = await knex('users').columnInfo();
+
   await knex.schema.alterTable('users', function(table) {
     // Personal Information
-    table.string('first_name');
-    table.string('last_name');
-    table.date('date_of_birth');
-    
-    // Contact Information  
-    table.string('phone');
-    table.string('street_address');
-    table.string('city');
-    table.string('province_state');
-    table.string('postal_zip_code');
-    table.string('country');
-    
+    if (!existingColumns.first_name) table.string('first_name');
+    if (!existingColumns.last_name) table.string('last_name');
+    if (!existingColumns.date_of_birth) table.date('date_of_birth');
+
+    // Contact Information
+    if (!existingColumns.phone) table.string('phone');
+    if (!existingColumns.street_address) table.string('street_address');
+    if (!existingColumns.city) table.string('city');
+    if (!existingColumns.province_state) table.string('province_state');
+    if (!existingColumns.postal_zip_code) table.string('postal_zip_code');
+    if (!existingColumns.country) table.string('country');
+
     // Emergency Contact
-    table.string('emergency_contact_name');
-    table.string('emergency_contact_phone');
-    
+    if (!existingColumns.emergency_contact_name) table.string('emergency_contact_name');
+    if (!existingColumns.emergency_contact_phone) table.string('emergency_contact_phone');
+
     // Professional Information
-    table.integer('year_started_refereeing');
-    table.json('certifications'); // Array of certification strings
-    table.json('specializations'); // Array of specialization strings
-    table.enu('availability_status', ['active', 'inactive', 'on_break']).defaultTo('active');
-    
+    if (!existingColumns.year_started_refereeing) table.integer('year_started_refereeing');
+    if (!existingColumns.certifications) table.json('certifications');
+    if (!existingColumns.specializations) table.json('specializations');
+    if (!existingColumns.availability_status) table.enu('availability_status', ['active', 'inactive', 'on_break']).defaultTo('active');
+
     // System Information
-    table.string('organization_id').defaultTo('1');
-    table.date('registration_date').defaultTo(knex.fn.now());
-    table.timestamp('last_login');
-    table.integer('profile_completion_percentage').defaultTo(0);
-    table.text('admin_notes');
-    table.string('profile_photo_url');
-    
+    if (!existingColumns.organization_id) table.string('organization_id').defaultTo('1');
+    if (!existingColumns.registration_date) table.date('registration_date').defaultTo(knex.fn.now());
+    if (!existingColumns.last_login) table.timestamp('last_login');
+    if (!existingColumns.profile_completion_percentage) table.integer('profile_completion_percentage').defaultTo(0);
+    if (!existingColumns.admin_notes) table.text('admin_notes');
+    if (!existingColumns.profile_photo_url) table.string('profile_photo_url');
+
     // Communication Preferences (JSON)
-    table.json('communication_preferences');
-    
+    if (!existingColumns.communication_preferences) table.json('communication_preferences');
+
     // Banking Information (JSON)
-    table.json('banking_info');
-    
+    if (!existingColumns.banking_info) table.json('banking_info');
+
     // Legacy fields for backward compatibility
-    table.string('name'); // Computed from first_name + last_name
-    table.boolean('is_available').defaultTo(true);
-    table.boolean('is_referee').defaultTo(false);
-    
-    // Add indexes for frequently queried fields
-    table.index('first_name');
-    table.index('last_name');
-    table.index('phone');
-    table.index('postal_zip_code');
-    table.index('availability_status');
-    table.index('year_started_refereeing');
-    table.index('is_available');
-    table.index('is_referee');
+    if (!existingColumns.name) table.string('name');
+    if (!existingColumns.is_available) table.boolean('is_available').defaultTo(true);
+    if (!existingColumns.is_referee) table.boolean('is_referee').defaultTo(false);
   });
 
-  console.log('✅ Comprehensive user fields added successfully');
-  console.log('   Added personal, contact, professional, and system fields');
-  console.log('   Added JSON fields for preferences and banking info');
-  console.log('   Added indexes for performance optimization');
+  console.log('✅ Comprehensive user fields migration completed');
 };
 
 exports.down = async function(knex) {

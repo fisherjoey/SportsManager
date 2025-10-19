@@ -795,3 +795,25 @@ export interface AssignmentRouteParams extends RouteParams {
 export interface RoleRouteParams extends RouteParams {
   roleId?: UUID;
 }
+
+// Page permission API types
+export interface PageAccessRequest {
+  pageId: string;
+}
+
+export interface PageAccessResponse {
+  allowed: boolean;
+  reason?: string;
+}
+
+export interface PagePermission {
+  pageId: string;
+  actions: {
+    view: boolean;
+    access: boolean;
+  };
+}
+
+export interface PagePermissionsResponse {
+  permissions: PagePermission[];
+}

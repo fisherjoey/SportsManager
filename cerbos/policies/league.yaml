@@ -4,6 +4,12 @@ resourcePolicy:
   version: "default"
   resource: "league"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    # Admin has specific permissions
     - actions:
         - view
         - view:list
@@ -16,4 +22,3 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles:
         - admin
-        - super_admin

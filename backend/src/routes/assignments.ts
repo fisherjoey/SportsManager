@@ -30,6 +30,9 @@ const { calculateFinalWage, getWageBreakdown } = require('../utils/wage-calculat
 const { checkTimeOverlap, hasSchedulingConflict, findAvailableReferees } = require('../utils/availability');
 import { checkAssignmentConflicts } from '../services/conflictDetectionService';
 import AssignmentService from '../services/AssignmentService';
+import emailService from '../services/emailService';
+import smsService, { SMSService } from '../services/smsService';
+import notificationService from '../services/NotificationService';
 const { getOrganizationSettings } = require('../utils/organization-settings');
 const { enhancedAsyncHandler } = require('../middleware/enhanced-error-handling');
 const { validateBody, validateParams, validateQuery } = require('../middleware/validation');
@@ -71,6 +74,7 @@ export interface UpdateAssignmentBody {
   position_id?: UUID;
   calculated_wage?: number;
   decline_reason?: string;
+  decline_category?: string;
   rating?: number;
   feedback?: string;
 }
@@ -98,6 +102,8 @@ export interface BulkRemoveBody {
 
 export interface AssignmentStatusUpdateBody {
   status: AssignmentStatus;
+  decline_reason?: string;
+  decline_category?: string;
 }
 
 // Transformed assignment response interface
@@ -338,7 +344,108 @@ const createAssignment = async (
     wage: (result.assignment as any).wage,
     userId: req.user.id
   });
-  
+
+  // Send assignment email to referee (non-blocking)
+  try {
+    const assignmentDetails = await assignmentService.getAssignmentsWithDetails(
+      { game_id: result.assignment.game_id },
+      1,
+      50
+    );
+
+    const assignment = assignmentDetails.data.find((a: any) => a.id === result.assignment.id);
+
+    if (assignment && req.user) {
+      // Get assignor details - req.user only has email, id, roles
+      const assignorName = req.user.email.split('@')[0]; // Use email username as fallback
+
+      // Format date and time
+      const gameDate = new Date(assignment.game_date);
+      const gameTime = new Date(assignment.game_time);
+
+      await emailService.sendAssignmentEmail({
+        email: assignment.referee_email,
+        firstName: assignment.referee_name.split(' ')[0] || assignment.referee_name,
+        lastName: assignment.referee_name.split(' ').slice(1).join(' ') || '',
+        assignment: {
+          id: assignment.id,
+          position: assignment.position_name,
+          calculatedWage: assignment.calculated_wage || 0
+        },
+        game: {
+          id: assignment.game_id,
+          homeTeam: assignment.home_team_name,
+          awayTeam: assignment.away_team_name,
+          date: gameDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          time: gameTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          location: assignment.location || 'TBD',
+          level: assignment.level || 'N/A',
+          payRate: assignment.pay_rate || 0,
+          wageMultiplier: assignment.wage_multiplier || 1.0,
+          wageMultiplierReason: assignment.wage_multiplier_reason
+        },
+        assignor: {
+          name: assignorName,
+          email: req.user.email
+        },
+        acceptLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/assignments/${assignment.id}/accept`,
+        declineLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/assignments/${assignment.id}/decline`
+      });
+
+      console.log(`✅ Assignment email sent to ${assignment.referee_email}`);
+
+      // Send SMS notification (if referee has phone number)
+      const refereePhone = (assignment as any).referee_phone;
+      if (refereePhone) {
+        try {
+          const formattedPhone = SMSService.formatPhoneNumber(refereePhone);
+          const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+          await smsService.sendAssignmentSMS({
+            phoneNumber: formattedPhone,
+            firstName: assignment.referee_name.split(' ')[0] || assignment.referee_name,
+            game: {
+              homeTeam: assignment.home_team_name,
+              awayTeam: assignment.away_team_name,
+              date: assignment.game_date,
+              time: gameTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            },
+            dashboardLink: `${baseUrl}/assignments`
+          });
+
+          console.log(`✅ Assignment SMS sent to ${refereePhone}`);
+        } catch (smsError) {
+          console.error('Failed to send assignment SMS:', smsError);
+          console.log('⚠️ SMS notification failed, but assignment created successfully');
+        }
+      }
+
+      // Create in-app notification
+      try {
+        await notificationService.createNotification({
+          user_id: (assignment as any).referee_id || result.assignment.user_id,
+          type: 'assignment',
+          title: 'New Game Assignment',
+          message: `You've been assigned to ${assignment.home_team_name} vs ${assignment.away_team_name} on ${gameDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          link: `/assignments/${assignment.id}`,
+          metadata: {
+            game_id: assignment.game_id,
+            assignment_id: assignment.id,
+            position: assignment.position_name,
+            calculated_wage: assignment.calculated_wage
+          }
+        });
+        console.log(`✅ In-app notification created for assignment ${assignment.id}`);
+      } catch (notifError) {
+        console.error('Failed to create in-app notification:', notifError);
+      }
+    }
+  } catch (emailError) {
+    // Log error but don't fail the assignment creation
+    console.error('Failed to send assignment email:', emailError);
+    console.log('⚠️ Assignment created successfully, but email notification failed');
+  }
+
   const response = ResponseFormatter.created(
     responseData,
     'Assignment created successfully',
@@ -412,15 +519,17 @@ const bulkRemoveAssignments = async (
  * Update assignment status
  */
 const updateAssignmentStatus = async (
-  req: AuthenticatedRequest<{id: string}, {}, AssignmentStatusUpdateBody>, 
+  req: AuthenticatedRequest<{id: string}, {}, AssignmentStatusUpdateBody>,
   res: Response
 ): Promise<Response> => {
-  const { status } = (req as any).body;
+  const { status, decline_reason, decline_category } = (req as any).body;
 
   // Use AssignmentService for single status update
   const results = await assignmentService.bulkUpdateAssignments([{
     assignment_id: (req as any).params.id,
-    status
+    status,
+    decline_reason,
+    decline_category
   }]);
 
   if (results.summary.failedUpdates > 0) {
@@ -444,7 +553,89 @@ const updateAssignmentStatus = async (
     });
   }
 
-  return ResponseFormatter.sendSuccess(res, 
+  // Send notification email to assignor (non-blocking)
+  if (status === 'accepted' || status === 'declined') {
+    try {
+      const updatedAssignment = results.updatedAssignments[0];
+
+      // Get full assignment details with game and referee info
+      const assignmentDetails = await assignmentService.getAssignmentsWithDetails(
+        { game_id: updatedAssignment.game_id },
+        1,
+        50
+      );
+
+      const assignment = assignmentDetails.data.find((a: any) => a.id === updatedAssignment.id);
+
+      if (assignment && assignment.assigned_by) {
+        // Get assignor details from database
+        const assignor: any = await db('users')
+          .where('id', assignment.assigned_by)
+          .first();
+
+        if (assignor) {
+          const assignorName = assignor.first_name && assignor.last_name
+            ? `${assignor.first_name} ${assignor.last_name}`
+            : assignor.email || 'Unknown Assignor';
+
+          // Format date and time
+          const gameDate = new Date(assignment.game_date);
+          const gameTime = new Date(assignment.game_time);
+
+          await emailService.sendAssignorNotificationEmail({
+            email: assignor.email,
+            name: assignorName,
+            referee: {
+              name: assignment.referee_name,
+              email: assignment.referee_email
+            },
+            game: {
+              homeTeam: assignment.home_team_name,
+              awayTeam: assignment.away_team_name,
+              date: gameDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+              time: gameTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            },
+            status: status as 'accepted' | 'declined',
+            declineReason: decline_reason,
+            declineCategory: decline_category
+          });
+
+          console.log(`✅ Assignor notification sent to ${assignor.email} - Assignment ${status}`);
+
+          // Create in-app notification for assignor
+          try {
+            const statusIcon = status === 'accepted' ? '✓' : '✗';
+            const declineInfo = decline_reason ? ` - ${decline_reason}` : '';
+
+            await notificationService.createNotification({
+              user_id: assignor.id,
+              type: 'status_change',
+              title: `Assignment ${status === 'accepted' ? 'Accepted' : 'Declined'}`,
+              message: `${assignment.referee_name} ${status} ${assignment.home_team_name} vs ${assignment.away_team_name}${declineInfo}`,
+              link: `/games/${assignment.game_id}`,
+              metadata: {
+                game_id: assignment.game_id,
+                assignment_id: assignment.id,
+                status,
+                referee_name: assignment.referee_name,
+                decline_reason,
+                decline_category
+              }
+            });
+            console.log(`✅ In-app notification created for assignor (assignment ${status})`);
+          } catch (notifError) {
+            console.error('Failed to create in-app notification for assignor:', notifError);
+          }
+        }
+      }
+    } catch (emailError) {
+      // Log error but don't fail the status update
+      console.error('Failed to send assignor notification:', emailError);
+      console.log('⚠️ Assignment status updated successfully, but email notification failed');
+    }
+  }
+
+  return ResponseFormatter.sendSuccess(res,
     { assignment: results.updatedAssignments[0] },
     'Assignment status updated successfully'
   );
@@ -605,7 +796,9 @@ router.post('/bulk-update',
     updates: Joi.array().items(Joi.object({
       assignment_id: Joi.string().uuid().required(),
       status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required(),
-      calculated_wage: Joi.number().min(0).optional()
+      calculated_wage: Joi.number().min(0).optional(),
+      decline_reason: Joi.string().max(500).optional(),
+      decline_category: Joi.string().valid('unavailable', 'conflict', 'distance', 'level', 'other').optional()
     })).min(1).max(100).required()
   })),
   enhancedAsyncHandler(bulkUpdateAssignments)
@@ -632,7 +825,9 @@ router.patch('/:id/status',
   }),
   validateParams(IdParamSchema),
   validateBody(Joi.object({
-    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required()
+    status: Joi.string().valid('pending', 'accepted', 'declined', 'completed').required(),
+    decline_reason: Joi.string().max(500).optional(),
+    decline_category: Joi.string().valid('unavailable', 'conflict', 'distance', 'level', 'other').optional()
   })),
   enhancedAsyncHandler(updateAssignmentStatus)
 );

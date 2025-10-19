@@ -553,42 +553,27 @@ export function UserManagementDashboard() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
-          <p className="text-muted-foreground">
-            Manage system users, roles, and permissions
-          </p>
-        </div>
-        <Button onClick={handleCreateUser}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
-      </div>
-
-      {/* Quick Stats in Header */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-        <span className="flex items-center gap-1">
-          <Users className="h-4 w-4" />
-          {stats.total} total users
-        </span>
-        <span>•</span>
-        <span>{stats.active} active</span>
-        <span>•</span>
-        <span>{stats.admins} admins</span>
-        <span>•</span>
-        <span>{stats.referees} referees</span>
-      </div>
-
-      {/* Users Table */}
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>User Directory</CardTitle>
-          <CardDescription>Search and manage all system users with advanced filtering</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                User Management
+              </CardTitle>
+              <CardDescription>
+                Manage system users, roles, and permissions
+              </CardDescription>
+            </div>
+            <Button onClick={handleCreateUser}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
+
           <FilterableTable
             columns={getUserColumns(filters.role === 'referee' || filters.role.endsWith('_referee'))}
             data={filteredUsers}

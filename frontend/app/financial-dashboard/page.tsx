@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PageAccessGuard } from '@/components/page-access-guard'
 import { useAuth } from '@/components/auth-provider'
 import { LoginForm } from '@/components/login-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -100,7 +101,7 @@ interface DashboardData {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
 
-export default function FinancialDashboardPage() {
+function FinancialDashboardPageContent() {
   const { isAuthenticated, token } = useAuth()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -588,5 +589,13 @@ export default function FinancialDashboardPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+export default function FinancialDashboardPage() {
+  return (
+    <PageAccessGuard pageId="financial_dashboard">
+      <FinancialDashboardPageContent />
+    </PageAccessGuard>
   )
 }
