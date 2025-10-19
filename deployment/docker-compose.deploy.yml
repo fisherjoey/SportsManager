@@ -76,7 +76,8 @@ services:
       DISABLE_REDIS: true
 
       # CORS Configuration
-      ALLOWED_ORIGINS: https://syncedsport.com,http://localhost:3004
+      FRONTEND_URL: https://syncedsport.com
+      PRODUCTION_DOMAINS: https://syncedsport.com,http://localhost:3004
 
       # Rate Limiting
       RATE_LIMIT_WINDOW_MS: 900000
