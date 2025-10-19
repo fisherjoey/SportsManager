@@ -580,4 +580,42 @@
   .animate-shake {
     animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   }
+
+  /* Smooth sidebar transitions */
+  [data-sidebar="sidebar"] {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Fixed sidebar container transitions */
+  .group.peer[data-state] > div:last-child {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sidebar inset should transition smoothly */
+  [data-sidebar="sidebar"] + * {
+    transition: margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Keep sidebar menu buttons with consistent left-aligned icons */
+  [data-sidebar="menu-button"] {
+    padding-left: 0.75rem !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Icons always stay in the same position */
+  [data-sidebar="menu-button"] > svg:first-child {
+    margin-right: 0.75rem;
+  }
+
+  /* Text slides in/out but icon stays put */
+  [data-sidebar="menu-button"] > span {
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .group[data-collapsible="icon"] [data-sidebar="menu-button"] > span {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
 }

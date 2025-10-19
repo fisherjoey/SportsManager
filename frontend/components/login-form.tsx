@@ -200,9 +200,9 @@ export function LoginForm() {
     setIsLoading(false)
   }
 
-  const handleDemoLogin = (demoEmail: string) => {
+  const handleDemoLogin = (demoEmail: string, demoPassword: string = 'password') => {
     setEmail(demoEmail)
-    setPassword('password')
+    setPassword(demoPassword)
     setShowDemoAccounts(false)
     // Don't show password toggle for auto-filled demo passwords
     setShowPasswordToggle(false)
@@ -388,6 +388,14 @@ export function LoginForm() {
                 <div className="space-y-2">
                   <button
                     type="button"
+                    onClick={() => handleDemoLogin('admin@sportsmanager.com', 'admin123')}
+                    className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
+                  >
+                    <strong className="block text-foreground group-hover:text-primary">Super Admin</strong>
+                    <span className="text-muted-foreground">admin@sportsmanager.com</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleDemoLogin('admin@test.com')}
                     className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
                   >
@@ -420,7 +428,7 @@ export function LoginForm() {
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
-                  <strong>Password for all accounts:</strong> password
+                  <strong>Passwords:</strong> Super Admin uses "admin123", all others use "password"
                 </p>
               </div>
             </CollapsibleContent>

@@ -125,14 +125,9 @@ export function TeamsLocationsPage() {
 
         console.log('Starting to fetch data...')
 
-        // Check if user is authenticated
-        const token = localStorage.getItem('auth_token')
-        if (!token) {
-          console.warn('No authentication token found')
-          setError('Please log in to view teams and locations')
-          setLoading(false)
-          return
-        }
+        // Check if user is authenticated - auth uses cookies, not localStorage
+        // The apiClient automatically includes the auth_token cookie in requests
+        // so we don't need to manually check for it here
 
         // Fetch teams
         try {
@@ -144,10 +139,6 @@ export function TeamsLocationsPage() {
           // Check if it's an authentication error
           if (teamsError.message && (teamsError.message.includes('401') || teamsError.message.includes('403') || teamsError.message.includes('Invalid or expired token'))) {
             setError('Your session has expired. Please log in again.')
-            // Optional: Clear the invalid token
-            localStorage.removeItem('auth_token')
-            // Optional: Redirect to login page
-            // window.location.href = '/login'
             return
           }
           throw teamsError
@@ -163,7 +154,6 @@ export function TeamsLocationsPage() {
           // Check if it's an authentication error
           if (locationsError.message && (locationsError.message.includes('401') || locationsError.message.includes('403') || locationsError.message.includes('Invalid or expired token'))) {
             setError('Your session has expired. Please log in again.')
-            localStorage.removeItem('auth_token')
             return
           }
           throw locationsError

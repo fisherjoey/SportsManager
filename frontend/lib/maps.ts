@@ -26,18 +26,24 @@ export async function calculateDistanceAndDriveTime(
     // First, ensure we have coordinates for both locations
     let originCoords: Location
     let destCoords: Location
-    
+
     if (typeof origin === 'string') {
       const coords = await geocodeAddress(origin)
-      if (!coords) throw new Error('Could not geocode origin address')
+      if (!coords) {
+        console.warn('Could not geocode origin address:', origin)
+        return null
+      }
       originCoords = coords
     } else {
       originCoords = origin
     }
-    
+
     if (typeof destination === 'string') {
       const coords = await geocodeAddress(destination)
-      if (!coords) throw new Error('Could not geocode destination address')
+      if (!coords) {
+        console.warn('Could not geocode destination address:', destination)
+        return null
+      }
       destCoords = coords
     } else {
       destCoords = destination
@@ -115,24 +121,26 @@ export async function geocodeAddress(address: string): Promise<Location | null> 
         }
       }
     )
-    
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      console.warn(`Geocoding API error: ${response.status}`)
+      return null
     }
-    
+
     const data = await response.json()
-    
+
     if (!data?.length) {
-      throw new Error('Address not found')
+      console.warn(`Address not found: ${address}`)
+      return null
     }
-    
+
     const result = data[0]
     return {
       lat: parseFloat(result.lat),
       lng: parseFloat(result.lon)
     }
   } catch (error) {
-    console.error('Error geocoding address:', error)
+    console.warn('Error geocoding address:', error instanceof Error ? error.message : 'Unknown error')
     return null
   }
 }
