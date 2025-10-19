@@ -2,7 +2,7 @@ require('dotenv').config();
 import { createServer } from 'http';
 import app from './app';
 import db from './config/database';
-import { initializeRBACScanner  } from './startup/rbac-scanner-init';
+// REMOVED: import { initializeRBACScanner  } from './startup/rbac-scanner-init'; // RBAC Registry deleted 2025-10-18
 import reminderScheduler from './services/reminderScheduler';
 
 const PORT = process.env.PORT || 3001;
@@ -18,23 +18,9 @@ server.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Server listening on http://localhost:${PORT}`);
 
-  // Initialize RBAC scanner in background (non-blocking)
-  // This prevents the 1.8 second event loop lag during startup
-  // Set DISABLE_RBAC_SCANNER=true to completely disable
-  if (process.env.DISABLE_RBAC_SCANNER !== 'true') {
-    setImmediate(async () => {
-      try {
-        console.log('🔍 Starting RBAC scanner in background...');
-        await initializeRBACScanner(db);
-        console.log('✅ RBAC scanner initialization complete');
-      } catch (error) {
-        console.error('⚠️  RBAC Scanner failed (non-critical):', error.message);
-        // Server continues normally - RBAC scanner is optional
-      }
-    });
-  } else {
-    console.log('ℹ️  RBAC scanner disabled by environment variable');
-  }
+  // REMOVED: RBAC Scanner initialization (system deleted 2025-10-18)
+  // The RBAC Registry system has been permanently removed as part of migration to Cerbos
+  // All authorization is now handled via Cerbos YAML policies
 
   // Start reminder scheduler (game reminders via SMS)
   if (process.env.DISABLE_REMINDER_SCHEDULER !== 'true') {
