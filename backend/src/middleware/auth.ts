@@ -42,20 +42,6 @@ const deprecatedPermissionService = {
  * Validates Bearer tokens and attaches user information to the request
  */
 function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  // Auth bypass for Figma scraping and development
-  if (process.env.DISABLE_AUTH === 'true') {
-    console.log('[AUTH BYPASS] Authentication disabled via DISABLE_AUTH environment variable');
-    // Inject a mock super admin user for routes that need req.user
-    req.user = {
-      userId: '00000000-0000-0000-0000-000000000001',
-      id: '00000000-0000-0000-0000-000000000001',
-      email: 'bypass@system.local',
-      roles: [{ name: 'Super Admin', code: 'SUPER_ADMIN' }]
-    } as any;
-    next();
-    return;
-  }
-
   const authHeader = (req as any).headers['authorization'];
 
   console.log('[DEBUG] authenticateToken middleware called - Path:', (req as any).path, 'URL:', (req as any).url, 'Query:', (req as any).query, 'Has authHeader:', !!authHeader);

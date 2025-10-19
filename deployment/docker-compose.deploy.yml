@@ -72,9 +72,6 @@ services:
       CERBOS_CACHE_ENABLED: true
       CERBOS_CACHE_TTL: 300000
 
-      # Auth Bypass (for Figma scraping)
-      DISABLE_AUTH: ${DISABLE_AUTH:-true}
-
       # Redis
       DISABLE_REDIS: true
 
@@ -116,9 +113,6 @@ services:
 
       # Environment
       NEXT_PUBLIC_ENV: ${NODE_ENV:-development}
-
-      # Auth Bypass (for Figma scraping)
-      NEXT_PUBLIC_DISABLE_AUTH: ${NEXT_PUBLIC_DISABLE_AUTH:-true}
 
       # Features
       NEXT_PUBLIC_ENABLE_DEBUG: true
