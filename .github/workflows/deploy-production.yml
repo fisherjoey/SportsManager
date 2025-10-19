@@ -50,7 +50,6 @@ jobs:
     name: Deploy to Production (Proxmox CT102)
     runs-on: self-hosted
     needs: pre-deployment-checks
-    # environment: production  # Optional - uncomment if you want manual approval gate
     if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
 
     steps:
