@@ -50,16 +50,14 @@ jobs:
     name: Deploy to Production (Proxmox CT102)
     runs-on: self-hosted
     needs: pre-deployment-checks
-    environment: production
+    # environment: production  # Optional - uncomment if you want manual approval gate
     if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
 
     steps:
-      - name: Setup SSH key
+      - name: Ensure SSH known_hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Create database backup
         run: |
