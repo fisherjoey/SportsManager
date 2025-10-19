@@ -79,12 +79,17 @@ import menteeGamesRoutes from './routes/mentee-games';
 
 // Import admin routes
 import adminRoleRoutes from './routes/admin/roles';
-import adminPermissionRoutes from './routes/admin/permissions';
 import adminMaintenanceRoutes from './routes/admin/maintenance';
 import testRoleRoutes from './routes/admin/test-roles';
-import adminRBACRegistryRoutes from './routes/admin/rbac-registry';
+// REMOVED: import adminRBACRegistryRoutes from './routes/admin/rbac-registry';
 import adminAccessRoutes from './routes/admin/access';
 import adminUsersRoutes from './routes/admin/users';
+import adminCerbosPoliciesRoutes from './routes/admin/cerbos-policies';
+import adminPermissionsRoutes from './routes/admin/permissions';
+import unifiedRoleRoutes from './routes/admin/unified-roles';
+import cerbosRoutes from './routes/cerbos';
+import notificationRoutes from './routes/notifications';
+import pagesRoutes from './routes/pages';
 
 const app = express();
 
@@ -192,6 +197,7 @@ app.use('/api/ai-assignment-rules', aiAssignmentRulesRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Expenses API routes
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);
@@ -224,12 +230,20 @@ app.use('/api/mentees', menteeGamesRoutes);
 
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);
-app.use('/api/admin/permissions', adminPermissionRoutes);
+app.use('/api/admin/permissions', adminPermissionsRoutes);
 app.use('/api/admin/maintenance', adminMaintenanceRoutes);
 app.use('/api/admin/access', adminAccessRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
-app.use('/api/admin/rbac-registry', adminRBACRegistryRoutes);
+app.use('/api/admin/cerbos-policies', adminCerbosPoliciesRoutes);
+app.use('/api/admin/unified-roles', unifiedRoleRoutes);
+// REMOVED: app.use('/api/admin/rbac-registry', adminRBACRegistryRoutes);
 app.use('/api/test-roles', testRoleRoutes);
+
+// Cerbos policy management routes
+app.use('/api/cerbos', cerbosRoutes);
+
+// Page permission routes
+app.use('/api/pages', pagesRoutes);
 
 // Performance monitoring routes (admin only)
 app.use('/api/performance', performanceRoutes);

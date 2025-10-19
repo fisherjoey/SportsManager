@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { receiptUploader  } from '../middleware/fileUpload';
 import path from 'path';
 import fs from 'fs';
@@ -33,7 +34,10 @@ const postUpdateSchema = Joi.object({
 });
 
 // GET /api/posts - Get all posts with filters
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const { 
       status, 
@@ -163,7 +167,11 @@ router.get('/categories', async (req, res) => {
 });
 
 // GET /api/posts/:id - Get specific post
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const post = await db('posts')
       .select(
@@ -225,7 +233,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/posts - Create new post (Admin only)
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'create',
+}), async (req, res) => {
   try {
     const { error, value } = postSchema.validate(req.body);
     if (error) {
@@ -261,7 +272,11 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // PUT /api/posts/:id - Update post (Admin only)
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { error, value } = postUpdateSchema.validate(req.body);
     if (error) {
@@ -313,7 +328,11 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // DELETE /api/posts/:id - Delete post (Admin only)
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const deletedCount = await db('posts').where('id', req.params.id).del();
     
@@ -338,7 +357,11 @@ router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) 
 });
 
 // POST /api/posts/:id/media - Upload media for post (Admin only)
-router.post('/:id/media', authenticateToken, requireRole('admin'), receiptUploader.single('file'), async (req, res) => {
+router.post('/:id/media', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'admin:upload_media',
+  getResourceId: (req) => req.params.id,
+}), receiptUploader.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -381,7 +404,11 @@ router.post('/:id/media', authenticateToken, requireRole('admin'), receiptUpload
 });
 
 // GET /api/posts/:id/reads - Get read receipts for post (Admin only)
-router.get('/:id/reads', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/:id/reads', authenticateToken, requireCerbosPermission({
+  resource: 'post',
+  action: 'admin:view_reads',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const reads = await db('post_reads')
       .join('users', 'post_reads.user_id', 'users.id')

@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.3",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.55.1",
+    "puppeteer": "^24.22.3"
+  }
+}

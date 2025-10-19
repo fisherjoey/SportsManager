@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 // Validation schemas
 const ruleSchema = Joi.object({
@@ -373,7 +374,10 @@ function calculateNextRun(schedule) {
 // Routes
 
 // GET /api/ai-assignment-rules - Get all rules
-router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const { enabled, aiSystemType, page = 1, limit = 50 } = req.query;
     
@@ -408,7 +412,10 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // POST /api/ai-assignment-rules - Create new rule
-router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'create',
+}), async (req, res) => {
   try {
     const { error, value } = ruleSchema.validate(req.body);
     if (error) {
@@ -491,7 +498,11 @@ router.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/ai-assignment-rules/:id - Get specific rule
-router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'view:details',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -534,7 +545,11 @@ router.get('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // PUT /api/ai-assignment-rules/:id - Update rule
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = ruleSchema.validate(req.body);
@@ -614,7 +629,11 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
 });
 
 // POST /api/ai-assignment-rules/:id/partner-preferences - Add partner preference
-router.post('/:id/partner-preferences', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/partner-preferences', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'manage:partner_preferences',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = partnerPreferenceSchema.validate(req.body);
@@ -665,7 +684,11 @@ router.post('/:id/partner-preferences', authenticateToken, requireRole('admin'),
 });
 
 // DELETE /api/ai-assignment-rules/:id/partner-preferences/:prefId - Delete partner preference
-router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'manage:partner_preferences',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { prefId } = req.params;
 
@@ -694,7 +717,11 @@ router.delete('/:id/partner-preferences/:prefId', authenticateToken, requireRole
 });
 
 // POST /api/ai-assignment-rules/:id/run - Execute rule
-router.post('/:id/run', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/run', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'run',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = runRuleSchema.validate(req.body);
@@ -838,7 +865,11 @@ router.post('/:id/run', authenticateToken, requireRole('admin'), async (req, res
 });
 
 // GET /api/ai-assignment-rules/:id/runs - Get rule run history
-router.get('/:id/runs', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/:id/runs', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'view:runs',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, page = 1, limit = 50 } = req.query;
@@ -868,7 +899,11 @@ router.get('/:id/runs', authenticateToken, requireRole('admin'), async (req, res
 });
 
 // GET /api/ai-assignment-rules/runs/:runId - Get detailed run results
-router.get('/runs/:runId', authenticateToken, requireRole('admin'), async (req, res) => {
+router.get('/runs/:runId', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'view:run_details',
+  getResourceId: (req) => req.params.runId,
+}), async (req, res) => {
   try {
     const { runId } = req.params;
 
@@ -897,7 +932,11 @@ router.get('/runs/:runId', authenticateToken, requireRole('admin'), async (req, 
 });
 
 // POST /api/ai-assignment-rules/:id/toggle - Toggle rule enabled status
-router.post('/:id/toggle', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/toggle', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'toggle',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -930,7 +969,11 @@ router.post('/:id/toggle', authenticateToken, requireRole('admin'), async (req, 
 });
 
 // DELETE /api/ai-assignment-rules/:id - Delete rule
-router.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'ai_assignment_rule',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { id } = req.params;
 

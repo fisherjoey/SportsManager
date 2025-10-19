@@ -7,8 +7,13 @@ resourcePolicy:
     - common_roles
   resource: "assignment"
   rules:
-    # Admin rules - full access within their organization
+    # Super Admin has full access
     - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    # Admin rules - full access within their organization
+    - actions: ['view:list', 'view:details', 'create', 'update', 'delete', 'change_status']
       effect: EFFECT_ALLOW
       roles:
         - admin
@@ -16,7 +21,7 @@ resourcePolicy:
         - organization_admin
 
     # Assignor rules
-    - actions: ['view', 'list']
+    - actions: ['view:list', 'view:details']
       effect: EFFECT_ALLOW
       roles:
         - assignor
@@ -62,7 +67,7 @@ resourcePolicy:
               - expr: request.resource.attr.status != "completed"
 
     # Referee rules - can view their own assignments
-    - actions: ['view', 'list']
+    - actions: ['view:list', 'view:details']
       effect: EFFECT_ALLOW
       roles:
         - referee
@@ -76,7 +81,7 @@ resourcePolicy:
                   request.resource.attr.gameRegionId in request.principal.attr.regionIds
 
     # Referee can accept/decline their own assignments
-    - actions: ['accept', 'decline']
+    - actions: ['change_status']
       effect: EFFECT_ALLOW
       roles:
         - referee

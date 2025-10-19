@@ -1,0 +1,26 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: role
+  rules:
+    - actions:
+        - '*'
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions:
+        - view
+        - view:list
+        - list
+        - create
+        - update
+        - delete
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+    - actions:
+        - create
+      effect: EFFECT_ALLOW
+      roles:
+        - basictestrole

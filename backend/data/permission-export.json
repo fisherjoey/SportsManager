@@ -1,0 +1,3056 @@
+{
+  "permissions": [
+    {
+      "id": "5ef42a4b-9747-4abb-937d-3459a7b50554",
+      "name": "assignments.accept",
+      "category": "assignments",
+      "description": "Accept or decline assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "e7b90744-a393-474e-993e-633e427f9a1e",
+      "name": "assignments.approve.junior",
+      "category": "assignments",
+      "description": "Approve junior referee assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "0a9933c3-d081-4d1d-a1ce-9ce704c29a53",
+      "name": "assignments.override",
+      "category": "assignments",
+      "description": "Override any assignment",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "fc84609f-722f-4430-a794-935d4db0230a",
+      "name": "assignments.view",
+      "category": "assignments",
+      "description": "View own assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "15090764-79a5-44b6-9af2-ba6011a0bcc2",
+      "name": "assignments:approve",
+      "category": "assignments",
+      "description": "Approve or reject assignment requests",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "5b9792a2-5355-4ef3-b816-4b656171a825",
+      "name": "assignments:auto_assign",
+      "category": "assignments",
+      "description": "Use AI auto-assignment features",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "491d0ba9-d5e0-41d0-aafe-5dbac166c541",
+      "name": "assignments:create",
+      "category": "assignments",
+      "description": "Create new assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "46043573-0af0-4b8e-9e43-8d9bf854c26c",
+      "name": "assignments:delete",
+      "category": "assignments",
+      "description": "Delete assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "name": "assignments:read",
+      "category": "assignments",
+      "description": "View game assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "3ae58694-4728-41c3-ab91-7175e1a65f02",
+      "name": "assignments:update",
+      "category": "assignments",
+      "description": "Edit existing assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "553101c1-2cf1-404c-8566-b6b2eb17c90b",
+      "name": "certifications.approve",
+      "category": "certifications",
+      "description": "Approve certifications",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "6d2747ba-bd0a-4872-81d3-acf655e4c4cf",
+      "name": "communication:broadcast",
+      "category": "communication",
+      "description": "Send organization-wide announcements",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "b53293dd-197c-4259-966c-ad6c8c776add",
+      "name": "communication:manage",
+      "category": "communication",
+      "description": "Manage communication templates and settings",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+      "name": "communication:send",
+      "category": "communication",
+      "description": "Send messages and notifications",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "0beab852-257c-471f-87f5-2e4c8706dfbb",
+      "name": "content:create",
+      "category": "content",
+      "description": "Create new content and resources",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "6f261d77-f3e1-4bdb-98ab-9651c0ffa809",
+      "name": "content:delete",
+      "category": "content",
+      "description": "Delete content and resources",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "afd3a70a-b6c5-4e3b-a764-a52d482ad596",
+      "name": "content:publish",
+      "category": "content",
+      "description": "Publish content to make it visible to users",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "name": "content:read",
+      "category": "content",
+      "description": "View content and resources",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "b298849c-820e-4e1a-828b-8a8bc679684e",
+      "name": "content:update",
+      "category": "content",
+      "description": "Edit existing content and resources",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+      "name": "evaluations.create",
+      "category": "evaluations",
+      "description": "Evaluate other referees",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "664d02c0-f695-4ef9-a264-f8774e677690",
+      "name": "evaluations.manage",
+      "category": "evaluations",
+      "description": "Manage all evaluations",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "f1ffe670-b438-4107-b817-6d88d3b159cd",
+      "name": "evaluations.view.own",
+      "category": "evaluations",
+      "description": "View own evaluations",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "6333b098-fe89-4c21-ad55-fce2540348ef",
+      "name": "finance:approve",
+      "category": "finance",
+      "description": "Approve expenses and reimbursements",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "fd2860f9-d57f-4dce-a212-bd815ee402e6",
+      "name": "finance:create",
+      "category": "finance",
+      "description": "Create expense entries and budgets",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "32e7061f-e35f-46ee-ace5-da595bc82f10",
+      "name": "finance:manage",
+      "category": "finance",
+      "description": "Manage budgets and financial controls",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f8c83ded-f133-41c9-8aca-b11b54bd8e12",
+      "name": "finance:read",
+      "category": "finance",
+      "description": "View financial data and expenses",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "8d2f7c79-72d2-4fb1-b1ab-0a1636b98320",
+      "name": "games.recommend",
+      "category": "games",
+      "description": "Recommend referees for games",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "f81a600d-5d00-44ce-8bf5-62f0cfbbe3df",
+      "name": "games.self_assign",
+      "category": "games",
+      "description": "Self-assign to open games",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "e20740a8-1833-4605-b544-7434a9bf8fb3",
+      "name": "games.view",
+      "category": "games",
+      "description": "View game assignments",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "33961978-b275-4bcc-ab3d-213b3d78b81a",
+      "name": "games:create",
+      "category": "games",
+      "description": "Create new games",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "3e3267d4-9405-4a0c-b75d-c3bd62d49bf8",
+      "name": "games:delete",
+      "category": "games",
+      "description": "Delete games",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "78fd591b-0c26-4267-af47-2360c7fe9475",
+      "name": "games:publish",
+      "category": "games",
+      "description": "Publish games to make them visible to referees",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "name": "games:read",
+      "category": "games",
+      "description": "View games and game schedules",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f833f473-ec9b-48ee-bf1e-1c14900ad228",
+      "name": "games:update",
+      "category": "games",
+      "description": "Edit existing games",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "name": "mentee_games:read",
+      "category": "mentorship",
+      "description": "View mentee game assignments and performance",
+      "is_system": true,
+      "created_at": "2025-09-25T20:12:20.726Z",
+      "updated_at": "2025-09-25T20:12:20.726Z"
+    },
+    {
+      "id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "name": "mentorship.provide",
+      "category": "mentorship",
+      "description": "Act as mentor",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "7cb87294-66cf-4faf-8766-8da1be5d1fe4",
+      "name": "mentorship.request",
+      "category": "mentorship",
+      "description": "Request mentorship",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+      "name": "mentorships:create",
+      "category": "mentorship",
+      "description": "Create new mentorship relationships",
+      "is_system": true,
+      "created_at": "2025-09-25T21:04:24.391Z",
+      "updated_at": "2025-09-25T21:04:24.391Z"
+    },
+    {
+      "id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "name": "mentorships:manage",
+      "category": "mentorship",
+      "description": "Manage mentorship relationships and mentee progress",
+      "is_system": true,
+      "created_at": "2025-09-25T20:12:20.725Z",
+      "updated_at": "2025-09-25T20:12:20.725Z"
+    },
+    {
+      "id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "name": "mentorships:read",
+      "category": "mentorship",
+      "description": "View mentorship relationships and mentee information",
+      "is_system": true,
+      "created_at": "2025-09-25T20:12:20.722Z",
+      "updated_at": "2025-09-25T20:12:20.722Z"
+    },
+    {
+      "id": "01aac21e-9e3c-4758-8b4a-ec8dd0334cee",
+      "name": "profile.edit.own",
+      "category": "profile",
+      "description": "Edit own referee profile",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "2be3781d-2c67-4579-ac59-83bc8be24982",
+      "name": "referees.manage",
+      "category": "referees",
+      "description": "Full referee management",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+      "name": "referees:evaluate",
+      "category": "referees",
+      "description": "Evaluate referee performance",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "1f085a33-ba7e-4a8f-8e57-3ef989725ebc",
+      "name": "referees:manage",
+      "category": "referees",
+      "description": "Manage referee levels, availability, and status",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "name": "referees:read",
+      "category": "referees",
+      "description": "View referee profiles and information",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+      "name": "referees:update",
+      "category": "referees",
+      "description": "Edit referee profiles",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+      "name": "reports:create",
+      "category": "reports",
+      "description": "Generate custom reports",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "2059142a-0264-4b0c-854a-c06cafcc559c",
+      "name": "reports:export",
+      "category": "reports",
+      "description": "Export reports to various formats",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f675a9ae-858e-4fc9-8930-16f4048b7312",
+      "name": "reports:financial",
+      "category": "reports",
+      "description": "Access financial reports and budgets",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "name": "reports:read",
+      "category": "reports",
+      "description": "View reports and analytics",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "08a79dcb-0f92-49fa-8884-9371adf305b9",
+      "name": "roles:assign",
+      "category": "roles",
+      "description": "Assign or remove roles from users",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "db9f5418-8b56-4f86-976b-4eb3a5db5ff8",
+      "name": "roles:manage",
+      "category": "roles",
+      "description": "Create, edit, and delete roles and permissions",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "fb8c3f38-8ac0-4d1e-b8c8-2be2a604e6ed",
+      "name": "roles:read",
+      "category": "roles",
+      "description": "View roles and permissions",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "db4cacd1-f82b-4e72-a12e-d1514fb777ce",
+      "name": "settings:organization",
+      "category": "settings",
+      "description": "Manage organization-wide settings",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "9ab98a7a-00ce-4504-be61-3304c5c8e7a1",
+      "name": "settings:read",
+      "category": "settings",
+      "description": "View system settings",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "3495fd22-993b-43d1-b513-be33621eee37",
+      "name": "settings:update",
+      "category": "settings",
+      "description": "Modify system settings",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "b4982269-6793-4ef8-b43f-a927fddc2ce1",
+      "name": "training.create",
+      "category": "training",
+      "description": "Create training materials",
+      "is_system": true,
+      "created_at": "2025-09-25T19:27:00.486Z",
+      "updated_at": "2025-09-25T19:27:00.486Z"
+    },
+    {
+      "id": "48517c93-edce-4a53-bf94-5e2c146b0885",
+      "name": "users:create",
+      "category": "users",
+      "description": "Create new user accounts",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "e43cc73d-9cf0-4cc1-8b32-127135d3973e",
+      "name": "users:delete",
+      "category": "users",
+      "description": "Delete user accounts",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "153132f7-df2b-47fa-98bd-47f064cad0a2",
+      "name": "users:impersonate",
+      "category": "users",
+      "description": "Login as other users for troubleshooting",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "f34f0b5e-3570-4e37-8bb3-faf69466fb47",
+      "name": "users:read",
+      "category": "users",
+      "description": "View user profiles and information",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    },
+    {
+      "id": "8f13d44d-f13b-4faa-b4c5-7c6d5771f43c",
+      "name": "users:update",
+      "category": "users",
+      "description": "Edit user profiles and information",
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.241Z",
+      "updated_at": "2025-09-25T04:57:05.241Z"
+    }
+  ],
+  "roles": [
+    {
+      "id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "name": "Admin",
+      "description": "Administrative access to most system functions. Cannot manage roles or impersonate users.",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.245Z",
+      "updated_at": "2025-09-25T04:57:05.245Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "name": "Assignment Manager",
+      "description": "Manages game assignments and referee scheduling. Can assign referees to games.",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.248Z",
+      "updated_at": "2025-09-25T04:57:05.248Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "74867030-af96-48da-8f93-258fdf666de2",
+      "name": "Head Referee",
+      "description": "Lead referee with management permissions",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T19:20:05.701Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "5fa8da17-1a36-4f2f-8464-a4b44d79aa20",
+      "name": "Junior Referee",
+      "description": "Standard referee",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T19:20:05.698Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": "referee_type",
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "name": "Mentor",
+      "description": "Can mentor other referees, view their games, and provide guidance",
+      "is_active": true,
+      "is_system": false,
+      "created_at": "2025-09-25T20:12:20.727Z",
+      "updated_at": "2025-09-25T20:12:20.727Z",
+      "category": "system",
+      "referee_config": null,
+      "color": "#10B981",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "df3de067-aefb-42b5-be56-049585350d77",
+      "name": "Mentorship Coordinator",
+      "description": "Can manage all mentorship relationships, assign mentors and mentees",
+      "is_active": true,
+      "is_system": false,
+      "created_at": "2025-09-25T21:12:25.305Z",
+      "updated_at": "2025-09-25T21:12:25.305Z",
+      "category": "system",
+      "referee_config": null,
+      "color": "#8B5CF6",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "name": "Referee",
+      "description": "Base role for all referees",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.251Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": "referee_type",
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "name": "Referee Coach",
+      "description": "Referee trainer and evaluator",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T19:20:05.702Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "name": "Referee Coordinator",
+      "description": "Coordinates referee activities, evaluations, and development. Manages referee information.",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.249Z",
+      "updated_at": "2025-09-25T04:57:05.249Z",
+      "category": "referee_type",
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "8a7e546e-b153-4e03-8ad5-f0d77a6d6a31",
+      "name": "Rookie Referee",
+      "description": "New referee with limited permissions",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T19:20:05.694Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "name": "Senior Referee",
+      "description": "Experienced referee with mentoring capabilities",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.250Z",
+      "updated_at": "2025-09-25T19:26:51.383Z",
+      "category": "referee_type",
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    },
+    {
+      "id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "name": "Super Admin",
+      "description": "Full system access with all permissions. Can manage other admins and system settings.",
+      "is_active": true,
+      "is_system": true,
+      "created_at": "2025-09-25T04:57:05.243Z",
+      "updated_at": "2025-09-25T04:57:05.243Z",
+      "category": null,
+      "referee_config": null,
+      "color": "#6B7280",
+      "profile_visibility_settings": null,
+      "advanced_settings": null
+    }
+  ],
+  "rolePermissions": [
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "15090764-79a5-44b6-9af2-ba6011a0bcc2",
+      "role_name": "Admin",
+      "permission_name": "assignments:approve"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "5b9792a2-5355-4ef3-b816-4b656171a825",
+      "role_name": "Admin",
+      "permission_name": "assignments:auto_assign"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "491d0ba9-d5e0-41d0-aafe-5dbac166c541",
+      "role_name": "Admin",
+      "permission_name": "assignments:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "46043573-0af0-4b8e-9e43-8d9bf854c26c",
+      "role_name": "Admin",
+      "permission_name": "assignments:delete"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Admin",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "3ae58694-4728-41c3-ab91-7175e1a65f02",
+      "role_name": "Admin",
+      "permission_name": "assignments:update"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "6d2747ba-bd0a-4872-81d3-acf655e4c4cf",
+      "role_name": "Admin",
+      "permission_name": "communication:broadcast"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "b53293dd-197c-4259-966c-ad6c8c776add",
+      "role_name": "Admin",
+      "permission_name": "communication:manage"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+      "role_name": "Admin",
+      "permission_name": "communication:send"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "0beab852-257c-471f-87f5-2e4c8706dfbb",
+      "role_name": "Admin",
+      "permission_name": "content:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "6f261d77-f3e1-4bdb-98ab-9651c0ffa809",
+      "role_name": "Admin",
+      "permission_name": "content:delete"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "afd3a70a-b6c5-4e3b-a764-a52d482ad596",
+      "role_name": "Admin",
+      "permission_name": "content:publish"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "role_name": "Admin",
+      "permission_name": "content:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "b298849c-820e-4e1a-828b-8a8bc679684e",
+      "role_name": "Admin",
+      "permission_name": "content:update"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "6333b098-fe89-4c21-ad55-fce2540348ef",
+      "role_name": "Admin",
+      "permission_name": "finance:approve"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "fd2860f9-d57f-4dce-a212-bd815ee402e6",
+      "role_name": "Admin",
+      "permission_name": "finance:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "32e7061f-e35f-46ee-ace5-da595bc82f10",
+      "role_name": "Admin",
+      "permission_name": "finance:manage"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f8c83ded-f133-41c9-8aca-b11b54bd8e12",
+      "role_name": "Admin",
+      "permission_name": "finance:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "33961978-b275-4bcc-ab3d-213b3d78b81a",
+      "role_name": "Admin",
+      "permission_name": "games:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "3e3267d4-9405-4a0c-b75d-c3bd62d49bf8",
+      "role_name": "Admin",
+      "permission_name": "games:delete"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "78fd591b-0c26-4267-af47-2360c7fe9475",
+      "role_name": "Admin",
+      "permission_name": "games:publish"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Admin",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f833f473-ec9b-48ee-bf1e-1c14900ad228",
+      "role_name": "Admin",
+      "permission_name": "games:update"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Admin",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Admin",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "7cb87294-66cf-4faf-8766-8da1be5d1fe4",
+      "role_name": "Admin",
+      "permission_name": "mentorship.request"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+      "role_name": "Admin",
+      "permission_name": "mentorships:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Admin",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Admin",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+      "role_name": "Admin",
+      "permission_name": "referees:evaluate"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "1f085a33-ba7e-4a8f-8e57-3ef989725ebc",
+      "role_name": "Admin",
+      "permission_name": "referees:manage"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Admin",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+      "role_name": "Admin",
+      "permission_name": "referees:update"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+      "role_name": "Admin",
+      "permission_name": "reports:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "2059142a-0264-4b0c-854a-c06cafcc559c",
+      "role_name": "Admin",
+      "permission_name": "reports:export"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f675a9ae-858e-4fc9-8930-16f4048b7312",
+      "role_name": "Admin",
+      "permission_name": "reports:financial"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "role_name": "Admin",
+      "permission_name": "reports:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "9ab98a7a-00ce-4504-be61-3304c5c8e7a1",
+      "role_name": "Admin",
+      "permission_name": "settings:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "3495fd22-993b-43d1-b513-be33621eee37",
+      "role_name": "Admin",
+      "permission_name": "settings:update"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "48517c93-edce-4a53-bf94-5e2c146b0885",
+      "role_name": "Admin",
+      "permission_name": "users:create"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "f34f0b5e-3570-4e37-8bb3-faf69466fb47",
+      "role_name": "Admin",
+      "permission_name": "users:read"
+    },
+    {
+      "role_id": "fdf07291-bad6-4861-acaf-70ae8b197c42",
+      "permission_id": "8f13d44d-f13b-4faa-b4c5-7c6d5771f43c",
+      "role_name": "Admin",
+      "permission_name": "users:update"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "15090764-79a5-44b6-9af2-ba6011a0bcc2",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:approve"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "5b9792a2-5355-4ef3-b816-4b656171a825",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:auto_assign"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "491d0ba9-d5e0-41d0-aafe-5dbac166c541",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:create"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "46043573-0af0-4b8e-9e43-8d9bf854c26c",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:delete"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "3ae58694-4728-41c3-ab91-7175e1a65f02",
+      "role_name": "Assignment Manager",
+      "permission_name": "assignments:update"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+      "role_name": "Assignment Manager",
+      "permission_name": "communication:send"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Assignment Manager",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Assignment Manager",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+      "role_name": "Assignment Manager",
+      "permission_name": "referees:update"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+      "role_name": "Assignment Manager",
+      "permission_name": "reports:create"
+    },
+    {
+      "role_id": "6bb6633c-5f11-43c6-a223-181c070d960c",
+      "permission_id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "role_name": "Assignment Manager",
+      "permission_name": "reports:read"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "e7b90744-a393-474e-993e-633e427f9a1e",
+      "role_name": "Head Referee",
+      "permission_name": "assignments.approve.junior"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "0a9933c3-d081-4d1d-a1ce-9ce704c29a53",
+      "role_name": "Head Referee",
+      "permission_name": "assignments.override"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+      "role_name": "Head Referee",
+      "permission_name": "evaluations.create"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "664d02c0-f695-4ef9-a264-f8774e677690",
+      "role_name": "Head Referee",
+      "permission_name": "evaluations.manage"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "8d2f7c79-72d2-4fb1-b1ab-0a1636b98320",
+      "role_name": "Head Referee",
+      "permission_name": "games.recommend"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Head Referee",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Head Referee",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Head Referee",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Head Referee",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "74867030-af96-48da-8f93-258fdf666de2",
+      "permission_id": "2be3781d-2c67-4579-ac59-83bc8be24982",
+      "role_name": "Head Referee",
+      "permission_name": "referees.manage"
+    },
+    {
+      "role_id": "5fa8da17-1a36-4f2f-8464-a4b44d79aa20",
+      "permission_id": "f1ffe670-b438-4107-b817-6d88d3b159cd",
+      "role_name": "Junior Referee",
+      "permission_name": "evaluations.view.own"
+    },
+    {
+      "role_id": "5fa8da17-1a36-4f2f-8464-a4b44d79aa20",
+      "permission_id": "f81a600d-5d00-44ce-8bf5-62f0cfbbe3df",
+      "role_name": "Junior Referee",
+      "permission_name": "games.self_assign"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Mentor",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Mentor",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Mentor",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Mentor",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Mentor",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Mentor",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "61fe4497-e0c9-46d4-beb9-fc5617c1f8aa",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Mentor",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "df3de067-aefb-42b5-be56-049585350d77",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Mentorship Coordinator",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "df3de067-aefb-42b5-be56-049585350d77",
+      "permission_id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+      "role_name": "Mentorship Coordinator",
+      "permission_name": "mentorships:create"
+    },
+    {
+      "role_id": "df3de067-aefb-42b5-be56-049585350d77",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Mentorship Coordinator",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "df3de067-aefb-42b5-be56-049585350d77",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Mentorship Coordinator",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "5ef42a4b-9747-4abb-937d-3459a7b50554",
+      "role_name": "Referee",
+      "permission_name": "assignments.accept"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "fc84609f-722f-4430-a794-935d4db0230a",
+      "role_name": "Referee",
+      "permission_name": "assignments.view"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Referee",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "role_name": "Referee",
+      "permission_name": "content:read"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "e20740a8-1833-4605-b544-7434a9bf8fb3",
+      "role_name": "Referee",
+      "permission_name": "games.view"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Referee",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "01aac21e-9e3c-4758-8b4a-ec8dd0334cee",
+      "role_name": "Referee",
+      "permission_name": "profile.edit.own"
+    },
+    {
+      "role_id": "072745dc-8dbb-4e97-b59f-f0dd3f18139b",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Referee",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "553101c1-2cf1-404c-8566-b6b2eb17c90b",
+      "role_name": "Referee Coach",
+      "permission_name": "certifications.approve"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+      "role_name": "Referee Coach",
+      "permission_name": "evaluations.create"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "664d02c0-f695-4ef9-a264-f8774e677690",
+      "role_name": "Referee Coach",
+      "permission_name": "evaluations.manage"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Referee Coach",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Referee Coach",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Referee Coach",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Referee Coach",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "01c224ee-3033-412c-bb76-725ce64c741d",
+      "permission_id": "b4982269-6793-4ef8-b43f-a927fddc2ce1",
+      "role_name": "Referee Coach",
+      "permission_name": "training.create"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Referee Coordinator",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "6d2747ba-bd0a-4872-81d3-acf655e4c4cf",
+      "role_name": "Referee Coordinator",
+      "permission_name": "communication:broadcast"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+      "role_name": "Referee Coordinator",
+      "permission_name": "communication:send"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "0beab852-257c-471f-87f5-2e4c8706dfbb",
+      "role_name": "Referee Coordinator",
+      "permission_name": "content:create"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "role_name": "Referee Coordinator",
+      "permission_name": "content:read"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "b298849c-820e-4e1a-828b-8a8bc679684e",
+      "role_name": "Referee Coordinator",
+      "permission_name": "content:update"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Referee Coordinator",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+      "role_name": "Referee Coordinator",
+      "permission_name": "mentorships:create"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+      "role_name": "Referee Coordinator",
+      "permission_name": "referees:evaluate"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "1f085a33-ba7e-4a8f-8e57-3ef989725ebc",
+      "role_name": "Referee Coordinator",
+      "permission_name": "referees:manage"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Referee Coordinator",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+      "role_name": "Referee Coordinator",
+      "permission_name": "referees:update"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+      "role_name": "Referee Coordinator",
+      "permission_name": "reports:create"
+    },
+    {
+      "role_id": "47e17cf5-f55c-4c8e-a956-1de73e1932d5",
+      "permission_id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "role_name": "Referee Coordinator",
+      "permission_name": "reports:read"
+    },
+    {
+      "role_id": "8a7e546e-b153-4e03-8ad5-f0d77a6d6a31",
+      "permission_id": "f1ffe670-b438-4107-b817-6d88d3b159cd",
+      "role_name": "Rookie Referee",
+      "permission_name": "evaluations.view.own"
+    },
+    {
+      "role_id": "8a7e546e-b153-4e03-8ad5-f0d77a6d6a31",
+      "permission_id": "7cb87294-66cf-4faf-8766-8da1be5d1fe4",
+      "role_name": "Rookie Referee",
+      "permission_name": "mentorship.request"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "e7b90744-a393-474e-993e-633e427f9a1e",
+      "role_name": "Senior Referee",
+      "permission_name": "assignments.approve.junior"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Senior Referee",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "role_name": "Senior Referee",
+      "permission_name": "content:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+      "role_name": "Senior Referee",
+      "permission_name": "evaluations.create"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "8d2f7c79-72d2-4fb1-b1ab-0a1636b98320",
+      "role_name": "Senior Referee",
+      "permission_name": "games.recommend"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Senior Referee",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Senior Referee",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Senior Referee",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Senior Referee",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Senior Referee",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+      "role_name": "Senior Referee",
+      "permission_name": "referees:evaluate"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Senior Referee",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "da14726f-c661-4de7-8e5b-64654298524f",
+      "permission_id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "role_name": "Senior Referee",
+      "permission_name": "reports:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "5ef42a4b-9747-4abb-937d-3459a7b50554",
+      "role_name": "Super Admin",
+      "permission_name": "assignments.accept"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "e7b90744-a393-474e-993e-633e427f9a1e",
+      "role_name": "Super Admin",
+      "permission_name": "assignments.approve.junior"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "0a9933c3-d081-4d1d-a1ce-9ce704c29a53",
+      "role_name": "Super Admin",
+      "permission_name": "assignments.override"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "fc84609f-722f-4430-a794-935d4db0230a",
+      "role_name": "Super Admin",
+      "permission_name": "assignments.view"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "15090764-79a5-44b6-9af2-ba6011a0bcc2",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:approve"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "5b9792a2-5355-4ef3-b816-4b656171a825",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:auto_assign"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "491d0ba9-d5e0-41d0-aafe-5dbac166c541",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "46043573-0af0-4b8e-9e43-8d9bf854c26c",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:delete"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "a8910823-983e-4053-b932-c66fa8082e49",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "3ae58694-4728-41c3-ab91-7175e1a65f02",
+      "role_name": "Super Admin",
+      "permission_name": "assignments:update"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "553101c1-2cf1-404c-8566-b6b2eb17c90b",
+      "role_name": "Super Admin",
+      "permission_name": "certifications.approve"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "6d2747ba-bd0a-4872-81d3-acf655e4c4cf",
+      "role_name": "Super Admin",
+      "permission_name": "communication:broadcast"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "b53293dd-197c-4259-966c-ad6c8c776add",
+      "role_name": "Super Admin",
+      "permission_name": "communication:manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+      "role_name": "Super Admin",
+      "permission_name": "communication:send"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "0beab852-257c-471f-87f5-2e4c8706dfbb",
+      "role_name": "Super Admin",
+      "permission_name": "content:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "6f261d77-f3e1-4bdb-98ab-9651c0ffa809",
+      "role_name": "Super Admin",
+      "permission_name": "content:delete"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "afd3a70a-b6c5-4e3b-a764-a52d482ad596",
+      "role_name": "Super Admin",
+      "permission_name": "content:publish"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+      "role_name": "Super Admin",
+      "permission_name": "content:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "b298849c-820e-4e1a-828b-8a8bc679684e",
+      "role_name": "Super Admin",
+      "permission_name": "content:update"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+      "role_name": "Super Admin",
+      "permission_name": "evaluations.create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "664d02c0-f695-4ef9-a264-f8774e677690",
+      "role_name": "Super Admin",
+      "permission_name": "evaluations.manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f1ffe670-b438-4107-b817-6d88d3b159cd",
+      "role_name": "Super Admin",
+      "permission_name": "evaluations.view.own"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "6333b098-fe89-4c21-ad55-fce2540348ef",
+      "role_name": "Super Admin",
+      "permission_name": "finance:approve"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "fd2860f9-d57f-4dce-a212-bd815ee402e6",
+      "role_name": "Super Admin",
+      "permission_name": "finance:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "32e7061f-e35f-46ee-ace5-da595bc82f10",
+      "role_name": "Super Admin",
+      "permission_name": "finance:manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f8c83ded-f133-41c9-8aca-b11b54bd8e12",
+      "role_name": "Super Admin",
+      "permission_name": "finance:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "8d2f7c79-72d2-4fb1-b1ab-0a1636b98320",
+      "role_name": "Super Admin",
+      "permission_name": "games.recommend"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f81a600d-5d00-44ce-8bf5-62f0cfbbe3df",
+      "role_name": "Super Admin",
+      "permission_name": "games.self_assign"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "e20740a8-1833-4605-b544-7434a9bf8fb3",
+      "role_name": "Super Admin",
+      "permission_name": "games.view"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "33961978-b275-4bcc-ab3d-213b3d78b81a",
+      "role_name": "Super Admin",
+      "permission_name": "games:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "3e3267d4-9405-4a0c-b75d-c3bd62d49bf8",
+      "role_name": "Super Admin",
+      "permission_name": "games:delete"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "78fd591b-0c26-4267-af47-2360c7fe9475",
+      "role_name": "Super Admin",
+      "permission_name": "games:publish"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+      "role_name": "Super Admin",
+      "permission_name": "games:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f833f473-ec9b-48ee-bf1e-1c14900ad228",
+      "role_name": "Super Admin",
+      "permission_name": "games:update"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+      "role_name": "Super Admin",
+      "permission_name": "mentee_games:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+      "role_name": "Super Admin",
+      "permission_name": "mentorship.provide"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "7cb87294-66cf-4faf-8766-8da1be5d1fe4",
+      "role_name": "Super Admin",
+      "permission_name": "mentorship.request"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+      "role_name": "Super Admin",
+      "permission_name": "mentorships:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+      "role_name": "Super Admin",
+      "permission_name": "mentorships:manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+      "role_name": "Super Admin",
+      "permission_name": "mentorships:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "01aac21e-9e3c-4758-8b4a-ec8dd0334cee",
+      "role_name": "Super Admin",
+      "permission_name": "profile.edit.own"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "2be3781d-2c67-4579-ac59-83bc8be24982",
+      "role_name": "Super Admin",
+      "permission_name": "referees.manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+      "role_name": "Super Admin",
+      "permission_name": "referees:evaluate"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "1f085a33-ba7e-4a8f-8e57-3ef989725ebc",
+      "role_name": "Super Admin",
+      "permission_name": "referees:manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "93cc3329-798c-4de6-b93a-a22648f95953",
+      "role_name": "Super Admin",
+      "permission_name": "referees:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+      "role_name": "Super Admin",
+      "permission_name": "referees:update"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+      "role_name": "Super Admin",
+      "permission_name": "reports:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "2059142a-0264-4b0c-854a-c06cafcc559c",
+      "role_name": "Super Admin",
+      "permission_name": "reports:export"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f675a9ae-858e-4fc9-8930-16f4048b7312",
+      "role_name": "Super Admin",
+      "permission_name": "reports:financial"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+      "role_name": "Super Admin",
+      "permission_name": "reports:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "08a79dcb-0f92-49fa-8884-9371adf305b9",
+      "role_name": "Super Admin",
+      "permission_name": "roles:assign"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "db9f5418-8b56-4f86-976b-4eb3a5db5ff8",
+      "role_name": "Super Admin",
+      "permission_name": "roles:manage"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "fb8c3f38-8ac0-4d1e-b8c8-2be2a604e6ed",
+      "role_name": "Super Admin",
+      "permission_name": "roles:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "db4cacd1-f82b-4e72-a12e-d1514fb777ce",
+      "role_name": "Super Admin",
+      "permission_name": "settings:organization"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "9ab98a7a-00ce-4504-be61-3304c5c8e7a1",
+      "role_name": "Super Admin",
+      "permission_name": "settings:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "3495fd22-993b-43d1-b513-be33621eee37",
+      "role_name": "Super Admin",
+      "permission_name": "settings:update"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "b4982269-6793-4ef8-b43f-a927fddc2ce1",
+      "role_name": "Super Admin",
+      "permission_name": "training.create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "48517c93-edce-4a53-bf94-5e2c146b0885",
+      "role_name": "Super Admin",
+      "permission_name": "users:create"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "e43cc73d-9cf0-4cc1-8b32-127135d3973e",
+      "role_name": "Super Admin",
+      "permission_name": "users:delete"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "153132f7-df2b-47fa-98bd-47f064cad0a2",
+      "role_name": "Super Admin",
+      "permission_name": "users:impersonate"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "f34f0b5e-3570-4e37-8bb3-faf69466fb47",
+      "role_name": "Super Admin",
+      "permission_name": "users:read"
+    },
+    {
+      "role_id": "3f4b74df-0135-4632-8f5a-5ae4a6d4cf99",
+      "permission_id": "8f13d44d-f13b-4faa-b4c5-7c6d5771f43c",
+      "role_name": "Super Admin",
+      "permission_name": "users:update"
+    }
+  ],
+  "resourcePermissions": {
+    "other": {
+      "actions": [
+        "assignments.accept",
+        "assignments.approve.junior",
+        "assignments.override",
+        "assignments.view",
+        "certifications.approve",
+        "evaluations.create",
+        "evaluations.manage",
+        "evaluations.view.own",
+        "games.recommend",
+        "games.self_assign",
+        "games.view",
+        "mentorship.provide",
+        "mentorship.request",
+        "profile.edit.own",
+        "referees.manage",
+        "training.create"
+      ],
+      "permissions": [
+        {
+          "id": "5ef42a4b-9747-4abb-937d-3459a7b50554",
+          "name": "assignments.accept",
+          "category": "assignments",
+          "description": "Accept or decline assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "e7b90744-a393-474e-993e-633e427f9a1e",
+          "name": "assignments.approve.junior",
+          "category": "assignments",
+          "description": "Approve junior referee assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "0a9933c3-d081-4d1d-a1ce-9ce704c29a53",
+          "name": "assignments.override",
+          "category": "assignments",
+          "description": "Override any assignment",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "fc84609f-722f-4430-a794-935d4db0230a",
+          "name": "assignments.view",
+          "category": "assignments",
+          "description": "View own assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "553101c1-2cf1-404c-8566-b6b2eb17c90b",
+          "name": "certifications.approve",
+          "category": "certifications",
+          "description": "Approve certifications",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "cc779eda-8f04-412b-ae1d-3f6ebcc3561f",
+          "name": "evaluations.create",
+          "category": "evaluations",
+          "description": "Evaluate other referees",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "664d02c0-f695-4ef9-a264-f8774e677690",
+          "name": "evaluations.manage",
+          "category": "evaluations",
+          "description": "Manage all evaluations",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "f1ffe670-b438-4107-b817-6d88d3b159cd",
+          "name": "evaluations.view.own",
+          "category": "evaluations",
+          "description": "View own evaluations",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "8d2f7c79-72d2-4fb1-b1ab-0a1636b98320",
+          "name": "games.recommend",
+          "category": "games",
+          "description": "Recommend referees for games",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "f81a600d-5d00-44ce-8bf5-62f0cfbbe3df",
+          "name": "games.self_assign",
+          "category": "games",
+          "description": "Self-assign to open games",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "e20740a8-1833-4605-b544-7434a9bf8fb3",
+          "name": "games.view",
+          "category": "games",
+          "description": "View game assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "ee2b3c7f-6e36-4116-a0aa-e9636bf0a139",
+          "name": "mentorship.provide",
+          "category": "mentorship",
+          "description": "Act as mentor",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "7cb87294-66cf-4faf-8766-8da1be5d1fe4",
+          "name": "mentorship.request",
+          "category": "mentorship",
+          "description": "Request mentorship",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "01aac21e-9e3c-4758-8b4a-ec8dd0334cee",
+          "name": "profile.edit.own",
+          "category": "profile",
+          "description": "Edit own referee profile",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "2be3781d-2c67-4579-ac59-83bc8be24982",
+          "name": "referees.manage",
+          "category": "referees",
+          "description": "Full referee management",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        },
+        {
+          "id": "b4982269-6793-4ef8-b43f-a927fddc2ce1",
+          "name": "training.create",
+          "category": "training",
+          "description": "Create training materials",
+          "is_system": true,
+          "created_at": "2025-09-25T19:27:00.486Z",
+          "updated_at": "2025-09-25T19:27:00.486Z"
+        }
+      ]
+    },
+    "assignments": {
+      "actions": [
+        "approve",
+        "auto_assign",
+        "create",
+        "delete",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "15090764-79a5-44b6-9af2-ba6011a0bcc2",
+          "name": "assignments:approve",
+          "category": "assignments",
+          "description": "Approve or reject assignment requests",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "5b9792a2-5355-4ef3-b816-4b656171a825",
+          "name": "assignments:auto_assign",
+          "category": "assignments",
+          "description": "Use AI auto-assignment features",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "491d0ba9-d5e0-41d0-aafe-5dbac166c541",
+          "name": "assignments:create",
+          "category": "assignments",
+          "description": "Create new assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "46043573-0af0-4b8e-9e43-8d9bf854c26c",
+          "name": "assignments:delete",
+          "category": "assignments",
+          "description": "Delete assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "a8910823-983e-4053-b932-c66fa8082e49",
+          "name": "assignments:read",
+          "category": "assignments",
+          "description": "View game assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "3ae58694-4728-41c3-ab91-7175e1a65f02",
+          "name": "assignments:update",
+          "category": "assignments",
+          "description": "Edit existing assignments",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "communication": {
+      "actions": [
+        "broadcast",
+        "manage",
+        "send"
+      ],
+      "permissions": [
+        {
+          "id": "6d2747ba-bd0a-4872-81d3-acf655e4c4cf",
+          "name": "communication:broadcast",
+          "category": "communication",
+          "description": "Send organization-wide announcements",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "b53293dd-197c-4259-966c-ad6c8c776add",
+          "name": "communication:manage",
+          "category": "communication",
+          "description": "Manage communication templates and settings",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f74adbdf-488c-4ca6-9b6d-51ff74981479",
+          "name": "communication:send",
+          "category": "communication",
+          "description": "Send messages and notifications",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "content": {
+      "actions": [
+        "create",
+        "delete",
+        "publish",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "0beab852-257c-471f-87f5-2e4c8706dfbb",
+          "name": "content:create",
+          "category": "content",
+          "description": "Create new content and resources",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "6f261d77-f3e1-4bdb-98ab-9651c0ffa809",
+          "name": "content:delete",
+          "category": "content",
+          "description": "Delete content and resources",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "afd3a70a-b6c5-4e3b-a764-a52d482ad596",
+          "name": "content:publish",
+          "category": "content",
+          "description": "Publish content to make it visible to users",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "613eeda4-2bd2-4f8c-ae3a-10cf2fc1ee78",
+          "name": "content:read",
+          "category": "content",
+          "description": "View content and resources",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "b298849c-820e-4e1a-828b-8a8bc679684e",
+          "name": "content:update",
+          "category": "content",
+          "description": "Edit existing content and resources",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "finance": {
+      "actions": [
+        "approve",
+        "create",
+        "manage",
+        "read"
+      ],
+      "permissions": [
+        {
+          "id": "6333b098-fe89-4c21-ad55-fce2540348ef",
+          "name": "finance:approve",
+          "category": "finance",
+          "description": "Approve expenses and reimbursements",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "fd2860f9-d57f-4dce-a212-bd815ee402e6",
+          "name": "finance:create",
+          "category": "finance",
+          "description": "Create expense entries and budgets",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "32e7061f-e35f-46ee-ace5-da595bc82f10",
+          "name": "finance:manage",
+          "category": "finance",
+          "description": "Manage budgets and financial controls",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f8c83ded-f133-41c9-8aca-b11b54bd8e12",
+          "name": "finance:read",
+          "category": "finance",
+          "description": "View financial data and expenses",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "games": {
+      "actions": [
+        "create",
+        "delete",
+        "publish",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "33961978-b275-4bcc-ab3d-213b3d78b81a",
+          "name": "games:create",
+          "category": "games",
+          "description": "Create new games",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "3e3267d4-9405-4a0c-b75d-c3bd62d49bf8",
+          "name": "games:delete",
+          "category": "games",
+          "description": "Delete games",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "78fd591b-0c26-4267-af47-2360c7fe9475",
+          "name": "games:publish",
+          "category": "games",
+          "description": "Publish games to make them visible to referees",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "778f700a-09da-4b58-812b-f5ef956e3ae1",
+          "name": "games:read",
+          "category": "games",
+          "description": "View games and game schedules",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f833f473-ec9b-48ee-bf1e-1c14900ad228",
+          "name": "games:update",
+          "category": "games",
+          "description": "Edit existing games",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "mentee_games": {
+      "actions": [
+        "read"
+      ],
+      "permissions": [
+        {
+          "id": "1afdc3f7-623d-4d5f-a3d9-02444bd1211f",
+          "name": "mentee_games:read",
+          "category": "mentorship",
+          "description": "View mentee game assignments and performance",
+          "is_system": true,
+          "created_at": "2025-09-25T20:12:20.726Z",
+          "updated_at": "2025-09-25T20:12:20.726Z"
+        }
+      ]
+    },
+    "mentorships": {
+      "actions": [
+        "create",
+        "manage",
+        "read"
+      ],
+      "permissions": [
+        {
+          "id": "8d5fc9cf-e564-4ab6-82b1-abdf338135ca",
+          "name": "mentorships:create",
+          "category": "mentorship",
+          "description": "Create new mentorship relationships",
+          "is_system": true,
+          "created_at": "2025-09-25T21:04:24.391Z",
+          "updated_at": "2025-09-25T21:04:24.391Z"
+        },
+        {
+          "id": "ef0513a7-566b-45eb-83ba-3d5050042188",
+          "name": "mentorships:manage",
+          "category": "mentorship",
+          "description": "Manage mentorship relationships and mentee progress",
+          "is_system": true,
+          "created_at": "2025-09-25T20:12:20.725Z",
+          "updated_at": "2025-09-25T20:12:20.725Z"
+        },
+        {
+          "id": "c74624b2-f9d8-40f4-b2a2-a5257d1dc1be",
+          "name": "mentorships:read",
+          "category": "mentorship",
+          "description": "View mentorship relationships and mentee information",
+          "is_system": true,
+          "created_at": "2025-09-25T20:12:20.722Z",
+          "updated_at": "2025-09-25T20:12:20.722Z"
+        }
+      ]
+    },
+    "referees": {
+      "actions": [
+        "evaluate",
+        "manage",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "5905a269-6e01-4998-b0f8-5dc4f5563649",
+          "name": "referees:evaluate",
+          "category": "referees",
+          "description": "Evaluate referee performance",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "1f085a33-ba7e-4a8f-8e57-3ef989725ebc",
+          "name": "referees:manage",
+          "category": "referees",
+          "description": "Manage referee levels, availability, and status",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "93cc3329-798c-4de6-b93a-a22648f95953",
+          "name": "referees:read",
+          "category": "referees",
+          "description": "View referee profiles and information",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f94035a9-06ed-4a9f-87ff-14384d0c7b62",
+          "name": "referees:update",
+          "category": "referees",
+          "description": "Edit referee profiles",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "reports": {
+      "actions": [
+        "create",
+        "export",
+        "financial",
+        "read"
+      ],
+      "permissions": [
+        {
+          "id": "644d5a9c-a10c-4ddd-8ff3-39b395ec3cba",
+          "name": "reports:create",
+          "category": "reports",
+          "description": "Generate custom reports",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "2059142a-0264-4b0c-854a-c06cafcc559c",
+          "name": "reports:export",
+          "category": "reports",
+          "description": "Export reports to various formats",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f675a9ae-858e-4fc9-8930-16f4048b7312",
+          "name": "reports:financial",
+          "category": "reports",
+          "description": "Access financial reports and budgets",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "d7a27e48-47f5-4557-91bf-588e26b64930",
+          "name": "reports:read",
+          "category": "reports",
+          "description": "View reports and analytics",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "roles": {
+      "actions": [
+        "assign",
+        "manage",
+        "read"
+      ],
+      "permissions": [
+        {
+          "id": "08a79dcb-0f92-49fa-8884-9371adf305b9",
+          "name": "roles:assign",
+          "category": "roles",
+          "description": "Assign or remove roles from users",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "db9f5418-8b56-4f86-976b-4eb3a5db5ff8",
+          "name": "roles:manage",
+          "category": "roles",
+          "description": "Create, edit, and delete roles and permissions",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "fb8c3f38-8ac0-4d1e-b8c8-2be2a604e6ed",
+          "name": "roles:read",
+          "category": "roles",
+          "description": "View roles and permissions",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "settings": {
+      "actions": [
+        "organization",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "db4cacd1-f82b-4e72-a12e-d1514fb777ce",
+          "name": "settings:organization",
+          "category": "settings",
+          "description": "Manage organization-wide settings",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "9ab98a7a-00ce-4504-be61-3304c5c8e7a1",
+          "name": "settings:read",
+          "category": "settings",
+          "description": "View system settings",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "3495fd22-993b-43d1-b513-be33621eee37",
+          "name": "settings:update",
+          "category": "settings",
+          "description": "Modify system settings",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    },
+    "users": {
+      "actions": [
+        "create",
+        "delete",
+        "impersonate",
+        "read",
+        "update"
+      ],
+      "permissions": [
+        {
+          "id": "48517c93-edce-4a53-bf94-5e2c146b0885",
+          "name": "users:create",
+          "category": "users",
+          "description": "Create new user accounts",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "e43cc73d-9cf0-4cc1-8b32-127135d3973e",
+          "name": "users:delete",
+          "category": "users",
+          "description": "Delete user accounts",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "153132f7-df2b-47fa-98bd-47f064cad0a2",
+          "name": "users:impersonate",
+          "category": "users",
+          "description": "Login as other users for troubleshooting",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "f34f0b5e-3570-4e37-8bb3-faf69466fb47",
+          "name": "users:read",
+          "category": "users",
+          "description": "View user profiles and information",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        },
+        {
+          "id": "8f13d44d-f13b-4faa-b4c5-7c6d5771f43c",
+          "name": "users:update",
+          "category": "users",
+          "description": "Edit user profiles and information",
+          "is_system": true,
+          "created_at": "2025-09-25T04:57:05.241Z",
+          "updated_at": "2025-09-25T04:57:05.241Z"
+        }
+      ]
+    }
+  },
+  "rolePermissionMapping": {
+    "Admin": {
+      "permissions": [
+        "assignments:approve",
+        "assignments:auto_assign",
+        "assignments:create",
+        "assignments:delete",
+        "assignments:read",
+        "assignments:update",
+        "communication:broadcast",
+        "communication:manage",
+        "communication:send",
+        "content:create",
+        "content:delete",
+        "content:publish",
+        "content:read",
+        "content:update",
+        "finance:approve",
+        "finance:create",
+        "finance:manage",
+        "finance:read",
+        "games:create",
+        "games:delete",
+        "games:publish",
+        "games:read",
+        "games:update",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorship.request",
+        "mentorships:create",
+        "mentorships:manage",
+        "mentorships:read",
+        "referees:evaluate",
+        "referees:manage",
+        "referees:read",
+        "referees:update",
+        "reports:create",
+        "reports:export",
+        "reports:financial",
+        "reports:read",
+        "settings:read",
+        "settings:update",
+        "users:create",
+        "users:read",
+        "users:update"
+      ],
+      "resources": {
+        "assignments": [
+          "approve",
+          "auto_assign",
+          "create",
+          "delete",
+          "read",
+          "update"
+        ],
+        "communication": [
+          "broadcast",
+          "manage",
+          "send"
+        ],
+        "content": [
+          "create",
+          "delete",
+          "publish",
+          "read",
+          "update"
+        ],
+        "finance": [
+          "approve",
+          "create",
+          "manage",
+          "read"
+        ],
+        "games": [
+          "create",
+          "delete",
+          "publish",
+          "read",
+          "update"
+        ],
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "create",
+          "manage",
+          "read"
+        ],
+        "referees": [
+          "evaluate",
+          "manage",
+          "read",
+          "update"
+        ],
+        "reports": [
+          "create",
+          "export",
+          "financial",
+          "read"
+        ],
+        "settings": [
+          "read",
+          "update"
+        ],
+        "users": [
+          "create",
+          "read",
+          "update"
+        ]
+      }
+    },
+    "Assignment Manager": {
+      "permissions": [
+        "assignments:approve",
+        "assignments:auto_assign",
+        "assignments:create",
+        "assignments:delete",
+        "assignments:read",
+        "assignments:update",
+        "communication:send",
+        "games:read",
+        "referees:read",
+        "referees:update",
+        "reports:create",
+        "reports:read"
+      ],
+      "resources": {
+        "assignments": [
+          "approve",
+          "auto_assign",
+          "create",
+          "delete",
+          "read",
+          "update"
+        ],
+        "communication": [
+          "send"
+        ],
+        "games": [
+          "read"
+        ],
+        "referees": [
+          "read",
+          "update"
+        ],
+        "reports": [
+          "create",
+          "read"
+        ]
+      }
+    },
+    "Head Referee": {
+      "permissions": [
+        "assignments.approve.junior",
+        "assignments.override",
+        "evaluations.create",
+        "evaluations.manage",
+        "games.recommend",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorships:manage",
+        "mentorships:read",
+        "referees.manage"
+      ],
+      "resources": {
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "manage",
+          "read"
+        ]
+      }
+    },
+    "Junior Referee": {
+      "permissions": [
+        "evaluations.view.own",
+        "games.self_assign"
+      ],
+      "resources": {}
+    },
+    "Mentor": {
+      "permissions": [
+        "assignments:read",
+        "games:read",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorships:manage",
+        "mentorships:read",
+        "referees:read"
+      ],
+      "resources": {
+        "assignments": [
+          "read"
+        ],
+        "games": [
+          "read"
+        ],
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "manage",
+          "read"
+        ],
+        "referees": [
+          "read"
+        ]
+      }
+    },
+    "Mentorship Coordinator": {
+      "permissions": [
+        "mentee_games:read",
+        "mentorships:create",
+        "mentorships:manage",
+        "mentorships:read"
+      ],
+      "resources": {
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "create",
+          "manage",
+          "read"
+        ]
+      }
+    },
+    "Referee": {
+      "permissions": [
+        "assignments.accept",
+        "assignments.view",
+        "assignments:read",
+        "content:read",
+        "games.view",
+        "games:read",
+        "profile.edit.own",
+        "referees:read"
+      ],
+      "resources": {
+        "assignments": [
+          "read"
+        ],
+        "content": [
+          "read"
+        ],
+        "games": [
+          "read"
+        ],
+        "referees": [
+          "read"
+        ]
+      }
+    },
+    "Referee Coach": {
+      "permissions": [
+        "certifications.approve",
+        "evaluations.create",
+        "evaluations.manage",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorships:manage",
+        "mentorships:read",
+        "training.create"
+      ],
+      "resources": {
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "manage",
+          "read"
+        ]
+      }
+    },
+    "Referee Coordinator": {
+      "permissions": [
+        "assignments:read",
+        "communication:broadcast",
+        "communication:send",
+        "content:create",
+        "content:read",
+        "content:update",
+        "games:read",
+        "mentorships:create",
+        "referees:evaluate",
+        "referees:manage",
+        "referees:read",
+        "referees:update",
+        "reports:create",
+        "reports:read"
+      ],
+      "resources": {
+        "assignments": [
+          "read"
+        ],
+        "communication": [
+          "broadcast",
+          "send"
+        ],
+        "content": [
+          "create",
+          "read",
+          "update"
+        ],
+        "games": [
+          "read"
+        ],
+        "mentorships": [
+          "create"
+        ],
+        "referees": [
+          "evaluate",
+          "manage",
+          "read",
+          "update"
+        ],
+        "reports": [
+          "create",
+          "read"
+        ]
+      }
+    },
+    "Rookie Referee": {
+      "permissions": [
+        "evaluations.view.own",
+        "mentorship.request"
+      ],
+      "resources": {}
+    },
+    "Senior Referee": {
+      "permissions": [
+        "assignments.approve.junior",
+        "assignments:read",
+        "content:read",
+        "evaluations.create",
+        "games.recommend",
+        "games:read",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorships:manage",
+        "mentorships:read",
+        "referees:evaluate",
+        "referees:read",
+        "reports:read"
+      ],
+      "resources": {
+        "assignments": [
+          "read"
+        ],
+        "content": [
+          "read"
+        ],
+        "games": [
+          "read"
+        ],
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "manage",
+          "read"
+        ],
+        "referees": [
+          "evaluate",
+          "read"
+        ],
+        "reports": [
+          "read"
+        ]
+      }
+    },
+    "Super Admin": {
+      "permissions": [
+        "assignments.accept",
+        "assignments.approve.junior",
+        "assignments.override",
+        "assignments.view",
+        "assignments:approve",
+        "assignments:auto_assign",
+        "assignments:create",
+        "assignments:delete",
+        "assignments:read",
+        "assignments:update",
+        "certifications.approve",
+        "communication:broadcast",
+        "communication:manage",
+        "communication:send",
+        "content:create",
+        "content:delete",
+        "content:publish",
+        "content:read",
+        "content:update",
+        "evaluations.create",
+        "evaluations.manage",
+        "evaluations.view.own",
+        "finance:approve",
+        "finance:create",
+        "finance:manage",
+        "finance:read",
+        "games.recommend",
+        "games.self_assign",
+        "games.view",
+        "games:create",
+        "games:delete",
+        "games:publish",
+        "games:read",
+        "games:update",
+        "mentee_games:read",
+        "mentorship.provide",
+        "mentorship.request",
+        "mentorships:create",
+        "mentorships:manage",
+        "mentorships:read",
+        "profile.edit.own",
+        "referees.manage",
+        "referees:evaluate",
+        "referees:manage",
+        "referees:read",
+        "referees:update",
+        "reports:create",
+        "reports:export",
+        "reports:financial",
+        "reports:read",
+        "roles:assign",
+        "roles:manage",
+        "roles:read",
+        "settings:organization",
+        "settings:read",
+        "settings:update",
+        "training.create",
+        "users:create",
+        "users:delete",
+        "users:impersonate",
+        "users:read",
+        "users:update"
+      ],
+      "resources": {
+        "assignments": [
+          "approve",
+          "auto_assign",
+          "create",
+          "delete",
+          "read",
+          "update"
+        ],
+        "communication": [
+          "broadcast",
+          "manage",
+          "send"
+        ],
+        "content": [
+          "create",
+          "delete",
+          "publish",
+          "read",
+          "update"
+        ],
+        "finance": [
+          "approve",
+          "create",
+          "manage",
+          "read"
+        ],
+        "games": [
+          "create",
+          "delete",
+          "publish",
+          "read",
+          "update"
+        ],
+        "mentee_games": [
+          "read"
+        ],
+        "mentorships": [
+          "create",
+          "manage",
+          "read"
+        ],
+        "referees": [
+          "evaluate",
+          "manage",
+          "read",
+          "update"
+        ],
+        "reports": [
+          "create",
+          "export",
+          "financial",
+          "read"
+        ],
+        "roles": [
+          "assign",
+          "manage",
+          "read"
+        ],
+        "settings": [
+          "organization",
+          "read",
+          "update"
+        ],
+        "users": [
+          "create",
+          "delete",
+          "impersonate",
+          "read",
+          "update"
+        ]
+      }
+    }
+  },
+  "statistics": {
+    "totalPermissions": 62,
+    "totalRoles": 12,
+    "totalRolePermissions": 184,
+    "resourceCount": 13,
+    "averagePermissionsPerRole": 15.33
+  }
+}

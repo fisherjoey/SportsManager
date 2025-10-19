@@ -1,69 +1,103 @@
-const config = require('./knexfile');
-const knex = require('knex')(config.development);
+/**
+ * Assign Super Admin role to admin@test.com user
+ */
+
+const { Client } = require('pg');
+const { v4: uuidv4 } = require('uuid');
+
+const client = new Client({
+  host: 'localhost',
+  port: 5432,
+  database: 'sports_management',
+  user: 'postgres',
+  password: 'postgres123'
+});
 
 async function assignAdminRole() {
   try {
-    // Find admin user
-    const adminUser = await knex('users')
-      .where('email', 'admin@cmba.ca')
-      .first();
-    
-    if (!adminUser) {
-      console.log('Admin user not found');
+    await client.connect();
+    console.log('✓ Connected to database\n');
+
+    // Get the admin@test.com user
+    const userResult = await client.query(
+      `SELECT id, email, name FROM users WHERE email = $1`,
+      ['admin@test.com']
+    );
+
+    if (userResult.rows.length === 0) {
+      console.error('❌ User admin@test.com not found');
       process.exit(1);
     }
-    
-    console.log('Found admin user:', adminUser.email);
-    
-    // Find Admin role
-    const adminRole = await knex('roles')
-      .where('name', 'Admin')
-      .first();
-    
-    if (!adminRole) {
-      console.log('Admin role not found');
-      process.exit(1);
-    }
-    
-    console.log('Found Admin role:', adminRole.name);
-    
-    // Check if assignment already exists
-    const existing = await knex('user_roles')
-      .where({
-        user_id: adminUser.id,
-        role_id: adminRole.id
-      })
-      .first();
-    
-    if (existing) {
-      console.log('Admin user already has Admin role');
+
+    const user = userResult.rows[0];
+    console.log(`Found user: ${user.name} (${user.email})`);
+
+    // Get or create the Super Admin role
+    let roleResult = await client.query(
+      `SELECT id, name, code FROM roles WHERE name = $1`,
+      ['Super Admin']
+    );
+
+    let role;
+    if (roleResult.rows.length === 0) {
+      console.log('\nCreating Super Admin role...');
+
+      roleResult = await client.query(`
+        INSERT INTO roles (
+          id, name, code, description,
+          is_active, is_system, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING id, name, code
+      `, [
+        uuidv4(),
+        'Super Admin',
+        'super_admin',
+        'Full system administrator with unrestricted access',
+        true,
+        true
+      ]);
+
+      role = roleResult.rows[0];
+      console.log(`✓ Created role: ${role.name} (${role.code})`);
     } else {
-      // Create assignment
-      await knex('user_roles').insert({
-        user_id: adminUser.id,
-        role_id: adminRole.id,
-        assigned_at: new Date(),
-        assigned_by: adminUser.id
-      });
-      console.log('✓ Admin user assigned to Admin role successfully');
+      role = roleResult.rows[0];
+      console.log(`✓ Found existing role: ${role.name} (${role.code})`);
     }
-    
-    // Verify permissions
-    const permissions = await knex('permissions')
-      .join('role_permissions', 'permissions.id', 'role_permissions.permission_id')
-      .join('roles', 'role_permissions.role_id', 'roles.id')
-      .join('user_roles', 'roles.id', 'user_roles.role_id')
-      .where('user_roles.user_id', adminUser.id)
-      .where('roles.is_active', true)
-      .select('permissions.name')
-      .distinct();
-    
-    console.log(`Admin user now has ${permissions.length} permissions`);
-    
-    process.exit(0);
+
+    // Check if user already has this role
+    const existingAssignment = await client.query(`
+      SELECT id FROM user_roles
+      WHERE user_id = $1 AND role_id = $2
+    `, [user.id, role.id]);
+
+    if (existingAssignment.rows.length > 0) {
+      console.log('\n⚠️  User already has Super Admin role assigned');
+    } else {
+      // Assign role to user
+      await client.query(`
+        INSERT INTO user_roles (
+          id, user_id, role_id, assigned_at, is_active
+        )
+        VALUES ($1, $2, $3, NOW(), true)
+      `, [uuidv4(), user.id, role.id]);
+
+      console.log('\n✅ Successfully assigned Super Admin role to user!');
+    }
+
+    console.log('\n' + '='.repeat(60));
+    console.log('User Details:');
+    console.log(`  Email: ${user.email}`);
+    console.log(`  Name: ${user.name}`);
+    console.log(`  Role: ${role.name} (${role.code})`);
+    console.log('='.repeat(60));
+    console.log('\n✨ The user can now login with full admin permissions!');
+
   } catch (error) {
-    console.error('Error:', error);
+    console.error('\n❌ Error:', error.message);
     process.exit(1);
+  } finally {
+    await client.end();
   }
 }
 

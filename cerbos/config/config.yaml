@@ -5,8 +5,12 @@
 server:
   httpListenAddr: ":3592"
   grpcListenAddr: ":3593"
-  requestLimits:
-    maxRequestBytes: 4194304  # 4MB
+  adminAPI:
+    enabled: true
+    # No authentication for development - SECURE THIS IN PRODUCTION
+    adminCredentials:
+      username: ""
+      passwordHash: ""
 
 storage:
   driver: "disk"
@@ -20,10 +24,6 @@ audit:
   backend: local
   local:
     storagePath: /data/audit.log
-    advanced:
-      maxFileSizeMB: 100
-      maxFileAgeDays: 30
-      maxBackups: 10
 
 # Schema validation
 schema:

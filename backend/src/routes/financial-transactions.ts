@@ -6,16 +6,26 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as Joi from 'joi';
 import db from '../config/database';
-import {
-  authenticateToken,
-  requireRole,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
-} from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { auditMiddleware } from '../middleware/auditTrail';
+import { AuthenticatedRequest } from '../types/auth.types';
+
+// Temporary extension for organization_id compatibility
+declare module '../types/auth.types' {
+  interface AuthenticatedUser {
+    organization_id?: number;
+  }
+}
+
+// Additional interface to ensure Express properties are available
+interface ExtendedAuthenticatedRequest extends AuthenticatedRequest {
+  query: any;
+  body: any;
+  params: any;
+}
+
 import {
-  AuthenticatedRequest,
   TransactionCreateRequest,
   VendorCreateRequest,
   TransactionQuery,
@@ -124,8 +134,11 @@ async function generateTransactionNumber(organizationId: number, transactionType
  */
 router.get('/transactions',
   authenticateToken,
-  requirePermission('finance:read'),
-  async (req: AuthenticatedRequest, res: Response<TransactionListResponse | ErrorResponse>) => {
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'view'
+  }),
+  async (req: ExtendedAuthenticatedRequest, res: Response<TransactionListResponse | ErrorResponse>) => {
     try {
       const { error, value } = querySchema.validate(req.query);
       if (error) {
@@ -256,9 +269,12 @@ router.get('/transactions',
  */
 router.post('/transactions',
   authenticateToken,
-  requirePermission('finance:manage'),
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'manage'
+  }),
   auditMiddleware({ logAllRequests: true }),
-  async (req: AuthenticatedRequest, res: Response<TransactionCreateResponse | ErrorResponse>) => {
+  async (req: ExtendedAuthenticatedRequest, res: Response<TransactionCreateResponse | ErrorResponse>) => {
     try {
       const { error, value } = transactionSchema.validate(req.body);
       if (error) {
@@ -281,7 +297,7 @@ router.post('/transactions',
       }
 
       // Generate transaction number
-      const transactionNumber = await generateTransactionNumber(organizationId, transactionData.transaction_type);
+      const transactionNumber = await generateTransactionNumber(Number(organizationId), transactionData.transaction_type);
 
       // Validate budget exists if provided
       if (transactionData.budget_id) {
@@ -366,8 +382,11 @@ router.post('/transactions',
  */
 router.get('/transactions/:id',
   authenticateToken,
-  requirePermission('finance:read'),
-  async (req: AuthenticatedRequest, res: Response<TransactionDetailResponse | ErrorResponse>) => {
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'view'
+  }),
+  async (req: ExtendedAuthenticatedRequest, res: Response<TransactionDetailResponse | ErrorResponse>) => {
     try {
       const transactionId = req.params.id;
       const organizationId = req.user.organization_id || req.user.id;
@@ -425,9 +444,12 @@ router.get('/transactions/:id',
  */
 router.put('/transactions/:id/status',
   authenticateToken,
-  requirePermission('finance:approve'),
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'approve'
+  }),
   auditMiddleware({ logAllRequests: true }),
-  async (req: AuthenticatedRequest, res: Response<StatusUpdateResponse | ErrorResponse>) => {
+  async (req: ExtendedAuthenticatedRequest, res: Response<StatusUpdateResponse | ErrorResponse>) => {
     try {
       const transactionId = req.params.id;
       const organizationId = req.user.organization_id || req.user.id;
@@ -514,8 +536,11 @@ router.put('/transactions/:id/status',
  */
 router.get('/vendors',
   authenticateToken,
-  requirePermission('finance:read'),
-  async (req: AuthenticatedRequest, res: Response<VendorListResponse | ErrorResponse>) => {
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'view'
+  }),
+  async (req: ExtendedAuthenticatedRequest, res: Response<VendorListResponse | ErrorResponse>) => {
     try {
       const organizationId = req.user.organization_id || req.user.id;
       const { active = 'true', search, page = '1', limit = '20' } = req.query as VendorQuery;
@@ -569,9 +594,12 @@ router.get('/vendors',
  */
 router.post('/vendors',
   authenticateToken,
-  requirePermission('finance:manage'),
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'manage'
+  }),
   auditMiddleware({ logAllRequests: true }),
-  async (req: AuthenticatedRequest, res: Response<VendorCreateResponse | ErrorResponse>) => {
+  async (req: ExtendedAuthenticatedRequest, res: Response<VendorCreateResponse | ErrorResponse>) => {
     try {
       const { error, value } = vendorSchema.validate(req.body);
       if (error) {
@@ -631,8 +659,11 @@ router.post('/vendors',
  */
 router.get('/dashboard',
   authenticateToken,
-  requirePermission('finance:read'),
-  async (req: AuthenticatedRequest, res: Response<DashboardResponse | ErrorResponse>) => {
+  requireCerbosPermission({
+    resource: 'financial_transaction',
+    action: 'view'
+  }),
+  async (req: ExtendedAuthenticatedRequest, res: Response<DashboardResponse | ErrorResponse>) => {
     try {
       const organizationId = req.user.organization_id || req.user.id;
       const { period = '30' } = req.query as DashboardQuery;

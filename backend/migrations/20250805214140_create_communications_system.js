@@ -2,7 +2,13 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = function(knex) {
+exports.up = async function(knex) {
+  const hasTable = await knex.schema.hasTable('internal_communications');
+  if (hasTable) {
+    console.log('⚠️  Communications system tables already exist, skipping migration');
+    return;
+  }
+
   return knex.schema
     .createTable('internal_communications', table => {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));

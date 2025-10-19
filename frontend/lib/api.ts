@@ -8,7 +8,8 @@
  * @module lib/api
  */
 
-import { AvailabilityWindow, AvailabilityResponse } from './types'
+import { AvailabilityWindow, AvailabilityResponse, PagePermissionsResponse, PageAccessCheckResponse } from './types'
+import { setAuthToken, getAuthToken, deleteAuthToken } from './cookies'
 
 interface ApiResponse<T> {
   data?: T;
@@ -35,7 +36,7 @@ class ApiClient {
    * Create an API client instance
    */
   constructor() {
-    this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    this.token = typeof window !== 'undefined' ? getAuthToken() : null
   }
 
   /**
@@ -77,13 +78,17 @@ class ApiClient {
   setToken(token: string) {
     this.token = token
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token)
+      // Use cookie utility for consistent cookie management
+      setAuthToken(token, {
+        maxAge: 604800, // 7 days (matches JWT expiry)
+        sameSite: 'lax',
+      })
     }
   }
 
   initializeToken() {
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token')
+      const storedToken = getAuthToken()
       if (storedToken) {
         this.token = storedToken
       }
@@ -93,7 +98,7 @@ class ApiClient {
   removeToken() {
     this.token = null
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
+      deleteAuthToken()
     }
   }
 
@@ -105,9 +110,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Always check for the latest token from localStorage
+    // Always check for the latest token from cookies
     if (typeof window !== 'undefined') {
-      const currentToken = localStorage.getItem('auth_token')
+      const currentToken = getAuthToken()
       if (currentToken !== this.token) {
         this.token = currentToken
       }
@@ -163,9 +168,22 @@ class ApiClient {
           console.warn('Failed to parse error response:', parseError)
         }
 
-        // Only log non-authentication errors to console
-        // 401 errors are expected when user is not logged in
-        if (response.status !== 401) {
+        // Handle different error types appropriately
+        if (response.status === 403) {
+          // Cerbos authorization failure - create a user-friendly error
+          const cerbosError = new Error('Access denied. You do not have permission to perform this action.')
+          ;(cerbosError as any).status = 403
+          ;(cerbosError as any).type = 'PERMISSION_DENIED'
+          ;(cerbosError as any).originalError = errorMessage
+          throw cerbosError
+        } else if (response.status === 401) {
+          // Authentication failure - don't log these as they're expected
+          const authError = new Error('Authentication required. Please log in.')
+          ;(authError as any).status = 401
+          ;(authError as any).type = 'AUTHENTICATION_REQUIRED'
+          throw authError
+        } else {
+          // Log other errors for debugging
           console.error(`API Error [${method}] ${url}:`, {
             status: response.status,
             statusText: response.statusText,
@@ -2688,14 +2706,38 @@ class ApiClient {
   }
 
   async getUnreadCommunicationsCount() {
+    return Promise.resolve({
+      success: true,
+      data: {
+        unreadCount: 0,
+        byPriority: {},
+        byType: {}
+      }
+    });
+  }
+
+  // Notification broadcast endpoint
+  async broadcastNotification(notificationData: {
+    title: string;
+    message: string;
+    type: 'assignment' | 'status_change' | 'reminder' | 'system';
+    link?: string;
+    target_audience: {
+      roles?: string[];
+      specific_users?: string[];
+      all_users?: boolean;
+    };
+    metadata?: any;
+  }) {
     return this.request<{
       success: boolean;
-      data: {
-        unreadCount: number;
-        byPriority: any;
-        byType: any;
-      };
-    }>('/communications/unread/count')
+      recipientCount: number;
+      createdCount: number;
+      message: string;
+    }>('/notifications/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(notificationData)
+    })
   }
 
   // Employee Management API
@@ -3179,7 +3221,7 @@ class ApiClient {
   }
 
   // Get available roles for user assignment
-  async getUserRoles() {
+  async getAvailableRoles() {
     return this.request<{
       success: boolean;
       data: { roles: any[] };
@@ -3300,13 +3342,10 @@ class ApiClient {
     })
   }
 
-  async checkPageAccess(page: string) {
-    return this.request<{
-      success: boolean;
-      hasAccess: boolean;
-    }>('/admin/access/check-page', {
+  async checkPageAccess(pageId: string) {
+    return this.request<PageAccessCheckResponse>('/pages/check-access', {
       method: 'POST',
-      body: JSON.stringify({ page })
+      body: JSON.stringify({ pageId })
     })
   }
 
@@ -3359,6 +3398,10 @@ class ApiClient {
         endpoint_category: string;
       }>;
     }>('/admin/access/my-apis')
+  }
+
+  async getPagePermissions() {
+    return this.request<PagePermissionsResponse>('/pages/permissions')
   }
 
   async getRole(roleId: string) {
@@ -3524,6 +3567,222 @@ class ApiClient {
     }>(`/users/${userId}`, {
       method: 'DELETE'
     })
+  }
+
+  // Cerbos Policy Management endpoints
+  async getCerbosPolicies() {
+    return this.request<{
+      success: boolean;
+      data: { policies: any[] };
+      message: string;
+    }>('/admin/cerbos-policies')
+  }
+
+  async getCerbosPolicy(policyId: string) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`)
+  }
+
+  async createCerbosPolicy(policyData: any) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>('/admin/cerbos-policies', {
+      method: 'POST',
+      body: JSON.stringify(policyData)
+    })
+  }
+
+  async updateCerbosPolicy(policyId: string, policyData: any) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(policyData)
+    })
+  }
+
+  async deleteCerbosPolicy(policyId: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/cerbos-policies/${policyId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async updateRolePermissionsInCerbos(role: string, permissions: string[]) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: string;
+        updatedPolicies: string[];
+        permissions: string[];
+      };
+      message: string;
+    }>('/admin/cerbos-policies/role-permissions', {
+      method: 'POST',
+      body: JSON.stringify({ role, permissions })
+    })
+  }
+
+  async getRolePermissionsFromCerbos(roleName: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: string;
+        permissions: string[];
+      };
+      message: string;
+    }>(`/admin/cerbos-policies/role/${roleName}/permissions`)
+  }
+
+  async getCerbosRoles() {
+    return this.request<{
+      success: boolean;
+      data: { roles: any[] };
+      message: string;
+    }>('/admin/cerbos-policies/roles')
+  }
+
+  async createCerbosRole(roleData: { name: string; parentRoles?: string[]; condition?: string }) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>('/admin/cerbos-policies/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async updateCerbosRole(roleName: string, roleData: { name?: string; parentRoles?: string[]; condition?: string }) {
+    return this.request<{
+      success: boolean;
+      data: { role: any };
+      message: string;
+    }>(`/admin/cerbos-policies/roles/${roleName}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async deleteCerbosRole(roleName: string, force = false) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/cerbos-policies/roles/${roleName}${force ? '?force=true' : ''}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Unified Role Management endpoints
+  async getUnifiedRoles() {
+    return this.request<{
+      success: boolean;
+      data: {
+        roles: Array<{
+          name: string;
+          description?: string;
+          permissions: string[];
+          userCount?: number;
+          color?: string;
+          source: 'cerbos' | 'database' | 'both';
+        }>;
+      };
+      message: string;
+    }>('/admin/roles')
+  }
+
+  async getUnifiedRole(name: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          userCount?: number;
+          color?: string;
+          source: 'cerbos' | 'database' | 'both';
+        };
+      };
+      message: string;
+    }>(`/admin/unified-roles/${name}`)
+  }
+
+  async createUnifiedRole(roleData: {
+    name: string;
+    description?: string;
+    permissions: string[];
+    color?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          color?: string;
+          userCount: number;
+          source: string;
+        };
+      };
+      message: string;
+    }>('/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async updateUnifiedRole(idOrName: string, roleData: {
+    description?: string;
+    permissions?: string[];
+    color?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        role: {
+          name: string;
+          description?: string;
+          permissions: string[];
+          color?: string;
+          source: string;
+        };
+      };
+      message: string;
+    }>(`/admin/roles/${idOrName}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData)
+    })
+  }
+
+  async deleteUnifiedRole(name: string, force = false) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/admin/unified-roles/${name}${force ? '?force=true' : ''}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getAvailablePermissions() {
+    return this.request<{
+      success: boolean;
+      data: {
+        permissions: string[];
+        groupedByResource: Record<string, string[]>;
+      };
+      message: string;
+    }>('/admin/unified-roles/available-permissions')
   }
 
   // Generic HTTP methods for resources and other endpoints
@@ -3708,6 +3967,78 @@ class ApiClient {
     return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`);
   }
 
+  // ==================== CHUNK METHODS ====================
+
+  /**
+   * Get list of game chunks
+   */
+  async getChunks(params?: {
+    location?: string
+    date?: string
+    status?: string
+    page?: number
+    limit?: number
+  }) {
+    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    return this.request<import('./types/chunks').ChunkListResponse>(`/chunks${queryString ? `?${queryString}` : ''}`)
+  }
+
+  /**
+   * Get chunk details with games
+   */
+  async getChunk(id: string) {
+    return this.request<import('./types/chunks').ChunkDetailsResponse>(`/chunks/${id}`)
+  }
+
+  /**
+   * Create a new chunk
+   */
+  async createChunk(data: import('./types/chunks').CreateChunkRequest) {
+    return this.request<{ chunk: import('./types/chunks').GameChunk }>(`/chunks`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Update an existing chunk
+   */
+  async updateChunk(id: string, data: import('./types/chunks').UpdateChunkRequest) {
+    return this.request<{ chunk: import('./types/chunks').GameChunk }>(`/chunks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Delete a chunk
+   */
+  async deleteChunk(id: string, force?: boolean) {
+    const queryString = force ? '?force=true' : ''
+    return this.request<{ assignments_removed: number }>(`/chunks/${id}${queryString}`, {
+      method: 'DELETE'
+    })
+  }
+
+  /**
+   * Assign a chunk to a referee
+   */
+  async assignChunk(id: string, data: import('./types/chunks').AssignChunkRequest) {
+    return this.request<import('./types/chunks').AssignChunkResponse>(`/chunks/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  /**
+   * Auto-create chunks based on criteria
+   */
+  async autoCreateChunks(data: import('./types/chunks').AutoCreateChunksRequest) {
+    return this.request<{ chunks_created: number; chunks: import('./types/chunks').GameChunk[] }>(`/chunks/auto-create`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
 }
 
 // Types (updated to match backend schema)

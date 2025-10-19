@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Roles API</title>
+</head>
+<body>
+    <h1>Test Roles API</h1>
+    <button onclick="testRoles()">Test Get Roles</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testRoles() {
+            const resultEl = document.getElementById('result');
+
+            try {
+                // First, login to get a token
+                const loginResponse = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@refassign.com',
+                        password: 'password'
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+                console.log('Login response:', loginData);
+
+                if (!loginData.token) {
+                    throw new Error('Failed to get token');
+                }
+
+                // Now test the roles endpoint
+                const rolesResponse = await fetch('http://localhost:3001/api/users/roles', {
+                    headers: {
+                        'Authorization': `Bearer ${loginData.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const rolesData = await rolesResponse.json();
+                console.log('Roles response:', rolesData);
+
+                resultEl.textContent = JSON.stringify(rolesData, null, 2);
+
+                // Display the roles in a more readable format
+                if (rolesData.success && rolesData.data && rolesData.data.roles) {
+                    const rolesList = rolesData.data.roles.map(r => `- ${r.name}: ${r.description || 'No description'}`).join('\n');
+                    resultEl.textContent = `Success! Found ${rolesData.data.roles.length} roles:\n\n${rolesList}`;
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultEl.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

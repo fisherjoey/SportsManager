@@ -1,0 +1,101 @@
+{
+  "timestamp": "2025-10-01T07:02:49.060Z",
+  "auth": {
+    "email": "admin@refassign.com",
+    "tokenUsed": true
+  },
+  "results": [
+    {
+      "route": "Login Page",
+      "path": "/",
+      "success": false,
+      "reason": "auth_failed"
+    },
+    {
+      "route": "Games Management",
+      "path": "/games",
+      "success": true,
+      "filename": "games_management.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\games_management.png"
+    },
+    {
+      "route": "Admin Broadcast Notifications",
+      "path": "/admin/notifications/broadcast",
+      "success": true,
+      "filename": "admin_broadcast_notifications.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\admin_broadcast_notifications.png"
+    },
+    {
+      "route": "Admin Permissions",
+      "path": "/admin/permissions",
+      "success": true,
+      "filename": "admin_permissions.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\admin_permissions.png"
+    },
+    {
+      "route": "Admin Page Access",
+      "path": "/admin/page-access",
+      "success": false,
+      "reason": "auth_failed"
+    },
+    {
+      "route": "Admin Audit Logs",
+      "path": "/admin/audit-logs",
+      "success": true,
+      "filename": "admin_audit_logs.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\admin_audit_logs.png"
+    },
+    {
+      "route": "Budget Management",
+      "path": "/budget",
+      "success": true,
+      "filename": "budget_management.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\budget_management.png"
+    },
+    {
+      "route": "Financial Dashboard",
+      "path": "/financial-dashboard",
+      "success": true,
+      "filename": "financial_dashboard.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\financial_dashboard.png"
+    },
+    {
+      "route": "Financial Budgets",
+      "path": "/financial-budgets",
+      "success": true,
+      "filename": "financial_budgets.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\financial_budgets.png"
+    },
+    {
+      "route": "Notifications",
+      "path": "/notifications",
+      "success": false,
+      "reason": "auth_failed"
+    },
+    {
+      "route": "Notification Settings",
+      "path": "/settings/notifications",
+      "success": false,
+      "reason": "auth_failed"
+    },
+    {
+      "route": "Resource Centre",
+      "path": "/resources",
+      "success": true,
+      "filename": "resource_centre.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\resource_centre.png"
+    },
+    {
+      "route": "AI Assignment Demo",
+      "path": "/demo/ai-assignments",
+      "success": true,
+      "filename": "ai_assignment_demo.png",
+      "filepath": "C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\scripts\\ux-audit\\screenshots\\2025-10-01\\ai_assignment_demo.png"
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "successful": 9,
+    "failed": 4
+  }
+}

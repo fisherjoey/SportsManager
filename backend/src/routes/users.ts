@@ -8,7 +8,8 @@ import express, { Request, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import { Database } from '../types/database.types';
 import db from '../config/database';
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter } from '../utils/response-formatters';
 import { enhancedAsyncHandler } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
@@ -60,28 +61,17 @@ export interface UserResponse {
   user: any;
 }
 
-// Extend AuthenticatedRequest to work with Express Request types
-interface AuthenticatedRequestWithParams<P = {}, ResBody = any, ReqBody = any, ReqQuery = {}> 
-  extends Request<P, ResBody, ReqBody, ReqQuery> {
-  user?: {
-    id: UUID;
-    email: string;
-    name: string;
-    roles?: any[];
-  };
-}
+// Use the existing AuthenticatedRequest type instead of creating a new one
 
 /**
  * GET /api/users/roles
  * Get all available roles
  */
-const getRoles = async (req: AuthenticatedRequestWithParams, res: Response): Promise<any> => {
-  const db: Database = req.app.locals.db;
-  
-  const roles = await db('roles')
+const getRoles = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+  const roles = await (db as any)('roles')
     .select(['id', 'name', 'description'])
     .orderBy('name', 'asc');
-  
+
   return ResponseFormatter.sendSuccess(res, { roles }, 'Roles retrieved successfully');
 };
 
@@ -91,12 +81,12 @@ const getRoles = async (req: AuthenticatedRequestWithParams, res: Response): Pro
  * Requires: users:read permission
  */
 const getUsers = async (
-  req: AuthenticatedRequestWithParams<{}, UsersResponse, {}, GetUsersQuery>,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   try {
     const userService = new UserService(db as any);
-    const { page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 50 } = (req as any).query;
 
     // Get all users with error handling
     const users = await userService.findWhere({}, {
@@ -130,15 +120,15 @@ const getUsers = async (
  * Get a specific user
  */
 const getUserById = async (
-  req: AuthenticatedRequestWithParams<UserIdParams, UserResponse>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
+  const userId = (req as any).params.id;
   
   // Users can only view their own profile unless they're admin
-  const isAdmin = req.user?.roles && (req.user.roles.some(role => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
-  if (!isAdmin && req.user?.id !== userId) {
+  const isAdmin = (req as any).user?.roles && ((req as any).user.roles.some((role: any) => ['admin', 'Admin', 'Super Admin'].includes(role.name || role)));
+  if (!isAdmin && (req as any).user?.id !== userId) {
     throw ErrorFactory.forbidden('Not authorized to view this user');
   }
 
@@ -162,11 +152,11 @@ const getUserById = async (
  * Create a new user (admin only)
  */
 const createUser = async (
-  req: AuthenticatedRequestWithParams<{}, UserResponse, CreateUserBody>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const { email, password, name, send_welcome_email = false } = req.body;
+  const { email, password, name, send_welcome_email = false } = (req as any).body;
   
   console.log('Creating user with data:', { email, name });
   
@@ -196,7 +186,6 @@ const createUser = async (
       max_distance: 25,
       is_available: true,
       white_whistle: false,
-      availability_strategy: AvailabilityStrategy.WHITELIST,
       wage_per_game: null,
       referee_level_id: null,
       is_active: true,
@@ -221,12 +210,12 @@ const createUser = async (
  * Update a user (admin only)
  */
 const updateUser = async (
-  req: AuthenticatedRequestWithParams<UserIdParams, UserResponse, UpdateUserBody>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
-  const { email, name, role, password, roles } = req.body;
+  const userId = (req as any).params.id;
+  const { email, name, role, password, roles } = (req as any).body;
   
   // Check if user exists
   const user = await userService.findById(userId);
@@ -251,7 +240,7 @@ const updateUser = async (
   // Update roles if provided (new RBAC system)
   if (roles && Array.isArray(roles)) {
     // Remove existing roles
-    await db('user_roles').where('user_id', userId).del();
+    await (db as any)('user_roles').where('user_id', userId).del();
     
     // Add new roles
     if (roles.length > 0) {
@@ -259,10 +248,10 @@ const updateUser = async (
         user_id: userId,
         role_id: roleId,
         assigned_at: new Date(),
-        assigned_by: req.user?.id
+        assigned_by: (req as any).user?.id
       }));
       
-      await db('user_roles').insert(roleAssignments);
+      await (db as any)('user_roles').insert(roleAssignments);
     }
   }
   
@@ -277,14 +266,14 @@ const updateUser = async (
  * Delete a user (admin only)
  */
 const deleteUser = async (
-  req: AuthenticatedRequestWithParams<UserIdParams>, 
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<any> => {
   const userService = new UserService(db as any);
-  const userId = req.params.id;
+  const userId = (req as any).params.id;
   
   // Prevent deleting own account
-  if (req.user?.id === userId) {
+  if ((req as any).user?.id === userId) {
     throw new ValidationError('Cannot delete your own account');
   }
   
@@ -303,38 +292,64 @@ const deleteUser = async (
 };
 
 // Route definitions with proper middleware and handlers
-router.get('/roles', authenticateToken as any, enhancedAsyncHandler(getRoles as any));
+router.get('/roles',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:roles',
+  }) as any,
+  enhancedAsyncHandler(getRoles as any)
+);
 
 router.get('/',
   authenticateToken as any,
-  // Permission checks disabled until PermissionService DB connection is fixed
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:list',
+  }) as any,
   validateQuery(FilterSchemas.referees) as any,
   enhancedAsyncHandler(getUsers as any)
 );
 
-router.get('/:id', 
-  authenticateToken as any, 
-  validateParams(IdParamSchema) as any, 
+router.get('/:id',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(getUserById as any)
 );
 
-router.post('/', 
-  authenticateToken as any, 
-  requireRole('admin') as any, 
+router.post('/',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'create',
+  }) as any,
   enhancedAsyncHandler(createUser as any)
 );
 
-router.put('/:id', 
-  authenticateToken as any, 
-  requireRole('admin') as any, 
-  validateParams(IdParamSchema) as any, 
+router.put('/:id',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(updateUser as any)
 );
 
-router.delete('/:id', 
-  authenticateToken as any, 
-  requireRole('admin') as any, 
-  validateParams(IdParamSchema) as any, 
+router.delete('/:id',
+  authenticateToken as any,
+  requireCerbosPermission({
+    resource: 'user',
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }) as any,
+  validateParams(IdParamSchema) as any,
   enhancedAsyncHandler(deleteUser as any)
 );
 

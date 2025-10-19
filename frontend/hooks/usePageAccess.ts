@@ -1,67 +1,138 @@
 /**
  * @fileoverview Page Access Hook
- * 
- * Hook for checking page access from the database
- * Replaces hardcoded permission checks with database-driven access control
+ *
+ * Hook for checking page access permissions with automatic redirects
+ * Integrates with AuthProvider for centralized permission management
  */
 
-import { useState, useEffect } from 'react'
-import { apiClient } from '@/lib/api'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 
-export function usePageAccess() {
-  const { user } = useAuth()
-  const [accessiblePages, setAccessiblePages] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
+interface UsePageAccessOptions {
+  redirectToLogin?: boolean
+  redirectToUnauthorized?: boolean
+}
+
+interface UsePageAccessReturn {
+  isChecking: boolean
+  hasAccess: boolean
+}
+
+/**
+ * Hook for checking page access permissions
+ *
+ * @param pageId - The page ID or path to check access for
+ * @param options - Configuration options for redirects
+ * @returns Object with isChecking and hasAccess status
+ *
+ * @example
+ * ```tsx
+ * function MyPage() {
+ *   const { isChecking, hasAccess } = usePageAccess('admin/users')
+ *
+ *   if (isChecking) return <LoadingSpinner />
+ *   if (!hasAccess) return null // Will redirect automatically
+ *
+ *   return <div>Page content</div>
+ * }
+ * ```
+ */
+export function usePageAccess(
+  pageId: string,
+  options: UsePageAccessOptions = {}
+): UsePageAccessReturn {
+  const {
+    redirectToLogin = true,
+    redirectToUnauthorized = true
+  } = options
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const { user, isAuthenticated, canAccessPage, pagePermissions } = useAuth()
+  const [isChecking, setIsChecking] = useState(true)
+  const [hasAccess, setHasAccess] = useState(false)
 
   useEffect(() => {
-    if (!user) {
-      setAccessiblePages([])
-      setLoading(false)
-      return
-    }
-
-    // Fetch accessible pages from database
-    const fetchAccessiblePages = async () => {
-      try {
-        const response = await apiClient.getMyAccessiblePages()
-        if (response.success && response.data) {
-          const pagePaths = response.data.map(p => p.page_path)
-          setAccessiblePages(pagePaths)
+    // Wait for client-side rendering and auth to be initialized
+    const checkAccess = () => {
+      // If not authenticated and should redirect to login
+      if (!isAuthenticated && redirectToLogin) {
+        // Store the current path to redirect back after login
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('redirect_after_login', pathname || '/')
         }
-      } catch (error) {
-        console.error('Failed to fetch accessible pages:', error)
-        setAccessiblePages([])
-      } finally {
-        setLoading(false)
+        router.push('/login')
+        setIsChecking(false)
+        setHasAccess(false)
+        return
+      }
+
+      // If authenticated, check page access
+      if (isAuthenticated && user) {
+        const allowed = canAccessPage(pageId)
+        setHasAccess(allowed)
+
+        // If no access and should redirect to unauthorized page
+        if (!allowed && redirectToUnauthorized) {
+          router.push('/unauthorized')
+        }
+
+        setIsChecking(false)
+      } else if (!isAuthenticated) {
+        // Not authenticated and shouldn't redirect to login
+        setHasAccess(false)
+        setIsChecking(false)
       }
     }
 
-    fetchAccessiblePages()
-  }, [user])
+    // Add a small delay to allow page permissions to load
+    // This prevents flashing during initial page load
+    const timer = setTimeout(checkAccess, 100)
 
-  const hasPageAccess = (pagePath: string): boolean => {
-    // During loading, allow access to prevent flashing
-    if (loading) return true
-    
-    // Check if page is in accessible pages list
-    return accessiblePages.includes(pagePath)
-  }
-
-  const checkPageAccess = async (pagePath: string): Promise<boolean> => {
-    try {
-      const response = await apiClient.checkPageAccess(pagePath)
-      return response.hasAccess || false
-    } catch (error) {
-      console.error('Failed to check page access:', error)
-      return false
-    }
-  }
+    return () => clearTimeout(timer)
+  }, [
+    pageId,
+    isAuthenticated,
+    user,
+    canAccessPage,
+    redirectToLogin,
+    redirectToUnauthorized,
+    router,
+    pathname,
+    pagePermissions // Re-check when permissions change
+  ])
 
   return {
-    accessiblePages,
-    hasPageAccess,
-    checkPageAccess,
-    loading
+    isChecking,
+    hasAccess
   }
+}
+
+/**
+ * Simplified hook for checking page access without redirects
+ * Useful when you want to conditionally render content
+ *
+ * @param pageId - The page ID or path to check access for
+ * @returns Boolean indicating if user has access
+ *
+ * @example
+ * ```tsx
+ * function ConditionalContent() {
+ *   const canViewAdmin = usePageAccessCheck('admin/dashboard')
+ *
+ *   return (
+ *     <div>
+ *       {canViewAdmin && <AdminPanel />}
+ *       <RegularContent />
+ *     </div>
+ *   )
+ * }
+ * ```
+ */
+export function usePageAccessCheck(pageId: string): boolean {
+  const { canAccessPage } = useAuth()
+  return canAccessPage(pageId)
 }

@@ -7,12 +7,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
 import {
-  authenticateToken,
-  requireRole,
-  requireAnyRole,
-  requirePermission,
-  requireAnyPermission
+  authenticateToken
 } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { auditMiddleware } from '../middleware/auditTrail';
 import type {
   BudgetPeriod,
@@ -87,7 +84,7 @@ const checkBudgetAccess = (action: 'read' | 'update' | 'delete' | 'create') => {
         }
 
         // Check budget status for certain actions
-        if (['update', 'delete'].includes(action) && budget.status === 'locked') {
+        if (['update', 'delete'].includes(action) && (budget as any).status === 'locked') {
           res.status(403).json({
             error: 'Budget locked',
             message: 'Cannot perform this action on a locked budget'
@@ -96,7 +93,7 @@ const checkBudgetAccess = (action: 'read' | 'update' | 'delete' | 'create') => {
         }
 
         // Check if user is the budget owner
-        if (budget.owner_id === userId) {
+        if ((budget as any).owner_id === userId) {
           return next();
         }
 
@@ -187,7 +184,10 @@ const budgetAllocationSchema = Joi.object({
  */
 router.get('/periods',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -246,13 +246,13 @@ router.get('/periods',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const periods: BudgetPeriodModel[] = await query
+      const periods: BudgetPeriodModel[] = (await query
         .orderBy(filters.sort_by, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetPeriodsResponse = {
         periods: periods.map(period => ({
@@ -284,7 +284,10 @@ router.get('/periods',
  */
 router.post('/periods',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_period_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -331,8 +334,8 @@ router.post('/periods',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetPeriod = {
         ...newPeriod,
@@ -359,7 +362,10 @@ router.post('/periods',
  */
 router.get('/categories',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -410,13 +416,13 @@ router.get('/categories',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const categories: BudgetCategoryModel[] = await query
+      const categories: BudgetCategoryModel[] = (await query
         .orderBy(filters.sort_by, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetCategoriesResponse = {
         categories: categories.map(category => ({
@@ -447,7 +453,10 @@ router.get('/categories',
  */
 router.post('/categories',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_category_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -499,8 +508,8 @@ router.post('/categories',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetCategory = {
         ...newCategory,
@@ -526,7 +535,10 @@ router.post('/categories',
  */
 router.get('/',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = req.user?.organization_id || req.user?.id;
@@ -581,13 +593,13 @@ router.get('/',
       }
 
       // Get total count
-      const [{ count }] = await countQuery;
+      const [{ count }] = await countQuery as any;
 
       // Apply pagination and sorting
-      const budgets: BudgetModel[] = await query
+      const budgets: BudgetModel[] = (await query
         .orderBy(`budgets.${filters.sort_by}`, filters.sort_order)
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as any;
 
       const response: BudgetsResponse = {
         budgets: budgets.map(budget => ({
@@ -617,7 +629,10 @@ router.get('/',
  */
 router.post('/',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   auditMiddleware('budget_create'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -682,8 +697,8 @@ router.post('/',
           organization_id: organizationId,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: Budget = {
         ...newBudget,
@@ -708,7 +723,10 @@ router.post('/',
  */
 router.get('/:id',
   authenticateToken,
-  requirePermission('finance:read'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'view:list',
+  }),
   checkBudgetAccess('read'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -718,7 +736,7 @@ router.get('/:id',
       const budget: BudgetModel = await db('budgets')
         .where('id', budgetId)
         .where('organization_id', organizationId)
-        .first();
+        .first() as any;
 
       if (!budget) {
         res.status(404).json({
@@ -751,7 +769,10 @@ router.get('/:id',
  */
 router.put('/:id',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   checkBudgetAccess('update'),
   auditMiddleware('budget_update'),
   async (req: Request, res: Response): Promise<void> => {
@@ -789,8 +810,8 @@ router.put('/:id',
         .update({
           ...updateData,
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: Budget = {
         ...updatedBudget,
@@ -815,7 +836,10 @@ router.put('/:id',
  */
 router.post('/:id/allocations',
   authenticateToken,
-  requirePermission('finance:write'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'update',
+  }),
   checkBudgetAccess('update'),
   auditMiddleware('budget_allocation_create'),
   async (req: Request, res: Response): Promise<void> => {
@@ -858,8 +882,8 @@ router.post('/:id/allocations',
           ...validatedData,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('*');
+        } as any)
+        .returning('*') as any;
 
       const response: BudgetAllocation = {
         ...newAllocation,
@@ -884,7 +908,10 @@ router.post('/:id/allocations',
  */
 router.delete('/periods/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   auditMiddleware('budget_period_delete'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -944,7 +971,10 @@ router.delete('/periods/:id',
  */
 router.delete('/categories/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   auditMiddleware('budget_category_delete'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -1004,7 +1034,10 @@ router.delete('/categories/:id',
  */
 router.delete('/:id',
   authenticateToken,
-  requirePermission('finance:admin'),
+  requireCerbosPermission({
+    resource: 'budget',
+    action: 'delete',
+  }),
   checkBudgetAccess('delete'),
   auditMiddleware('budget_delete'),
   async (req: Request, res: Response): Promise<void> => {

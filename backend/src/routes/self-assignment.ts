@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import db from '../config/database';
 import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { calculateFinalWage, getWageBreakdown } from '../utils/wage-calculator';
 
 const router = express.Router();
@@ -50,6 +51,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
+  body: any;
 }
 
 interface SelfAssignmentRequest {
@@ -58,13 +60,16 @@ interface SelfAssignmentRequest {
 }
 
 // POST /api/self-assignment - Allow referees to self-assign to available games (with restrictions)
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'create',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { game_id, position_id } = req.body as SelfAssignmentRequest;
     const user_id = req.user!.userId;
 
     // Get game details
-    const game = await db('games').where('id', game_id).first() as Game | undefined;
+    const game = await db('games').where('id', game_id).first() as unknown as Game | undefined;
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
@@ -78,7 +83,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
         'referee_levels.allowed_divisions'
       )
       .where('users.id', user_id)
-      .first() as User | undefined;
+      .first() as unknown as User | undefined;
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -109,7 +114,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     }
 
     // Check if position exists
-    const position = await db('positions').where('id', position_id).first() as Position | undefined;
+    const position = await db('positions').where('id', position_id).first() as unknown as Position | undefined;
     if (!position) {
       return res.status(404).json({ error: 'Position not found' });
     }
@@ -139,7 +144,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
       .where('game_id', game_id)
       .whereIn('status', ['pending', 'accepted'])
       .count('* as count')
-      .first() as { count: string };
+      .first() as unknown as { count: string };
 
     if (parseInt(currentAssignments.count) >= game.refs_needed) {
       return res.status(409).json({ error: 'Game has reached maximum number of referees' });
@@ -173,14 +178,14 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
       calculated_wage: finalWage
     };
 
-    const [assignment] = await db('game_assignments').insert(assignmentData).returning('*') as GameAssignment[];
+    const [assignment] = await db('game_assignments').insert(assignmentData as any).returning('*') as unknown as GameAssignment[];
 
     // Update game status
     const totalAssignments = await db('game_assignments')
       .where('game_id', game_id)
       .whereIn('status', ['pending', 'accepted'])
       .count('* as count')
-      .first() as { count: string };
+      .first() as unknown as { count: string };
 
     let gameStatus = 'unassigned';
     if (parseInt(totalAssignments.count) > 0 && parseInt(totalAssignments.count) < game.refs_needed) {
@@ -191,7 +196,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
 
     await db('games')
       .where('id', game_id)
-      .update({ status: gameStatus, updated_at: new Date() });
+      .update({ status: gameStatus, updated_at: new Date() } as any);
 
     res.status(201).json({
       success: true,
@@ -208,7 +213,10 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
 });
 
 // GET /api/self-assignment/available - Get games available for self-assignment
-router.get('/available', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/available', authenticateToken, requireCerbosPermission({
+  resource: 'assignment',
+  action: 'view',
+}), async (req: AuthenticatedRequest, res: Response) => {
   try {
     console.log('Starting available games endpoint');
     const user_id = req.user!.userId;
@@ -223,7 +231,7 @@ router.get('/available', authenticateToken, async (req: AuthenticatedRequest, re
         'referee_levels.allowed_divisions'
       )
       .where('users.id', user_id)
-      .first() as User | undefined;
+      .first() as unknown as User | undefined;
 
     console.log('Found user:', !!user);
 

@@ -59,7 +59,6 @@ export interface CreateRefereeData {
   phone?: string;
   max_distance?: number;
   wage_per_game?: number;
-  availability_strategy?: AvailabilityStrategy;
 }
 
 export class UserService extends BaseService<User> {
@@ -269,17 +268,14 @@ export class UserService extends BaseService<User> {
   }
 
   /**
-   * Get referee roles for a user (replaces user_referee_roles query)
+   * Get referee roles for a user
    * @param userId - The user ID
    * @returns Array of referee-related roles
    */
   async getUserRefereeRoles(userId: UUID): Promise<RefereeRole[]> {
     try {
-      // This replaces queries to the non-existent user_referee_roles table
       const roles = await (this.db('user_roles as ur') as any)
         .join('roles as r', 'ur.role_id', 'r.id')
-        .leftJoin('role_permissions as rp', 'r.id', 'rp.role_id')
-        .leftJoin('permissions as p', 'rp.permission_id', 'p.id')
         .where('ur.user_id', userId)
         .where('ur.is_active', true)
         .where('r.name', 'LIKE', '%Referee%')
@@ -288,18 +284,13 @@ export class UserService extends BaseService<User> {
           'r.name',
           'r.description',
           'ur.assigned_at',
-          (this.db.raw('COALESCE(ur.is_active, true) as is_active') as any),
-          (this.db.raw('json_agg(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL) as permissions') as any)
-        )
-        .groupBy('r.id', 'r.name', 'r.description', 'ur.assigned_at', 'ur.is_active');
+          (this.db.raw('COALESCE(ur.is_active, true) as is_active') as any)
+        );
 
-      // Transform permissions from array to object format
+      // Return roles without permissions since they're managed by Cerbos
       return roles.map((role: any) => ({
         ...role,
-        permissions: (role.permissions || []).reduce((acc: any, perm: string) => {
-          acc[perm] = true;
-          return acc;
-        }, {})
+        permissions: {} // Permissions managed by Cerbos
       }));
     } catch (error) {
       console.error(`Error getting referee roles for user ${userId}:`, error);
@@ -316,11 +307,9 @@ export class UserService extends BaseService<User> {
     try {
       const result = await (this.db('user_roles as ur') as any)
         .join('roles as r', 'ur.role_id', 'r.id')
-        .join('role_permissions as rp', 'r.id', 'rp.role_id')
-        .join('permissions as p', 'rp.permission_id', 'p.id')
         .where('ur.user_id', userId)
         .where('ur.is_active', true)
-        .where('p.name', 'mentorship.provide')
+        .whereIn('r.name', ['Mentorship Coordinator', 'Super Admin'])
         .first();
 
       return !!result;
@@ -339,11 +328,9 @@ export class UserService extends BaseService<User> {
     try {
       const result = await (this.db('user_roles as ur') as any)
         .join('roles as r', 'ur.role_id', 'r.id')
-        .join('role_permissions as rp', 'r.id', 'rp.role_id')
-        .join('permissions as p', 'rp.permission_id', 'p.id')
         .where('ur.user_id', userId)
         .where('ur.is_active', true)
-        .where('p.name', 'evaluations.create')
+        .whereIn('r.name', ['Senior Referee', 'Head Referee', 'Referee Coach', 'Super Admin'])
         .first();
 
       return !!result;
@@ -594,10 +581,9 @@ export class UserService extends BaseService<User> {
         is_available: true,
         max_distance: 25,
         wage_per_game: 0,
-        availability_strategy: AvailabilityStrategy.WHITELIST,
         ...refereeData,
         // Hash password if provided, otherwise set a temporary one
-        password_hash: refereeData.password 
+        password_hash: refereeData.password
           ? await bcrypt.hash(refereeData.password, 12)
           : await bcrypt.hash(`temp_password_${Date.now()}`, 12)
       };

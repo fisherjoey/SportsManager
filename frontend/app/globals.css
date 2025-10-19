@@ -54,6 +54,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 91%; /* Light gray border #E8E8E8 */
     --input: 0 0% 98%; /* Very light gray for inputs #FAFAFA */
+    --input-foreground: 0 0% 15%; /* Dark text for readability #262626 */
     --ring: 217 100% 38%; /* Cloudflare Blue focus ring */
 
     /* Chart colors - Cloudflare palette */
@@ -102,7 +103,8 @@
     --destructive: 0 72% 60%; /* Brighter red for dark mode */
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 25%; /* Dark border */
-    --input: 0 0% 20%;
+    --input: 217 33% 17%; /* Lighter dark gray for better contrast #2a3544 */
+    --input-foreground: 210 40% 98%; /* Near white for readability #f9fafb */
     --ring: 217 100% 60%; /* Cloudflare Blue ring */
 
     /* Chart colors - Cloudflare palette dark mode */
@@ -566,5 +568,54 @@
 
   .mentee-details li {
     @apply text-muted-foreground;
+  }
+
+  /* Login form shake animation */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+    20%, 40%, 60%, 80% { transform: translateX(8px); }
+  }
+
+  .animate-shake {
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  /* Smooth sidebar transitions */
+  [data-sidebar="sidebar"] {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Fixed sidebar container transitions */
+  .group.peer[data-state] > div:last-child {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sidebar inset should transition smoothly */
+  [data-sidebar="sidebar"] + * {
+    transition: margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Keep sidebar menu buttons with consistent left-aligned icons */
+  [data-sidebar="menu-button"] {
+    padding-left: 0.75rem !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Icons always stay in the same position */
+  [data-sidebar="menu-button"] > svg:first-child {
+    margin-right: 0.75rem;
+  }
+
+  /* Text slides in/out but icon stays put */
+  [data-sidebar="menu-button"] > span {
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .group[data-collapsible="icon"] [data-sidebar="menu-button"] > span {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
   }
 }

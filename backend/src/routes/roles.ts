@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 const router = express.Router();
 
@@ -35,7 +36,10 @@ const VALID_ROLES = ['admin', 'referee', 'referee_coach', 'evaluator'] as const;
 type ValidRole = typeof VALID_ROLES[number];
 
 // GET /api/roles/available - Get list of available roles
-router.get('/available', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/available', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view:available',
+}), async (req: Request, res: Response) => {
   try {
     // Return predefined roles for now - can be made dynamic later
     const availableRoles: Role[] = [
@@ -68,7 +72,11 @@ router.get('/available', authenticateToken, requireRole('admin'), async (req: Re
 });
 
 // PUT /api/roles/users/:userId - Update user roles (Admin only)
-router.put('/users/:userId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.put('/users/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'admin:update_user_roles',
+  getResourceId: (req: any) => req.params.userId,
+}), async (req: Request, res: Response) => {
   try {
     const { error, value } = updateRolesSchema.validate(req.body);
     if (error) {
@@ -88,21 +96,21 @@ router.put('/users/:userId', authenticateToken, requireRole('admin'), async (req
     }
 
     // Check if user exists
-    const user = await db('users').where('id', userId).first() as User | undefined;
+    const user = await (db as any)('users').where('id', userId).first() as User | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Update user roles
-    await db('users')
+    await (db as any)('users')
       .where('id', userId)
       .update({
         roles: JSON.stringify(roles), // Store as JSON string for PostgreSQL array handling
-        updated_at: db.fn.now()
+        updated_at: (db as any).fn.now()
       });
 
     // Fetch updated user
-    const updatedUser = await db('users')
+    const updatedUser = await (db as any)('users')
       .select('id', 'email', 'role', 'roles', 'name', 'created_at', 'updated_at')
       .where('id', userId)
       .first() as User;
@@ -123,11 +131,15 @@ router.put('/users/:userId', authenticateToken, requireRole('admin'), async (req
 });
 
 // GET /api/roles/users/:userId - Get user roles
-router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/users/:userId', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'admin:view_user_roles',
+  getResourceId: (req: any) => req.params.userId,
+}), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const user = await db('users')
+    const user = await (db as any)('users')
       .select('id', 'email', 'role', 'roles', 'name')
       .where('id', userId)
       .first() as User | undefined;

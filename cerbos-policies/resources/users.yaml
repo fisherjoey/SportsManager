@@ -1,0 +1,27 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for users resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "users"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    # Admin rules - full access within their organization
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    # Guest rules - no access
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

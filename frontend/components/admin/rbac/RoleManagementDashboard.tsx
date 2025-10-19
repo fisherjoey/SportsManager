@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
 import { Plus, Shield, Users, AlertCircle } from 'lucide-react'
-import { RoleEditor } from './RoleEditor'
+import { UnifiedRoleEditor } from './UnifiedRoleEditor'
 import { RoleCard } from './RoleCard'
 import { PermissionMatrix } from './PermissionMatrix'
 import { UserRoleManager } from './UserRoleManager'
@@ -21,6 +21,7 @@ interface Role {
   is_active: boolean
   user_count: number
   permission_count: number
+  pages?: string[]
   created_at: string
   updated_at: string
 }
@@ -37,13 +38,27 @@ export function RoleManagementDashboard() {
 
   const fetchRoles = async () => {
     try {
-      console.log('Fetching roles from /api/admin/roles');
+      console.log('Fetching roles from /api/admin/unified-roles');
       console.log('Token:', localStorage.getItem('auth_token')?.substring(0, 20) + '...');
-      
-      // Fetch all roles including inactive ones
-      const data = await apiClient.getRoles({ include_inactive: true })
-      console.log('Roles data:', data);
-      setRoles(data.data?.roles || [])
+
+      // Fetch all unified roles (includes permissions from Cerbos)
+      const data = await apiClient.getUnifiedRoles()
+      console.log('Unified roles data:', data);
+
+      // Transform unified roles to match existing role structure
+      const rolesArray = data.data?.roles || data.roles || [];
+      console.log('Roles array to transform:', rolesArray);
+
+      const transformedRoles = rolesArray.map(role => ({
+        ...role,
+        id: role.id || role.name, // Use actual ID if available, otherwise use name
+        is_active: role.is_active !== undefined ? role.is_active : true, // Keep existing is_active if present
+        user_count: role.user_count || role.userCount || 0,
+        permission_count: role.permission_count || role.permissionCount || 0 // Add permission_count field
+      }))
+
+      console.log('Transformed roles:', transformedRoles);
+      setRoles(transformedRoles)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load roles'
       toast({
@@ -67,9 +82,9 @@ export function RoleManagementDashboard() {
     }
   }
 
-  // Separate active and inactive roles
-  const activeRoles = roles.filter(role => role.is_active)
-  const inactiveRoles = roles.filter(role => !role.is_active)
+  // In unified system, all roles are considered active
+  const activeRoles = roles
+  const inactiveRoles: any[] = [] // No inactive roles in unified system
 
   useEffect(() => {
     fetchRoles()
@@ -102,7 +117,7 @@ export function RoleManagementDashboard() {
     if (!confirm(`Are you sure you want to delete the "${roleToDelete.name}" role?\n\nThis action cannot be undone.`)) return
 
     try {
-      const response = await apiClient.deleteRole(roleId)
+      const response = await apiClient.deleteUnifiedRole(roleToDelete.name)
 
       if (!response.success) {
         throw new Error(response.error || response.message || 'Failed to delete role')
@@ -135,41 +150,13 @@ export function RoleManagementDashboard() {
   }
 
   const handleToggleStatus = async (role: Role) => {
-    try {
-      const response = await apiClient.updateRoleStatus(role.id, !role.is_active)
-
-      if (!response.success) {
-        throw new Error(response.error || response.message || 'Failed to update role status')
-      }
-
-      const action = role.is_active ? 'deactivated' : 'activated'
-      toast({
-        title: '✅ Status Updated',
-        description: `"${role.name}" has been ${action}`,
-        duration: 3000
-      })
-      
-      fetchRoles()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update role status'
-      toast({
-        title: '❌ Status Update Failed',
-        description: (
-          <div className="mt-2">
-            <div className="font-semibold">Unable to update "{role.name}" status</div>
-            <div className="text-sm mt-1">{errorMessage}</div>
-            {errorMessage.includes('Super Admin') && (
-              <div className="text-xs mt-2">Super Admin role is protected and cannot be modified</div>
-            )}
-            {errorMessage.includes('system roles') && (
-              <div className="text-xs mt-2">System roles cannot be deactivated</div>
-            )}
-          </div>
-        ) as any,
-        variant: 'destructive',
-        duration: 6000
-      })
-    }
+    // Status toggling is not applicable in unified role system
+    // Roles either exist with permissions or they don't
+    toast({
+      title: 'ℹ️ Information',
+      description: 'Role status is managed through permissions. Edit the role to modify its permissions.',
+      duration: 4000
+    })
   }
 
   if (loading) {
@@ -280,7 +267,7 @@ export function RoleManagementDashboard() {
       </Card>
 
       {showEditor && (
-        <RoleEditor
+        <UnifiedRoleEditor
           role={selectedRole}
           open={showEditor}
           onClose={() => setShowEditor(false)}

@@ -1,0 +1,24 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "mentorship"
+  rules:
+    # Super Admin has full access to all actions
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    # Admin has specific permissions
+    - actions:
+        - view
+        - view:list
+        - view:details
+        - view:stats
+        - create
+        - update
+        - delete
+        - manage
+      effect: EFFECT_ALLOW
+      roles:
+        - admin

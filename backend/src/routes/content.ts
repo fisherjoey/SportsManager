@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import DOMPurify from 'isomorphic-dompurify';
 import db from '../config/database';
-import { authenticateToken  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { asyncHandler, ValidationError  } from '../middleware/errorHandling';
 
 // Helper function to generate slug from title
@@ -116,7 +117,10 @@ router.get('/items/slug/:slug', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/content/items - Create new content item
-router.post('/items', asyncHandler(async (req, res) => {
+router.post('/items', authenticateToken, requireCerbosPermission({
+  resource: 'content',
+  action: 'create',
+}), asyncHandler(async (req, res) => {
   const {
     title,
     content,
@@ -239,7 +243,11 @@ router.post('/items', asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/content/items/:id - Update content item
-router.put('/items/:id', asyncHandler(async (req, res) => {
+router.put('/items/:id', authenticateToken, requireCerbosPermission({
+  resource: 'content',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     title,
@@ -370,7 +378,11 @@ router.put('/items/:id', asyncHandler(async (req, res) => {
 }));
 
 // DELETE /api/content/items/:id - Delete content item
-router.delete('/items/:id', asyncHandler(async (req, res) => {
+router.delete('/items/:id', authenticateToken, requireCerbosPermission({
+  resource: 'content',
+  action: 'delete',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const { id } = req.params;
   
   // Check if content item exists

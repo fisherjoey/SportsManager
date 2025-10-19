@@ -1,0 +1,28 @@
+{
+  "app": {
+    "url": "http://localhost:3000",
+    "loginPath": "/",
+    "credentials": {
+      "email": "admin@refassign.com",
+      "password": "password"
+    },
+    "waitAfterLogin": 3000,
+    "waitBetweenPages": 2000,
+    "screenshotDelay": 1000
+  },
+  "routes": [
+    {"path": "/", "name": "Login Page", "requiresAuth": false, "viewports": ["desktop"]},
+    {"path": "/games", "name": "Games Management", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/admin/notifications/broadcast", "name": "Admin Broadcast Notifications", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/admin/permissions", "name": "Admin Permissions", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/admin/page-access", "name": "Admin Page Access", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/admin/audit-logs", "name": "Admin Audit Logs", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/budget", "name": "Budget Management", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/financial-dashboard", "name": "Financial Dashboard", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/financial-budgets", "name": "Financial Budgets", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/notifications", "name": "Notifications", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/settings/notifications", "name": "Notification Settings", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/resources", "name": "Resource Centre", "requiresAuth": true, "viewports": ["desktop"]},
+    {"path": "/demo/ai-assignments", "name": "AI Assignment Demo", "requiresAuth": true, "viewports": ["desktop"]}
+  ]
+}

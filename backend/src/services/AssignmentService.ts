@@ -70,6 +70,8 @@ export interface BulkUpdateData {
   assignment_id: UUID;
   status: AssignmentStatus;
   calculated_wage?: number;
+  decline_reason?: string;
+  decline_category?: string;
 }
 
 export interface BulkUpdateResult {
@@ -324,7 +326,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
 
       for (const updateData of updates) {
         try {
-          const { assignment_id, status, calculated_wage } = updateData;
+          const { assignment_id, status, calculated_wage, decline_reason, decline_category } = updateData;
 
           if (!assignment_id || !status) {
             results.updateErrors.push({
@@ -358,13 +360,23 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
           }
 
           // Prepare update data
-          const updateFields: Partial<AssignmentEntity> = {
+          const updateFields: any = {
             status,
             updated_at: new Date()
           };
 
           if (calculated_wage !== undefined) {
             updateFields.calculated_wage = calculated_wage;
+          }
+
+          // Add decline fields if status is declined
+          if (status === 'declined') {
+            if (decline_reason) {
+              updateFields.decline_reason = decline_reason;
+            }
+            if (decline_category) {
+              updateFields.decline_category = decline_category;
+            }
           }
 
           // Update assignment
@@ -431,26 +443,21 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
       // Build query with all necessary joins
       let query = (this.db as any)('game_assignments')
         .join('games', 'game_assignments.game_id', 'games.id')
-        .join('users', 'game_assignments.user_id', 'users.id')
-        .join('positions', 'game_assignments.position_id', 'positions.id')
+        .join('users', 'game_assignments.referee_id', 'users.id')
+        // .join('positions', 'game_assignments.position_id', 'positions.id') // TODO: positions table doesn't exist yet
         .join('teams as home_team', 'games.home_team_id', 'home_team.id')
         .join('teams as away_team', 'games.away_team_id', 'away_team.id')
-        .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id')
+        // .leftJoin('referee_levels', 'users.referee_level_id', 'referee_levels.id') // TODO: referee_levels table doesn't exist yet
         .select(
           'game_assignments.*',
-          'games.game_date',
-          'games.game_time',
-          'games.location',
-          'games.level',
-          'games.pay_rate',
-          'games.wage_multiplier',
-          'games.wage_multiplier_reason',
+          'games.*',
           'home_team.name as home_team_name',
           'away_team.name as away_team_name',
           'users.name as referee_name',
-          'users.email as referee_email',
-          'positions.name as position_name',
-          'referee_levels.name as referee_level'
+          'users.email as referee_email'
+          // TODO: add back when positions and referee_levels tables exist:
+          // 'positions.name as position_name',
+          // 'referee_levels.name as referee_level'
         );
 
       // Apply filters
@@ -458,7 +465,7 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
         query = query.where('game_assignments.game_id', filters.game_id);
       }
       if (filters.user_id) {
-        query = query.where('game_assignments.user_id', filters.user_id);
+        query = query.where('game_assignments.referee_id', filters.user_id);
       }
       if (filters.status) {
         query = query.where('game_assignments.status', filters.status);
@@ -472,10 +479,11 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
 
       // Get total count
       const countQuery = query.clone().clearSelect().count('* as total').first();
-      
+
       // Apply pagination and ordering
       query = query
         .orderBy('games.game_date', 'asc')
+        .orderBy('games.game_time', 'asc')
         .limit(limit)
         .offset(offset);
 

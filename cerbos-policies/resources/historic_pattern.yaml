@@ -1,0 +1,27 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for historic_pattern resource (assignment pattern analysis)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "historic_pattern"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['view:list', 'view:details', 'apply', 'analyze', 'delete']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

@@ -15,7 +15,8 @@ const router = express.Router();
 import Joi from 'joi';
 
 // Middleware imports
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter  } from '../utils/response-formatters';
 import { enhancedAsyncHandler  } from '../middleware/enhanced-error-handling';
 import { validateParams, validateQuery  } from '../middleware/validation';
@@ -168,7 +169,11 @@ function buildGamesQuery(menteeId, filters = {}) {
  */
 router.get('/:id/games',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage', 'games:read']),
+  requireCerbosPermission({
+    resource: 'mentee_game',
+    action: 'view:list',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(MenteeIdParamSchema),
   validateQuery(MenteeGameSchemas.gameFilters),
   enhancedAsyncHandler(async (req, res) => {
@@ -253,7 +258,11 @@ router.get('/:id/games',
  */
 router.get('/:id/games/upcoming',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage', 'games:read']),
+  requireCerbosPermission({
+    resource: 'mentee_game',
+    action: 'view:upcoming',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(MenteeIdParamSchema),
   validateQuery(MenteeGameSchemas.upcomingGames),
   enhancedAsyncHandler(async (req, res) => {
@@ -340,7 +349,11 @@ router.get('/:id/games/upcoming',
  */
 router.get('/:id/games/history',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage', 'games:read']),
+  requireCerbosPermission({
+    resource: 'mentee_game',
+    action: 'view:history',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(MenteeIdParamSchema),
   validateQuery(Joi.object({
     page: Joi.number().integer().min(1).default(1),
@@ -478,7 +491,11 @@ router.get('/:id/games/history',
  */
 router.get('/:id/games/analytics',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentee_game',
+    action: 'view:analytics',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(MenteeIdParamSchema),
   validateQuery(MenteeGameSchemas.analytics),
   enhancedAsyncHandler(async (req, res) => {

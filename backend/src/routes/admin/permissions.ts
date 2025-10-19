@@ -1,721 +1,244 @@
 /**
- * Admin Permission Management Routes
- *
- * Provides permission listing and management functionality for administrators:
- * - List all permissions with filtering
- * - Get permissions by category
- * - Search permissions
- * - Permission metadata and statistics
- * - Full CRUD operations for permissions
- * - Role permission assignment
+ * Admin Permissions Routes
+ * Provides endpoints for managing permissions in the system
  */
 
-import express, { Response, NextFunction } from 'express';
-import Joi from 'joi';
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission } from '../../middleware/auth';
-import { AuthenticatedRequest } from '../../types/auth.types';
+import express, { Request, Response, NextFunction } from 'express'
+import { authenticateToken } from '../../middleware/auth'
+import { requireCerbosPermission } from '../../middleware/requireCerbosPermission'
 
-import PermissionService from '../../services/PermissionService';
+const router = express.Router()
 
-// Initialize router
-const router = express.Router();
-
-// Initialize services
-const permissionService = new PermissionService();
-
-// Type definitions for permission management
-interface PermissionFilters {
-  activeOnly?: boolean;
-  useCache?: boolean;
+// Define available permissions categorized by resource
+const PERMISSIONS_BY_CATEGORY = {
+  'User Management': [
+    { id: 'user:view', name: 'View Users', description: 'View user information' },
+    { id: 'user:view:list', name: 'View User List', description: 'View list of all users' },
+    { id: 'user:view:details', name: 'View User Details', description: 'View detailed user information' },
+    { id: 'user:create', name: 'Create Users', description: 'Create new users' },
+    { id: 'user:update', name: 'Update Users', description: 'Update user information' },
+    { id: 'user:delete', name: 'Delete Users', description: 'Delete users from the system' },
+    { id: 'user:view:roles', name: 'View User Roles', description: 'View roles assigned to users' },
+    { id: 'user:manage', name: 'Manage Users', description: 'Full user management permissions' },
+  ],
+  'Role Management': [
+    { id: 'role:view', name: 'View Roles', description: 'View role information' },
+    { id: 'role:view:list', name: 'View Role List', description: 'View list of all roles' },
+    { id: 'role:view:details', name: 'View Role Details', description: 'View detailed role information' },
+    { id: 'role:create', name: 'Create Roles', description: 'Create new roles' },
+    { id: 'role:update', name: 'Update Roles', description: 'Update role information' },
+    { id: 'role:delete', name: 'Delete Roles', description: 'Delete roles from the system' },
+    { id: 'role:manage_permissions', name: 'Manage Role Permissions', description: 'Assign and remove permissions from roles' },
+    { id: 'role:manage_users', name: 'Manage Role Users', description: 'Assign and remove users from roles' },
+    { id: 'role:manage', name: 'Manage Roles', description: 'Full role management permissions' },
+  ],
+  'Game Management': [
+    { id: 'game:view', name: 'View Games', description: 'View game information' },
+    { id: 'game:view:list', name: 'View Game List', description: 'View list of all games' },
+    { id: 'game:view:details', name: 'View Game Details', description: 'View detailed game information' },
+    { id: 'game:create', name: 'Create Games', description: 'Create new games' },
+    { id: 'game:update', name: 'Update Games', description: 'Update game information' },
+    { id: 'game:delete', name: 'Delete Games', description: 'Delete games from the system' },
+    { id: 'game:manage', name: 'Manage Games', description: 'Full game management permissions' },
+  ],
+  'Assignment Management': [
+    { id: 'assignment:view', name: 'View Assignments', description: 'View assignment information' },
+    { id: 'assignment:view:list', name: 'View Assignment List', description: 'View list of all assignments' },
+    { id: 'assignment:view:details', name: 'View Assignment Details', description: 'View detailed assignment information' },
+    { id: 'assignment:create', name: 'Create Assignments', description: 'Create new assignments' },
+    { id: 'assignment:update', name: 'Update Assignments', description: 'Update assignment information' },
+    { id: 'assignment:delete', name: 'Delete Assignments', description: 'Delete assignments' },
+    { id: 'assignment:self', name: 'Self-Assign', description: 'Self-assign to games' },
+    { id: 'assignment:manage', name: 'Manage Assignments', description: 'Full assignment management permissions' },
+  ],
+  'Referee Management': [
+    { id: 'referee:view', name: 'View Referees', description: 'View referee information' },
+    { id: 'referee:view:list', name: 'View Referee List', description: 'View list of all referees' },
+    { id: 'referee:view:details', name: 'View Referee Details', description: 'View detailed referee information' },
+    { id: 'referee:create', name: 'Create Referees', description: 'Create new referee profiles' },
+    { id: 'referee:update', name: 'Update Referees', description: 'Update referee information' },
+    { id: 'referee:delete', name: 'Delete Referees', description: 'Delete referee profiles' },
+    { id: 'referee:evaluate', name: 'Evaluate Referees', description: 'Submit referee evaluations' },
+    { id: 'referee:manage', name: 'Manage Referees', description: 'Full referee management permissions' },
+  ],
+  'Team Management': [
+    { id: 'team:view', name: 'View Teams', description: 'View team information' },
+    { id: 'team:view:list', name: 'View Team List', description: 'View list of all teams' },
+    { id: 'team:view:details', name: 'View Team Details', description: 'View detailed team information' },
+    { id: 'team:create', name: 'Create Teams', description: 'Create new teams' },
+    { id: 'team:update', name: 'Update Teams', description: 'Update team information' },
+    { id: 'team:delete', name: 'Delete Teams', description: 'Delete teams' },
+    { id: 'team:manage', name: 'Manage Teams', description: 'Full team management permissions' },
+  ],
+  'League Management': [
+    { id: 'league:view', name: 'View Leagues', description: 'View league information' },
+    { id: 'league:view:list', name: 'View League List', description: 'View list of all leagues' },
+    { id: 'league:view:details', name: 'View League Details', description: 'View detailed league information' },
+    { id: 'league:create', name: 'Create Leagues', description: 'Create new leagues' },
+    { id: 'league:update', name: 'Update Leagues', description: 'Update league information' },
+    { id: 'league:delete', name: 'Delete Leagues', description: 'Delete leagues' },
+    { id: 'league:manage', name: 'Manage Leagues', description: 'Full league management permissions' },
+  ],
+  'Financial Management': [
+    { id: 'financial:view', name: 'View Financial Data', description: 'View financial information' },
+    { id: 'financial:create', name: 'Create Financial Records', description: 'Create financial records' },
+    { id: 'financial:update', name: 'Update Financial Records', description: 'Update financial information' },
+    { id: 'financial:delete', name: 'Delete Financial Records', description: 'Delete financial records' },
+    { id: 'financial:approve', name: 'Approve Financial Transactions', description: 'Approve financial transactions' },
+    { id: 'financial:manage', name: 'Manage Finances', description: 'Full financial management permissions' },
+    { id: 'expense:view', name: 'View Expenses', description: 'View expense records' },
+    { id: 'expense:create', name: 'Create Expenses', description: 'Create expense records' },
+    { id: 'expense:approve', name: 'Approve Expenses', description: 'Approve expense requests' },
+    { id: 'budget:view', name: 'View Budgets', description: 'View budget information' },
+    { id: 'budget:manage', name: 'Manage Budgets', description: 'Create and manage budgets' },
+  ],
+  'Organization Management': [
+    { id: 'organization:view', name: 'View Organization', description: 'View organization information' },
+    { id: 'organization:update', name: 'Update Organization', description: 'Update organization settings' },
+    { id: 'organization:manage', name: 'Manage Organization', description: 'Full organization management' },
+    { id: 'organization:view:analytics', name: 'View Analytics', description: 'View organizational analytics' },
+    { id: 'employee:view', name: 'View Employees', description: 'View employee information' },
+    { id: 'employee:create', name: 'Create Employees', description: 'Create employee records' },
+    { id: 'employee:update', name: 'Update Employees', description: 'Update employee information' },
+    { id: 'employee:delete', name: 'Delete Employees', description: 'Delete employee records' },
+    { id: 'employee:manage', name: 'Manage Employees', description: 'Full employee management' },
+  ],
+  'System Administration': [
+    { id: 'system:admin', name: 'System Admin', description: 'Full system administration access' },
+    { id: 'system:manage', name: 'System Management', description: 'Manage system settings' },
+    { id: 'system:view:logs', name: 'View System Logs', description: 'View system log files' },
+    { id: 'system:view:audit', name: 'View Audit Logs', description: 'View audit trail logs' },
+    { id: 'cerbos_policy:view', name: 'View Cerbos Policies', description: 'View Cerbos authorization policies' },
+    { id: 'cerbos_policy:manage', name: 'Manage Cerbos Policies', description: 'Create and update Cerbos policies' },
+    { id: 'maintenance:execute', name: 'Execute Maintenance', description: 'Run system maintenance tasks' },
+  ],
 }
 
-interface SearchOptions {
-  category?: string;
-  activeOnly?: boolean;
-  limit?: number;
-}
-
-interface PermissionStatistics {
-  total: number;
-  categories: number;
-}
-
-interface CategorizedPermissions {
-  [category: string]: any[];
-}
-
-interface PermissionCategory {
-  category: string | null;
-}
-
-interface BulkPermissionResults {
-  [userId: string]: boolean;
-}
-
-interface BulkPermissionSummary {
-  total_users: number;
-  users_with_permission: number;
-  users_without_permission: number;
-}
-
-interface CacheStats {
-  total_entries?: number;
-  hit_rate?: number;
-  memory_usage?: string;
-  [key: string]: any;
-}
-
-interface PermissionCreateData {
-  name: string;
-  code?: string;
-  description?: string;
-  category?: string;
-  risk_level?: 'low' | 'medium' | 'high' | 'critical';
-  resource_type?: string;
-  action?: string;
-}
-
-interface PermissionUpdateData {
-  name?: string;
-  code?: string;
-  description?: string;
-  category?: string;
-  risk_level?: 'low' | 'medium' | 'high' | 'critical';
-  resource_type?: string;
-  action?: string;
-}
-
-interface UserInfo {
-  id: string;
-  name: string;
-  email: string;
-  active: boolean;
-}
-
-interface RoleInfo {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-// Validation schemas
-const searchSchema = Joi.object({
-  query: Joi.string().min(2).max(100).required(),
-  category: Joi.string().max(50),
-  active_only: Joi.boolean(),
-  limit: Joi.number().integer().min(1).max(100)
-});
-
-const userPermissionsSchema = Joi.object({
-  user_ids: Joi.array().items(Joi.string().uuid()).required().min(1).max(50)
-});
-
-const createPermissionSchema = Joi.object({
-  name: Joi.string().min(3).max(100).required(),
-  code: Joi.string().min(3).max(100),
-  description: Joi.string().max(500),
-  category: Joi.string().max(50),
-  risk_level: Joi.string().valid('low', 'medium', 'high', 'critical'),
-  resource_type: Joi.string().max(50),
-  action: Joi.string().max(50)
-});
-
-const updatePermissionSchema = Joi.object({
-  name: Joi.string().min(3).max(100),
-  code: Joi.string().min(3).max(100),
-  description: Joi.string().max(500),
-  category: Joi.string().max(50),
-  risk_level: Joi.string().valid('low', 'medium', 'high', 'critical'),
-  resource_type: Joi.string().max(50),
-  action: Joi.string().max(50)
-}).min(1);
-
-const assignPermissionsSchema = Joi.object({
-  permission_ids: Joi.array().items(Joi.string().uuid()).required()
-});
-
-// ===== ROUTES WITHOUT PARAMETERS FIRST =====
+// Flatten permissions for easier access
+const ALL_PERMISSIONS = Object.values(PERMISSIONS_BY_CATEGORY).flat()
 
 /**
- * GET /api/admin/permissions - Get all permissions with optional filtering
- * Requires: permissions:read or system:admin permission
+ * GET /api/admin/permissions - Get all available permissions
  */
-router.get('/', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { active_only = 'true', use_cache = 'true' } = (req as any).query as {
-      active_only?: string;
-      use_cache?: string;
-    };
-
-    const filters: PermissionFilters = {
-      activeOnly: active_only === 'true',
-      useCache: use_cache === 'true'
-    };
-
-    const permissions: CategorizedPermissions = await permissionService.getPermissionsByCategory(filters);
-
     // Calculate statistics
-    const stats: PermissionStatistics = Object.keys(permissions).reduce((acc, category) => {
-      acc.total += permissions[category].length;
-      acc.categories++;
-      return acc;
-    }, { total: 0, categories: 0 });
+    const statistics = {
+      total: ALL_PERMISSIONS.length,
+      categories: Object.keys(PERMISSIONS_BY_CATEGORY).length,
+    }
 
     res.json({
       success: true,
       data: {
-        permissions,
-        statistics: stats
+        permissions: PERMISSIONS_BY_CATEGORY,
+        statistics,
+        categories: Object.keys(PERMISSIONS_BY_CATEGORY),
       },
       message: 'Permissions retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting permissions:', error);
+    })
+  } catch (error) {
+    console.error('Error retrieving permissions:', error)
     res.status(500).json({
       error: 'Failed to retrieve permissions',
-      details: error.message
-    });
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
   }
-});
+})
 
 /**
- * POST /api/admin/permissions - Create a new permission
- * Requires: system:admin permission
+ * GET /api/admin/permissions/flat - Get all permissions as a flat list
  */
-router.post('/', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/flat', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { error, value } = createPermissionSchema.validate((req as any).body);
-    if (error) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.details[0].message
-      });
-      return;
-    }
-
-    const permissionData = value as PermissionCreateData;
-    const permission = await permissionService.createPermission(permissionData);
-
-    res.status(201).json({
-      success: true,
-      data: { permission },
-      message: 'Permission created successfully'
-    });
-  } catch (error: any) {
-    console.error('Error creating permission:', error);
-    if (error.message.includes('already exists')) {
-      res.status(409).json({
-        error: 'Permission already exists',
-        details: error.message
-      });
-    } else {
-      res.status(500).json({
-        error: 'Failed to create permission',
-        details: error.message
-      });
-    }
-  }
-});
-
-/**
- * GET /api/admin/permissions/categories - Get unique permission categories
- * Requires: permissions:read or system:admin permission
- */
-router.get('/categories', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { active_only = 'true' } = (req as any).query as { active_only?: string };
-
-    const query = permissionService.db('permissions')
-      .distinct('category')
-      .orderBy('category');
-
-    if (active_only === 'true') {
-      query.where('active', true);
-    }
-
-    const results: PermissionCategory[] = await query;
-    const categories: string[] = results.map((row: PermissionCategory) => row.category || 'uncategorized');
-
-    res.json({
-      success: true,
-      data: { categories },
-      message: 'Categories retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting categories:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve categories',
-      details: error.message
-    });
-  }
-});
-
-/**
- * POST /api/admin/permissions/search - Search permissions
- */
-router.post('/search', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { error, value } = searchSchema.validate((req as any).body);
-    if (error) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.details[0].message
-      });
-      return;
-    }
-
-    const { query, category, active_only = true, limit = 50 } = value;
-
-    const searchOptions: SearchOptions = {
-      category,
-      activeOnly: active_only,
-      limit
-    };
-
-    const permissions = await permissionService.searchPermissions(query, searchOptions);
-
     res.json({
       success: true,
       data: {
-        query,
-        permissions,
-        count: permissions.length,
-        limited: permissions.length === limit
+        permissions: ALL_PERMISSIONS,
+        total: ALL_PERMISSIONS.length,
       },
-      message: 'Permission search completed'
-    });
-  } catch (error: any) {
-    console.error('Error searching permissions:', error);
+      message: 'Permissions retrieved successfully'
+    })
+  } catch (error) {
+    console.error('Error retrieving permissions:', error)
     res.status(500).json({
-      error: 'Failed to search permissions',
-      details: error.message
-    });
+      error: 'Failed to retrieve permissions',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
   }
-});
+})
 
 /**
- * GET /api/admin/permissions/cache/stats - Get permission cache statistics
+ * GET /api/admin/permissions/category/:category - Get permissions by category
  */
-router.get('/cache/stats', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/category/:category', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
-    const stats: CacheStats = permissionService.getCacheStats();
+    const { category } = req.params
+    const permissions = PERMISSIONS_BY_CATEGORY[category as keyof typeof PERMISSIONS_BY_CATEGORY]
 
-    res.json({
-      success: true,
-      data: { cache_stats: stats },
-      message: 'Cache statistics retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting cache stats:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve cache statistics',
-      details: error.message
-    });
-  }
-});
-
-/**
- * DELETE /api/admin/permissions/cache - Clear permission cache
- */
-router.delete('/cache', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { user_id } = (req as any).query as { user_id?: string };
-
-    if (user_id) {
-      permissionService.invalidateUserCache(user_id);
-    } else {
-      permissionService.invalidateAllCaches();
+    if (!permissions) {
+      res.status(404).json({
+        error: 'Category not found',
+        details: `Permission category "${category}" does not exist`
+      })
+      return
     }
-
-    res.json({
-      success: true,
-      message: user_id
-        ? `Cache cleared for user ${user_id}`
-        : 'All caches cleared successfully'
-    });
-  } catch (error: any) {
-    console.error('Error clearing cache:', error);
-    res.status(500).json({
-      error: 'Failed to clear cache',
-      details: error.message
-    });
-  }
-});
-
-/**
- * POST /api/admin/permissions/users/bulk-check - Bulk permission check for users
- */
-router.post('/users/bulk-check', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { error, value } = userPermissionsSchema.validate((req as any).body);
-    if (error) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.details[0].message
-      });
-      return;
-    }
-
-    const { user_ids } = value;
-    const { permission } = (req as any).query as { permission?: string };
-
-    if (!permission) {
-      res.status(400).json({
-        error: 'Permission parameter is required'
-      });
-      return;
-    }
-
-    const results: BulkPermissionResults = await permissionService.bulkPermissionCheck(user_ids, permission);
-
-    const summary: BulkPermissionSummary = {
-      total_users: user_ids.length,
-      users_with_permission: Object.values(results).filter(Boolean).length,
-      users_without_permission: Object.values(results).filter(result => !result).length
-    };
-
-    res.json({
-      success: true,
-      data: {
-        permission,
-        results,
-        summary
-      },
-      message: 'Bulk permission check completed'
-    });
-  } catch (error: any) {
-    console.error('Error in bulk permission check:', error);
-    res.status(500).json({
-      error: 'Failed to perform bulk permission check',
-      details: error.message
-    });
-  }
-});
-
-// ===== ROUTES WITH SPECIFIC PATH PARAMETERS =====
-
-/**
- * GET /api/admin/permissions/category/:category - Get permissions for specific category
- * Requires: permissions:read or system:admin permission
- */
-router.get('/category/:category', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { category } = (req as any).params;
-    const { active_only = 'true' } = (req as any).query as { active_only?: string };
-
-    const permissions = await permissionService.findWhere(
-      { category },
-      {
-        orderBy: 'name',
-        orderDirection: 'asc'
-      }
-    );
-
-    const filteredPermissions = active_only === 'true'
-      ? permissions.filter((p: any) => p.active)
-      : permissions;
 
     res.json({
       success: true,
       data: {
         category,
-        permissions: filteredPermissions,
-        count: filteredPermissions.length
-      },
-      message: 'Category permissions retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting category permissions:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve category permissions',
-      details: error.message
-    });
-  }
-});
-
-/**
- * GET /api/admin/permissions/users/:userId - Get user's permissions with details
- */
-router.get('/users/:userId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { userId } = (req as any).params;
-    const { by_category = 'false', include_roles = 'false' } = (req as any).query as {
-      by_category?: string;
-      include_roles?: string;
-    };
-
-    let permissions: any;
-
-    if (by_category === 'true') {
-      permissions = await permissionService.getUserPermissionsByCategory(userId);
-    } else if (include_roles === 'true') {
-      permissions = await permissionService.getUserPermissionDetails(userId);
-    } else {
-      permissions = await permissionService.getUserPermissions(userId);
-    }
-
-    // Get user info
-    const user: UserInfo | null = await permissionService.db('users')
-      .select('id', 'name', 'email', 'active')
-      .where('id', userId)
-      .first();
-
-    if (!user) {
-      res.status(404).json({
-        error: 'User not found'
-      });
-      return;
-    }
-
-    const permissionCount = Array.isArray(permissions)
-      ? permissions.length
-      : Object.values(permissions).flat().length;
-
-    res.json({
-      success: true,
-      data: {
-        user,
         permissions,
-        count: permissionCount
+        count: permissions.length,
       },
-      message: 'User permissions retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting user permissions:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({
-        error: 'User not found',
-        details: error.message
-      });
-    } else {
-      res.status(500).json({
-        error: 'Failed to retrieve user permissions',
-        details: error.message
-      });
-    }
-  }
-});
-
-/**
- * GET /api/admin/permissions/roles/:roleId - Get permissions for a role
- * Requires: permissions:read or system:admin permission
- */
-router.get('/roles/:roleId', authenticateToken, requireAnyPermission(['permissions:read', 'system:admin']), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { roleId } = (req as any).params;
-    const permissions = await permissionService.getRolePermissions(roleId);
-
-    res.json({
-      success: true,
-      data: {
-        role_id: roleId,
-        permissions,
-        count: permissions.length
-      },
-      message: 'Role permissions retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting role permissions:', error);
+      message: 'Permissions retrieved successfully'
+    })
+  } catch (error) {
+    console.error('Error retrieving permissions by category:', error)
     res.status(500).json({
-      error: 'Failed to retrieve role permissions',
-      details: error.message
-    });
+      error: 'Failed to retrieve permissions',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
   }
-});
+})
 
 /**
- * POST /api/admin/permissions/roles/:roleId - Assign permissions to a role
- * Requires: system:admin permission
+ * GET /api/admin/permissions/categories - Get all permission categories
  */
-router.post('/roles/:roleId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+router.get('/categories', authenticateToken, requireCerbosPermission({
+  resource: 'role',
+  action: 'view',
+}), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { error, value } = assignPermissionsSchema.validate((req as any).body);
-    if (error) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.details[0].message
-      });
-      return;
-    }
-
-    const { roleId } = (req as any).params;
-    const { permission_ids } = value;
-
-    const permissions = await permissionService.assignPermissionsToRole(roleId, permission_ids);
+    const categories = Object.keys(PERMISSIONS_BY_CATEGORY).map(category => ({
+      name: category,
+      count: PERMISSIONS_BY_CATEGORY[category as keyof typeof PERMISSIONS_BY_CATEGORY].length,
+    }))
 
     res.json({
       success: true,
       data: {
-        role_id: roleId,
-        permissions,
-        count: permissions.length
+        categories,
+        total: categories.length,
       },
-      message: 'Permissions assigned to role successfully'
-    });
-  } catch (error: any) {
-    console.error('Error assigning permissions to role:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({
-        error: 'Role not found',
-        details: error.message
-      });
-    } else {
-      res.status(500).json({
-        error: 'Failed to assign permissions to role',
-        details: error.message
-      });
-    }
-  }
-});
-
-// ===== GENERIC PARAMETER ROUTES LAST =====
-
-/**
- * GET /api/admin/permissions/:permissionId - Get specific permission details
- */
-router.get('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { permissionId } = (req as any).params;
-
-    const permission = await permissionService.findById(permissionId);
-
-    if (!permission) {
-      res.status(404).json({
-        error: 'Permission not found'
-      });
-      return;
-    }
-
-    // Get roles that have this permission
-    const rolesWithPermission: RoleInfo[] = await permissionService.db('roles')
-      .join('role_permissions', 'roles.id', 'role_permissions.role_id')
-      .where('role_permissions.permission_id', permissionId)
-      .where('roles.is_active', true)
-      .select('roles.id', 'roles.name', 'roles.description')
-      .orderBy('roles.name');
-
-    // Get count of users with this permission (through roles)
-    const userCount = await permissionService.db('users')
-      .join('user_roles', 'users.id', 'user_roles.user_id')
-      .join('role_permissions', 'user_roles.role_id', 'role_permissions.role_id')
-      .where('role_permissions.permission_id', permissionId)
-      .where('users.active', true)
-      .countDistinct('users.id as count')
-      .first();
-
-    res.json({
-      success: true,
-      data: {
-        permission: {
-          ...permission,
-          roles: rolesWithPermission,
-          user_count: parseInt(userCount.count) || 0
-        }
-      },
-      message: 'Permission details retrieved successfully'
-    });
-  } catch (error: any) {
-    console.error('Error getting permission details:', error);
+      message: 'Permission categories retrieved successfully'
+    })
+  } catch (error) {
+    console.error('Error retrieving permission categories:', error)
     res.status(500).json({
-      error: 'Failed to retrieve permission details',
-      details: error.message
-    });
+      error: 'Failed to retrieve permission categories',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
   }
-});
+})
 
-/**
- * PUT /api/admin/permissions/:permissionId - Update a permission
- * Requires: system:admin permission
- */
-router.put('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { error, value } = updatePermissionSchema.validate((req as any).body);
-    if (error) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.details[0].message
-      });
-      return;
-    }
-
-    const { permissionId } = (req as any).params;
-    const updateData = value as PermissionUpdateData;
-    const permission = await permissionService.updatePermission(permissionId, updateData);
-
-    res.json({
-      success: true,
-      data: { permission },
-      message: 'Permission updated successfully'
-    });
-  } catch (error: any) {
-    console.error('Error updating permission:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({
-        error: 'Permission not found',
-        details: error.message
-      });
-    } else if (error.message.includes('already exists')) {
-      res.status(409).json({
-        error: 'Permission with this name or code already exists',
-        details: error.message
-      });
-    } else {
-      res.status(500).json({
-        error: 'Failed to update permission',
-        details: error.message
-      });
-    }
-  }
-});
-
-/**
- * DELETE /api/admin/permissions/:permissionId - Delete a permission
- * Requires: system:admin permission
- */
-router.delete('/:permissionId', authenticateToken, requireRole('admin'), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { permissionId } = (req as any).params;
-
-    // Don't allow deletion of core permissions
-    const corePermissions = [
-      'system:admin',
-      'permissions:read',
-      'permissions:write',
-      'roles:read',
-      'roles:write',
-      'users:read',
-      'users:write'
-    ];
-
-    const permission = await permissionService.getPermission(permissionId);
-    if (permission && corePermissions.includes(permission.code)) {
-      res.status(403).json({
-        error: 'Cannot delete core system permission',
-        details: `The permission "${permission.code}" is a core system permission and cannot be deleted`
-      });
-      return;
-    }
-
-    await permissionService.deletePermission(permissionId);
-
-    res.json({
-      success: true,
-      message: 'Permission deleted successfully'
-    });
-  } catch (error: any) {
-    console.error('Error deleting permission:', error);
-    if (error.message.includes('not found')) {
-      res.status(404).json({
-        error: 'Permission not found',
-        details: error.message
-      });
-    } else {
-      res.status(500).json({
-        error: 'Failed to delete permission',
-        details: error.message
-      });
-    }
-  }
-});
-
-export default router;
+export default router

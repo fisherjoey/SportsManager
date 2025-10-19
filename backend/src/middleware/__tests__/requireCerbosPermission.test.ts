@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedUser } from '../../types/auth.types';
 import { UserRole } from '../../types/index';
 
+
 const mockCheckPermission = jest.fn();
 
 jest.mock('../../services/CerbosAuthService', () => {
@@ -52,7 +53,8 @@ describe('requireCerbosPermission middleware', () => {
     },
     roles: [{
       id: 'role-123',
-      name: 'assignor',
+      name: 'Assignor',
+      code: 'assignor',
       description: 'Game assignor role',
       is_system: false,
       is_active: true,
@@ -90,8 +92,6 @@ describe('requireCerbosPermission middleware', () => {
       },
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
-      created_by: 'admin-123',
-      updated_by: 'admin-123',
     }],
   };
 
@@ -610,6 +610,295 @@ describe('requireCerbosPermission middleware', () => {
       const duration = Date.now() - start;
 
       expect(duration).toBeLessThan(50);
+    });
+  });
+
+  describe('Super Admin Bypass - RoleEntity Type Safety', () => {
+    it('should bypass permission check for super admin with RoleEntity name "Super Admin"', async () => {
+      const superAdminRole = {
+        id: 'role-super-admin',
+        name: 'Super Admin',
+        code: 'super_admin',
+        description: 'Super Administrator role',
+        is_system: true,
+        is_active: true,
+        priority: 100,
+        permissions: [],
+        resource_permissions: {},
+        settings: {
+          advanced: {
+            canManageOwnProfile: true,
+            canViewOwnAssignments: true,
+            canModifyAvailability: true,
+            canViewPayments: true,
+            requireApprovalForAssignments: false,
+            maxAssignmentsPerWeek: null,
+            allowConflictingAssignments: false,
+            canSelfAssign: true,
+          },
+          profile: {
+            visibility: 'public' as const,
+            showContactInfo: true,
+            showLocation: true,
+            showExperience: true,
+            showStats: true,
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: true,
+            assignmentReminders: true,
+            scheduleUpdates: true,
+          },
+        },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockRequest.user = {
+        ...mockUser,
+        roles: [superAdminRole],
+      };
+
+      const middleware = requireCerbosPermission({
+        resource: 'game',
+        action: 'delete',
+      });
+
+      await middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      expect(nextFunction).toHaveBeenCalled();
+      expect(mockCheckPermission).not.toHaveBeenCalled();
+    });
+
+    it('should bypass permission check for super admin with RoleEntity code "super_admin"', async () => {
+      const superAdminRole = {
+        id: 'role-super-admin',
+        name: 'Super Administrator',
+        code: 'super_admin',
+        description: 'Super Administrator role',
+        is_system: true,
+        is_active: true,
+        priority: 100,
+        permissions: [],
+        resource_permissions: {},
+        settings: {
+          advanced: {
+            canManageOwnProfile: true,
+            canViewOwnAssignments: true,
+            canModifyAvailability: true,
+            canViewPayments: true,
+            requireApprovalForAssignments: false,
+            maxAssignmentsPerWeek: null,
+            allowConflictingAssignments: false,
+            canSelfAssign: true,
+          },
+          profile: {
+            visibility: 'public' as const,
+            showContactInfo: true,
+            showLocation: true,
+            showExperience: true,
+            showStats: true,
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: true,
+            assignmentReminders: true,
+            scheduleUpdates: true,
+          },
+        },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockRequest.user = {
+        ...mockUser,
+        roles: [superAdminRole],
+      };
+
+      const middleware = requireCerbosPermission({
+        resource: 'game',
+        action: 'delete',
+      });
+
+      await middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      expect(nextFunction).toHaveBeenCalled();
+      expect(mockCheckPermission).not.toHaveBeenCalled();
+    });
+
+    it('should NOT bypass permission check for non-super-admin RoleEntity objects', async () => {
+      const adminRole = {
+        id: 'role-admin',
+        name: 'Admin',
+        code: 'admin',
+        description: 'Administrator role',
+        is_system: true,
+        is_active: true,
+        priority: 50,
+        permissions: [],
+        resource_permissions: {},
+        settings: {
+          advanced: {
+            canManageOwnProfile: true,
+            canViewOwnAssignments: true,
+            canModifyAvailability: true,
+            canViewPayments: true,
+            requireApprovalForAssignments: false,
+            maxAssignmentsPerWeek: null,
+            allowConflictingAssignments: false,
+            canSelfAssign: true,
+          },
+          profile: {
+            visibility: 'public' as const,
+            showContactInfo: true,
+            showLocation: true,
+            showExperience: true,
+            showStats: true,
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: true,
+            assignmentReminders: true,
+            scheduleUpdates: true,
+          },
+        },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockRequest.user = {
+        ...mockUser,
+        roles: [adminRole],
+      };
+
+      mockCheckPermission.mockResolvedValue({
+        allowed: true,
+      });
+
+      const middleware = requireCerbosPermission({
+        resource: 'game',
+        action: 'delete',
+      });
+
+      await middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      expect(mockCheckPermission).toHaveBeenCalled();
+    });
+
+    it('should handle mixed RoleEntity array with super admin', async () => {
+      const superAdminRole = {
+        id: 'role-super-admin',
+        name: 'Super Admin',
+        code: 'super_admin',
+        description: 'Super Administrator role',
+        is_system: true,
+        is_active: true,
+        priority: 100,
+        permissions: [],
+        resource_permissions: {},
+        settings: {
+          advanced: {
+            canManageOwnProfile: true,
+            canViewOwnAssignments: true,
+            canModifyAvailability: true,
+            canViewPayments: true,
+            requireApprovalForAssignments: false,
+            maxAssignmentsPerWeek: null,
+            allowConflictingAssignments: false,
+            canSelfAssign: true,
+          },
+          profile: {
+            visibility: 'public' as const,
+            showContactInfo: true,
+            showLocation: true,
+            showExperience: true,
+            showStats: true,
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: true,
+            assignmentReminders: true,
+            scheduleUpdates: true,
+          },
+        },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      const adminRole = {
+        id: 'role-admin',
+        name: 'Admin',
+        code: 'admin',
+        description: 'Administrator role',
+        is_system: true,
+        is_active: true,
+        priority: 50,
+        permissions: [],
+        resource_permissions: {},
+        settings: {
+          advanced: {
+            canManageOwnProfile: true,
+            canViewOwnAssignments: true,
+            canModifyAvailability: true,
+            canViewPayments: true,
+            requireApprovalForAssignments: false,
+            maxAssignmentsPerWeek: null,
+            allowConflictingAssignments: false,
+            canSelfAssign: true,
+          },
+          profile: {
+            visibility: 'public' as const,
+            showContactInfo: true,
+            showLocation: true,
+            showExperience: true,
+            showStats: true,
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: true,
+            assignmentReminders: true,
+            scheduleUpdates: true,
+          },
+        },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockRequest.user = {
+        ...mockUser,
+        roles: [adminRole, superAdminRole],
+      };
+
+      const middleware = requireCerbosPermission({
+        resource: 'game',
+        action: 'delete',
+      });
+
+      await middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      expect(nextFunction).toHaveBeenCalled();
+      expect(mockCheckPermission).not.toHaveBeenCalled();
     });
   });
 });

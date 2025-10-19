@@ -5,7 +5,7 @@ derivedRoles:
   name: common_roles
   definitions:
     - name: owner
-      parentRoles: ["assignor", "admin"]
+      parentRoles: ["assignor", "admin", "super_admin"]
       condition:
         match:
           expr: request.resource.attr.createdBy == request.principal.id
@@ -23,10 +23,16 @@ derivedRoles:
           expr: request.resource.attr.regionId in request.principal.attr.regionIds
 
     - name: organization_admin
-      parentRoles: ["admin"]
+      parentRoles: ["admin", "super_admin"]
       condition:
         match:
           all:
             of:
               - expr: request.principal.attr.organizationId != null
               - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - name: system_admin
+      parentRoles: ["super_admin"]
+      condition:
+        match:
+          expr: "true"  # Super admins always have system-level access

@@ -3,8 +3,8 @@
  * @description TypeScript AI configuration with comprehensive type safety and validation
  */
 
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // AI Provider types
 export type AIProvider = 'openai' | 'deepseek' | 'auto';

@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter  } from '../utils/response-formatters';
 import { enhancedAsyncHandler  } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery  } from '../middleware/validation';
@@ -51,8 +52,12 @@ const IdParamSchema = Joi.object({
 });
 
 // GET /api/referee-roles - Get all referee roles
-router.get('/', 
+router.get('/',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'view:list',
+  }),
   enhancedAsyncHandler(async (req, res) => {
     const { include_inactive } = req.query;
     
@@ -81,6 +86,11 @@ router.get('/',
 // GET /api/referee-roles/:id - Get specific referee role
 router.get('/:id',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const roleId = req.params.id;
@@ -121,7 +131,10 @@ router.get('/:id',
 // POST /api/referee-roles - Create new referee role (admin only)
 router.post('/',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'create',
+  }),
   validateBody(RoleSchema),
   enhancedAsyncHandler(async (req, res) => {
     const roleData = req.body;
@@ -165,7 +178,11 @@ router.post('/',
 // PUT /api/referee-roles/:id - Update referee role (admin only)
 router.put('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateBody(RoleSchema),
   enhancedAsyncHandler(async (req, res) => {
@@ -217,7 +234,11 @@ router.put('/:id',
 // DELETE /api/referee-roles/:id - Delete referee role (admin only)
 router.delete('/:id',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const roleId = req.params.id;
@@ -260,7 +281,10 @@ router.delete('/:id',
 // POST /api/referee-roles/assign - Assign role to referee (admin only)
 router.post('/assign',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'admin:assign_role',
+  }),
   validateBody(AssignRoleSchema),
   enhancedAsyncHandler(async (req, res) => {
     const { user_id, role_name } = req.body;
@@ -291,7 +315,10 @@ router.post('/assign',
 // POST /api/referee-roles/remove - Remove role from referee (admin only)
 router.post('/remove',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'admin:remove_role',
+  }),
   validateBody(RemoveRoleSchema),
   enhancedAsyncHandler(async (req, res) => {
     const { user_id, role_name } = req.body;
@@ -318,6 +345,11 @@ router.post('/remove',
 // GET /api/referee-roles/user/:userId - Get roles for specific user
 router.get('/user/:userId',
   authenticateToken,
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'view:user_roles',
+    getResourceId: (req) => req.params.userId,
+  }),
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
   enhancedAsyncHandler(async (req, res) => {
     const userId = req.params.userId;
@@ -382,7 +414,10 @@ router.get('/user/:userId',
 // GET /api/referee-roles/permissions/summary - Get permissions summary for all roles
 router.get('/permissions/summary',
   authenticateToken,
-  requireRole('admin'),
+  requireCerbosPermission({
+    resource: 'referee_role',
+    action: 'admin:view_permissions_summary',
+  }),
   enhancedAsyncHandler(async (req, res) => {
     const roles = await db('referee_roles')
       .where('is_active', true)

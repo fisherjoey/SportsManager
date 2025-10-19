@@ -9,7 +9,6 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/auth-provider'
-import { usePageAccess } from '@/hooks/usePageAccess'
 import { usePermissions } from '@/hooks/usePermissions'
 
 // Import all possible dashboard components
@@ -37,8 +36,7 @@ import { UnifiedAccessControlDashboard } from '@/components/admin/access-control
 
 export function UnifiedDashboard() {
   const router = useRouter()
-  const { user } = useAuth()
-  const { hasPageAccess, loading: pageAccessLoading } = usePageAccess()
+  const { user, canAccessPage } = useAuth()
   const { hasAnyPermission } = usePermissions()
   
   // Initialize activeView from URL on first render
@@ -146,11 +144,8 @@ export function UnifiedDashboard() {
 
   // Check if user has permission to access the current view
   const checkViewPermission = (view: string): boolean => {
-    // During loading, return true to prevent flashing
-    if (pageAccessLoading) return true
-    
-    // Use database-driven access check
-    return hasPageAccess(view)
+    // Use canAccessPage from AuthProvider to check access
+    return canAccessPage(view)
   }
 
   // Determine which dashboard overview to show based on user's roles

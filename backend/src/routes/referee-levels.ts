@@ -4,7 +4,8 @@ import express from 'express';
 const router = express.Router();
 import db from '../config/database';
 import Joi from 'joi';
-import { authenticateToken, requireRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 
 const refereeLevelSchema = Joi.object({
   name: Joi.string().required(),
@@ -16,7 +17,10 @@ const refereeLevelSchema = Joi.object({
 });
 
 // GET /api/referee-levels - Get all referee levels
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, requireCerbosPermission({
+  resource: 'referee_level',
+  action: 'view:list',
+}), async (req, res) => {
   try {
     const levels = await db('referee_levels').select('*').orderBy('wage_amount', 'asc');
     res.json({ success: true, data: levels });
@@ -27,7 +31,11 @@ router.get('/', async (req, res) => {
 });
 
 // PUT /api/referee-levels/:refereeId/assign - Assign referee to a level (admin only)
-router.put('/:refereeId/assign', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:refereeId/assign', authenticateToken, requireCerbosPermission({
+  resource: 'referee_level',
+  action: 'admin:assign',
+  getResourceId: (req) => req.params.refereeId,
+}), async (req, res) => {
   try {
     const { referee_level_id, year_started_refereeing, evaluation_score, notes } = req.body;
     
@@ -66,7 +74,10 @@ router.put('/:refereeId/assign', authenticateToken, requireRole('admin'), async 
 });
 
 // GET /api/referee-levels/check-assignment/:gameId/:refereeId - Check if referee can be assigned to game
-router.get('/check-assignment/:gameId/:refereeId', authenticateToken, async (req, res) => {
+router.get('/check-assignment/:gameId/:refereeId', authenticateToken, requireCerbosPermission({
+  resource: 'referee_level',
+  action: 'check:assignment',
+}), async (req, res) => {
   try {
     const { gameId, refereeId } = req.params;
     

@@ -13,50 +13,100 @@ import type {
   CreateDocumentRequest,
   UpdateDocumentRequest,
   CreateDocumentVersionRequest,
-  DocumentStatus,
   AccessPermissions,
-  AcknowledgmentMethod,
   DocumentStats,
   PendingAcknowledgment
 } from '../../types/document.types';
+import {
+  DocumentStatus,
+  AcknowledgmentMethod
+} from '../../types/document.types';
 
 // Mock dependencies
+const mockDb: any = {
+  select: (jest.fn() as any).mockReturnThis(),
+  where: (jest.fn() as any).mockReturnThis(),
+  whereIn: (jest.fn() as any).mockReturnThis(),
+  orWhere: (jest.fn() as any).mockReturnThis(),
+  join: (jest.fn() as any).mockReturnThis(),
+  leftJoin: (jest.fn() as any).mockReturnThis(),
+  orderBy: (jest.fn() as any).mockReturnThis(),
+  groupBy: (jest.fn() as any).mockReturnThis(),
+  first: (jest.fn() as any).mockResolvedValue(null),
+  insert: (jest.fn() as any).mockReturnThis(),
+  update: (jest.fn() as any).mockReturnThis(),
+  del: (jest.fn() as any).mockResolvedValue(1),
+  returning: (jest.fn() as any).mockResolvedValue([]),
+  count: (jest.fn() as any).mockReturnThis(),
+  pluck: (jest.fn() as any).mockResolvedValue([]),
+  raw: jest.fn() as any,
+  transaction: jest.fn() as any
+};
+
 const mockPool = {
-  query: jest.fn(),
-  connect: jest.fn().mockReturnValue({
-    query: jest.fn(),
-    release: jest.fn()
+  query: jest.fn() as any,
+  connect: (jest.fn() as any).mockReturnValue({
+    query: jest.fn() as any,
+    release: jest.fn() as any
   })
 };
 
 const mockFs = {
-  readFile: jest.fn(),
-  unlink: jest.fn().mockResolvedValue(undefined)
+  readFile: jest.fn() as any,
+  unlink: (jest.fn() as any).mockResolvedValue(undefined)
 };
 
 const mockCrypto = {
-  createHash: jest.fn().mockReturnValue({
-    update: jest.fn().mockReturnThis(),
-    digest: jest.fn().mockReturnValue('mock-checksum')
+  createHash: (jest.fn() as any).mockReturnValue({
+    update: (jest.fn() as any).mockReturnThis(),
+    digest: (jest.fn() as any).mockReturnValue('mock-checksum')
   })
 };
 
-const mockAuthMiddleware = {
-  authenticateToken: jest.fn((req: any, res: any, next: any) => {
+const mockAuth = {
+  authenticateToken: (jest.fn() as any).mockImplementation((req: any, res: any, next: any) => {
     req.user = {
       id: 'user-123',
       role: 'admin',
       organization_id: 'org-123'
     };
     next();
-  }),
-  requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
-  requireAnyRole: jest.fn(() => (req: any, res: any, next: any) => next())
+  })
 };
+
+const mockCerbos = {
+  requireCerbosPermission: (jest.fn() as any).mockImplementation(() => (req: any, res: any, next: any) => next())
+};
+
+const mockValidation = {
+  validateBody: (jest.fn() as any).mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateParams: (jest.fn() as any).mockImplementation((schema: any) => (req: any, res: any, next: any) => next()),
+  validateQuery: (jest.fn() as any).mockImplementation((schema: any) => (req: any, res: any, next: any) => next())
+};
+
+const mockResponseFormatter = {
+  sendSuccess: (jest.fn() as any).mockImplementation((res: any, data: any, message?: string) => {
+    res.json({ success: true, data, message });
+  }),
+  sendCreated: (jest.fn() as any).mockImplementation((res: any, data: any, message?: string, location?: string) => {
+    res.status(201).json({ success: true, data, message });
+  }),
+  sendError: (jest.fn() as any).mockImplementation((res: any, error: any, statusCode: number) => {
+    res.status(statusCode).json({ error: error.message || error });
+  })
+};
+
+const mockEnhancedAsyncHandler = (jest.fn() as any).mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+  try {
+    await fn(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
 
 const mockFileUpload = {
   receiptUploader: {
-    single: jest.fn(() => (req: any, res: any, next: any) => {
+    single: (jest.fn() as any)(() => (req: any, res: any, next: any) => {
       req.file = {
         path: '/uploads/test-file.pdf',
         originalname: 'test-document.pdf',
@@ -70,10 +120,64 @@ const mockFileUpload = {
 
 // Mock modules
 jest.mock('pg', () => ({ Pool: jest.fn(() => mockPool) }));
+jest.mock('../../config/database', () => mockDb);
 jest.mock('fs', () => ({ promises: mockFs }));
 jest.mock('crypto', () => mockCrypto);
-jest.mock('../middleware/auth', () => mockAuthMiddleware);
+jest.mock('../../middleware/auth', () => mockAuth);
+jest.mock('../../middleware/requireCerbosPermission', () => mockCerbos);
+jest.mock('../../middleware/validation', () => mockValidation);
+jest.mock('../../utils/response-formatters', () => ({ ResponseFormatter: mockResponseFormatter }));
+jest.mock('../../middleware/enhanced-error-handling', () => ({ enhancedAsyncHandler: mockEnhancedAsyncHandler }));
 jest.mock('../middleware/fileUpload', () => mockFileUpload);
+jest.mock('joi', () => {
+  // Create a comprehensive chainable mock that handles all Joi methods
+  const createChainableMock = (): any => {
+    const mock: any = {};
+
+    // Define all Joi methods that need to be chainable
+    const chainableMethods = [
+      'string', 'number', 'boolean', 'array', 'object', 'date', 'binary',
+      'required', 'optional', 'allow', 'valid', 'invalid', 'default',
+      'min', 'max', 'length', 'email', 'uri', 'uuid', 'integer',
+      'positive', 'negative', 'items', 'keys', 'pattern', 'regex',
+      'alphanum', 'token', 'hex', 'base64', 'lowercase', 'uppercase',
+      'trim', 'replace', 'truncate', 'normalize', 'when', 'alternatives',
+      'alt', 'concat', 'raw', 'empty', 'strip', 'label', 'description',
+      'notes', 'tags', 'meta', 'example', 'unit', 'messages', 'prefs',
+      'preferences', 'strict', 'options', 'fork', 'validate'
+    ];
+
+    // Create mock functions for all chainable methods
+    chainableMethods.forEach(method => {
+      if (method === 'validate') {
+        mock[method] = jest.fn().mockReturnValue({ error: null, value: {} });
+      } else {
+        mock[method] = jest.fn().mockReturnValue(mock); // Return self for chaining
+      }
+    });
+
+    return mock;
+  };
+
+  // Create the main Joi mock
+  const joiMock = createChainableMock();
+
+  // Override specific methods that return schemas
+  joiMock.object = jest.fn().mockImplementation((schema?: any) => {
+    const schemaMock = createChainableMock();
+    return schemaMock;
+  });
+
+  joiMock.array = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.string = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.number = jest.fn().mockImplementation(() => createChainableMock());
+  joiMock.boolean = jest.fn().mockImplementation(() => createChainableMock());
+
+  return {
+    default: joiMock,
+    __esModule: true
+  };
+});
 
 // Import the router after mocking dependencies
 let documentRouter: express.Router;
@@ -93,6 +197,36 @@ describe('Document Routes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Restore default mock implementations after clearAllMocks
+    mockAuth.authenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      req.user = {
+        id: 'user-123',
+        role: 'admin',
+        organization_id: 'org-123'
+      };
+      next();
+    });
+    mockCerbos.requireCerbosPermission.mockImplementation(() => (req: any, res: any, next: any) => next());
+    mockValidation.validateBody.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateParams.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockValidation.validateQuery.mockImplementation((schema: any) => (req: any, res: any, next: any) => next());
+    mockEnhancedAsyncHandler.mockImplementation((fn: any) => async (req: any, res: any, next: any) => {
+      try {
+        await fn(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    });
+    mockFileUpload.receiptUploader.single.mockImplementation(() => (req: any, res: any, next: any) => {
+      req.file = {
+        path: '/uploads/test-file.pdf',
+        originalname: 'test-document.pdf',
+        size: 1024,
+        mimetype: 'application/pdf'
+      };
+      next();
+    });
   });
 
   describe('GET /api/documents', () => {
@@ -287,7 +421,10 @@ describe('Document Routes', () => {
 
       const createdDocument: Document = {
         id: 'doc-2',
-        ...newDocument,
+        title: newDocument.title,
+        description: newDocument.description || null,
+        category: newDocument.category,
+        subcategory: newDocument.subcategory || null,
         file_path: '/uploads/test-file.pdf',
         file_name: 'test-document.pdf',
         file_type: 'pdf',
@@ -295,9 +432,11 @@ describe('Document Routes', () => {
         version: '1.0',
         uploaded_by: 'user-123',
         approved_by: null,
+        effective_date: newDocument.effective_date || null,
         expiration_date: null,
         tags: null,
         access_permissions: null,
+        requires_acknowledgment: newDocument.requires_acknowledgment || false,
         checksum: 'mock-checksum',
         status: DocumentStatus.PENDING_APPROVAL,
         created_at: new Date(),
@@ -705,7 +844,7 @@ describe('Document Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
-      mockAuthMiddleware.authenticateToken.mockImplementationOnce((req: any, res: any, next: any) => {
+      mockAuth.authenticateToken.mockImplementationOnce((req: any, res: any, next: any) => {
         res.status(401).json({ error: 'Unauthorized' });
       });
 
@@ -714,8 +853,8 @@ describe('Document Routes', () => {
         .expect(401);
     });
 
-    it('should require proper roles for admin operations', async () => {
-      mockAuthMiddleware.requireAnyRole.mockImplementationOnce(() => (req: any, res: any, next: any) => {
+    it('should require proper Cerbos permissions for admin operations', async () => {
+      mockCerbos.requireCerbosPermission.mockImplementationOnce(() => (req: any, res: any, next: any) => {
         res.status(403).json({ error: 'Insufficient permissions' });
       });
 

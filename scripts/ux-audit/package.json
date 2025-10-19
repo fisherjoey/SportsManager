@@ -1,0 +1,29 @@
+{
+  "name": "ux-ui-audit-system",
+  "version": "1.0.0",
+  "description": "Automated UX/UI audit system for Sports Management Platform",
+  "main": "run-full-audit.js",
+  "scripts": {
+    "audit": "node run-full-audit.js",
+    "audit:screenshots": "node capture-screenshots.js",
+    "audit:analyze": "node analyze-ux.js",
+    "audit:report": "node generate-report.js"
+  },
+  "keywords": [
+    "ux",
+    "ui",
+    "audit",
+    "accessibility",
+    "automation",
+    "testing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

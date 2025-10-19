@@ -13,9 +13,9 @@ router.get(
   requireCerbosPermission({
     resource: 'game',
     action: 'view',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req: any) => req.params.id,
     getResourceAttributes: async (req) => {
-      const game = await db('games')
+      const game = await (db as any)('games')
         .select('organization_id', 'region_id', 'created_by', 'status')
         .where('id', req.params.id)
         .first();
@@ -35,7 +35,7 @@ router.get(
   async (req: Request, res: Response) => {
     const gameId = req.params.id;
 
-    const game = await db('games')
+    const game = await (db as any)('games')
       .select('*')
       .where('id', gameId)
       .first();
@@ -59,9 +59,9 @@ router.post(
     action: 'create',
   }),
   async (req: AuthenticatedRequest, res: Response) => {
-    const { homeTeam, awayTeam, date, time, location, level } = req.body;
+    const { homeTeam, awayTeam, date, time, location, level } = (req as any).body;
 
-    const [gameId] = await db('games').insert({
+    const [gameId] = await (db as any)('games').insert({
       home_team_id: homeTeam,
       away_team_id: awayTeam,
       date_time: `${date}T${time}`,
@@ -73,7 +73,7 @@ router.post(
       status: 'scheduled',
     });
 
-    const game = await db('games').where('id', gameId).first();
+    const game = await (db as any)('games').where('id', gameId).first();
 
     res.status(201).json(game);
   }
@@ -85,9 +85,9 @@ router.put(
   requireCerbosPermission({
     resource: 'game',
     action: 'update',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req: any) => req.params.id,
     getResourceAttributes: async (req) => {
-      const game = await db('games')
+      const game = await (db as any)('games')
         .select('organization_id', 'region_id', 'created_by', 'status')
         .where('id', req.params.id)
         .first();
@@ -106,9 +106,9 @@ router.put(
   }),
   async (req: Request, res: Response) => {
     const gameId = req.params.id;
-    const { date, time, location, level } = req.body;
+    const { date, time, location, level } = (req as any).body;
 
-    await db('games')
+    await (db as any)('games')
       .where('id', gameId)
       .update({
         date_time: date && time ? `${date}T${time}` : undefined,
@@ -117,7 +117,7 @@ router.put(
         updated_at: new Date(),
       });
 
-    const game = await db('games').where('id', gameId).first();
+    const game = await (db as any)('games').where('id', gameId).first();
 
     res.json(game);
   }
@@ -129,9 +129,9 @@ router.delete(
   requireCerbosPermission({
     resource: 'game',
     action: 'delete',
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req: any) => req.params.id,
     getResourceAttributes: async (req) => {
-      const game = await db('games')
+      const game = await (db as any)('games')
         .select('organization_id', 'region_id', 'created_by', 'status')
         .where('id', req.params.id)
         .first();
@@ -152,7 +152,7 @@ router.delete(
   async (req: Request, res: Response) => {
     const gameId = req.params.id;
 
-    await db('games').where('id', gameId).delete();
+    await (db as any)('games').where('id', gameId).delete();
 
     res.status(204).send();
   }
@@ -164,9 +164,9 @@ router.post(
   requireCerbosPermission({
     resource: 'game',
     actions: ['view', 'update'],
-    getResourceId: (req) => req.params.id,
+    getResourceId: (req: any) => req.params.id,
     getResourceAttributes: async (req) => {
-      const game = await db('games')
+      const game = await (db as any)('games')
         .select('organization_id', 'region_id', 'status')
         .where('id', req.params.id)
         .first();
@@ -180,9 +180,9 @@ router.post(
   }),
   async (req: Request, res: Response) => {
     const gameId = req.params.id;
-    const { refereeId, position } = req.body;
+    const { refereeId, position } = (req as any).body;
 
-    const [assignmentId] = await db('game_assignments').insert({
+    const [assignmentId] = await (db as any)('game_assignments').insert({
       game_id: gameId,
       referee_id: refereeId,
       position,
@@ -190,7 +190,7 @@ router.post(
       created_at: new Date(),
     });
 
-    const assignment = await db('game_assignments')
+    const assignment = await (db as any)('game_assignments')
       .where('id', assignmentId)
       .first();
 

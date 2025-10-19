@@ -10,10 +10,15 @@
  * @module middleware/permissionCheck
  */
 
-import PermissionService from '../services/PermissionService';
+// DEPRECATED: PermissionService has been replaced by Cerbos authorization
+// This middleware is deprecated and should be replaced with requireCerbosPermission
 
-// Initialize permission service
-const permissionService = new PermissionService();
+const deprecatedPermissionService = {
+  hasAnyPermission: () => {
+    console.warn('DEPRECATED: permissionCheck middleware should be replaced with requireCerbosPermission');
+    return Promise.resolve(false);
+  }
+};
 
 /**
  * API Endpoint Permission Mapping
@@ -240,7 +245,7 @@ async function checkUserPermissions(userId, requiredPermissions) {
   try {
     // Check each permission
     for (const permission of requiredPermissions) {
-      const hasPermission = await permissionService.hasPermission(userId, permission);
+      const hasPermission = await deprecatedPermissionService.hasAnyPermission();
       if (hasPermission) {
         return true; // User has at least one required permission
       }

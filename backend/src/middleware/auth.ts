@@ -14,23 +14,28 @@ interface ExtendedJWTPayload extends JWTPayload {
   roles?: string[]; // For backward compatibility with role array
 }
 
-// Import PermissionService
-import PermissionService from '../services/PermissionService';
+// DEPRECATED: PermissionService has been replaced by Cerbos authorization
+// These functions are kept for backward compatibility but always return false
+// to encourage migration to Cerbos-based authorization
 
-let permissionService: PermissionService;
-
-try {
-  permissionService = new PermissionService();
-} catch (error) {
-  console.error('Could not load PermissionService:', error.message);
-  // Create a mock service to prevent runtime errors during compilation
-  permissionService = {
-    hasPermission: () => Promise.resolve(false),
-    hasAnyPermission: () => Promise.resolve(false),
-    hasAllPermissions: () => Promise.resolve(false),
-    getUserPermissions: () => Promise.resolve([])
-  } as any;
-}
+const deprecatedPermissionService = {
+  hasPermission: () => {
+    console.warn('DEPRECATED: hasPermission() should be replaced with Cerbos authorization');
+    return Promise.resolve(false);
+  },
+  hasAnyPermission: () => {
+    console.warn('DEPRECATED: hasAnyPermission() should be replaced with Cerbos authorization');
+    return Promise.resolve(false);
+  },
+  hasAllPermissions: () => {
+    console.warn('DEPRECATED: hasAllPermissions() should be replaced with Cerbos authorization');
+    return Promise.resolve(false);
+  },
+  getUserPermissions: () => {
+    console.warn('DEPRECATED: getUserPermissions() should be replaced with Cerbos authorization');
+    return Promise.resolve([]);
+  }
+};
 
 /**
  * Middleware to authenticate JWT tokens
@@ -196,7 +201,7 @@ function requirePermission(permissionName: string) {
       }
 
       // Check permission
-      const hasPermission = await permissionService.hasPermission((req.user as any).id, permissionName);
+      const hasPermission = await deprecatedPermissionService.hasPermission();
       
       if (!hasPermission) {
         res.status(403).json({ 
@@ -244,7 +249,7 @@ function requireAnyPermission(permissionNames: string[]) {
       }
 
       // Check if user has any of the required permissions
-      const hasAnyPermission = await permissionService.hasAnyPermission((req.user as any).id, permissionNames);
+      const hasAnyPermission = await deprecatedPermissionService.hasAnyPermission();
       
       if (!hasAnyPermission) {
         res.status(403).json({ 
@@ -290,7 +295,7 @@ function requireAllPermissions(permissionNames: string[]) {
       }
 
       // Check if user has all required permissions
-      const hasAllPermissions = await permissionService.hasAllPermissions((req.user as any).id, permissionNames);
+      const hasAllPermissions = await deprecatedPermissionService.hasAllPermissions();
       
       if (!hasAllPermissions) {
         res.status(403).json({ 
@@ -328,7 +333,7 @@ async function hasPermission(user: any, permissionName: string): Promise<boolean
       return true;
     }
 
-    return await permissionService.hasPermission(user.id, permissionName);
+    return await deprecatedPermissionService.hasPermission();
   } catch (error) {
     console.error('Permission check error:', error);
     return false;
@@ -343,7 +348,7 @@ async function hasPermission(user: any, permissionName: string): Promise<boolean
  */
 async function getUserPermissions(userId: string, useCache: boolean = true): Promise<string[]> {
   try {
-    const permissions = await permissionService.getUserPermissions(userId, useCache);
+    const permissions = await deprecatedPermissionService.getUserPermissions();
     // Extract permission names from Permission objects
     return permissions.map((p: any) => p.name || p);
   } catch (error) {
@@ -367,6 +372,5 @@ export {
   hasPermission,
   getUserPermissions,
   requireAdmin,
-  requireSuperAdmin,
-  permissionService
+  requireSuperAdmin
 };

@@ -1,0 +1,12 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Principal policy for Super Admin role - grants full access to all resources
+principalPolicy:
+  principal: super_admin
+  version: "1.0"
+  rules:
+    - resource: "*"
+      actions:
+        - action: "*"
+          effect: EFFECT_ALLOW
+

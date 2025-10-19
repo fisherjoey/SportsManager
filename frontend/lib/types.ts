@@ -118,3 +118,24 @@ export interface UsersWithRoleResponse {
   }
   message?: string
 }
+
+// Page Access Control Types
+export interface PagePermission {
+  page_id: string
+  page_path: string
+  page_name: string
+  page_category: string
+  view: boolean
+  access: boolean
+}
+
+export interface PagePermissionsResponse {
+  success: boolean
+  permissions: PagePermission[]
+  message?: string
+}
+
+export interface PageAccessCheckResponse {
+  allowed: boolean
+  message?: string
+}

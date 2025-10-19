@@ -1,7 +1,8 @@
 import express, { Router } from 'express';
 import Joi from 'joi';
 import db from '../config/database';
-import { authenticateToken, requireRole, requireAnyRole } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import {
   AuthenticatedRequest,
   BudgetVarianceQuery,
@@ -79,7 +80,7 @@ const kpiConfigSchema = Joi.object({
  * GET /api/financial-reports/budget-variance
  * Generate budget variance report
  */
-router.get('/budget-variance', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<BudgetVarianceResponse | ErrorResponse>) => {
+router.get('/budget-variance', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:budget_variance' }), async (req: AuthenticatedRequest, res: express.Response<BudgetVarianceResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -88,7 +89,7 @@ router.get('/budget-variance', authenticateToken, async (req: AuthenticatedReque
       date_from,
       date_to,
       variance_threshold = '5' // Minimum variance percentage to show
-    }: BudgetVarianceQuery = req.query;
+    }: BudgetVarianceQuery = (req as any).query;
 
     let budgetQuery = db('budgets as b')
       .join('budget_periods as bp', 'b.budget_period_id', 'bp.id')
@@ -215,7 +216,7 @@ router.get('/budget-variance', authenticateToken, async (req: AuthenticatedReque
  * GET /api/financial-reports/cash-flow
  * Generate cash flow report
  */
-router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<CashFlowResponse | ErrorResponse>) => {
+router.get('/cash-flow', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:cash_flow' }), async (req: AuthenticatedRequest, res: express.Response<CashFlowResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -223,7 +224,7 @@ router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, re
       date_to,
       grouping = 'monthly', // daily, weekly, monthly, quarterly
       include_forecast = 'false'
-    }: CashFlowQuery = req.query;
+    }: CashFlowQuery = (req as any).query;
 
     // Validate grouping parameter
     if (!isValidGrouping(grouping)) {
@@ -282,7 +283,7 @@ router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, re
         outflow,
         net_flow: netFlow,
         running_balance: runningBalance,
-        transaction_count: parseInt(row.transaction_count) || 0
+        transaction_count: parseInt((row as any).transaction_count) || 0
       };
     });
 
@@ -373,7 +374,7 @@ router.get('/cash-flow', authenticateToken, async (req: AuthenticatedRequest, re
  * GET /api/financial-reports/expense-analysis
  * Generate detailed expense analysis report
  */
-router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<ExpenseAnalysisResponse | ErrorResponse>) => {
+router.get('/expense-analysis', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:expense_analysis' }), async (req: AuthenticatedRequest, res: express.Response<ExpenseAnalysisResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -382,7 +383,7 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
       category_id,
       vendor_id,
       comparison_period = 'false' // Compare with previous period
-    }: ExpenseAnalysisQuery = req.query;
+    }: ExpenseAnalysisQuery = (req as any).query;
 
     const endDate = date_to ? new Date(date_to) : new Date();
     const startDate = date_from ? new Date(date_from) : new Date(endDate.getFullYear(), endDate.getMonth() - DEFAULT_PERIODS.EXPENSE_ANALYSIS_MONTHS, 1);
@@ -422,8 +423,8 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
         category_name: row.category_name || 'Uncategorized',
         category_type: row.category_type || 'operating_expenses',
         color_code: row.color_code || '#808080',
-        total_amount: parseMonetaryAmount(row.total_amount),
-        transaction_count: parseInt(row.transaction_count) || 0,
+        total_amount: parseMonetaryAmount((row as any).total_amount),
+        transaction_count: parseInt((row as any).transaction_count) || 0,
         average_amount: parseMonetaryAmount(row.average_amount),
         min_amount: parseMonetaryAmount(row.min_amount),
         max_amount: parseMonetaryAmount(row.max_amount)
@@ -442,8 +443,8 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
       .limit(10)
       .then(results => results.map(row => ({
         vendor_name: row.vendor_name || 'Unknown Vendor',
-        total_amount: parseMonetaryAmount(row.total_amount),
-        transaction_count: parseInt(row.transaction_count) || 0,
+        total_amount: parseMonetaryAmount((row as any).total_amount),
+        transaction_count: parseInt((row as any).transaction_count) || 0,
         average_amount: parseMonetaryAmount(row.average_amount)
       })));
 
@@ -457,9 +458,9 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
       .groupBy('month')
       .orderBy('month')
       .then(results => results.map(row => ({
-        month: row.month,
-        total_amount: parseMonetaryAmount(row.total_amount),
-        transaction_count: parseInt(row.transaction_count) || 0
+        month: (row as any).month,
+        total_amount: parseMonetaryAmount((row as any).total_amount),
+        transaction_count: parseInt((row as any).transaction_count) || 0
       })));
 
     // Expense summary
@@ -521,7 +522,7 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
         );
 
       if (prevSummary) {
-        const currentTotal = parseMonetaryAmount(summary.total_expenses);
+        const currentTotal = parseMonetaryAmount((summary as any).total_expenses);
         const prevTotal = parseMonetaryAmount(prevSummary.total_expenses);
         const change = prevTotal > 0 ? ((currentTotal - prevTotal) / prevTotal) * 100 : 0;
 
@@ -541,11 +542,11 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
 
     const response: ExpenseAnalysisResponse = {
       summary: {
-        total_expenses: parseMonetaryAmount(summary.total_expenses),
-        total_transactions: parseInt(summary.total_transactions) || 0,
-        average_transaction: parseMonetaryAmount(summary.average_transaction),
-        unique_vendors: parseInt(summary.unique_vendors) || 0,
-        categories_used: parseInt(summary.categories_used) || 0
+        total_expenses: parseMonetaryAmount((summary as any).total_expenses),
+        total_transactions: parseInt((summary as any).total_transactions) || 0,
+        average_transaction: parseMonetaryAmount((summary as any).average_transaction),
+        unique_vendors: parseInt((summary as any).unique_vendors) || 0,
+        categories_used: parseInt((summary as any).categories_used) || 0
       },
       expenses_by_category: expensesByCategory,
       expenses_by_vendor: expensesByVendor,
@@ -567,7 +568,7 @@ router.get('/expense-analysis', authenticateToken, async (req: AuthenticatedRequ
  * GET /api/financial-reports/payroll-summary
  * Generate payroll summary report
  */
-router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<PayrollSummaryResponse | ErrorResponse>) => {
+router.get('/payroll-summary', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:payroll_summary' }), async (req: AuthenticatedRequest, res: express.Response<PayrollSummaryResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
     const {
@@ -575,7 +576,7 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
       date_to,
       referee_id,
       payment_status = 'all' // all, paid, pending, approved
-    }: PayrollSummaryQuery = req.query;
+    }: PayrollSummaryQuery = (req as any).query;
 
     // Validate payment status
     if (!isValidPaymentStatus(payment_status)) {
@@ -620,8 +621,8 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
         referee_name: row.referee_name,
         referee_email: row.referee_email,
         games_officiated: parseInt(row.games_officiated) || 0,
-        total_wages: parseMonetaryAmount(row.total_wages),
-        average_wage: parseMonetaryAmount(row.average_wage),
+        total_wages: parseMonetaryAmount((row as any).total_wages),
+        average_wage: parseMonetaryAmount((row as any).average_wage),
         games_paid: parseInt(row.games_paid) || 0,
         wages_paid: parseMonetaryAmount(row.wages_paid),
         wages_pending: parseMonetaryAmount(row.wages_pending)
@@ -638,10 +639,10 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
       .groupBy('month')
       .orderBy('month')
       .then(results => results.map(row => ({
-        month: row.month,
-        total_assignments: parseInt(row.total_assignments) || 0,
-        total_wages: parseMonetaryAmount(row.total_wages),
-        active_referees: parseInt(row.active_referees) || 0
+        month: (row as any).month,
+        total_assignments: parseInt((row as any).total_assignments) || 0,
+        total_wages: parseMonetaryAmount((row as any).total_wages),
+        active_referees: parseInt((row as any).active_referees) || 0
       })));
 
     // Payment status breakdown
@@ -656,7 +657,7 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
       .then(results => results.map(row => ({
         payment_status: row.payment_status,
         assignment_count: parseInt(row.assignment_count) || 0,
-        total_amount: parseMonetaryAmount(row.total_amount)
+        total_amount: parseMonetaryAmount((row as any).total_amount)
       })));
 
     // Summary statistics
@@ -691,19 +692,19 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
         game_date: new Date(row.game_date),
         home_team: row.home_team,
         away_team: row.away_team,
-        total_wages: parseMonetaryAmount(row.total_wages),
+        total_wages: parseMonetaryAmount((row as any).total_wages),
         referee_count: parseInt(row.referee_count) || 0
       })));
 
     const response: PayrollSummaryResponse = {
       summary: {
-        total_assignments: parseInt(summary.total_assignments) || 0,
-        total_wages: parseMonetaryAmount(summary.total_wages),
-        average_wage: parseMonetaryAmount(summary.average_wage),
-        total_referees: parseInt(summary.total_referees) || 0,
-        games_covered: parseInt(summary.games_covered) || 0,
-        total_paid: parseMonetaryAmount(summary.total_paid),
-        total_pending: parseMonetaryAmount(summary.total_pending)
+        total_assignments: parseInt((summary as any).total_assignments) || 0,
+        total_wages: parseMonetaryAmount((summary as any).total_wages),
+        average_wage: parseMonetaryAmount((summary as any).average_wage),
+        total_referees: parseInt((summary as any).total_referees) || 0,
+        games_covered: parseInt((summary as any).games_covered) || 0,
+        total_paid: parseMonetaryAmount((summary as any).total_paid),
+        total_pending: parseMonetaryAmount((summary as any).total_pending)
       },
       payroll_by_referee: payrollByReferee,
       monthly_payroll: monthlyPayroll,
@@ -724,10 +725,10 @@ router.get('/payroll-summary', authenticateToken, async (req: AuthenticatedReque
  * GET /api/financial-reports/kpis
  * Get financial KPIs dashboard
  */
-router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<KPIResponse | ErrorResponse>) => {
+router.get('/kpis', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'view:kpis' }), async (req: AuthenticatedRequest, res: express.Response<KPIResponse | ErrorResponse>) => {
   try {
     const organizationId: number = req.user.organization_id || req.user.id;
-    const { period_days = DEFAULT_PERIODS.KPI_CALCULATION_DAYS.toString() }: KPIQuery = req.query;
+    const { period_days = DEFAULT_PERIODS.KPI_CALCULATION_DAYS.toString() }: KPIQuery = (req as any).query;
 
     const periodStart = new Date();
     periodStart.setDate(periodStart.getDate() - parseInt(period_days));
@@ -746,9 +747,9 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
       )
       .first();
 
-    if (budgetUtilization && parseMonetaryAmount(budgetUtilization.total_allocated) > 0) {
-      const allocated = parseMonetaryAmount(budgetUtilization.total_allocated);
-      const spent = parseMonetaryAmount(budgetUtilization.total_spent);
+    if (budgetUtilization && parseMonetaryAmount((budgetUtilization as any).total_allocated) > 0) {
+      const allocated = parseMonetaryAmount((budgetUtilization as any).total_allocated);
+      const spent = parseMonetaryAmount((budgetUtilization as any).total_spent);
       kpis.budget_utilization_rate = {
         value: (spent / allocated) * 100,
         unit: '%',
@@ -769,7 +770,7 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
       .first();
 
     if (cashFlowCurrent) {
-      const netCashFlow = parseMonetaryAmount(cashFlowCurrent.revenue) - parseMonetaryAmount(cashFlowCurrent.expenses);
+      const netCashFlow = parseMonetaryAmount((cashFlowCurrent as any).revenue) - parseMonetaryAmount((cashFlowCurrent as any).expenses);
       kpis.net_cash_flow = {
         value: netCashFlow,
         unit: '$',
@@ -789,9 +790,9 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
       )
       .first();
 
-    if (expenseVariance && parseMonetaryAmount(expenseVariance.budgeted) > 0) {
-      const budgeted = parseMonetaryAmount(expenseVariance.budgeted);
-      const actual = parseMonetaryAmount(expenseVariance.actual);
+    if (expenseVariance && parseMonetaryAmount((expenseVariance as any).budgeted) > 0) {
+      const budgeted = parseMonetaryAmount((expenseVariance as any).budgeted);
+      const actual = parseMonetaryAmount((expenseVariance as any).actual);
       const variance = ((actual - budgeted) / budgeted) * 100;
       kpis.expense_variance = {
         value: variance,
@@ -818,9 +819,9 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
       .count('id as total')
       .first();
 
-    if (costPerGame && gameCount && parseInt(gameCount.total as string) > 0) {
-      const totalExpenses = parseMonetaryAmount(costPerGame.total_expenses);
-      const totalGames = parseInt(gameCount.total as string);
+    if (costPerGame && gameCount && parseInt((gameCount as any).total as string) > 0) {
+      const totalExpenses = parseMonetaryAmount((costPerGame as any).total_expenses);
+      const totalGames = parseInt((gameCount as any).total as string);
       kpis.cost_per_game = {
         value: totalExpenses / totalGames,
         unit: '$',
@@ -840,9 +841,9 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
       )
       .first();
 
-    if (payrollEfficiency && parseMonetaryAmount(payrollEfficiency.total_expenses) > 0) {
-      const payroll = parseMonetaryAmount(payrollEfficiency.payroll);
-      const totalExpenses = parseMonetaryAmount(payrollEfficiency.total_expenses);
+    if (payrollEfficiency && parseMonetaryAmount((payrollEfficiency as any).total_expenses) > 0) {
+      const payroll = parseMonetaryAmount((payrollEfficiency as any).payroll);
+      const totalExpenses = parseMonetaryAmount((payrollEfficiency as any).total_expenses);
       kpis.payroll_efficiency = {
         value: (payroll / totalExpenses) * 100,
         unit: '%',
@@ -858,7 +859,7 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
 
     const response: KPIResponse = {
       calculated_kpis: kpis,
-      stored_kpis: storedKpis,
+      stored_kpis: storedKpis as any,
       calculation_period: {
         days: parseInt(period_days),
         start_date: periodStart,
@@ -880,10 +881,10 @@ router.get('/kpis', authenticateToken, async (req: AuthenticatedRequest, res: ex
  */
 router.post('/kpis',
   authenticateToken,
-  requireAnyRole('admin', 'manager'),
+  requireCerbosPermission({ resource: 'financial_report', action: 'create:kpi' }),
   async (req: AuthenticatedRequest, res: express.Response<KPIConfigResponse | ErrorResponse>) => {
     try {
-      const { error, value } = kpiConfigSchema.validate(req.body);
+      const { error, value } = kpiConfigSchema.validate((req as any).body);
       if (error) {
         return res.status(400).json({
           error: 'Validation error',
@@ -898,7 +899,7 @@ router.post('/kpis',
         .insert({
           ...kpiData,
           organization_id: organizationId
-        })
+        } as any)
         .onConflict(['organization_id', 'kpi_name'])
         .merge()
         .returning('*');
@@ -918,9 +919,9 @@ router.post('/kpis',
  * GET /api/financial-reports/export/:type
  * Export financial report as CSV
  */
-router.get('/export/:type', authenticateToken, async (req: AuthenticatedRequest, res: express.Response<ExportResponse | ErrorResponse>) => {
+router.get('/export/:type', authenticateToken, requireCerbosPermission({ resource: 'financial_report', action: 'export' }), async (req: AuthenticatedRequest, res: express.Response<ExportResponse | ErrorResponse>) => {
   try {
-    const reportType: string = req.params.type;
+    const reportType: string = (req as any).params.type;
     const organizationId: number = req.user.organization_id || req.user.id;
 
     // This would implement CSV export functionality

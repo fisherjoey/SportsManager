@@ -105,22 +105,25 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await apiClient.getUserRoles()
+        const response = await apiClient.getAvailableRoles()
         console.log('Roles response:', response)
-        
-        // Handle different response structures
+
+        // The backend returns { success: true, data: { roles: [...] } }
+        // But apiClient might already extract the nested structure
         let roles = []
-        if (response?.data?.roles) {
+        if (response?.success && response?.data?.roles) {
+          roles = response.data.roles
+        } else if (response?.data?.roles) {
           roles = response.data.roles
         } else if (response?.roles) {
           roles = response.roles
         } else if (Array.isArray(response)) {
           roles = response
         }
-        
+
         console.log('Extracted roles:', roles)
         setAvailableRoles(roles)
-        
+
         if (roles.length === 0) {
           toast({
             title: 'Warning',

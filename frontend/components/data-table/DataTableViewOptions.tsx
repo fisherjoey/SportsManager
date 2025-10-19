@@ -35,6 +35,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>
+  maxVisibleColumns?: number
 }
 
 interface ColumnItem {
@@ -42,9 +43,12 @@ interface ColumnItem {
   displayName: string
   isVisible: boolean
   column: any
+  isAtLimit?: boolean
+  visibleCount?: number
+  maxVisibleColumns?: number
 }
 
-function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) {
+function SortableColumnItem({ id, displayName, isVisible, column, isAtLimit, visibleCount, maxVisibleColumns }: ColumnItem) {
   const {
     attributes,
     listeners,
@@ -59,6 +63,18 @@ function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) 
     transition,
     opacity: isDragging ? 0.5 : 1
   }
+
+  const handleCheckChange = (value: boolean) => {
+    // If trying to enable a column while at limit, prevent it
+    if (value && isAtLimit && !isVisible) {
+      return // Block enabling new columns when at limit
+    }
+    // Allow disabling columns at any time, or enabling when under limit
+    column.toggleVisibility(!!value)
+  }
+
+  // Disable checkbox if trying to enable while at limit
+  const isDisabled = !isVisible && isAtLimit
 
   return (
     <div
@@ -75,16 +91,18 @@ function SortableColumnItem({ id, displayName, isVisible, column }: ColumnItem) 
       </div>
       <Checkbox
         checked={isVisible}
-        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+        onCheckedChange={handleCheckChange}
+        disabled={isDisabled}
         className="flex-shrink-0"
       />
-      <span className="flex-1 capitalize">{displayName}</span>
+      <span className={`flex-1 capitalize ${isDisabled ? 'text-muted-foreground' : ''}`}>{displayName}</span>
     </div>
   )
 }
 
 export function DataTableViewOptions<TData>({
-  table
+  table,
+  maxVisibleColumns
 }: DataTableViewOptionsProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -101,12 +119,16 @@ export function DataTableViewOptions<TData>({
         typeof column.accessorFn !== 'undefined' && column.getCanHide()
     )
 
+  // Count visible columns
+  const visibleCount = allColumns.filter(col => col.getIsVisible()).length
+  const isAtLimit = maxVisibleColumns ? visibleCount >= maxVisibleColumns : false
+
   // Map column IDs to display names
   const columnNameMap: Record<string, string> = {
     id: 'Game #',
     homeTeam: 'Home Team',
     awayTeam: 'Away Team',
-    date: 'Date & Time', 
+    date: 'Date & Time',
     location: 'Location',
     level: 'Level',
     division: 'Division',
@@ -117,29 +139,35 @@ export function DataTableViewOptions<TData>({
     // Referee columns
     name: 'Name',
     contact: 'Contact',
-    certifications: 'Certifications', 
+    certifications: 'Certifications',
     isAvailable: 'Status'
   }
 
   // Create ordered column items
-  const [columnItems, setColumnItems] = React.useState<ColumnItem[]>(() => 
+  const [columnItems, setColumnItems] = React.useState<ColumnItem[]>(() =>
     allColumns.map((column) => ({
       id: column.id,
       displayName: columnNameMap[column.id] || column.id.replace(/_/g, ' '),
       isVisible: column.getIsVisible(),
-      column
+      column,
+      isAtLimit,
+      visibleCount,
+      maxVisibleColumns
     }))
   )
 
   // Update visibility when columns change
   React.useEffect(() => {
-    setColumnItems(prev => 
+    setColumnItems(prev =>
       prev.map(item => ({
         ...item,
-        isVisible: item.column.getIsVisible()
+        isVisible: item.column.getIsVisible(),
+        isAtLimit,
+        visibleCount,
+        maxVisibleColumns
       }))
     )
-  }, [allColumns.map(c => c.getIsVisible()).join(',')])
+  }, [allColumns.map(c => c.getIsVisible()).join(','), isAtLimit, visibleCount, maxVisibleColumns])
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -150,11 +178,11 @@ export function DataTableViewOptions<TData>({
         const newIndex = items.findIndex((item) => item.id === over.id)
 
         const newOrder = arrayMove(items, oldIndex, newIndex)
-        
+
         // Apply the new column order to the table
         const columnOrder = newOrder.map(item => item.id)
         table.setColumnOrder(columnOrder)
-        
+
         return newOrder
       })
     }
@@ -169,11 +197,25 @@ export function DataTableViewOptions<TData>({
           className="ml-auto hidden h-8 lg:flex"
         >
           <MixerHorizontalIcon className="mr-2 h-4 w-4" />
-          View
+          Columns
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuLabel>Toggle & Reorder Columns</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <div className="flex items-center justify-between">
+            <span>Toggle & Reorder Columns</span>
+            {maxVisibleColumns && (
+              <span className={`text-xs font-normal ${isAtLimit ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                {visibleCount}/{maxVisibleColumns}
+              </span>
+            )}
+          </div>
+        </DropdownMenuLabel>
+        {maxVisibleColumns && isAtLimit && (
+          <div className="px-2 py-1 text-xs text-orange-600 bg-orange-50 border-l-2 border-orange-600 mx-2 mb-2 rounded">
+            Maximum columns reached
+          </div>
+        )}
         <DropdownMenuSeparator />
         <div className="max-h-[300px] overflow-y-auto">
           <DndContext
@@ -192,6 +234,9 @@ export function DataTableViewOptions<TData>({
                   displayName={item.displayName}
                   isVisible={item.isVisible}
                   column={item.column}
+                  isAtLimit={item.isAtLimit}
+                  visibleCount={item.visibleCount}
+                  maxVisibleColumns={item.maxVisibleColumns}
                 />
               ))}
             </SortableContext>

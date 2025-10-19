@@ -1,0 +1,27 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for role resource (system role management)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "role"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['view:available', 'admin:update_user_roles', 'admin:view_user_roles']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

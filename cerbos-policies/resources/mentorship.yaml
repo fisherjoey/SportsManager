@@ -1,0 +1,35 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for mentorship resource (mentorship program management)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "mentorship"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['view:list', 'view:details', 'view:stats', 'view:notes', 'view:documents', 'create', 'update', 'delete', 'create:notes', 'update:notes', 'delete:notes', 'create:documents', 'delete:documents', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:list', 'view:details', 'view:stats', 'view:notes', 'view:documents', 'create', 'update', 'create:notes', 'update:notes', 'create:documents']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+
+    - actions: ['view:list', 'view:details', 'view:stats', 'view:notes', 'view:documents']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

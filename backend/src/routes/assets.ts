@@ -3,7 +3,8 @@
 import express from 'express';
 const router = express.Router();
 import { Pool  } from 'pg';
-import { authenticateToken, requireRole, requireAnyRole  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import Joi from 'joi';
 
 const pool = new Pool({
@@ -300,7 +301,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new asset
-router.post('/', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'create',
+}), async (req, res) => {
   try {
     const { error, value } = assetSchema.validate(req.body);
     if (error) {
@@ -344,7 +348,11 @@ router.post('/', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), as
 });
 
 // Update asset
-router.put('/:id', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'update',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { error, value } = assetSchema.partial().validate(req.body);
     if (error) {
@@ -428,7 +436,11 @@ router.get('/:id/maintenance', authenticateToken, async (req, res) => {
 });
 
 // Create maintenance record
-router.post('/:id/maintenance', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/maintenance', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'create:maintenance',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   try {
     const { error, value } = maintenanceSchema.validate({
       ...req.body,
@@ -465,7 +477,11 @@ router.post('/:id/maintenance', authenticateToken, requireAnyRole('admin', 'hr',
 });
 
 // Update maintenance record
-router.put('/maintenance/:maintenanceId', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.put('/maintenance/:maintenanceId', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'update:maintenance',
+  getResourceId: (req) => req.params.maintenanceId,
+}), async (req, res) => {
   try {
     const { error, value } = maintenanceSchema.partial().validate(req.body);
     if (error) {
@@ -521,7 +537,11 @@ router.put('/maintenance/:maintenanceId', authenticateToken, requireAnyRole('adm
 // ASSET CHECKOUT/CHECKIN ENDPOINTS
 
 // Check out asset to employee
-router.post('/:id/checkout', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/:id/checkout', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'checkout',
+  getResourceId: (req) => req.params.id,
+}), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -600,7 +620,11 @@ router.post('/:id/checkout', authenticateToken, requireAnyRole('admin', 'hr', 'm
 });
 
 // Check in asset from employee
-router.post('/checkout/:checkoutId/checkin', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.post('/checkout/:checkoutId/checkin', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'checkin',
+  getResourceId: (req) => req.params.checkoutId,
+}), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -665,7 +689,10 @@ router.post('/checkout/:checkoutId/checkin', authenticateToken, requireAnyRole('
 });
 
 // Get asset statistics and analytics
-router.get('/stats/overview', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.get('/stats/overview', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'view:stats',
+}), async (req, res) => {
   try {
     const query = `
       SELECT 
@@ -729,7 +756,10 @@ router.get('/stats/overview', authenticateToken, requireAnyRole('admin', 'hr', '
 });
 
 // Get assets due for maintenance
-router.get('/maintenance/due', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.get('/maintenance/due', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'view:maintenance_due',
+}), async (req, res) => {
   try {
     const { days_ahead = 30 } = req.query;
     
@@ -765,7 +795,10 @@ router.get('/maintenance/due', authenticateToken, requireAnyRole('admin', 'hr', 
 });
 
 // Get overdue checkouts
-router.get('/checkouts/overdue', authenticateToken, requireAnyRole('admin', 'hr', 'manager'), async (req, res) => {
+router.get('/checkouts/overdue', authenticateToken, requireCerbosPermission({
+  resource: 'asset',
+  action: 'view:overdue',
+}), async (req, res) => {
   try {
     const query = `
       SELECT 

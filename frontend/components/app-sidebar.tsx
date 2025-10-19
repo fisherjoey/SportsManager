@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout } from 'lucide-react'
+import { Calendar, Home, Users, GamepadIcon, User, LogOut, Zap as Whistle, Clock, Trophy, Shield, Zap, ChevronLeft, ChevronRight, CalendarClock, MapPin, ClipboardList, Settings, FileText, Bot, Moon, Sun, DollarSign, Receipt, BarChart3, Building2, FileX, Users2, Package, Shield as ShieldIcon, Workflow, Database, MessageSquare, Plus, CheckCircle, BookOpen, UserCheck, Grid3X3, Pin, PinOff, MoreVertical, Key, Layout, Bell, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import { NotificationsBell } from '@/components/notifications-bell'
@@ -39,9 +39,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
-  const { user, logout } = useAuth()
+  const { user, logout, canAccessPage } = useAuth()
   const { hasAnyPermission } = usePermissions()
-  const { hasPageAccess, accessiblePages } = usePageAccess()
   const { state, toggleSidebar, setOpen } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
@@ -50,6 +49,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const [interactionMode, setInteractionMode] = useState<'hover' | 'click'>('hover')
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const sidebarRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const hoverIntentRef = useRef<boolean>(false)
@@ -61,16 +61,25 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   useEffect(() => {
     const savedPinned = localStorage.getItem('sidebar-pinned')
     const savedMode = localStorage.getItem('sidebar-mode') as 'hover' | 'click'
-    
+    const savedCollapsed = localStorage.getItem('sidebar-collapsed-sections')
+
     if (savedPinned === 'true') {
       setIsPinned(true)
       if (state === 'collapsed') {
         setOpen(true)
       }
     }
-    
+
     if (savedMode) {
       setInteractionMode(savedMode)
+    }
+
+    if (savedCollapsed) {
+      try {
+        setCollapsedSections(JSON.parse(savedCollapsed))
+      } catch (e) {
+        console.error('Failed to parse collapsed sections:', e)
+      }
     }
   }, [])
 
@@ -306,6 +315,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       icon: ShieldIcon
     },
     {
+      title: 'Broadcast Notification',
+      url: 'admin/notifications/broadcast',
+      icon: Bell
+    },
+    {
       title: 'Workflow Management',
       url: 'admin-workflows',
       icon: Workflow
@@ -364,13 +378,23 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const filterItemsByPermissions = (items: any[]) => {
     return items.filter(item => {
       // Use database-driven access check
-      return hasPageAccess(item.url)
+      return canAccessPage(item.url)
     })
   }
 
   // Apply database-driven permission filter only
   const filterNavigationItems = (items: any[]) => {
     return filterItemsByPermissions(items)
+  }
+
+  // Toggle section collapsed state
+  const toggleSection = (sectionName: string) => {
+    const newCollapsedSections = {
+      ...collapsedSections,
+      [sectionName]: !collapsedSections[sectionName]
+    }
+    setCollapsedSections(newCollapsedSections)
+    localStorage.setItem('sidebar-collapsed-sections', JSON.stringify(newCollapsedSections))
   }
 
   // Build navigation sections based on user role and permissions
@@ -428,8 +452,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       className="flex flex-col h-screen transition-none"
       data-no-transition="true"
     >
-      <SidebarHeader className="border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-3 px-6 py-6 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
+      <SidebarHeader className="border-b border-sidebar-border flex-shrink-0 h-16">
+        <div className="flex items-center justify-between gap-3 px-6 h-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img
               src="/sportsync-icon.svg"
@@ -437,13 +461,13 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               className="h-7 w-7 object-contain transition-all duration-150 group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6"
             />
             <div className="group-data-[collapsible=icon]:hidden overflow-hidden transition-all duration-150">
-              <h2 className="text-lg font-bold text-foreground">SyncedSport</h2>
+              <h2 className="text-lg font-bold text-foreground leading-none">SyncedSport</h2>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="group-data-[collapsible=icon]:hidden ml-auto p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-100"
+                className="group-data-[collapsible=icon]:hidden p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-100"
                 title="Sidebar settings"
               >
                 <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
@@ -489,20 +513,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="px-6 pb-4 group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{user?.name?.split(' ')[0] || 'User'}</span>
-            </div>
-            <NotificationsBell />
-          </div>
-        </div>
       </SidebarHeader>
-      <SidebarContent 
+      <SidebarContent
         ref={contentRef}
         className="px-0 pt-3 pb-2 overflow-y-scroll overflow-x-hidden relative flex-grow min-h-0 max-h-full [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-sidebar-border/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-sidebar-border group-data-[collapsible=icon]:[&::-webkit-scrollbar]:w-[3px]"
-        style={{ height: 'calc(100vh - 200px)' }}
       >
         {/* Scroll indicators - subtle gradients */}
         {showScrollTop && (
@@ -513,16 +527,39 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         )}
         {navigationSections.length > 0 ? (
           <>
-            {navigationSections.map((section) => (
-              <SidebarGroup key={section.section}>
-                <SidebarGroupLabel className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
-                  {section.section}
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu className="space-y-0">
-                    {section.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton 
+            {navigationSections.map((section) => {
+              const isCollapsed = collapsedSections[section.section]
+              return (
+                <SidebarGroup key={section.section}>
+                  <div
+                    className="flex items-center justify-between px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center cursor-pointer hover:bg-sidebar-accent/50 transition-colors rounded-md mx-1"
+                    onClick={() => {
+                      if (state !== 'collapsed') {
+                        toggleSection(section.section)
+                      }
+                    }}
+                  >
+                    <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden cursor-pointer m-0 p-0">
+                      {section.section}
+                    </SidebarGroupLabel>
+                    {state !== 'collapsed' && (
+                      <button
+                        className="text-muted-foreground hover:text-foreground transition-colors group-data-[collapsible=icon]:hidden"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleSection(section.section)
+                        }}
+                      >
+                        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                  {!isCollapsed && (
+                    <SidebarGroupContent>
+                      <SidebarMenu className="space-y-0">
+                        {section.items.map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton 
                           onMouseEnter={(e) => {
                             hoveredItemRef.current = e.currentTarget
                           }}
@@ -559,8 +596,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
+                  )}
               </SidebarGroup>
-            ))}
+              )
+            })}
           </>
         ) : (
           // If no sections available, show a basic menu for referee role

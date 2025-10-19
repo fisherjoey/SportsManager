@@ -1,0 +1,35 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for referee_level resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "referee_level"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['view:list', 'check:assignment', 'admin:assign']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:list', 'check:assignment']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+
+    - actions: ['view:list']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

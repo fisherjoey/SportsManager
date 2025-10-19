@@ -18,7 +18,8 @@ import fs from 'fs-extra';
 import Joi from 'joi';
 
 // Middleware imports
-import { authenticateToken, requireRole, requirePermission, requireAnyPermission  } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { ResponseFormatter  } from '../utils/response-formatters';
 import { enhancedAsyncHandler  } from '../middleware/enhanced-error-handling';
 import { validateBody, validateParams, validateQuery  } from '../middleware/validation';
@@ -80,7 +81,10 @@ const DocumentIdParamSchema = Joi.object({
  */
 router.get('/my-mentees',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:list',
+  }),
   validateQuery(Joi.object({
     status: Joi.string().valid('active', 'paused', 'completed', 'terminated').optional(),
     include_details: Joi.boolean().default(true)
@@ -130,7 +134,10 @@ router.get('/my-mentees',
  */
 router.get('/',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:list',
+  }),
   validateQuery(Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(20),
@@ -144,14 +151,14 @@ router.get('/',
       let mentorships;
       let userRole = 'mentee'; // default
 
-      // Check if user has admin/manage permissions directly from database
+      // Check if user has admin/manage permissions via roles
+      // Note: Permission checking is now handled by Cerbos at the route level
+      // This check is just for determining view scope
       const hasManagePermission = await db('user_roles')
         .join('roles', 'user_roles.role_id', 'roles.id')
-        .join('role_permissions', 'roles.id', 'role_permissions.role_id')
-        .join('permissions', 'role_permissions.permission_id', 'permissions.id')
         .where('user_roles.user_id', userId)
         .where('user_roles.is_active', true)
-        .where('permissions.name', 'mentorships:manage')
+        .whereIn('roles.name', ['Super Admin', 'Mentorship Coordinator'])
         .first();
 
       console.log(`User ${userId} has manage permission:`, !!hasManagePermission);
@@ -220,7 +227,11 @@ router.get('/',
  */
 router.get('/:id',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:details',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipId = req.params.id;
@@ -250,7 +261,10 @@ router.get('/:id',
  */
 router.post('/',
   authenticateToken,
-  requireAnyPermission(['mentorships:create', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'create',
+  }),
   validateBody(MentorshipSchemas.create),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipData = req.body;
@@ -290,7 +304,11 @@ router.post('/',
  */
 router.put('/:id',
   authenticateToken,
-  requireAnyPermission(['mentorships:create', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'update',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateBody(MentorshipSchemas.update),
   enhancedAsyncHandler(async (req, res) => {
@@ -336,7 +354,11 @@ router.put('/:id',
  */
 router.delete('/:id',
   authenticateToken,
-  requirePermission('mentorships:manage'),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'delete',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipId = req.params.id;
@@ -366,7 +388,11 @@ router.delete('/:id',
  */
 router.get('/:id/stats',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:stats',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const mentorshipId = req.params.id;
@@ -402,7 +428,11 @@ router.get('/:id/stats',
  */
 router.get('/:id/notes',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:notes',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateQuery(Joi.object({
     page: Joi.number().integer().min(1).default(1),
@@ -444,7 +474,11 @@ router.get('/:id/notes',
  */
 router.post('/:id/notes',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'create:notes',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateBody(MentorshipSchemas.noteCreate),
   enhancedAsyncHandler(async (req, res) => {
@@ -485,7 +519,11 @@ router.post('/:id/notes',
  */
 router.put('/:id/notes/:noteId',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'update:notes',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(NoteIdParamSchema),
   validateBody(MentorshipSchemas.noteUpdate),
   enhancedAsyncHandler(async (req, res) => {
@@ -517,7 +555,11 @@ router.put('/:id/notes/:noteId',
  */
 router.delete('/:id/notes/:noteId',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'delete:notes',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(NoteIdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const { noteId } = req.params;
@@ -553,7 +595,11 @@ router.delete('/:id/notes/:noteId',
  */
 router.get('/:id/documents',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:documents',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   validateQuery(Joi.object({
     page: Joi.number().integer().min(1).default(1),
@@ -591,7 +637,11 @@ router.get('/:id/documents',
  */
 router.post('/:id/documents',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'create:documents',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(IdParamSchema),
   mentorshipUploader.single('document'),
   mentorshipFileSecurity,
@@ -645,7 +695,11 @@ router.post('/:id/documents',
  */
 router.get('/:id/documents/:docId',
   authenticateToken,
-  requireAnyPermission(['mentorships:read', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'view:documents',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(DocumentIdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const { docId } = req.params;
@@ -679,7 +733,11 @@ router.get('/:id/documents/:docId',
  */
 router.delete('/:id/documents/:docId',
   authenticateToken,
-  requireAnyPermission(['mentorships:update', 'mentorships:manage']),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'delete:documents',
+    getResourceId: (req) => req.params.id,
+  }),
   validateParams(DocumentIdParamSchema),
   enhancedAsyncHandler(async (req, res) => {
     const { docId } = req.params;
@@ -715,7 +773,11 @@ router.delete('/:id/documents/:docId',
  */
 router.get('/available-mentors/:menteeId',
   authenticateToken,
-  requirePermission('mentorships:manage'),
+  requireCerbosPermission({
+    resource: 'mentorship',
+    action: 'manage',
+    getResourceId: (req) => req.params.menteeId,
+  }),
   validateParams(Joi.object({ menteeId: Joi.string().uuid().required() })),
   enhancedAsyncHandler(async (req, res) => {
     const { menteeId } = req.params;

@@ -1,12 +1,12 @@
 'use client'
 
+import { PageAccessGuard } from '@/components/page-access-guard'
 import { RolePageAccessManager } from '@/components/admin/rbac/RolePageAccessManager'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export default function PageAccessManagementPage() {
   return (
-    <ProtectedRoute requiredPermissions={['roles.manage']}>
+    <PageAccessGuard pageId="admin_page_access">
       <RolePageAccessManager />
-    </ProtectedRoute>
+    </PageAccessGuard>
   )
 }
