@@ -3,229 +3,187 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-  release:
-    types: [published]
-  workflow_dispatch: # Allow manual triggering with approval
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  SERVER_HOST: 10.0.0.5
+  CONTAINER_ID: 102
+  DEPLOY_PATH: /root/SportsManager
+  DOMAIN: syncedsport.com
 
 jobs:
   pre-deployment-checks:
     name: Pre-deployment Validation
-    runs-on: ubuntu-latest
-    
+    runs-on: self-hosted
+
     outputs:
       should-deploy: ${{ steps.checks.outputs.should-deploy }}
-    
+      has-migrations: ${{ steps.checks.outputs.has-migrations }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - name: Check for breaking changes
+
+      - name: Check for critical changes
         id: checks
         run: |
           # Check if there are any database migrations
-          MIGRATION_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep "migrations/" | wc -l)
-          
-          # Check if there are any major version changes
-          PACKAGE_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep "package.json" | wc -l)
-          
+          MIGRATION_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E "backend/src/migrations/" | wc -l || echo "0")
+
+          # Check if there are any Docker changes
+          DOCKER_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E "Dockerfile|docker-compose" | wc -l || echo "0")
+
+          echo "has-migrations=$MIGRATION_CHANGES" >> $GITHUB_OUTPUT
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+
           if [ "$MIGRATION_CHANGES" -gt 0 ]; then
-            echo "⚠️ Database migrations detected - requires careful deployment"
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
-          elif [ "$PACKAGE_CHANGES" -gt 0 ]; then
-            echo "⚠️ Package.json changes detected - checking for breaking changes"
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "✅ No breaking changes detected"
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Database migrations detected - will run migrations during deployment"
           fi
 
-  build-and-test:
-    name: Build and Test for Production
-    runs-on: ubuntu-latest
-    needs: pre-deployment-checks
-    if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
-    
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: sports_management_prod_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      # Full test suite for production
-      - name: Install and test frontend
-        run: |
-          npm ci
-          npm run build
-          npm test -- --coverage --watchAll=false
-      
-      - name: Install and test backend
-        run: |
-          cd backend
-          npm ci
-          npm run migrate
-          npm test -- --coverage
-        env:
-          NODE_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: sports_management_prod_test
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-          JWT_SECRET: test_production_secret
-      
-      - name: Security audit
-        run: |
-          npm audit --audit-level=high
-          cd backend && npm audit --audit-level=high
-      
-      - name: Bundle analysis
-        run: |
-          npm run build
-          # Check bundle size (example threshold)
-          BUNDLE_SIZE=$(du -sk .next | cut -f1)
-          if [ "$BUNDLE_SIZE" -gt 50000 ]; then
-            echo "⚠️ Bundle size is large: ${BUNDLE_SIZE}KB"
-            echo "Consider optimizing before production deployment"
-          else
-            echo "✅ Bundle size acceptable: ${BUNDLE_SIZE}KB"
+          if [ "$DOCKER_CHANGES" -gt 0 ]; then
+            echo "🐳 Docker configuration changes detected - will rebuild images"
           fi
 
   deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [pre-deployment-checks, build-and-test]
-    environment: production # Requires manual approval
+    name: Deploy to Production (Proxmox CT102)
+    runs-on: self-hosted
+    needs: pre-deployment-checks
+    environment: production
     if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
-    
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      # Backup current production (if applicable)
-      - name: Create production backup
+      - name: Setup SSH key
         run: |
-          echo "📦 Creating production backup..."
-          # Add backup commands here
-          # Examples:
-          # - Database backup
-          # - File system backup
-          # - Docker image backup
-          echo "✅ Backup completed"
-      
-      # Deploy with zero-downtime strategy
-      - name: Deploy to production
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create database backup
         run: |
-          echo "🚀 Starting production deployment..."
-          
-          # Build production assets
-          npm ci
-          npm run build
-          
-          # Deploy backend
-          cd backend
-          npm ci
-          
-          # Run database migrations (production)
+          echo "📦 Creating database backup..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              mkdir -p ${{ env.DEPLOY_PATH }}/deployment/database-dumps/backups && \
+              docker exec sportsmanager-backend sh -c \"cd /app && npx knex migrate:currentVersion\" && \
+              docker exec -e PGPASSWORD=postgres123 sportsmanager-postgres pg_dump -U postgres -d sports_management -F c -f /tmp/backup_\$(date +%Y%m%d_%H%M%S).dump && \
+              docker cp sportsmanager-postgres:/tmp/backup_\$(date +%Y%m%d_%H%M%S).dump ${{ env.DEPLOY_PATH }}/deployment/database-dumps/backups/\
+            '"
+          echo "✅ Database backup created"
+
+      - name: Pull latest code
+        run: |
+          echo "📥 Pulling latest code from main branch..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }} && \
+              git fetch --all && \
+              git checkout main && \
+              git pull origin main\
+            '"
+
+      - name: Run database migrations
+        if: needs.pre-deployment-checks.outputs.has-migrations != '0'
+        run: |
           echo "📊 Running database migrations..."
-          npm run migrate
-          
-          echo "✅ Production deployment initiated"
-          # Add actual deployment commands:
-          # - Blue-green deployment
-          # - Rolling updates
-          # - Container orchestration
-          # - CDN cache invalidation
-        env:
-          NODE_ENV: production
-          DB_HOST: ${{ secrets.PROD_DB_HOST }}
-          DB_PORT: ${{ secrets.PROD_DB_PORT }}
-          DB_NAME: ${{ secrets.PROD_DB_NAME }}
-          DB_USER: ${{ secrets.PROD_DB_USER }}
-          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
-      
-      # Health checks and smoke tests
-      - name: Post-deployment health checks
-        timeout-minutes: 10
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              docker exec sportsmanager-backend sh -c \"cd /app && npx knex migrate:latest\"\
+            '"
+          echo "✅ Migrations completed"
+
+      - name: Rebuild and restart services
         run: |
-          echo "🔍 Running production health checks..."
-          
-          # Wait for deployment to stabilize
-          sleep 60
-          
-          # Health check endpoints
-          # curl -f ${{ secrets.PROD_API_URL }}/health || exit 1
-          # curl -f ${{ secrets.PROD_FRONTEND_URL }} || exit 1
-          
-          # Database connectivity test
-          # Test critical API endpoints
-          
+          echo "🔨 Rebuilding Docker containers..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }}/deployment && \
+              docker compose -f docker-compose.deploy.yml --env-file .env up -d --build\
+            '"
+
+      - name: Wait for services to stabilize
+        run: |
+          echo "⏳ Waiting for services to be healthy..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              for i in {1..60}; do \
+                HEALTHY=\$(docker ps --format \"{{.Names}}: {{.Status}}\" | grep -c healthy || echo 0); \
+                if [ \"\$HEALTHY\" -ge 2 ]; then \
+                  echo \"✅ Services are healthy\"; \
+                  exit 0; \
+                fi; \
+                echo \"Waiting... (\$i/60)\"; \
+                sleep 2; \
+              done; \
+              echo \"⚠️ Timeout waiting for healthy status\"; \
+              docker ps --format \"table {{.Names}}\t{{.Status}}\"; \
+            '"
+
+      - name: Run health checks
+        run: |
+          echo "🔍 Running health checks..."
+
+          # Internal health checks
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              curl -f http://localhost:3001/health || exit 1 && \
+              curl -f http://localhost:3004 || exit 1\
+            '"
+
+          # External health check via Cloudflare Tunnel
+          sleep 10
+          curl -f https://${{ env.DOMAIN }} || exit 1
+          curl -f https://${{ env.DOMAIN }}/api/games | grep -q "data" || exit 1
+
           echo "✅ All health checks passed"
-      
-      # Rollback mechanism (if health checks fail)
+
+      - name: Verify deployment
+        run: |
+          echo "📊 Deployment Summary:"
+          echo "--------------------"
+          echo "🌐 Production URL: https://${{ env.DOMAIN }}"
+          echo "📡 API URL: https://${{ env.DOMAIN }}/api"
+          echo "🐳 Container Status:"
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              docker ps --format \"table {{.Names}}\t{{.Status}}\"\
+            '"
+
       - name: Rollback on failure
         if: failure()
         run: |
           echo "❌ Deployment failed - initiating rollback..."
-          
-          # Rollback database migrations (if safe)
-          # cd backend && npx knex migrate:rollback --batch=1
-          
-          # Restore previous deployment
-          # Restore from backup
-          
-          echo "🔄 Rollback completed"
+
+          # Get logs for debugging
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }}/deployment && \
+              docker compose -f docker-compose.deploy.yml logs --tail=100\
+            '"
+
+          # Optionally rollback to previous version
+          # ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+          #   "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+          #     cd ${{ env.DEPLOY_PATH }} && \
+          #     git checkout HEAD~1 && \
+          #     cd deployment && \
+          #     docker compose -f docker-compose.deploy.yml up -d --build\
+          #   '"
+
           exit 1
 
   post-deployment:
     name: Post-deployment Tasks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: deploy-production
     if: success()
-    
+
     steps:
-      - name: Update deployment status
+      - name: Deployment success notification
         run: |
           echo "🎉 Production deployment successful!"
-          echo "🌐 Production URL: ${{ secrets.PROD_FRONTEND_URL }}"
-          echo "📡 API URL: ${{ secrets.PROD_API_URL }}"
+          echo "🌐 Live at: https://${{ env.DOMAIN }}"
           echo "📅 Deployed at: $(date)"
-      
-      - name: Notify team
-        run: |
-          # Send notifications (Slack, email, etc.)
-          echo "📢 Notifying deployment team..."
-          echo "✅ Sports Management App deployed to production"
-          
-      - name: Update monitoring
-        run: |
-          # Update monitoring dashboards
-          # Set up alerts for new deployment
-          echo "📊 Monitoring updated for new deployment"
+          echo "🔗 Git commit: ${{ github.sha }}"

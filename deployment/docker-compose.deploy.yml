@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sportsmanager-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: sports_management
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-dumps:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - sportsmanager-network
+
+  # Cerbos Authorization Server
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:latest
+    container_name: sportsmanager-cerbos
+    command: server --config=/config/config.yaml
+    ports:
+      - "3592:3592"  # HTTP API
+      - "3593:3593"  # gRPC API
+    volumes:
+      - ../cerbos-policies:/policies:ro
+      - ../cerbos/config:/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3592/_cerbos/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sportsmanager-network
+
+  # Backend API Server
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-dev}
+    container_name: sportsmanager-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sports_management
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-postgres123}@postgres:5432/sports_management
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-development-secret-key-change-this-in-production}
+      JWT_EXPIRES_IN: 7d
+
+      # Cerbos
+      CERBOS_HOST: cerbos:3593
+      CERBOS_TLS: false
+      CERBOS_CACHE_ENABLED: true
+      CERBOS_CACHE_TTL: 300000
+
+      # Redis
+      DISABLE_REDIS: true
+
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 1000
+
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cerbos:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sportsmanager-network
+
+  # Frontend Next.js Application
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-dev}
+    container_name: sportsmanager-frontend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3004
+
+      # API Configuration - use domain for public access via Cloudflare Tunnel
+      NEXT_PUBLIC_API_URL: https://syncedsport.com/api
+      NEXT_PUBLIC_API_BASE_URL: https://syncedsport.com/api
+
+      # Environment
+      NEXT_PUBLIC_ENV: ${NODE_ENV:-development}
+
+      # Features
+      NEXT_PUBLIC_ENABLE_DEBUG: true
+
+      # Maps
+      NEXT_PUBLIC_OPENROUTE_API_KEY: ${NEXT_PUBLIC_OPENROUTE_API_KEY:-}
+
+      NEXT_TELEMETRY_DISABLED: 1
+
+    ports:
+      - "${FRONTEND_PORT:-3004}:3004"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3004"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sportsmanager-network
+
+networks:
+  sportsmanager-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

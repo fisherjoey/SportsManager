@@ -56,6 +56,13 @@ export function usePageAccess(
   const [hasAccess, setHasAccess] = useState(false)
 
   useEffect(() => {
+    // Auth bypass for Figma scraping - grant access to all pages
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+      setHasAccess(true)
+      setIsChecking(false)
+      return
+    }
+
     // Wait for client-side rendering and auth to be initialized
     const checkAccess = () => {
       // If not authenticated and should redirect to login

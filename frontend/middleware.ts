@@ -133,6 +133,15 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
 
   // ============================================================================
+  // AUTH BYPASS FOR FIGMA SCRAPING
+  // ============================================================================
+  // When DISABLE_AUTH is enabled, skip all auth checks to allow public access
+  if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+    console.log('[FRONTEND MIDDLEWARE BYPASS] Authentication disabled - allowing all routes')
+    return NextResponse.next()
+  }
+
+  // ============================================================================
   // STEP 1: Exclude routes that don't need middleware processing
   // ============================================================================
   // Skip middleware for API routes, static assets, and Next.js internals
