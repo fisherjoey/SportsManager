@@ -36,6 +36,12 @@ export function requireCerbosPermission(
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Auth bypass for Figma scraping and development
+      if (process.env.DISABLE_AUTH === 'true') {
+        console.log('[CERBOS BYPASS] Authorization disabled via DISABLE_AUTH environment variable');
+        return next();
+      }
+
       if (!req.user) {
         return res.status(401).json({
           error: 'Unauthorized',
