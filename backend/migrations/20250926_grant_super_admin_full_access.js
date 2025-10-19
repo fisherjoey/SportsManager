@@ -13,7 +13,7 @@ exports.up = async function(knex) {
 
   try {
     // Step 1: Get the Super Admin role
-    const superAdminRole = await knex('roles')
+    let superAdminRole = await knex('roles')
       .where('name', 'Super Admin')
       .first();
 

@@ -252,7 +252,8 @@ const createRoleSchema = Joi.object({
   is_system: Joi.boolean().default(false),
   is_active: Joi.boolean().default(true),
   permissions: Joi.array().items(Joi.string()).allow(null), // Allow permission names or UUIDs
-  permission_ids: Joi.array().items(Joi.string()).allow(null) // Legacy field, ignored but allowed
+  permission_ids: Joi.array().items(Joi.string()).allow(null), // Legacy field, ignored but allowed
+  pages: Joi.array().items(Joi.string()).allow(null).default([]) // Page-level access control
 });
 
 const updateRoleSchema = Joi.object({
@@ -263,7 +264,8 @@ const updateRoleSchema = Joi.object({
   color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
   is_active: Joi.boolean(),
   permissions: Joi.array().items(Joi.string()).allow(null), // Allow permission names or UUIDs
-  permission_ids: Joi.array().items(Joi.string()).allow(null) // Legacy field, ignored but allowed
+  permission_ids: Joi.array().items(Joi.string()).allow(null), // Legacy field, ignored but allowed
+  pages: Joi.array().items(Joi.string()).allow(null) // Page-level access control
 });
 
 const assignPermissionsSchema = Joi.object({

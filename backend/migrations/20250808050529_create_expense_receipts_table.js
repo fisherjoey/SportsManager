@@ -2,7 +2,13 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = function(knex) {
+exports.up = async function(knex) {
+  const hasTable = await knex.schema.hasTable('expense_receipts');
+  if (hasTable) {
+    console.log('⚠️  Expense receipts table already exists, skipping migration');
+    return;
+  }
+
   return knex.schema.createTable('expense_receipts', function(table) {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE');

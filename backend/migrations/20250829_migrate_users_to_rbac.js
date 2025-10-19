@@ -14,12 +14,20 @@
 exports.up = async function(knex) {
   console.log('Starting user RBAC migration...');
 
+  // Check if roles table exists
+  const hasRolesTable = await knex.schema.hasTable('roles');
+  if (!hasRolesTable) {
+    console.log('⚠️  Roles table does not exist yet, skipping user RBAC migration');
+    return;
+  }
+
   // Get the role IDs from the new RBAC system
   const adminRole = await knex('roles').where('name', 'Admin').first();
   const refereeRole = await knex('roles').where('name', 'Referee').first();
 
   if (!adminRole || !refereeRole) {
-    throw new Error('Required roles (Admin, Referee) not found. Please ensure RBAC seed data has been run.');
+    console.log('⚠️  Required roles (Admin, Referee) not found, skipping user RBAC migration');
+    return;
   }
 
   // Get all users with their current roles

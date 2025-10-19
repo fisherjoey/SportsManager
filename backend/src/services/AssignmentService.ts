@@ -471,18 +471,19 @@ export class AssignmentService extends BaseService<AssignmentEntity> {
         query = query.where('game_assignments.status', filters.status);
       }
       if (filters.date_from) {
-        query = query.where('games.date_time', '>=', filters.date_from);
+        query = query.where('games.game_date', '>=', filters.date_from);
       }
       if (filters.date_to) {
-        query = query.where('games.date_time', '<=', filters.date_to);
+        query = query.where('games.game_date', '<=', filters.date_to);
       }
 
       // Get total count
       const countQuery = query.clone().clearSelect().count('* as total').first();
-      
+
       // Apply pagination and ordering
       query = query
-        .orderBy('games.date_time', 'asc')
+        .orderBy('games.game_date', 'asc')
+        .orderBy('games.game_time', 'asc')
         .limit(limit)
         .offset(offset);
 

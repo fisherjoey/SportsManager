@@ -209,12 +209,9 @@ router.get('/',
           .select(
             'teams.id',
             'teams.name',
-            'teams.team_number',
-            'teams.display_name',
             'teams.league_id',
             'teams.contact_email',
             'teams.contact_phone',
-            'teams.metadata',
             'teams.created_at',
             'teams.updated_at',
             'leagues.organization',
@@ -670,7 +667,7 @@ router.get('/league/:league_id',
       const teams = await db('teams')
         .select('teams.*')
         .where('teams.league_id', leagueId)
-        .orderBy('teams.team_number', 'asc');
+        .orderBy('teams.name', 'asc');
 
       const league = await db('leagues').where('id', leagueId).first();
       if (!league) {

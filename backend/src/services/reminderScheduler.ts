@@ -52,13 +52,14 @@ export class ReminderScheduler {
           'users.email',
           'users.name',
           'users.phone',
-          'games.date_time',
-          'games.field as location',
+          'games.game_date',
+          'games.game_time',
+          'games.location',
           'home_teams.name as home_team_name',
           'away_teams.name as away_team_name'
         )
         .where('game_assignments.status', 'accepted')
-        .whereBetween('games.date_time', [twoHoursFromNow, threeHoursFromNow])
+        .whereRaw(`games.game_date::timestamp + games.game_time::time BETWEEN ? AND ?`, [twoHoursFromNow, threeHoursFromNow])
         .whereNull('game_assignments.reminder_sent_at'); // Only send once
 
       console.log(`Found ${upcomingAssignments.length} games needing reminders`);
@@ -77,7 +78,7 @@ export class ReminderScheduler {
    */
   private async sendGameReminder(assignment: any) {
     try {
-      const gameTime = new Date(assignment.date_time);
+      const gameTime = new Date(`${assignment.game_date}T${assignment.game_time}`);
       const now = new Date();
       const hoursUntil = Math.round((gameTime.getTime() - now.getTime()) / (1000 * 60 * 60));
 

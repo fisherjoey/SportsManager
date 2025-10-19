@@ -8,13 +8,18 @@
 exports.up = async function(knex) {
   console.log('Adding user notes column...');
 
-  // Add notes column to users table
-  await knex.schema.alterTable('users', function(table) {
-    table.text('notes');
-    table.index('notes'); // For searching notes
-  });
+  // Get existing columns
+  const existingColumns = await knex('users').columnInfo();
 
-  console.log('✅ User notes column added successfully');
+  // Add notes column to users table if it doesn't exist
+  if (!existingColumns.notes) {
+    await knex.schema.alterTable('users', function(table) {
+      table.text('notes');
+    });
+    console.log('✅ User notes column added successfully');
+  } else {
+    console.log('⚠️  User notes column already exists, skipping');
+  }
 };
 
 exports.down = async function(knex) {
