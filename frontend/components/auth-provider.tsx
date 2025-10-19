@@ -79,8 +79,17 @@ const AuthContext = createContext<AuthContextType | null>(null)
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Auth bypass for Figma scraping - create mock authenticated state
+  const authBypassEnabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true'
+
+  const [user, setUser] = useState<User | null>(authBypassEnabled ? {
+    id: 'bypass-user',
+    email: 'bypass@system.local',
+    name: 'Bypass User',
+    roles: ['Super Admin']
+  } as User : null)
+  const [isAuthenticated, setIsAuthenticated] = useState(authBypassEnabled)
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [pagePermissions, setPagePermissions] = useState<Map<string, { view: boolean, access: boolean }>>(new Map())
   const [isClient, setIsClient] = useState(false)
@@ -131,6 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isClient) return
+
+    // Skip auth check if bypass is enabled
+    if (authBypassEnabled) {
+      return
+    }
 
     // Check for stored auth on mount
     const storedToken = getAuthToken()
@@ -223,11 +237,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const hasRole = (role: string): boolean => {
+    // Auth bypass - always return true
+    if (authBypassEnabled) return true
+
     if (!user) return false
-    
+
     // Check roles array
     const userRoles = user.roles || []
-    
+
     // Super Admin and Admin always have access
     if (userRoles.includes('Super Admin') || userRoles.includes('admin') || userRoles.includes('Admin')) {
       return true
@@ -301,6 +318,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchUserPermissions])
 
   const canAccessPage = useCallback((pageId: string): boolean => {
+    // Auth bypass - always return true
+    if (authBypassEnabled) return true
+
     if (!user || !isAuthenticated) return false
 
     // Super Admin and Admin always have access to all pages
