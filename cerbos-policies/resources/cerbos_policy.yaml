@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "cerbos_policy"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['view:resources', 'view:resource_details', 'create:resource', 'update:resource', 'delete:resource', 'view:actions', 'create:action', 'delete:action', 'view:roles', 'update:roles', 'reload', 'view:derived_roles']
       effect: EFFECT_ALLOW
       roles:

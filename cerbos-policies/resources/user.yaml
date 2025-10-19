@@ -7,6 +7,14 @@ resourcePolicy:
     - common_roles
   resource: "user"
   rules:
+    # Super Admin has full access to all user operations
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+      derivedRoles:
+        - system_admin
+
     - actions: ['view:list', 'view:details', 'view:roles', 'create', 'update', 'delete']
       effect: EFFECT_ALLOW
       roles:

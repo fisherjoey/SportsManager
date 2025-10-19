@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "asset"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['create', 'update', 'create:maintenance', 'update:maintenance', 'checkout', 'checkin', 'view:stats', 'view:maintenance_due', 'view:overdue']
       effect: EFFECT_ALLOW
       roles:

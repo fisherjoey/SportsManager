@@ -7,6 +7,11 @@ resourcePolicy:
     - common_roles
   resource: "ai_assignment_rule"
   rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
     - actions: ['view:list', 'view:details', 'create', 'update', 'delete', 'run', 'view:runs', 'view:run_details', 'toggle', 'manage:partner_preferences']
       effect: EFFECT_ALLOW
       roles:
