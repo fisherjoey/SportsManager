@@ -75,6 +75,9 @@ services:
       # Redis
       DISABLE_REDIS: true
 
+      # CORS Configuration
+      ALLOWED_ORIGINS: https://syncedsport.com,http://localhost:3004
+
       # Rate Limiting
       RATE_LIMIT_WINDOW_MS: 900000
       RATE_LIMIT_MAX_REQUESTS: 1000
