@@ -1,0 +1,143 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  SERVER_HOST: 10.0.0.5
+  CONTAINER_ID: 102
+  DEPLOY_PATH: /root/SportsManager
+  DOMAIN: dev.syncedsport.com
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev Server
+    runs-on: self-hosted
+
+    steps:
+      - name: Ensure SSH known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Pull latest code on dev
+        run: |
+          echo "📥 Pulling latest code from develop branch..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }} && \
+              git fetch --all && \
+              git checkout develop && \
+              git pull origin develop\
+            '"
+
+      - name: Check for migrations
+        id: check_migrations
+        run: |
+          echo "🔍 Checking for database migrations..."
+          MIGRATION_COUNT=$(ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }} && \
+              git diff HEAD~1 HEAD --name-only | grep -c \"backend/src/migrations/\" || echo 0\
+            '")
+          echo "has_migrations=$MIGRATION_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$MIGRATION_COUNT" -gt 0 ]; then
+            echo "⚠️ Found $MIGRATION_COUNT migration file(s) - will run migrations"
+          else
+            echo "✅ No migrations detected"
+          fi
+
+      - name: Run database migrations
+        if: steps.check_migrations.outputs.has_migrations != '0'
+        run: |
+          echo "📊 Running database migrations..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              docker exec sportsmanager-backend-dev sh -c \"cd /app && npx knex migrate:latest\"\
+            '"
+          echo "✅ Migrations completed"
+
+      - name: Rebuild dev containers
+        run: |
+          echo "🔨 Rebuilding Docker containers..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }}/deployment && \
+              docker compose -f docker-compose.dev.yml up -d --build\
+            '"
+
+      - name: Wait for services to stabilize
+        run: |
+          echo "⏳ Waiting for services to be healthy..."
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              for i in {1..30}; do \
+                HEALTHY=\$(docker ps --format \"{{.Names}}: {{.Status}}\" | grep -c healthy || echo 0); \
+                if [ \"\$HEALTHY\" -ge 2 ]; then \
+                  echo \"✅ Services are healthy\"; \
+                  exit 0; \
+                fi; \
+                echo \"Waiting... (\$i/30)\"; \
+                sleep 2; \
+              done; \
+              echo \"⚠️ Timeout waiting for healthy status\"; \
+              docker ps --format \"table {{.Names}}\t{{.Status}}\"; \
+            '"
+
+      - name: Run health checks
+        run: |
+          echo "🔍 Running health checks..."
+
+          # Internal health checks
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              curl -f http://localhost:3002/health || exit 1 && \
+              curl -f http://localhost:3005 || exit 1\
+            '"
+
+          # External health check via Cloudflare Tunnel
+          sleep 5
+          curl -f https://${{ env.DOMAIN }} || exit 1
+
+          echo "✅ All health checks passed"
+
+      - name: Verify deployment
+        run: |
+          echo "📊 Development Deployment Summary:"
+          echo "------------------------------------"
+          echo "🌐 Dev URL: https://${{ env.DOMAIN }}"
+          echo "📡 API URL: https://${{ env.DOMAIN }}/api"
+          echo "🔧 Branch: develop"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo ""
+          echo "🐳 Container Status:"
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              docker ps --format \"table {{.Names}}\t{{.Status}}\" | grep dev\
+            '"
+
+      - name: Deployment success notification
+        if: success()
+        run: |
+          echo "🎉 Development deployment successful!"
+          echo "🌐 Live at: https://${{ env.DOMAIN }}"
+          echo "📅 Deployed at: $(date)"
+          echo "🔗 Git commit: ${{ github.sha }}"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Development deployment failed - showing logs..."
+
+          # Get logs for debugging
+          ssh -i ~/.ssh/id_rsa root@${{ env.SERVER_HOST }} \
+            "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
+              cd ${{ env.DEPLOY_PATH }}/deployment && \
+              docker compose -f docker-compose.dev.yml logs --tail=100\
+            '"
+
+          echo "💡 Tip: Check the logs above or visit GitHub Actions for details"
+          exit 1
