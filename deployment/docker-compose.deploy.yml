@@ -36,7 +36,7 @@ services:
       - ../cerbos/config:/config:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--addr=:3592"]
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
       interval: 10s
       timeout: 5s
       retries: 3
