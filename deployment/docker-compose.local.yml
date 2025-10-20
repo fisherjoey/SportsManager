@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sportsmanager-postgres-local
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: sports_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+      - ./seed-data:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - sportsmanager-local
+
+  # Cerbos Authorization Server
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:latest
+    container_name: sportsmanager-cerbos-local
+    command: server --config=/config/config.yaml
+    ports:
+      - "3592:3592"  # HTTP API
+      - "3593:3593"  # gRPC API
+    volumes:
+      - ../cerbos-policies:/policies:ro
+      - ../cerbos/config:/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sportsmanager-local
+
+  # Backend API Server (Hot-Reload)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    container_name: sportsmanager-backend-local
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sports_management
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/sports_management
+
+      # JWT
+      JWT_SECRET: local-dev-secret-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+
+      # Cerbos
+      CERBOS_HOST: cerbos:3593
+      CERBOS_TLS: false
+      CERBOS_CACHE_ENABLED: true
+      CERBOS_CACHE_TTL: 300000
+
+      # Redis
+      DISABLE_REDIS: true
+
+      # CORS Configuration
+      FRONTEND_URL: http://localhost:3000
+      PRODUCTION_DOMAINS: http://localhost:3000,http://localhost:3004
+
+      # Rate Limiting (more permissive for local dev)
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 10000
+
+      # Location Services
+      LOCATION_SERVICE: openroute
+      OPENROUTE_API_KEY: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQyZTg3ZTU0NWQ0NzQ5OWY4MWQ0MmZkYmMyZjNhM2YwIiwiaCI6Im11cm11cjY0In0=
+
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount source code for hot-reload
+      - ../backend/src:/app/src:ro
+      - ../backend/knexfile.ts:/app/knexfile.ts:ro
+      - ../backend/src/migrations:/app/src/migrations:ro
+      - ../backend/src/seeds:/app/src/seeds:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cerbos:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - sportsmanager-local
+
+  # Frontend Next.js Application (Hot-Reload)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+    container_name: sportsmanager-frontend-local
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+
+      # API Configuration
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001/api
+
+      # Environment
+      NEXT_PUBLIC_ENV: development
+
+      # Features
+      NEXT_PUBLIC_ENABLE_DEBUG: true
+
+      # Maps
+      NEXT_PUBLIC_OPENROUTE_API_KEY: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQyZTg3ZTU0NWQ0NzQ5OWY4MWQ0MmZkYmMyZjNhM2YwIiwiaCI6Im11cm11cjY0In0=
+
+      # Telemetry
+      NEXT_TELEMETRY_DISABLED: 1
+
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot-reload
+      - ../frontend/src:/app/src:ro
+      - ../frontend/public:/app/public:ro
+      - ../frontend/next.config.js:/app/next.config.js:ro
+      - ../frontend/tailwind.config.js:/app/tailwind.config.js:ro
+      - ../frontend/tsconfig.json:/app/tsconfig.json:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - sportsmanager-local
+
+networks:
+  sportsmanager-local:
+    driver: bridge
+
+volumes:
+  postgres_data_local:
+    driver: local
