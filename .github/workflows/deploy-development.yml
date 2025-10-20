@@ -41,10 +41,11 @@ jobs:
             "pct exec ${{ env.CONTAINER_ID }} -- bash -c '\
               cd ${{ env.DEPLOY_PATH }} && \
               git diff HEAD~1 HEAD --name-only | grep -c \"backend/src/migrations/\" || echo 0\
-            '")
+            '" | tail -1 | tr -d '\r\n')
           echo "has_migrations=$MIGRATION_COUNT" >> $GITHUB_OUTPUT
+          echo "Migration count: $MIGRATION_COUNT"
 
-          if [ "$MIGRATION_COUNT" -gt 0 ]; then
+          if [ "$MIGRATION_COUNT" -gt 0 ] 2>/dev/null; then
             echo "⚠️ Found $MIGRATION_COUNT migration file(s) - will run migrations"
           else
             echo "✅ No migrations detected"
