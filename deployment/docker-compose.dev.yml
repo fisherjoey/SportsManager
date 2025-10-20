@@ -29,8 +29,8 @@ services:
       CERBOS_CACHE_ENABLED: true
       CERBOS_CACHE_TTL: 300000
 
-      # Auth Bypass for Development/Figma
-      DISABLE_AUTH: true
+      # Authentication (enabled for development)
+      DISABLE_AUTH: false
 
       # Redis
       DISABLE_REDIS: true
@@ -68,8 +68,8 @@ services:
       # Environment
       NEXT_PUBLIC_ENV: development
 
-      # Auth Bypass for Development/Figma
-      NEXT_PUBLIC_DISABLE_AUTH: true
+      # Authentication (enabled for development)
+      NEXT_PUBLIC_DISABLE_AUTH: false
 
       # Features
       NEXT_PUBLIC_ENABLE_DEBUG: true
