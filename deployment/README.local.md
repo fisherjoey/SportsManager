@@ -244,3 +244,4 @@ docker-compose -f docker-compose.local.yml down
 - Check existing issues: https://github.com/fisherjoey/SportsManager/issues
 - Ask the team in Slack/Discord
 - Review the [troubleshooting section](#troubleshooting) above
+# Testing deployment
