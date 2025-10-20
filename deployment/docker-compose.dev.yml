@@ -89,5 +89,6 @@ services:
 
 networks:
   sportsmanager-network:
+    name: deployment_sportsmanager-network
     external: true
 
