@@ -11,6 +11,12 @@ const config: Config = {
     "./content/**/*.{md,mdx}",
     "*.{js,ts,jsx,tsx,mdx}"
   ],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
   theme: {
   	screens: {
   		'sm': '640px',

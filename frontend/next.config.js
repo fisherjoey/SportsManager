@@ -1,13 +1,34 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  
+
   // Temporarily disable TypeScript and ESLint during build for deployment
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+
+  // Fix for Tailwind CSS blocklist error in Next.js 15
+  webpack: (config) => {
+    // Find the CSS loader rule
+    const rules = config.module.rules.find((rule) => typeof rule === 'object' && rule.oneOf);
+
+    if (rules && rules.oneOf) {
+      rules.oneOf.forEach((rule) => {
+        if (rule.use && Array.isArray(rule.use)) {
+          rule.use.forEach((loader) => {
+            if (loader.loader && loader.loader.includes('css-loader') && loader.options) {
+              // Remove blocklist option if it exists
+              delete loader.options.blocklist;
+            }
+          });
+        }
+      });
+    }
+
+    return config;
   },
   
   // Environment variables
