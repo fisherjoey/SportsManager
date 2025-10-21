@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Users,
   Shield,
@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   UserCog,
   Key,
-  GraduationCap
+  GraduationCap,
+  AlertCircle
 } from 'lucide-react'
 
 // Import existing components
@@ -166,6 +167,19 @@ export function UnifiedAccessControlDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Cerbos Migration Notice */}
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-900">Cerbos Authorization System</AlertTitle>
+          <AlertDescription className="text-blue-800">
+            This application uses Cerbos for role-based access control. Permissions are managed through YAML policy files
+            (<code className="text-xs bg-blue-100 px-1 py-0.5 rounded">cerbos-policies/*.yaml</code>) and cannot be edited through the UI.{' '}
+            <a href="https://docs.cerbos.dev/" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+              Learn more about Cerbos
+            </a>
+          </AlertDescription>
+        </Alert>
       </div>
 
       {/* Main Tabs */}

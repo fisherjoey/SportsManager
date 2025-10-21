@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { 
   Shield, 
   Search, 
@@ -170,6 +171,19 @@ export function PermissionManagementDashboard() {
           Refresh
         </Button>
       </div>
+
+      {/* Cerbos Migration Notice */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <AlertCircle className="h-4 w-4 text-blue-600" />
+        <AlertTitle className="text-blue-900">Cerbos Migration Complete</AlertTitle>
+        <AlertDescription className="text-blue-800">
+          Permissions are now defined in Cerbos policy files (<code className="text-xs bg-blue-100 px-1 py-0.5 rounded">cerbos-policies/*.yaml</code>).
+          This dashboard displays current permissions for reference only and cannot be edited here.{' '}
+          <a href="https://docs.cerbos.dev/" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+            Learn more about Cerbos
+          </a>
+        </AlertDescription>
+      </Alert>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
