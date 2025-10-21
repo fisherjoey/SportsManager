@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Git Pre-Commit Hook
+# Validates Cerbos policies before allowing commit
+
+# Check if any Cerbos policy files are being committed
+CERBOS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^cerbos-policies/.*\.yaml$" || true)
+
+if [ -z "$CERBOS_FILES" ]; then
+  # No Cerbos policy files changed, skip validation
+  exit 0
+fi
+
+echo "🔍 Detected changes to Cerbos policies, running validation..."
+echo ""
+
+# Get the project root directory
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+
+# Run the validation script
+if [ -f "$PROJECT_ROOT/scripts/validate-cerbos-policies.sh" ]; then
+  bash "$PROJECT_ROOT/scripts/validate-cerbos-policies.sh"
+  VALIDATION_RESULT=$?
+
+  if [ $VALIDATION_RESULT -ne 0 ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "❌ Commit blocked: Cerbos policy validation failed"
+    echo ""
+    echo "Please fix the errors above before committing."
+    echo ""
+    echo "To skip this check (NOT RECOMMENDED):"
+    echo "  git commit --no-verify"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 1
+  fi
+else
+  echo "⚠️  Warning: Validation script not found at scripts/validate-cerbos-policies.sh"
+  echo "Skipping validation..."
+fi
+
+exit 0
