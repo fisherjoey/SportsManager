@@ -575,7 +575,7 @@ router.post('/:id/assign', authenticateToken, requireCerbosPermission({
       });
     }
 
-    const { referee_id, position_id = 'e468e96b-4ae8-448d-b0f7-86f688f3402b', check_conflicts, override_conflicts } = value;
+    let { referee_id, position_id, check_conflicts, override_conflicts } = value;
 
     // Get chunk and its games
     const chunk = await db('game_chunks').where('id', id).first();
@@ -584,6 +584,18 @@ router.post('/:id/assign', authenticateToken, requireCerbosPermission({
         success: false,
         error: 'Chunk not found'
       });
+    }
+
+    // If position_id not provided, get the first available position
+    if (!position_id) {
+      const firstPosition = await db('positions').orderBy('name').first();
+      if (!firstPosition) {
+        return res.status(400).json({
+          success: false,
+          error: 'No positions available in the system. Please create a position first.'
+        });
+      }
+      position_id = firstPosition.id;
     }
 
     const games = await db('chunk_games')
