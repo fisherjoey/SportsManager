@@ -26,7 +26,7 @@ const router = express.Router();
 const roleService = new RoleService(db);
 
 // Cerbos policies directory
-const CERBOS_POLICIES_DIR = process.env.CERBOS_POLICIES_DIR || path.join(__dirname, '..', '..', '..', '..', 'cerbos', 'policies');
+const CERBOS_POLICIES_DIR = process.env.CERBOS_POLICIES_DIR || path.join(__dirname, '..', '..', '..', 'cerbos', 'policies');
 
 /**
  * Helper function to get permissions for a role from Cerbos policies
@@ -34,10 +34,6 @@ const CERBOS_POLICIES_DIR = process.env.CERBOS_POLICIES_DIR || path.join(__dirna
 async function getRolePermissionsFromCerbos(roleCode: string): Promise<string[]> {
   try {
     const permissions: string[] = [];
-
-    // Log the directory we're trying to read
-    console.log(`[PERMISSIONS DEBUG] Reading from directory: ${CERBOS_POLICIES_DIR}`);
-    console.log(`[PERMISSIONS DEBUG] Current working directory: ${process.cwd()}`);
 
     // Read all policy files to find where this role has permissions
     const files = await fs.readdir(CERBOS_POLICIES_DIR);
@@ -288,7 +284,7 @@ router.get('/', authenticateToken, requireCerbosPermission({
   resource: 'role',
   action: 'view:list',
 }), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  console.log('[ROLES ENDPOINT] Admin roles endpoint hit - User:', req.user?.email, 'Getting roles with permissions...');
+  console.log('Admin roles endpoint hit - User:', req.user?.email, 'Getting roles with permissions...');
   try {
     const { include_inactive } = (req as any).query as { include_inactive?: string };
 

@@ -1,0 +1,31 @@
+# Development Dockerfile for Backend with Hot-Reload
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies for hot-reload
+RUN npm install -g nodemon
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (use npm install for dev, not ci)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3001
+
+# Create startup script that runs migrations then starts server
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "🔄 Running database migrations..."' >> /app/start.sh && \
+    echo 'npm run migrate || echo "⚠️  Migrations failed or already applied"' >> /app/start.sh && \
+    echo 'echo "✅ Migrations complete"' >> /app/start.sh && \
+    echo 'echo "🚀 Starting development server..."' >> /app/start.sh && \
+    echo 'exec npx nodemon --watch src --ext ts,js,json --exec "npm run dev"' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Start with migrations then nodemon for hot-reload
+CMD ["/app/start.sh"]

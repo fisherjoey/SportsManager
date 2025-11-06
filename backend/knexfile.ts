@@ -19,8 +19,8 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: 'knex_migrations',
-      directory: './migrations',
-      extension: 'js'
+      directory: './src/migrations',
+      extension: 'ts'
     },
     seeds: {
       directory: './seeds'
@@ -42,8 +42,8 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: 'knex_migrations',
-      directory: './migrations',
-      extension: 'js'
+      directory: './src/migrations',
+      extension: 'ts'
     },
     seeds: {
       directory: './seeds/test'
@@ -65,8 +65,8 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: 'knex_migrations',
-      directory: './migrations',
-      extension: 'js'
+      directory: './src/migrations',
+      extension: 'ts'
     },
     seeds: {
       directory: './seeds'
@@ -89,8 +89,8 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: 'knex_migrations',
-      directory: './migrations',
-      extension: 'js'
+      directory: './src/migrations',
+      extension: 'ts'
     },
     seeds: {
       directory: './seeds'

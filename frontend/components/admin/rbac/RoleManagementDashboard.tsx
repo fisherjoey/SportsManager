@@ -45,18 +45,13 @@ export function RoleManagementDashboard() {
       console.log('Unified roles data:', data);
 
       // Transform unified roles to match existing role structure
-      const rolesArray = data.data?.roles || data.roles || [];
-      console.log('Roles array to transform:', rolesArray);
-
-      const transformedRoles = rolesArray.map(role => ({
+      const transformedRoles = (data.data?.roles || []).map(role => ({
         ...role,
         id: role.id || role.name, // Use actual ID if available, otherwise use name
-        is_active: role.is_active !== undefined ? role.is_active : true, // Keep existing is_active if present
-        user_count: role.user_count || role.userCount || 0,
-        permission_count: role.permission_count || role.permissionCount || 0 // Add permission_count field
+        is_active: true, // Unified roles don't have is_active, default to true
+        user_count: role.userCount || 0
       }))
 
-      console.log('Transformed roles:', transformedRoles);
       setRoles(transformedRoles)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load roles'
