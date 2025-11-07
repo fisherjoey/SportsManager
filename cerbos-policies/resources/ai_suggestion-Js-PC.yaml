@@ -1,0 +1,27 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for ai_suggestion resource (AI assignment suggestions)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "ai_suggestion"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['generate', 'view:list', 'accept', 'reject']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

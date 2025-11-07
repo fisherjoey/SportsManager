@@ -1,0 +1,111 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for game resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "game"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    # Admin rules - full access within their organization
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    # Assignor rules
+    - actions: ['view', 'list']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+        - same_region
+
+    - actions: ['create']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.regionId in request.principal.attr.regionIds
+
+    - actions: ['update']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - owner
+        - same_region
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.status in ["scheduled", "pending"]
+
+    - actions: ['delete']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.status == "scheduled"
+              - expr: request.resource.attr.createdBy == request.principal.id
+
+    - actions: ['assign']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+      derivedRoles:
+        - same_organization
+        - same_region
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: request.resource.attr.status in ["scheduled", "pending"]
+
+    # Referee rules
+    - actions: ['view', 'list']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      derivedRoles:
+        - same_organization
+        - same_region
+
+    - actions: ['view']
+      effect: EFFECT_ALLOW
+      roles:
+        - referee
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+              - expr: >
+                  has(request.resource.attr.assignedReferees) &&
+                  request.principal.id in request.resource.attr.assignedReferees
+
+    # Guest rules - no access
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

@@ -1,0 +1,467 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "user"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'view:roles', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "team"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "league"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "referee"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "tournament"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "location"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "post"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "organization"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "role"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "invitation"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "expense"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "budget"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "financial_transaction"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "employee"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "asset"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "document"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "communication"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "mentorship"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "report"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "organizational_analytics"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "cerbos_policy"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "referee_role"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "referee_level"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "ai_suggestion"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "historic_pattern"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "chunk"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "ai_assignment_rule"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "calendar"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "game_fee"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "purchase_order"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "company_credit_card"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "accounting"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "financial_report"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "financial_dashboard"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "receipt"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "mentee_game"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "content"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "maintenance"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "updatable"
+  rules:
+    - actions: ['view', 'view:list', 'view:details', 'view:stats', 'create', 'update', 'delete', 'manage']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin

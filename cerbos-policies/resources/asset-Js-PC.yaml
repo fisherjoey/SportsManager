@@ -1,0 +1,27 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for asset resource (asset management system)
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "asset"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['create', 'update', 'create:maintenance', 'update:maintenance', 'checkout', 'checkin', 'view:stats', 'view:maintenance_due', 'view:overdue']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - assignor
+        - referee
+        - guest

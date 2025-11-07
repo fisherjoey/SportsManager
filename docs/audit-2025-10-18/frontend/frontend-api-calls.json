@@ -1,0 +1,2659 @@
+{
+  "generatedAt": "2025-10-18T21:02:27.175Z",
+  "summary": {
+    "totalEndpoints": 212,
+    "totalFiles": 13
+  },
+  "endpoints": [
+    {
+      "method": "/API/AUTH/CHECK-ADMIN",
+      "endpoint": "/api/auth/check-admin",
+      "usedInFiles": [
+        "frontend\\app\\admin\\audit-logs\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ADMIN/AUDIT-LOGS?${PARAMS}",
+      "endpoint": "/api/admin/audit-logs?${params}",
+      "usedInFiles": [
+        "frontend\\app\\admin\\audit-logs\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ADMIN/AUDIT-LOGS/METADATA",
+      "endpoint": "/api/admin/audit-logs/metadata",
+      "usedInFiles": [
+        "frontend\\app\\admin\\audit-logs\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ADMIN/AUDIT-LOGS/EXPORT",
+      "endpoint": "/api/admin/audit-logs/export",
+      "usedInFiles": [
+        "frontend\\app\\admin\\audit-logs\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ADMIN/AUDIT-LOGS/PRESETS",
+      "endpoint": "/api/admin/audit-logs/presets",
+      "usedInFiles": [
+        "frontend\\app\\admin\\audit-logs\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ROLES/AVAILABLE",
+      "endpoint": "/api/roles/available",
+      "usedInFiles": [
+        "frontend\\app\\admin\\notifications\\broadcast\\page.tsx"
+      ]
+    },
+    {
+      "method": "/API/ADMIN/ROLES/${ROLE.ID}/USERS",
+      "endpoint": "/api/admin/roles/${role.id}/users",
+      "usedInFiles": [
+        "frontend\\components\\admin\\rbac\\UserRoleManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/EXPENSES/RECEIPTS/${EXPENSE.ID}/DOWNLOAD",
+      "endpoint": "/api/expenses/receipts/${expense.id}/download",
+      "usedInFiles": [
+        "frontend\\components\\expense-approval-details.tsx"
+      ]
+    },
+    {
+      "method": "/API/EXPENSES/BULK",
+      "endpoint": "/api/expenses/bulk",
+      "usedInFiles": [
+        "frontend\\components\\expense-list-enhanced.tsx",
+        "frontend\\components\\expense-list.tsx"
+      ]
+    },
+    {
+      "method": "/API/EXPENSES/EXPORT",
+      "endpoint": "/api/expenses/export",
+      "usedInFiles": [
+        "frontend\\components\\expense-list-enhanced.tsx",
+        "frontend\\components\\expense-list.tsx"
+      ]
+    },
+    {
+      "method": "/API/EXPENSES",
+      "endpoint": "/api/expenses",
+      "usedInFiles": [
+        "frontend\\components\\expense-list.tsx"
+      ]
+    },
+    {
+      "method": "/API/ORGANIZATIONAL/METRICS",
+      "endpoint": "/api/organizational/metrics",
+      "usedInFiles": [
+        "frontend\\components\\organizational-dashboard.tsx"
+      ]
+    },
+    {
+      "method": "REQUEST",
+      "endpoint": "/users",
+      "usedInFiles": [
+        "frontend\\components\\referee-management.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS?${PARAMS.TOSTRING()}",
+      "endpoint": "/api/content/items?${params.toString()}",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/CATEGORIES",
+      "endpoint": "/api/content/categories",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS/${RESOURCE.ID}",
+      "endpoint": "/api/content/items/${resource.id}",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx",
+        "frontend\\components\\resource-centre.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS/${DELETINGRESOURCE.ID}",
+      "endpoint": "/api/content/items/${deletingResource.id}",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS/BULK-DELETE",
+      "endpoint": "/api/content/items/bulk-delete",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/UPLOAD",
+      "endpoint": "/api/content/upload",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre\\ResourceManager.tsx"
+      ]
+    },
+    {
+      "method": "/API/RESOURCES/UPLOAD",
+      "endpoint": "/api/resources/upload",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre-new.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS?STATUS=PUBLISHED&LIMIT=50",
+      "endpoint": "/api/content/items?status=published&limit=50",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre.tsx"
+      ]
+    },
+    {
+      "method": "/API/CONTENT/ITEMS/SLUG/${SLUG}",
+      "endpoint": "/api/content/items/slug/${slug}",
+      "usedInFiles": [
+        "frontend\\components\\resource-centre.tsx"
+      ]
+    },
+    {
+      "method": "/AUTH/LOGIN",
+      "endpoint": "/auth/login",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AUTH/REGISTER",
+      "endpoint": "/auth/register",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AUTH/ME",
+      "endpoint": "/auth/me",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/GAMES${QUERYSTRING ? ",
+      "endpoint": "/games${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/GAMES/${ID}",
+      "endpoint": "/games/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/GAMES",
+      "endpoint": "/games",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/GAMES/${ID}/STATUS",
+      "endpoint": "/games/${id}/status",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREES${QUERYSTRING ? ",
+      "endpoint": "/referees${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREES/${ID}",
+      "endpoint": "/referees/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREES/PROFILE",
+      "endpoint": "/referees/profile",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREES/${ID}/AVAILABILITY",
+      "endpoint": "/referees/${id}/availability",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AVAILABILITY/REFEREES/${REFEREEID}",
+      "endpoint": "/availability/referees/${refereeId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AVAILABILITY/BULK",
+      "endpoint": "/availability/bulk",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AVAILABILITY/${WINDOWID}",
+      "endpoint": "/availability/${windowId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AVAILABILITY/CONFLICTS?${QUERYSTRING}",
+      "endpoint": "/availability/conflicts?${queryString}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREES/${ID}/ASSIGNMENTS${QUERYSTRING ? ",
+      "endpoint": "/referees/${id}/assignments${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS${QUERYSTRING ? ",
+      "endpoint": "/assignments${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/${ID}",
+      "endpoint": "/assignments/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS",
+      "endpoint": "/assignments",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/${ID}/STATUS",
+      "endpoint": "/assignments/${id}/status",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/BULK",
+      "endpoint": "/assignments/bulk",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/AVAILABLE-GAMES${QUERYSTRING ? ",
+      "endpoint": "/assignments/available-games${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/AVAILABLE-REFEREES/${GAMEID}",
+      "endpoint": "/assignments/available-referees/${gameId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREE-LEVELS",
+      "endpoint": "/referee-levels",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREE-LEVELS/${REFEREEID}/ASSIGN",
+      "endpoint": "/referee-levels/${refereeId}/assign",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/REFEREE-LEVELS/CHECK-ASSIGNMENT/${GAMEID}/${REFEREEID}",
+      "endpoint": "/referee-levels/check-assignment/${gameId}/${refereeId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/SELF-ASSIGNMENT",
+      "endpoint": "/self-assignment",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/SELF-ASSIGNMENT/AVAILABLE",
+      "endpoint": "/self-assignment/available",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/LEAGUES${QUERYSTRING ? ",
+      "endpoint": "/leagues${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/LEAGUES/${ID}",
+      "endpoint": "/leagues/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/LEAGUES",
+      "endpoint": "/leagues",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/LEAGUES/BULK",
+      "endpoint": "/leagues/bulk",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/LEAGUES/OPTIONS/FILTERS",
+      "endpoint": "/leagues/options/filters",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS${QUERYSTRING ? ",
+      "endpoint": "/teams${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS/${ID}",
+      "endpoint": "/teams/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS",
+      "endpoint": "/teams",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS/BULK",
+      "endpoint": "/teams/bulk",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS/GENERATE",
+      "endpoint": "/teams/generate",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TEAMS/LEAGUE/${LEAGUEID}",
+      "endpoint": "/teams/league/${leagueId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TOURNAMENTS/GENERATE",
+      "endpoint": "/tournaments/generate",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TOURNAMENTS/CREATE-GAMES",
+      "endpoint": "/tournaments/create-games",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TOURNAMENTS/FORMATS",
+      "endpoint": "/tournaments/formats",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/TOURNAMENTS/ESTIMATE?${QUERYSTRING}",
+      "endpoint": "/tournaments/estimate?${queryString}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/INVITATIONS",
+      "endpoint": "/invitations",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/INVITATIONS${QUERYSTRING ? ",
+      "endpoint": "/invitations${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/INVITATIONS/${TOKEN}",
+      "endpoint": "/invitations/${token}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/INVITATIONS/${TOKEN}/COMPLETE",
+      "endpoint": "/invitations/${token}/complete",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/INVITATIONS/${ID}",
+      "endpoint": "/invitations/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ORGANIZATION/SETTINGS",
+      "endpoint": "/organization/settings",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/POSTS${PARAMS}",
+      "endpoint": "/posts${params}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/POSTS/CATEGORIES",
+      "endpoint": "/posts/categories",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/POSTS",
+      "endpoint": "/posts",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/POSTS/${ID}",
+      "endpoint": "/posts/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES${QUERY ? ",
+      "endpoint": "/ai-assignment-rules${query ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES",
+      "endpoint": "/ai-assignment-rules",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${ID}",
+      "endpoint": "/ai-assignment-rules/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${ID}/TOGGLE",
+      "endpoint": "/ai-assignment-rules/${id}/toggle",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${ID}/RUN",
+      "endpoint": "/ai-assignment-rules/${id}/run",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${ID}/RUNS${QUERY ? ",
+      "endpoint": "/ai-assignment-rules/${id}/runs${query ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/RUNS/${RUNID}",
+      "endpoint": "/ai-assignment-rules/runs/${runId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${RULEID}/PARTNER-PREFERENCES",
+      "endpoint": "/ai-assignment-rules/${ruleId}/partner-preferences",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AI-ASSIGNMENT-RULES/${RULEID}/PARTNER-PREFERENCES/${PREFID}",
+      "endpoint": "/ai-assignment-rules/${ruleId}/partner-preferences/${prefId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/DEPARTMENTS${QUERYSTRING ? ",
+      "endpoint": "/employees/departments${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/DEPARTMENTS",
+      "endpoint": "/employees/departments",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/DEPARTMENTS/${ID}",
+      "endpoint": "/employees/departments/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/POSITIONS${QUERYSTRING ? ",
+      "endpoint": "/employees/positions${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/POSITIONS",
+      "endpoint": "/employees/positions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES${QUERYSTRING ? ",
+      "endpoint": "/employees${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/${ID}",
+      "endpoint": "/employees/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES",
+      "endpoint": "/employees",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/${ID}/EVALUATIONS",
+      "endpoint": "/employees/${id}/evaluations",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/${ID}/TRAINING",
+      "endpoint": "/employees/${id}/training",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EMPLOYEES/STATS/OVERVIEW",
+      "endpoint": "/employees/stats/overview",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS${QUERYSTRING ? ",
+      "endpoint": "/assets${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/${ID}",
+      "endpoint": "/assets/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS",
+      "endpoint": "/assets",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/${ID}/MAINTENANCE",
+      "endpoint": "/assets/${id}/maintenance",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/${ID}/CHECKOUT",
+      "endpoint": "/assets/${id}/checkout",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/CHECKOUT/${CHECKOUTID}/CHECKIN",
+      "endpoint": "/assets/checkout/${checkoutId}/checkin",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/STATS/OVERVIEW",
+      "endpoint": "/assets/stats/overview",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS${QUERYSTRING ? ",
+      "endpoint": "/documents${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/${ID}",
+      "endpoint": "/documents/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS",
+      "endpoint": "/documents",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/${ID}/APPROVE",
+      "endpoint": "/documents/${id}/approve",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/${ID}/ACKNOWLEDGE",
+      "endpoint": "/documents/${id}/acknowledge",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/${ID}/DOWNLOAD",
+      "endpoint": "/documents/${id}/download",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/ACKNOWLEDGMENTS/PENDING",
+      "endpoint": "/documents/acknowledgments/pending",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/TRACKING${QUERYSTRING ? ",
+      "endpoint": "/compliance/tracking${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/TRACKING",
+      "endpoint": "/compliance/tracking",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/TRACKING/${ID}",
+      "endpoint": "/compliance/tracking/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/INCIDENTS${QUERYSTRING ? ",
+      "endpoint": "/compliance/incidents${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/INCIDENTS",
+      "endpoint": "/compliance/incidents",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/RISKS${QUERYSTRING ? ",
+      "endpoint": "/compliance/risks${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/RISKS",
+      "endpoint": "/compliance/risks",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPLIANCE/STATS/DASHBOARD",
+      "endpoint": "/compliance/stats/dashboard",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/BUDGETS/PERIODS",
+      "endpoint": "/budgets/periods",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/BUDGETS/CATEGORIES",
+      "endpoint": "/budgets/categories",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/BUDGETS${QUERYSTRING ? ",
+      "endpoint": "/budgets${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/BUDGETS",
+      "endpoint": "/budgets",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/BUDGETS/${ID}",
+      "endpoint": "/budgets/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/RECEIPTS/UPLOAD",
+      "endpoint": "/expenses/receipts/upload",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/RECEIPTS${QUERYSTRING ? ",
+      "endpoint": "/expenses/receipts${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/RECEIPTS/${ID}",
+      "endpoint": "/expenses/receipts/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/RECEIPTS/${ID}/PROCESS",
+      "endpoint": "/expenses/receipts/${id}/process",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/RECEIPTS/${ID}/APPROVE",
+      "endpoint": "/expenses/receipts/${id}/approve",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/CATEGORIES",
+      "endpoint": "/expenses/categories",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/REPORTS${QUERYSTRING ? ",
+      "endpoint": "/expenses/reports${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/PURCHASE-ORDERS/${ID}",
+      "endpoint": "/purchase-orders/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMPANY-CREDIT-CARDS/${ID}",
+      "endpoint": "/company-credit-cards/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES",
+      "endpoint": "/expenses",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/${ID}",
+      "endpoint": "/expenses/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES${QUERYSTRING ? ",
+      "endpoint": "/expenses${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/DRAFT",
+      "endpoint": "/expenses/draft",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/PENDING-APPROVAL${QUERYSTRING ? ",
+      "endpoint": "/expenses/pending-approval${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/${EXPENSEID}/APPROVE",
+      "endpoint": "/expenses/${expenseId}/approve",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/${EXPENSEID}/REJECT",
+      "endpoint": "/expenses/${expenseId}/reject",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/${EXPENSEID}/DELEGATE",
+      "endpoint": "/expenses/${expenseId}/delegate",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/EXPENSES/${EXPENSEID}/APPROVAL-HISTORY",
+      "endpoint": "/expenses/${expenseId}/approval-history",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/FINANCIAL-REPORTS/BUDGET-VARIANCE${QUERYSTRING ? ",
+      "endpoint": "/financial-reports/budget-variance${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/FINANCIAL-REPORTS/CASH-FLOW${QUERYSTRING ? ",
+      "endpoint": "/financial-reports/cash-flow${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/FINANCIAL-REPORTS/EXPENSE-ANALYSIS${QUERYSTRING ? ",
+      "endpoint": "/financial-reports/expense-analysis${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/FINANCIAL-REPORTS/KPIS${QUERYSTRING ? ",
+      "endpoint": "/financial-reports/kpis${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/PERFORMANCE${QUERYSTRING ? ",
+      "endpoint": "/analytics/organizational/employees/performance${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/RETENTION${QUERYSTRING ? ",
+      "endpoint": "/analytics/organizational/employees/retention${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/TRAINING${QUERYSTRING ? ",
+      "endpoint": "/analytics/organizational/employees/training${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ANALYTICS/ORGANIZATIONAL/HEALTH/OVERVIEW",
+      "endpoint": "/analytics/organizational/health/overview",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ANALYTICS/ORGANIZATIONAL/DASHBOARD/EXECUTIVE",
+      "endpoint": "/analytics/organizational/dashboard/executive",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/DEFINITIONS",
+      "endpoint": "/workflows/definitions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/INSTANCES${QUERYSTRING ? ",
+      "endpoint": "/workflows/instances${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/INSTANCES",
+      "endpoint": "/workflows/instances",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/INSTANCES/${ID}",
+      "endpoint": "/workflows/instances/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/STEPS/${STEPID}/COMPLETE",
+      "endpoint": "/workflows/steps/${stepId}/complete",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/TASKS/ASSIGNED${QUERYSTRING ? ",
+      "endpoint": "/workflows/tasks/assigned${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMMUNICATIONS${QUERYSTRING ? ",
+      "endpoint": "/communications${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMMUNICATIONS",
+      "endpoint": "/communications",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMMUNICATIONS/${ID}",
+      "endpoint": "/communications/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMMUNICATIONS/${ID}/PUBLISH",
+      "endpoint": "/communications/${id}/publish",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/COMMUNICATIONS/${ID}/ACKNOWLEDGE",
+      "endpoint": "/communications/${id}/acknowledge",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/NOTIFICATIONS/BROADCAST",
+      "endpoint": "/notifications/broadcast",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSETS/${ID}/CHECKIN",
+      "endpoint": "/assets/${id}/checkin",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/DOCUMENTS/UPLOAD",
+      "endpoint": "/documents/upload",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ORGANIZATIONAL-ANALYTICS${QUERYSTRING ? ",
+      "endpoint": "/organizational-analytics${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/FINANCIAL-REPORTS${QUERYSTRING ? ",
+      "endpoint": "/financial-reports${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS${QUERYSTRING ? ",
+      "endpoint": "/workflows${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/WORKFLOWS/TRIGGER",
+      "endpoint": "/workflows/trigger",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/AI-SUGGESTIONS/${SUGGESTIONID}/ACCEPT",
+      "endpoint": "/assignments/ai-suggestions/${suggestionId}/accept",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ASSIGNMENTS/AI-SUGGESTIONS/${SUGGESTIONID}/REJECT",
+      "endpoint": "/assignments/ai-suggestions/${suggestionId}/reject",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/AUTH/REFRESH-PERMISSIONS",
+      "endpoint": "/auth/refresh-permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/PERMISSIONS",
+      "endpoint": "/admin/permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/PERMISSIONS/CATEGORY/${CATEGORY}",
+      "endpoint": "/admin/permissions/category/${category}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/PERMISSIONS/CATEGORIES",
+      "endpoint": "/admin/permissions/categories",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/PERMISSIONS/USERS/BULK-CHECK",
+      "endpoint": "/admin/permissions/users/bulk-check",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES${QUERYSTRING ? ",
+      "endpoint": "/admin/roles${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/USERS/ROLES",
+      "endpoint": "/users/roles",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES/${ROLEID}",
+      "endpoint": "/admin/roles/${roleId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/PAGES",
+      "endpoint": "/admin/access/roles/${roleId}/pages",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/APIS",
+      "endpoint": "/admin/access/roles/${roleId}/apis",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/FEATURES",
+      "endpoint": "/admin/access/roles/${roleId}/features",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/PAGES/CHECK-ACCESS",
+      "endpoint": "/pages/check-access",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/CHECK-API",
+      "endpoint": "/admin/access/check-api",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/CHECK-FEATURE",
+      "endpoint": "/admin/access/check-feature",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ACCESS/CLEAR-CACHE",
+      "endpoint": "/admin/access/clear-cache",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/PAGES/PERMISSIONS",
+      "endpoint": "/pages/permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES",
+      "endpoint": "/admin/roles",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES/${ROLEID}/STATUS",
+      "endpoint": "/admin/roles/${roleId}/status",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES/${ROLEID}/PERMISSIONS",
+      "endpoint": "/admin/roles/${roleId}/permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES/${ROLEID}/USERS",
+      "endpoint": "/admin/roles/${roleId}/users",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/USERS/${USERID}/ROLES",
+      "endpoint": "/admin/users/${userId}/roles",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/USERS${QUERY}",
+      "endpoint": "/users${query}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/USERS",
+      "endpoint": "/users",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/USERS/${USERID}",
+      "endpoint": "/users/${userId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES",
+      "endpoint": "/admin/cerbos-policies",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/${POLICYID}",
+      "endpoint": "/admin/cerbos-policies/${policyId}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/ROLE-PERMISSIONS",
+      "endpoint": "/admin/cerbos-policies/role-permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/ROLE/${ROLENAME}/PERMISSIONS",
+      "endpoint": "/admin/cerbos-policies/role/${roleName}/permissions",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/ROLES",
+      "endpoint": "/admin/cerbos-policies/roles",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/ROLES/${ROLENAME}",
+      "endpoint": "/admin/cerbos-policies/roles/${roleName}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/CERBOS-POLICIES/ROLES/${ROLENAME}${FORCE ? ",
+      "endpoint": "/admin/cerbos-policies/roles/${roleName}${force ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/UNIFIED-ROLES/${NAME}",
+      "endpoint": "/admin/unified-roles/${name}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/ROLES/${IDORNAME}",
+      "endpoint": "/admin/roles/${idOrName}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/ADMIN/UNIFIED-ROLES/${NAME}${FORCE ? ",
+      "endpoint": "/admin/unified-roles/${name}${force ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS${QUERYSTRING ? ",
+      "endpoint": "/chunks${queryString ? ",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS/${ID}",
+      "endpoint": "/chunks/${id}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS",
+      "endpoint": "/chunks",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS/${ID}${QUERYSTRING}",
+      "endpoint": "/chunks/${id}${queryString}",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS/${ID}/ASSIGN",
+      "endpoint": "/chunks/${id}/assign",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/CHUNKS/AUTO-CREATE",
+      "endpoint": "/chunks/auto-create",
+      "usedInFiles": [
+        "frontend\\lib\\api.ts"
+      ]
+    },
+    {
+      "method": "/API/RESOURCES",
+      "endpoint": "/api/resources",
+      "usedInFiles": [
+        "frontend\\lib\\resources.ts"
+      ]
+    },
+    {
+      "method": "/API/RESOURCES/${SLUG}",
+      "endpoint": "/api/resources/${slug}",
+      "usedInFiles": [
+        "frontend\\lib\\resources.ts"
+      ]
+    },
+    {
+      "method": "/API/RESOURCES/CATEGORIES",
+      "endpoint": "/api/resources/categories",
+      "usedInFiles": [
+        "frontend\\lib\\resources.ts"
+      ]
+    }
+  ],
+  "fileUsage": [
+    {
+      "file": "frontend\\app\\admin\\audit-logs\\page.tsx",
+      "endpoints": [
+        {
+          "method": "/API/AUTH/CHECK-ADMIN",
+          "endpoint": "/api/auth/check-admin"
+        },
+        {
+          "method": "/API/ADMIN/AUDIT-LOGS?${PARAMS}",
+          "endpoint": "/api/admin/audit-logs?${params}"
+        },
+        {
+          "method": "/API/ADMIN/AUDIT-LOGS/METADATA",
+          "endpoint": "/api/admin/audit-logs/metadata"
+        },
+        {
+          "method": "/API/ADMIN/AUDIT-LOGS/EXPORT",
+          "endpoint": "/api/admin/audit-logs/export"
+        },
+        {
+          "method": "/API/ADMIN/AUDIT-LOGS/PRESETS",
+          "endpoint": "/api/admin/audit-logs/presets"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\app\\admin\\notifications\\broadcast\\page.tsx",
+      "endpoints": [
+        {
+          "method": "/API/ROLES/AVAILABLE",
+          "endpoint": "/api/roles/available"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\admin\\rbac\\UserRoleManager.tsx",
+      "endpoints": [
+        {
+          "method": "/API/ADMIN/ROLES/${ROLE.ID}/USERS",
+          "endpoint": "/api/admin/roles/${role.id}/users"
+        },
+        {
+          "method": "/API/ADMIN/ROLES/${ROLE.ID}/USERS",
+          "endpoint": "/api/admin/roles/${role.id}/users"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\expense-approval-details.tsx",
+      "endpoints": [
+        {
+          "method": "/API/EXPENSES/RECEIPTS/${EXPENSE.ID}/DOWNLOAD",
+          "endpoint": "/api/expenses/receipts/${expense.id}/download"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\expense-list-enhanced.tsx",
+      "endpoints": [
+        {
+          "method": "/API/EXPENSES/BULK",
+          "endpoint": "/api/expenses/bulk"
+        },
+        {
+          "method": "/API/EXPENSES/EXPORT",
+          "endpoint": "/api/expenses/export"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\expense-list.tsx",
+      "endpoints": [
+        {
+          "method": "/API/EXPENSES",
+          "endpoint": "/api/expenses"
+        },
+        {
+          "method": "/API/EXPENSES/BULK",
+          "endpoint": "/api/expenses/bulk"
+        },
+        {
+          "method": "/API/EXPENSES/EXPORT",
+          "endpoint": "/api/expenses/export"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\organizational-dashboard.tsx",
+      "endpoints": [
+        {
+          "method": "/API/ORGANIZATIONAL/METRICS",
+          "endpoint": "/api/organizational/metrics"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\referee-management.tsx",
+      "endpoints": [
+        {
+          "method": "REQUEST",
+          "endpoint": "/users"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\resource-centre\\ResourceManager.tsx",
+      "endpoints": [
+        {
+          "method": "/API/CONTENT/ITEMS?${PARAMS.TOSTRING()}",
+          "endpoint": "/api/content/items?${params.toString()}"
+        },
+        {
+          "method": "/API/CONTENT/CATEGORIES",
+          "endpoint": "/api/content/categories"
+        },
+        {
+          "method": "/API/CONTENT/ITEMS/${RESOURCE.ID}",
+          "endpoint": "/api/content/items/${resource.id}"
+        },
+        {
+          "method": "/API/CONTENT/ITEMS/${DELETINGRESOURCE.ID}",
+          "endpoint": "/api/content/items/${deletingResource.id}"
+        },
+        {
+          "method": "/API/CONTENT/ITEMS/BULK-DELETE",
+          "endpoint": "/api/content/items/bulk-delete"
+        },
+        {
+          "method": "/API/CONTENT/UPLOAD",
+          "endpoint": "/api/content/upload"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\resource-centre-new.tsx",
+      "endpoints": [
+        {
+          "method": "/API/RESOURCES/UPLOAD",
+          "endpoint": "/api/resources/upload"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\components\\resource-centre.tsx",
+      "endpoints": [
+        {
+          "method": "/API/CONTENT/ITEMS?STATUS=PUBLISHED&LIMIT=50",
+          "endpoint": "/api/content/items?status=published&limit=50"
+        },
+        {
+          "method": "/API/CONTENT/ITEMS/SLUG/${SLUG}",
+          "endpoint": "/api/content/items/slug/${slug}"
+        },
+        {
+          "method": "/API/CONTENT/ITEMS/${RESOURCE.ID}",
+          "endpoint": "/api/content/items/${resource.id}"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\lib\\api.ts",
+      "endpoints": [
+        {
+          "method": "/AUTH/LOGIN",
+          "endpoint": "/auth/login"
+        },
+        {
+          "method": "/AUTH/REGISTER",
+          "endpoint": "/auth/register"
+        },
+        {
+          "method": "/AUTH/ME",
+          "endpoint": "/auth/me"
+        },
+        {
+          "method": "/GAMES${QUERYSTRING ? ",
+          "endpoint": "/games${queryString ? "
+        },
+        {
+          "method": "/GAMES/${ID}",
+          "endpoint": "/games/${id}"
+        },
+        {
+          "method": "/GAMES",
+          "endpoint": "/games"
+        },
+        {
+          "method": "/GAMES/${ID}",
+          "endpoint": "/games/${id}"
+        },
+        {
+          "method": "/GAMES/${ID}/STATUS",
+          "endpoint": "/games/${id}/status"
+        },
+        {
+          "method": "/GAMES/${ID}",
+          "endpoint": "/games/${id}"
+        },
+        {
+          "method": "/REFEREES${QUERYSTRING ? ",
+          "endpoint": "/referees${queryString ? "
+        },
+        {
+          "method": "/REFEREES/${ID}",
+          "endpoint": "/referees/${id}"
+        },
+        {
+          "method": "/REFEREES/PROFILE",
+          "endpoint": "/referees/profile"
+        },
+        {
+          "method": "/REFEREES/${ID}",
+          "endpoint": "/referees/${id}"
+        },
+        {
+          "method": "/REFEREES/${ID}/AVAILABILITY",
+          "endpoint": "/referees/${id}/availability"
+        },
+        {
+          "method": "/AVAILABILITY/REFEREES/${REFEREEID}",
+          "endpoint": "/availability/referees/${refereeId}"
+        },
+        {
+          "method": "/AVAILABILITY/BULK",
+          "endpoint": "/availability/bulk"
+        },
+        {
+          "method": "/AVAILABILITY/${WINDOWID}",
+          "endpoint": "/availability/${windowId}"
+        },
+        {
+          "method": "/AVAILABILITY/${WINDOWID}",
+          "endpoint": "/availability/${windowId}"
+        },
+        {
+          "method": "/AVAILABILITY/CONFLICTS?${QUERYSTRING}",
+          "endpoint": "/availability/conflicts?${queryString}"
+        },
+        {
+          "method": "/REFEREES/${ID}/ASSIGNMENTS${QUERYSTRING ? ",
+          "endpoint": "/referees/${id}/assignments${queryString ? "
+        },
+        {
+          "method": "/REFEREES/${ID}",
+          "endpoint": "/referees/${id}"
+        },
+        {
+          "method": "/ASSIGNMENTS${QUERYSTRING ? ",
+          "endpoint": "/assignments${queryString ? "
+        },
+        {
+          "method": "/ASSIGNMENTS/${ID}",
+          "endpoint": "/assignments/${id}"
+        },
+        {
+          "method": "/ASSIGNMENTS",
+          "endpoint": "/assignments"
+        },
+        {
+          "method": "/ASSIGNMENTS/${ID}/STATUS",
+          "endpoint": "/assignments/${id}/status"
+        },
+        {
+          "method": "/ASSIGNMENTS/${ID}",
+          "endpoint": "/assignments/${id}"
+        },
+        {
+          "method": "/ASSIGNMENTS/BULK",
+          "endpoint": "/assignments/bulk"
+        },
+        {
+          "method": "/ASSIGNMENTS/AVAILABLE-GAMES${QUERYSTRING ? ",
+          "endpoint": "/assignments/available-games${queryString ? "
+        },
+        {
+          "method": "/ASSIGNMENTS/AVAILABLE-REFEREES/${GAMEID}",
+          "endpoint": "/assignments/available-referees/${gameId}"
+        },
+        {
+          "method": "/REFEREE-LEVELS",
+          "endpoint": "/referee-levels"
+        },
+        {
+          "method": "/REFEREE-LEVELS/${REFEREEID}/ASSIGN",
+          "endpoint": "/referee-levels/${refereeId}/assign"
+        },
+        {
+          "method": "/REFEREE-LEVELS/CHECK-ASSIGNMENT/${GAMEID}/${REFEREEID}",
+          "endpoint": "/referee-levels/check-assignment/${gameId}/${refereeId}"
+        },
+        {
+          "method": "/SELF-ASSIGNMENT",
+          "endpoint": "/self-assignment"
+        },
+        {
+          "method": "/SELF-ASSIGNMENT/AVAILABLE",
+          "endpoint": "/self-assignment/available"
+        },
+        {
+          "method": "/LEAGUES${QUERYSTRING ? ",
+          "endpoint": "/leagues${queryString ? "
+        },
+        {
+          "method": "/LEAGUES/${ID}",
+          "endpoint": "/leagues/${id}"
+        },
+        {
+          "method": "/LEAGUES",
+          "endpoint": "/leagues"
+        },
+        {
+          "method": "/LEAGUES/BULK",
+          "endpoint": "/leagues/bulk"
+        },
+        {
+          "method": "/LEAGUES/${ID}",
+          "endpoint": "/leagues/${id}"
+        },
+        {
+          "method": "/LEAGUES/${ID}",
+          "endpoint": "/leagues/${id}"
+        },
+        {
+          "method": "/LEAGUES/OPTIONS/FILTERS",
+          "endpoint": "/leagues/options/filters"
+        },
+        {
+          "method": "/TEAMS${QUERYSTRING ? ",
+          "endpoint": "/teams${queryString ? "
+        },
+        {
+          "method": "/TEAMS/${ID}",
+          "endpoint": "/teams/${id}"
+        },
+        {
+          "method": "/TEAMS",
+          "endpoint": "/teams"
+        },
+        {
+          "method": "/TEAMS/BULK",
+          "endpoint": "/teams/bulk"
+        },
+        {
+          "method": "/TEAMS/GENERATE",
+          "endpoint": "/teams/generate"
+        },
+        {
+          "method": "/TEAMS/${ID}",
+          "endpoint": "/teams/${id}"
+        },
+        {
+          "method": "/TEAMS/${ID}",
+          "endpoint": "/teams/${id}"
+        },
+        {
+          "method": "/TEAMS/LEAGUE/${LEAGUEID}",
+          "endpoint": "/teams/league/${leagueId}"
+        },
+        {
+          "method": "/TOURNAMENTS/GENERATE",
+          "endpoint": "/tournaments/generate"
+        },
+        {
+          "method": "/TOURNAMENTS/CREATE-GAMES",
+          "endpoint": "/tournaments/create-games"
+        },
+        {
+          "method": "/TOURNAMENTS/FORMATS",
+          "endpoint": "/tournaments/formats"
+        },
+        {
+          "method": "/TOURNAMENTS/ESTIMATE?${QUERYSTRING}",
+          "endpoint": "/tournaments/estimate?${queryString}"
+        },
+        {
+          "method": "/INVITATIONS",
+          "endpoint": "/invitations"
+        },
+        {
+          "method": "/INVITATIONS${QUERYSTRING ? ",
+          "endpoint": "/invitations${queryString ? "
+        },
+        {
+          "method": "/INVITATIONS/${TOKEN}",
+          "endpoint": "/invitations/${token}"
+        },
+        {
+          "method": "/INVITATIONS/${TOKEN}/COMPLETE",
+          "endpoint": "/invitations/${token}/complete"
+        },
+        {
+          "method": "/INVITATIONS/${ID}",
+          "endpoint": "/invitations/${id}"
+        },
+        {
+          "method": "/ORGANIZATION/SETTINGS",
+          "endpoint": "/organization/settings"
+        },
+        {
+          "method": "/ORGANIZATION/SETTINGS",
+          "endpoint": "/organization/settings"
+        },
+        {
+          "method": "/POSTS${PARAMS}",
+          "endpoint": "/posts${params}"
+        },
+        {
+          "method": "/POSTS/CATEGORIES",
+          "endpoint": "/posts/categories"
+        },
+        {
+          "method": "/POSTS",
+          "endpoint": "/posts"
+        },
+        {
+          "method": "/POSTS/${ID}",
+          "endpoint": "/posts/${id}"
+        },
+        {
+          "method": "/POSTS/${ID}",
+          "endpoint": "/posts/${id}"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES${QUERY ? ",
+          "endpoint": "/ai-assignment-rules${query ? "
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES",
+          "endpoint": "/ai-assignment-rules"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}",
+          "endpoint": "/ai-assignment-rules/${id}"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}",
+          "endpoint": "/ai-assignment-rules/${id}"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}",
+          "endpoint": "/ai-assignment-rules/${id}"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}/TOGGLE",
+          "endpoint": "/ai-assignment-rules/${id}/toggle"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}/RUN",
+          "endpoint": "/ai-assignment-rules/${id}/run"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${ID}/RUNS${QUERY ? ",
+          "endpoint": "/ai-assignment-rules/${id}/runs${query ? "
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/RUNS/${RUNID}",
+          "endpoint": "/ai-assignment-rules/runs/${runId}"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${RULEID}/PARTNER-PREFERENCES",
+          "endpoint": "/ai-assignment-rules/${ruleId}/partner-preferences"
+        },
+        {
+          "method": "/AI-ASSIGNMENT-RULES/${RULEID}/PARTNER-PREFERENCES/${PREFID}",
+          "endpoint": "/ai-assignment-rules/${ruleId}/partner-preferences/${prefId}"
+        },
+        {
+          "method": "/EMPLOYEES/DEPARTMENTS${QUERYSTRING ? ",
+          "endpoint": "/employees/departments${queryString ? "
+        },
+        {
+          "method": "/EMPLOYEES/DEPARTMENTS",
+          "endpoint": "/employees/departments"
+        },
+        {
+          "method": "/EMPLOYEES/DEPARTMENTS/${ID}",
+          "endpoint": "/employees/departments/${id}"
+        },
+        {
+          "method": "/EMPLOYEES/POSITIONS${QUERYSTRING ? ",
+          "endpoint": "/employees/positions${queryString ? "
+        },
+        {
+          "method": "/EMPLOYEES/POSITIONS",
+          "endpoint": "/employees/positions"
+        },
+        {
+          "method": "/EMPLOYEES${QUERYSTRING ? ",
+          "endpoint": "/employees${queryString ? "
+        },
+        {
+          "method": "/EMPLOYEES/${ID}",
+          "endpoint": "/employees/${id}"
+        },
+        {
+          "method": "/EMPLOYEES",
+          "endpoint": "/employees"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}",
+          "endpoint": "/employees/${id}"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}/EVALUATIONS",
+          "endpoint": "/employees/${id}/evaluations"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}/EVALUATIONS",
+          "endpoint": "/employees/${id}/evaluations"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}/TRAINING",
+          "endpoint": "/employees/${id}/training"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}/TRAINING",
+          "endpoint": "/employees/${id}/training"
+        },
+        {
+          "method": "/EMPLOYEES/STATS/OVERVIEW",
+          "endpoint": "/employees/stats/overview"
+        },
+        {
+          "method": "/ASSETS${QUERYSTRING ? ",
+          "endpoint": "/assets${queryString ? "
+        },
+        {
+          "method": "/ASSETS/${ID}",
+          "endpoint": "/assets/${id}"
+        },
+        {
+          "method": "/ASSETS",
+          "endpoint": "/assets"
+        },
+        {
+          "method": "/ASSETS/${ID}",
+          "endpoint": "/assets/${id}"
+        },
+        {
+          "method": "/ASSETS/${ID}/MAINTENANCE",
+          "endpoint": "/assets/${id}/maintenance"
+        },
+        {
+          "method": "/ASSETS/${ID}/MAINTENANCE",
+          "endpoint": "/assets/${id}/maintenance"
+        },
+        {
+          "method": "/ASSETS/${ID}/CHECKOUT",
+          "endpoint": "/assets/${id}/checkout"
+        },
+        {
+          "method": "/ASSETS/CHECKOUT/${CHECKOUTID}/CHECKIN",
+          "endpoint": "/assets/checkout/${checkoutId}/checkin"
+        },
+        {
+          "method": "/ASSETS/STATS/OVERVIEW",
+          "endpoint": "/assets/stats/overview"
+        },
+        {
+          "method": "/DOCUMENTS${QUERYSTRING ? ",
+          "endpoint": "/documents${queryString ? "
+        },
+        {
+          "method": "/DOCUMENTS/${ID}",
+          "endpoint": "/documents/${id}"
+        },
+        {
+          "method": "/DOCUMENTS",
+          "endpoint": "/documents"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}",
+          "endpoint": "/documents/${id}"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}/APPROVE",
+          "endpoint": "/documents/${id}/approve"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}/ACKNOWLEDGE",
+          "endpoint": "/documents/${id}/acknowledge"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}/DOWNLOAD",
+          "endpoint": "/documents/${id}/download"
+        },
+        {
+          "method": "/DOCUMENTS/ACKNOWLEDGMENTS/PENDING",
+          "endpoint": "/documents/acknowledgments/pending"
+        },
+        {
+          "method": "/COMPLIANCE/TRACKING${QUERYSTRING ? ",
+          "endpoint": "/compliance/tracking${queryString ? "
+        },
+        {
+          "method": "/COMPLIANCE/TRACKING",
+          "endpoint": "/compliance/tracking"
+        },
+        {
+          "method": "/COMPLIANCE/TRACKING/${ID}",
+          "endpoint": "/compliance/tracking/${id}"
+        },
+        {
+          "method": "/COMPLIANCE/INCIDENTS${QUERYSTRING ? ",
+          "endpoint": "/compliance/incidents${queryString ? "
+        },
+        {
+          "method": "/COMPLIANCE/INCIDENTS",
+          "endpoint": "/compliance/incidents"
+        },
+        {
+          "method": "/COMPLIANCE/RISKS${QUERYSTRING ? ",
+          "endpoint": "/compliance/risks${queryString ? "
+        },
+        {
+          "method": "/COMPLIANCE/RISKS",
+          "endpoint": "/compliance/risks"
+        },
+        {
+          "method": "/COMPLIANCE/STATS/DASHBOARD",
+          "endpoint": "/compliance/stats/dashboard"
+        },
+        {
+          "method": "/BUDGETS/PERIODS",
+          "endpoint": "/budgets/periods"
+        },
+        {
+          "method": "/BUDGETS/PERIODS",
+          "endpoint": "/budgets/periods"
+        },
+        {
+          "method": "/BUDGETS/CATEGORIES",
+          "endpoint": "/budgets/categories"
+        },
+        {
+          "method": "/BUDGETS/CATEGORIES",
+          "endpoint": "/budgets/categories"
+        },
+        {
+          "method": "/BUDGETS${QUERYSTRING ? ",
+          "endpoint": "/budgets${queryString ? "
+        },
+        {
+          "method": "/BUDGETS",
+          "endpoint": "/budgets"
+        },
+        {
+          "method": "/BUDGETS/${ID}",
+          "endpoint": "/budgets/${id}"
+        },
+        {
+          "method": "/BUDGETS/${ID}",
+          "endpoint": "/budgets/${id}"
+        },
+        {
+          "method": "/BUDGETS/${ID}",
+          "endpoint": "/budgets/${id}"
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS/UPLOAD",
+          "endpoint": "/expenses/receipts/upload"
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS${QUERYSTRING ? ",
+          "endpoint": "/expenses/receipts${queryString ? "
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS/${ID}",
+          "endpoint": "/expenses/receipts/${id}"
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS/${ID}/PROCESS",
+          "endpoint": "/expenses/receipts/${id}/process"
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS/${ID}/APPROVE",
+          "endpoint": "/expenses/receipts/${id}/approve"
+        },
+        {
+          "method": "/EXPENSES/RECEIPTS/${ID}",
+          "endpoint": "/expenses/receipts/${id}"
+        },
+        {
+          "method": "/EXPENSES/CATEGORIES",
+          "endpoint": "/expenses/categories"
+        },
+        {
+          "method": "/EXPENSES/REPORTS${QUERYSTRING ? ",
+          "endpoint": "/expenses/reports${queryString ? "
+        },
+        {
+          "method": "/PURCHASE-ORDERS/${ID}",
+          "endpoint": "/purchase-orders/${id}"
+        },
+        {
+          "method": "/COMPANY-CREDIT-CARDS/${ID}",
+          "endpoint": "/company-credit-cards/${id}"
+        },
+        {
+          "method": "/EXPENSES",
+          "endpoint": "/expenses"
+        },
+        {
+          "method": "/EXPENSES/${ID}",
+          "endpoint": "/expenses/${id}"
+        },
+        {
+          "method": "/EXPENSES${QUERYSTRING ? ",
+          "endpoint": "/expenses${queryString ? "
+        },
+        {
+          "method": "/EXPENSES/${ID}",
+          "endpoint": "/expenses/${id}"
+        },
+        {
+          "method": "/EXPENSES/DRAFT",
+          "endpoint": "/expenses/draft"
+        },
+        {
+          "method": "/EXPENSES/PENDING-APPROVAL${QUERYSTRING ? ",
+          "endpoint": "/expenses/pending-approval${queryString ? "
+        },
+        {
+          "method": "/EXPENSES/${EXPENSEID}/APPROVE",
+          "endpoint": "/expenses/${expenseId}/approve"
+        },
+        {
+          "method": "/EXPENSES/${EXPENSEID}/REJECT",
+          "endpoint": "/expenses/${expenseId}/reject"
+        },
+        {
+          "method": "/EXPENSES/${EXPENSEID}/DELEGATE",
+          "endpoint": "/expenses/${expenseId}/delegate"
+        },
+        {
+          "method": "/EXPENSES/${EXPENSEID}/APPROVAL-HISTORY",
+          "endpoint": "/expenses/${expenseId}/approval-history"
+        },
+        {
+          "method": "/FINANCIAL-REPORTS/BUDGET-VARIANCE${QUERYSTRING ? ",
+          "endpoint": "/financial-reports/budget-variance${queryString ? "
+        },
+        {
+          "method": "/FINANCIAL-REPORTS/CASH-FLOW${QUERYSTRING ? ",
+          "endpoint": "/financial-reports/cash-flow${queryString ? "
+        },
+        {
+          "method": "/FINANCIAL-REPORTS/EXPENSE-ANALYSIS${QUERYSTRING ? ",
+          "endpoint": "/financial-reports/expense-analysis${queryString ? "
+        },
+        {
+          "method": "/FINANCIAL-REPORTS/KPIS${QUERYSTRING ? ",
+          "endpoint": "/financial-reports/kpis${queryString ? "
+        },
+        {
+          "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/PERFORMANCE${QUERYSTRING ? ",
+          "endpoint": "/analytics/organizational/employees/performance${queryString ? "
+        },
+        {
+          "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/RETENTION${QUERYSTRING ? ",
+          "endpoint": "/analytics/organizational/employees/retention${queryString ? "
+        },
+        {
+          "method": "/ANALYTICS/ORGANIZATIONAL/EMPLOYEES/TRAINING${QUERYSTRING ? ",
+          "endpoint": "/analytics/organizational/employees/training${queryString ? "
+        },
+        {
+          "method": "/ANALYTICS/ORGANIZATIONAL/HEALTH/OVERVIEW",
+          "endpoint": "/analytics/organizational/health/overview"
+        },
+        {
+          "method": "/ANALYTICS/ORGANIZATIONAL/DASHBOARD/EXECUTIVE",
+          "endpoint": "/analytics/organizational/dashboard/executive"
+        },
+        {
+          "method": "/WORKFLOWS/DEFINITIONS",
+          "endpoint": "/workflows/definitions"
+        },
+        {
+          "method": "/WORKFLOWS/DEFINITIONS",
+          "endpoint": "/workflows/definitions"
+        },
+        {
+          "method": "/WORKFLOWS/INSTANCES${QUERYSTRING ? ",
+          "endpoint": "/workflows/instances${queryString ? "
+        },
+        {
+          "method": "/WORKFLOWS/INSTANCES",
+          "endpoint": "/workflows/instances"
+        },
+        {
+          "method": "/WORKFLOWS/INSTANCES/${ID}",
+          "endpoint": "/workflows/instances/${id}"
+        },
+        {
+          "method": "/WORKFLOWS/STEPS/${STEPID}/COMPLETE",
+          "endpoint": "/workflows/steps/${stepId}/complete"
+        },
+        {
+          "method": "/WORKFLOWS/TASKS/ASSIGNED${QUERYSTRING ? ",
+          "endpoint": "/workflows/tasks/assigned${queryString ? "
+        },
+        {
+          "method": "/COMMUNICATIONS${QUERYSTRING ? ",
+          "endpoint": "/communications${queryString ? "
+        },
+        {
+          "method": "/COMMUNICATIONS",
+          "endpoint": "/communications"
+        },
+        {
+          "method": "/COMMUNICATIONS/${ID}",
+          "endpoint": "/communications/${id}"
+        },
+        {
+          "method": "/COMMUNICATIONS/${ID}",
+          "endpoint": "/communications/${id}"
+        },
+        {
+          "method": "/COMMUNICATIONS/${ID}/PUBLISH",
+          "endpoint": "/communications/${id}/publish"
+        },
+        {
+          "method": "/COMMUNICATIONS/${ID}/ACKNOWLEDGE",
+          "endpoint": "/communications/${id}/acknowledge"
+        },
+        {
+          "method": "/NOTIFICATIONS/BROADCAST",
+          "endpoint": "/notifications/broadcast"
+        },
+        {
+          "method": "/EMPLOYEES${QUERYSTRING ? ",
+          "endpoint": "/employees${queryString ? "
+        },
+        {
+          "method": "/EMPLOYEES/${ID}",
+          "endpoint": "/employees/${id}"
+        },
+        {
+          "method": "/EMPLOYEES",
+          "endpoint": "/employees"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}",
+          "endpoint": "/employees/${id}"
+        },
+        {
+          "method": "/EMPLOYEES/${ID}",
+          "endpoint": "/employees/${id}"
+        },
+        {
+          "method": "/ASSETS${QUERYSTRING ? ",
+          "endpoint": "/assets${queryString ? "
+        },
+        {
+          "method": "/ASSETS/${ID}",
+          "endpoint": "/assets/${id}"
+        },
+        {
+          "method": "/ASSETS",
+          "endpoint": "/assets"
+        },
+        {
+          "method": "/ASSETS/${ID}",
+          "endpoint": "/assets/${id}"
+        },
+        {
+          "method": "/ASSETS/${ID}/CHECKOUT",
+          "endpoint": "/assets/${id}/checkout"
+        },
+        {
+          "method": "/ASSETS/${ID}/CHECKIN",
+          "endpoint": "/assets/${id}/checkin"
+        },
+        {
+          "method": "/DOCUMENTS${QUERYSTRING ? ",
+          "endpoint": "/documents${queryString ? "
+        },
+        {
+          "method": "/DOCUMENTS/UPLOAD",
+          "endpoint": "/documents/upload"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}",
+          "endpoint": "/documents/${id}"
+        },
+        {
+          "method": "/DOCUMENTS/${ID}/ACKNOWLEDGE",
+          "endpoint": "/documents/${id}/acknowledge"
+        },
+        {
+          "method": "/BUDGETS${QUERYSTRING ? ",
+          "endpoint": "/budgets${queryString ? "
+        },
+        {
+          "method": "/BUDGETS",
+          "endpoint": "/budgets"
+        },
+        {
+          "method": "/BUDGETS/${ID}",
+          "endpoint": "/budgets/${id}"
+        },
+        {
+          "method": "/ORGANIZATIONAL-ANALYTICS${QUERYSTRING ? ",
+          "endpoint": "/organizational-analytics${queryString ? "
+        },
+        {
+          "method": "/FINANCIAL-REPORTS${QUERYSTRING ? ",
+          "endpoint": "/financial-reports${queryString ? "
+        },
+        {
+          "method": "/WORKFLOWS${QUERYSTRING ? ",
+          "endpoint": "/workflows${queryString ? "
+        },
+        {
+          "method": "/WORKFLOWS/TRIGGER",
+          "endpoint": "/workflows/trigger"
+        },
+        {
+          "method": "/ASSIGNMENTS/AI-SUGGESTIONS/${SUGGESTIONID}/ACCEPT",
+          "endpoint": "/assignments/ai-suggestions/${suggestionId}/accept"
+        },
+        {
+          "method": "/ASSIGNMENTS/AI-SUGGESTIONS/${SUGGESTIONID}/REJECT",
+          "endpoint": "/assignments/ai-suggestions/${suggestionId}/reject"
+        },
+        {
+          "method": "/AUTH/REFRESH-PERMISSIONS",
+          "endpoint": "/auth/refresh-permissions"
+        },
+        {
+          "method": "/ADMIN/PERMISSIONS",
+          "endpoint": "/admin/permissions"
+        },
+        {
+          "method": "/ADMIN/PERMISSIONS",
+          "endpoint": "/admin/permissions"
+        },
+        {
+          "method": "/ADMIN/PERMISSIONS/CATEGORY/${CATEGORY}",
+          "endpoint": "/admin/permissions/category/${category}"
+        },
+        {
+          "method": "/ADMIN/PERMISSIONS/CATEGORIES",
+          "endpoint": "/admin/permissions/categories"
+        },
+        {
+          "method": "/ADMIN/PERMISSIONS/USERS/BULK-CHECK",
+          "endpoint": "/admin/permissions/users/bulk-check"
+        },
+        {
+          "method": "/ADMIN/ROLES${QUERYSTRING ? ",
+          "endpoint": "/admin/roles${queryString ? "
+        },
+        {
+          "method": "/USERS/ROLES",
+          "endpoint": "/users/roles"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}",
+          "endpoint": "/admin/roles/${roleId}"
+        },
+        {
+          "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/PAGES",
+          "endpoint": "/admin/access/roles/${roleId}/pages"
+        },
+        {
+          "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/APIS",
+          "endpoint": "/admin/access/roles/${roleId}/apis"
+        },
+        {
+          "method": "/ADMIN/ACCESS/ROLES/${ROLEID}/FEATURES",
+          "endpoint": "/admin/access/roles/${roleId}/features"
+        },
+        {
+          "method": "/PAGES/CHECK-ACCESS",
+          "endpoint": "/pages/check-access"
+        },
+        {
+          "method": "/ADMIN/ACCESS/CHECK-API",
+          "endpoint": "/admin/access/check-api"
+        },
+        {
+          "method": "/ADMIN/ACCESS/CHECK-FEATURE",
+          "endpoint": "/admin/access/check-feature"
+        },
+        {
+          "method": "/ADMIN/ACCESS/CLEAR-CACHE",
+          "endpoint": "/admin/access/clear-cache"
+        },
+        {
+          "method": "/PAGES/PERMISSIONS",
+          "endpoint": "/pages/permissions"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}",
+          "endpoint": "/admin/roles/${roleId}"
+        },
+        {
+          "method": "/ADMIN/ROLES",
+          "endpoint": "/admin/roles"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}",
+          "endpoint": "/admin/roles/${roleId}"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}",
+          "endpoint": "/admin/roles/${roleId}"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}/STATUS",
+          "endpoint": "/admin/roles/${roleId}/status"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}/PERMISSIONS",
+          "endpoint": "/admin/roles/${roleId}/permissions"
+        },
+        {
+          "method": "/ADMIN/ROLES/${ROLEID}/USERS",
+          "endpoint": "/admin/roles/${roleId}/users"
+        },
+        {
+          "method": "/ADMIN/USERS/${USERID}/ROLES",
+          "endpoint": "/admin/users/${userId}/roles"
+        },
+        {
+          "method": "/ADMIN/USERS/${USERID}/ROLES",
+          "endpoint": "/admin/users/${userId}/roles"
+        },
+        {
+          "method": "/ADMIN/USERS/${USERID}/ROLES",
+          "endpoint": "/admin/users/${userId}/roles"
+        },
+        {
+          "method": "/ADMIN/USERS/${USERID}/ROLES",
+          "endpoint": "/admin/users/${userId}/roles"
+        },
+        {
+          "method": "/USERS${QUERY}",
+          "endpoint": "/users${query}"
+        },
+        {
+          "method": "/USERS",
+          "endpoint": "/users"
+        },
+        {
+          "method": "/USERS/${USERID}",
+          "endpoint": "/users/${userId}"
+        },
+        {
+          "method": "/USERS/${USERID}",
+          "endpoint": "/users/${userId}"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES",
+          "endpoint": "/admin/cerbos-policies"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/${POLICYID}",
+          "endpoint": "/admin/cerbos-policies/${policyId}"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES",
+          "endpoint": "/admin/cerbos-policies"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/${POLICYID}",
+          "endpoint": "/admin/cerbos-policies/${policyId}"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/${POLICYID}",
+          "endpoint": "/admin/cerbos-policies/${policyId}"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLE-PERMISSIONS",
+          "endpoint": "/admin/cerbos-policies/role-permissions"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLE/${ROLENAME}/PERMISSIONS",
+          "endpoint": "/admin/cerbos-policies/role/${roleName}/permissions"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLES",
+          "endpoint": "/admin/cerbos-policies/roles"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLES",
+          "endpoint": "/admin/cerbos-policies/roles"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLES/${ROLENAME}",
+          "endpoint": "/admin/cerbos-policies/roles/${roleName}"
+        },
+        {
+          "method": "/ADMIN/CERBOS-POLICIES/ROLES/${ROLENAME}${FORCE ? ",
+          "endpoint": "/admin/cerbos-policies/roles/${roleName}${force ? "
+        },
+        {
+          "method": "/ADMIN/UNIFIED-ROLES/${NAME}",
+          "endpoint": "/admin/unified-roles/${name}"
+        },
+        {
+          "method": "/ADMIN/ROLES",
+          "endpoint": "/admin/roles"
+        },
+        {
+          "method": "/ADMIN/ROLES/${IDORNAME}",
+          "endpoint": "/admin/roles/${idOrName}"
+        },
+        {
+          "method": "/ADMIN/UNIFIED-ROLES/${NAME}${FORCE ? ",
+          "endpoint": "/admin/unified-roles/${name}${force ? "
+        },
+        {
+          "method": "/CHUNKS${QUERYSTRING ? ",
+          "endpoint": "/chunks${queryString ? "
+        },
+        {
+          "method": "/CHUNKS/${ID}",
+          "endpoint": "/chunks/${id}"
+        },
+        {
+          "method": "/CHUNKS",
+          "endpoint": "/chunks"
+        },
+        {
+          "method": "/CHUNKS/${ID}",
+          "endpoint": "/chunks/${id}"
+        },
+        {
+          "method": "/CHUNKS/${ID}${QUERYSTRING}",
+          "endpoint": "/chunks/${id}${queryString}"
+        },
+        {
+          "method": "/CHUNKS/${ID}/ASSIGN",
+          "endpoint": "/chunks/${id}/assign"
+        },
+        {
+          "method": "/CHUNKS/AUTO-CREATE",
+          "endpoint": "/chunks/auto-create"
+        }
+      ]
+    },
+    {
+      "file": "frontend\\lib\\resources.ts",
+      "endpoints": [
+        {
+          "method": "/API/RESOURCES",
+          "endpoint": "/api/resources"
+        },
+        {
+          "method": "/API/RESOURCES/${SLUG}",
+          "endpoint": "/api/resources/${slug}"
+        },
+        {
+          "method": "/API/RESOURCES/CATEGORIES",
+          "endpoint": "/api/resources/categories"
+        }
+      ]
+    }
+  ]
+}

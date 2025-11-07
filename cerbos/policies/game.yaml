@@ -33,38 +33,6 @@ resourcePolicy:
         - same_region
       name: region-members-view
     - actions:
-        - create
-      effect: EFFECT_ALLOW
-      roles:
-        - admin
-        - super_admin
-        - assignor
-      condition:
-        match:
-          all:
-            of:
-              - expr: request.principal.attr.isActive == true
-              - expr: >-
-                  request.resource.attr.organizationId ==
-                  request.principal.attr.organizationId
-      name: assignors-create-in-org
-    - actions:
-        - update
-      effect: EFFECT_ALLOW
-      derivedRoles:
-        - owner
-        - same_region
-      roles:
-        - assignor
-      condition:
-        match:
-          all:
-            of:
-              - expr: request.principal.attr.isActive == true
-              - expr: request.resource.attr.status != "completed"
-              - expr: request.resource.attr.status != "cancelled"
-      name: assignors-update-own-region
-    - actions:
         - update
         - delete
       effect: EFFECT_ALLOW
@@ -87,72 +55,6 @@ resourcePolicy:
               - expr: request.principal.attr.isActive == true
       name: owner-delete-draft
     - actions:
-        - assign_referee
-      effect: EFFECT_ALLOW
-      roles:
-        - assignor
-        - admin
-        - super_admin
-      derivedRoles:
-        - same_region
-      condition:
-        match:
-          all:
-            of:
-              - expr: request.principal.attr.isActive == true
-              - expr: request.resource.attr.status == "scheduled"
-      name: assignors-assign-referees
-    - actions:
-        - unassign_referee
-      effect: EFFECT_ALLOW
-      roles:
-        - assignor
-        - admin
-        - super_admin
-      derivedRoles:
-        - same_region
-      condition:
-        match:
-          all:
-            of:
-              - expr: request.principal.attr.isActive == true
-              - expr: request.resource.attr.status != "completed"
-      name: assignors-unassign-referees
-    - actions:
-        - change_status
-      effect: EFFECT_ALLOW
-      roles:
-        - assignor
-        - admin
-        - super_admin
-      derivedRoles:
-        - same_region
-      condition:
-        match:
-          expr: request.principal.attr.isActive == true
-      name: assignors-change-status
-    - actions:
-        - export
-      effect: EFFECT_ALLOW
-      roles:
-        - assignor
-        - admin
-        - super_admin
-      derivedRoles:
-        - same_organization
-      name: assignors-export
-    - actions:
-        - import
-      effect: EFFECT_ALLOW
-      roles:
-        - assignor
-        - admin
-        - super_admin
-      condition:
-        match:
-          expr: request.principal.attr.isActive == true
-      name: assignors-import
-    - actions:
         - approve
         - reject
       effect: EFFECT_ALLOW
@@ -167,3 +69,15 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles:
         - assignment_manager
+    - actions:
+        - create
+        - update
+        - assign_referee
+        - unassign_referee
+        - change_status
+        - export
+        - import
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor

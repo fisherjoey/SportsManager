@@ -1,0 +1,90 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: game
+  importDerivedRoles:
+    - common_roles
+  rules:
+    # Super Admin has full access to all game actions
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+      name: super-admin-full-access
+
+    - actions:
+        - view
+        - view:list
+        - view:details
+        - list
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      name: admins-view-all
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - same_organization
+        - active_user
+      name: org-members-view
+    - actions:
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - same_region
+      name: region-members-view
+    - actions:
+        - update
+        - delete
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: admins-update-delete
+    - actions:
+        - delete
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.status == "draft"
+              - expr: request.principal.attr.isActive == true
+      name: owner-delete-draft
+    - actions:
+        - approve
+        - reject
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+      derivedRoles:
+        - same_organization
+      name: admins-approve-reject
+    - actions:
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - assignment_manager
+    - actions:
+        - create
+        - update
+        - assign_referee
+        - unassign_referee
+        - change_status
+        - export
+        - import
+        - view
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor

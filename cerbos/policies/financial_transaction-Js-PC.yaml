@@ -1,0 +1,19 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "financial_transaction"
+  rules:
+    - actions:
+        - view
+        - view:list
+        - view:details
+        - view:stats
+        - create
+        - update
+        - delete
+        - manage
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin

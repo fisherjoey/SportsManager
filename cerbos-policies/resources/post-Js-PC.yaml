@@ -1,0 +1,31 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Policy for post resource
+resourcePolicy:
+  version: "default"
+  importDerivedRoles:
+    - common_roles
+  resource: "post"
+  rules:
+    # Super Admin has full access
+    - actions: ['*']
+      effect: EFFECT_ALLOW
+      roles:
+        - super_admin
+    - actions: ['view:list', 'view:details', 'view:categories', 'create', 'update', 'delete', 'admin:upload_media', 'admin:view_reads']
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+      derivedRoles:
+        - organization_admin
+
+    - actions: ['view:list', 'view:details', 'view:categories']
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - referee
+
+    - actions: ['*']
+      effect: EFFECT_DENY
+      roles:
+        - guest

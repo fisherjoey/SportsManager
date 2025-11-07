@@ -1,0 +1,34 @@
+---
+# Cerbos Server Configuration
+# Sports Manager Application
+
+server:
+  httpListenAddr: ":3592"
+  grpcListenAddr: ":3593"
+  adminAPI:
+    enabled: true
+    # No authentication for development - SECURE THIS IN PRODUCTION
+    adminCredentials:
+      username: ""
+      passwordHash: ""
+
+storage:
+  driver: "disk"
+  disk:
+    directory: "/policies"
+    watchForChanges: true
+
+# Audit logging for compliance
+audit:
+  enabled: true
+  backend: local
+  local:
+    storagePath: /data/audit.log
+
+# Schema validation
+schema:
+  enforcement: reject  # Reject invalid policies
+
+# Telemetry (disabled for local dev)
+telemetry:
+  disabled: true

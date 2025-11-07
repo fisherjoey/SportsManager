@@ -1,163 +1,231 @@
-# Quick Start: Creating Cerbos Policies
+# 🚀 Quick Start Guide
 
-## TL;DR
-
-Run this command from the project root:
+## Start Everything (One Command)
 
 ```bash
-./create_cerbos_policies.sh
+npm run dev
 ```
 
-This will create 38 policy files and restart Cerbos.
+**What this does:**
+1. Starts Cerbos container (Docker required)
+2. Starts Backend API on port 3001
+3. Starts Frontend on port 3000
+
+All services run in one terminal with color-coded output.
 
 ---
 
-## What This Fixes
+## Alternative: Use the Startup Script
 
-**Problem**: Super Admin getting "403 Forbidden" on API calls (except users, games, assignments)
-
-**Root Cause**: Cerbos has policies for only 3 resources out of 41
-
-**Solution**: Create individual policy files for all 38 remaining resources
-
----
-
-## Files Created
-
-1. **CERBOS_POLICY_CREATION_PLAN.md** - Complete documentation (read this for details)
-2. **create_cerbos_policies.sh** - Automated script (run this to execute)
-3. **QUICK_START.md** - This file (quick reference)
-
----
-
-## Step by Step (Manual)
-
-If the script doesn't work, create files manually:
-
-1. Go to policies directory:
-   ```bash
-   cd cerbos/policies/
-   ```
-
-2. Create each policy file (example for `team`):
-   ```bash
-   cat > team.yaml << 'EOF'
-   ---
-   apiVersion: api.cerbos.dev/v1
-   resourcePolicy:
-     version: "default"
-     resource: "team"
-     rules:
-       - actions:
-           - view
-           - view:list
-           - view:details
-           - view:stats
-           - create
-           - update
-           - delete
-           - manage
-         effect: EFFECT_ALLOW
-         roles:
-           - admin
-           - super_admin
-   EOF
-   ```
-
-3. Repeat for all 38 resources listed in CERBOS_POLICY_CREATION_PLAN.md
-
-4. Restart Cerbos:
-   ```bash
-   docker restart sportsmanager-cerbos
-   ```
-
----
-
-## Verification
-
-1. **Check policy count**:
-   ```bash
-   docker logs sportsmanager-cerbos 2>&1 | grep "Found.*executable policies" | tail -1
-   ```
-   Should show: "Found 41 executable policies"
-
-2. **Test an endpoint**:
-   ```bash
-   TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzYjViOTRmMy1hNzAwLTRjNTktYTI5Ny01ZGNiNTQzZDM3MmQiLCJlbWFpbCI6ImFkbWluQHJlZmFzc2lnbi5jb20iLCJyb2xlcyI6WyJTdXBlciBBZG1pbiIsIkFkbWluIl0sImlhdCI6MTc1OTAwNzQzMCwiZXhwIjoxNzU5NjEyMjMwfQ.kWjM3-7HEnRKs4FCWW6Nm59nx66bWUZAPOp9xcn7gV8"
-   curl -s -X GET "http://localhost:3001/api/teams" -H "Authorization: Bearer $TOKEN"
-   ```
-   Should return JSON data (not 403 error)
-
----
-
-## Resources That Need Policies
-
-- Core: team, league, location, referee, tournament, post
-- Organization: organization, role, invitation, region
-- Financial: expense, budget, financial_transaction, financial_report, financial_dashboard, receipt, game_fee, purchase_order, company_credit_card, accounting
-- HR: employee, asset
-- Communication: document, communication, content
-- Mentorship: mentorship, mentee_game
-- Reporting: report, organizational_analytics
-- Config: cerbos_policy, referee_role, referee_level, maintenance, updatable
-- AI: ai_suggestion, historic_pattern, chunk, ai_assignment_rule
-- Scheduling: calendar
-
----
-
-## Current Status
-
-✅ Fixed: Cerbos now uses disk storage (loads YAML files)
-✅ Working: user, game, assignment resources
-❌ Needs work: 38 remaining resources
-
----
-
-## Key Configuration
-
-**Cerbos Config** (`cerbos/config/config.yaml`):
-```yaml
-storage:
-  driver: "disk"
-  disk:
-    directory: "/policies"
-    watchForChanges: true
+**Windows:**
+```cmd
+dev-start.bat
 ```
 
-**Policy Location**: `cerbos/policies/*.yaml`
+**Mac/Linux:**
+```bash
+./dev-start.sh
+```
 
-**Cerbos Container**: `sportsmanager-cerbos`
+These scripts will:
+- ✅ Check if Docker is running
+- ✅ Install dependencies if needed
+- ✅ Start all services
+- ⚠️ Give you options if Docker isn't available
+
+---
+
+## Individual Service Control
+
+**Start services separately:**
+```bash
+# Terminal 1: Cerbos (background)
+npm run start:cerbos
+
+# Terminal 2: Backend
+npm run dev:backend
+
+# Terminal 3: Frontend
+npm run dev:frontend
+```
+
+**Stop Cerbos when done:**
+```bash
+npm run stop:cerbos
+```
+
+---
+
+## Access Your Services
+
+Once running:
+
+| Service | URL | Login |
+|---------|-----|-------|
+| **Frontend** | http://localhost:3000 | admin@refassign.com / (your password) |
+| **Backend API** | http://localhost:3001/api | - |
+| **Cerbos Health** | http://localhost:3592/_cerbos/health | - |
+| **Database** | localhost:5432 | postgres / postgres123 |
+
+---
+
+## Common Commands Cheat Sheet
+
+```bash
+# Development
+npm run dev                    # Start all services
+npm run dev:backend            # Backend only
+npm run dev:frontend           # Frontend only
+
+# Cerbos
+npm run start:cerbos           # Start (background)
+npm run stop:cerbos            # Stop
+npm run restart:cerbos         # Restart
+npm run logs:cerbos            # View logs
+
+# Database
+cd backend && npm run migrate              # Run migrations
+cd backend && npm run migrate:rollback     # Rollback
+cd backend && npm run seed:initial         # Seed data
+
+# Testing
+npm run test:all               # All tests
+cd backend && npm test         # Backend tests
+cd frontend && npm test        # Frontend tests
+
+# Validation
+cd backend && npm run cerbos:validate      # Check Cerbos policies
+cd backend && npm run type-check           # TypeScript check
+npm run lint:all               # Lint all code
+
+# Building
+npm run build:all              # Build everything
+cd backend && npm run build    # Backend only
+cd frontend && npm run build   # Frontend only
+
+# Cleanup
+npm run clean                  # Remove build artifacts
+```
 
 ---
 
 ## Troubleshooting
 
-### Issue: Script doesn't run
-```bash
-chmod +x create_cerbos_policies.sh
-./create_cerbos_policies.sh
-```
+### ❌ "Docker is not running"
 
-### Issue: Cerbos shows errors
-```bash
-docker logs --tail 50 sportsmanager-cerbos | grep error
-```
+**Solution:**
+1. Start Docker Desktop
+2. Wait for Docker icon to appear in system tray
+3. Run `npm run dev` again
 
-### Issue: Still getting 403
-- Check policy file name matches resource name exactly
-- Restart Cerbos: `docker restart sportsmanager-cerbos`
-- Check logs: `docker logs sportsmanager-cerbos | tail -30`
+**OR** run without Cerbos:
+```bash
+# Start backend and frontend only
+npm run dev:backend &
+npm run dev:frontend
+```
 
 ---
 
-## Success Criteria
+### ❌ "Permission check failed" errors in logs
 
-- [ ] 41 policy files exist in `cerbos/policies/`
-- [ ] Cerbos logs show "Found 41 executable policies"
-- [ ] No load failures in Cerbos logs
-- [ ] API calls return data (not 403 errors)
-- [ ] Super Admin can access all endpoints
+**Problem:** Cerbos not running
+
+**Solution:**
+```bash
+# Check if Cerbos is healthy
+curl http://localhost:3592/_cerbos/health
+
+# If no response, start Cerbos
+npm run start:cerbos
+
+# Verify it's running
+docker ps | grep cerbos
+```
 
 ---
 
-For complete documentation, see: **CERBOS_POLICY_CREATION_PLAN.md**
+### ❌ "Port 3000/3001 already in use"
+
+**Solution:**
+
+**Windows:**
+```cmd
+netstat -ano | findstr :3000
+taskkill /PID <PID_NUMBER> /F
+```
+
+**Mac/Linux:**
+```bash
+lsof -ti:3000 | xargs kill -9
+```
+
+---
+
+### ❌ Database connection errors
+
+**Check PostgreSQL is running:**
+```bash
+# Windows (local install)
+pg_isready -h localhost -p 5432
+
+# Docker
+docker ps | grep postgres
+```
+
+**Check credentials in `backend/.env`:**
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres123
+DB_NAME=sports_management
+```
+
+---
+
+### ❌ Tests hanging
+
+**Solution:**
+```bash
+cd backend
+npm test -- --forceExit --maxWorkers=1
+```
+
+---
+
+## First Time Setup Checklist
+
+- [ ] Install Node.js 18+
+- [ ] Install Docker Desktop
+- [ ] Clone repository
+- [ ] Run `npm run install:all`
+- [ ] Copy `backend/.env.example` to `backend/.env`
+- [ ] Start PostgreSQL (local or Docker)
+- [ ] Run `cd backend && npm run migrate`
+- [ ] Run `npm run dev`
+- [ ] Visit http://localhost:3000
+
+---
+
+## Development Workflow
+
+1. **Start services:** `npm run dev`
+2. **Make changes** in `backend/src/` or `frontend/`
+3. **Hot reload** happens automatically
+4. **Test:** `npm run test:all`
+5. **Commit:** Git will run Cerbos policy check
+6. **Push:** CI/CD runs all tests
+
+---
+
+## Need Help?
+
+- 📖 Full docs: `/docs`
+- 🐛 Issues: Check `/docs/ci-cd/PIPELINE_FIX_SUMMARY.md`
+- 🔐 Cerbos: See `/docs/security/CERBOS_POLICY_ENFORCEMENT.md`
+- 📊 Database: See `/docs/schema/README.md`
+
+---
+
+**Happy coding! 🎉**

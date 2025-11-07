@@ -1,0 +1,95 @@
+{
+  "timestamp": "2025-09-25T17:05:17.943Z",
+  "pagesChecked": [
+    "/",
+    "/login",
+    "/register",
+    "/dashboard",
+    "/games",
+    "/referees",
+    "/assignors",
+    "/mentorships",
+    "/my-mentees",
+    "/settings",
+    "/receipt-upload",
+    "/analytics",
+    "/reporting",
+    "/audit-logs"
+  ],
+  "errors": {
+    "http://localhost:3000/": [
+      "Navigation error: page.waitForTimeout is not a function",
+      "Module not found: Error: Can't resolve 'next-flight-client-entry-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Module not found: Error: Can't resolve 'next-flight-client-entry-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Module not found: Error: Can't resolve 'next-flight-client-entry-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Module not found: Error: Can't resolve 'next-flight-client-entry-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Module not found: Error: Can't resolve 'next-app-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Module not found: Error: Can't resolve 'next-app-loader' in 'C:\\Users\\School\\OneDrive\\Desktop\\SportsManager-pre-typescript\\frontend'",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Request failed: http://localhost:3000/__nextjs_font/geist-mono-latin.woff2 - net::ERR_ABORTED",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Request failed: http://localhost:3000/__nextjs_font/geist-latin.woff2 - net::ERR_ABORTED"
+    ],
+    "http://localhost:3000/login": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/register": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/dashboard": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/games": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/referees": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/assignors": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/mentorships": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/my-mentees": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/settings": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/receipt-upload": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/analytics": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/reporting": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ],
+    "http://localhost:3000/audit-logs": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Navigation error: page.waitForTimeout is not a function"
+    ]
+  },
+  "warnings": {},
+  "summary": {
+    "totalPages": 14,
+    "pagesWithErrors": 14,
+    "pagesWithWarnings": 0,
+    "totalErrors": 38,
+    "totalWarnings": 0
+  }
+}

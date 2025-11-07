@@ -1,0 +1,38 @@
+---
+apiVersion: api.cerbos.dev/v1
+description: Common derived roles used across resource policies
+derivedRoles:
+  name: common_roles
+  definitions:
+    - name: owner
+      parentRoles: ["assignor", "admin", "super_admin"]
+      condition:
+        match:
+          expr: request.resource.attr.createdBy == request.principal.id
+
+    - name: same_organization
+      parentRoles: ["*"]
+      condition:
+        match:
+          expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - name: same_region
+      parentRoles: ["assignor", "referee"]
+      condition:
+        match:
+          expr: request.resource.attr.regionId in request.principal.attr.regionIds
+
+    - name: organization_admin
+      parentRoles: ["admin", "super_admin"]
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.principal.attr.organizationId != null
+              - expr: request.resource.attr.organizationId == request.principal.attr.organizationId
+
+    - name: system_admin
+      parentRoles: ["super_admin"]
+      condition:
+        match:
+          expr: "true"  # Super admins always have system-level access

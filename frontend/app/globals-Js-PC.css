@@ -1,0 +1,621 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* SyncedSport Dark Theme Variables */
+  .syncedsport-dark {
+    --cf-bg-main: #0f0f0f;
+    --cf-bg-header: #0a0a0a;
+    --cf-bg-sidebar: #0a0a0a;
+    --cf-bg-card: #1a1a1a;
+    --cf-bg-hover: rgba(255, 255, 255, 0.05);
+    --cf-bg-selected: #0051c3;
+    --cf-text-primary: #ffffff;
+    --cf-text-secondary: #d1d5db;
+    --cf-text-muted: #9ca3af;
+    --cf-border: #2d2d2d;
+    --cf-border-input: #374151;
+  }
+
+  :root {
+    /* SyncedSport Light Mode Theme - Exact Colors */
+    --background: 0 0% 100%; /* Pure white #FFFFFF */
+    --foreground: 0 0% 20%; /* Text color #333333 */
+
+    /* Cloudflare/SyncedSport brand colors for sidebar */
+    --syncedsport-blue: #0051c3;
+    --syncedsport-blue-hover: #e5f2ff;
+    --syncedsport-orange: #f48120;
+    --syncedsport-cyan: #0ea5e9;
+
+    /* Inter Font Size Variables - SyncedSport Style */
+    --font-size-xs: 0.75rem;    /* 12px - Small labels */
+    --font-size-sm: 0.875rem;   /* 14px - Secondary text */
+    --font-size-base: 1rem;     /* 16px - Body text */
+    --font-size-lg: 1.125rem;   /* 18px - Headings */
+    --font-size-xl: 1.25rem;    /* 20px - Large headings */
+
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 0 0% 20%; /* Dark gray text */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 20%;
+    --primary: 217 100% 38%; /* Cloudflare Blue #0051C3 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 97%; /* Light gray #F7F7F7 */
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 96%; /* Light gray #F5F5F5 */
+    --muted-foreground: 0 0% 45%; /* Medium gray #737373 */
+    --accent: 207 100% 95%; /* Light Blue #e5f2ff */
+    --accent-foreground: 217 100% 38%; /* Cloudflare Blue text */
+    --destructive: 0 84% 60%; /* Error Red #EC5E5E */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 91%; /* Light gray border #E8E8E8 */
+    --input: 0 0% 98%; /* Very light gray for inputs #FAFAFA */
+    --input-foreground: 0 0% 15%; /* Dark text for readability #262626 */
+    --ring: 217 100% 38%; /* Cloudflare Blue focus ring */
+
+    /* Chart colors - Cloudflare palette */
+    --chart-1: 217 100% 38%; /* Cloudflare Blue #0051C3 */
+    --chart-2: 199 89% 48%; /* Cyan #0ea5e9 */
+    --chart-3: 217 100% 50%; /* Lighter Blue #0066ff */
+    --chart-4: 217 91% 60%; /* Sky Blue #3b82f6 */
+    --chart-5: 206 100% 70%; /* Light Sky #60a5fa */
+
+    --success: 158 61% 42%; /* Success Green #10B981 */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 93% 52%; /* Warning Orange #F59E0B */
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 44%; /* SyncedSport Blue #0051C3 */
+    --info-foreground: 0 0% 100%;
+    --radius: 0.375rem; /* SyncedSport uses slightly smaller radius */
+
+    /* Sidebar - Cloudflare light theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 217 100% 38%; /* #0051c3 - Cloudflare Blue text */
+    --sidebar-primary: 217 100% 38%; /* Cloudflare Blue */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 207 100% 95%; /* Light Blue hover */
+    --sidebar-accent-foreground: 217 100% 38%; /* #0051c3 */
+    --sidebar-border: 210 18% 87%;
+    --sidebar-ring: 217 100% 38%;
+  }
+
+  .dark {
+    /* Cloudflare Dark Mode Theme */
+    --background: 0 0% 12%; /* Dark background #1E1E1E */
+    --foreground: 210 17% 98%; /* Light text #F3F4F6 */
+
+    --card: 0 0% 17%; /* Dark card #2C2C2C */
+    --card-foreground: 210 17% 98%;
+    --popover: 0 0% 17%;
+    --popover-foreground: 210 17% 98%;
+    --primary: 217 100% 60%; /* Brighter Cloudflare Blue for dark mode */
+    --primary-foreground: 0 0% 12%;
+    --secondary: 0 0% 20%; /* Dark secondary */
+    --secondary-foreground: 210 16% 82%; /* Light gray */
+    --muted: 0 0% 20%; /* Dark muted */
+    --muted-foreground: 210 10% 60%; /* Medium gray #9CA3AF */
+    --accent: 217 100% 20%; /* Dark Blue accent */
+    --accent-foreground: 217 100% 70%; /* Light blue text */
+    --destructive: 0 72% 60%; /* Brighter red for dark mode */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%; /* Dark border */
+    --input: 217 33% 17%; /* Lighter dark gray for better contrast #2a3544 */
+    --input-foreground: 210 40% 98%; /* Near white for readability #f9fafb */
+    --ring: 217 100% 60%; /* Cloudflare Blue ring */
+
+    /* Chart colors - Cloudflare palette dark mode */
+    --chart-1: 217 100% 60%; /* Cloudflare Blue */
+    --chart-2: 199 89% 58%; /* Cyan */
+    --chart-3: 217 100% 70%; /* Lighter Blue */
+    --chart-4: 206 100% 80%; /* Sky Blue */
+    --chart-5: 199 100% 85%; /* Light Cyan */
+
+    --success: 158 61% 52%; /* Success Green */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 93% 62%; /* Warning Orange */
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%; /* SyncedSport Blue */
+    --info-foreground: 0 0% 100%;
+    --radius: 0.375rem;
+
+    /* Sidebar - Cloudflare dark theme */
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 205 86% 68%; /* #63b6f3 - Light blue text */
+    --sidebar-primary: 217 100% 60%; /* Cloudflare Blue */
+    --sidebar-primary-foreground: 0 0% 12%;
+    --sidebar-accent: 217 100% 20%; /* Dark Blue hover */
+    --sidebar-accent-foreground: 205 86% 68%; /* #63b6f3 */
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 217 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px; /* Prevents iOS zoom on form inputs */
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    min-width: 100%;
+  }
+
+  /* Ensure root and app containers take full width */
+  #__next, #root, [data-nextjs-scroll-focus-boundary] {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Ensure main content area can expand */
+  main {
+    width: 100%;
+  }
+
+  /* Global icon colors - Cloudflare Blue */
+  svg {
+    color: #0051c3;
+  }
+
+  .dark svg {
+    color: #63b6f3;
+  }
+
+  /* Allow specific overrides for special cases */
+  .text-destructive svg,
+  .text-success svg,
+  .text-warning svg,
+  .text-white svg,
+  .text-primary-foreground svg,
+  .text-muted-foreground svg,
+  .btn svg,
+  button svg {
+    color: inherit;
+  }
+
+  /* Ensure icons in buttons with primary variant are white */
+  .bg-primary svg:not(.text-inherit),
+  [class*="bg-primary"] svg:not(.text-inherit) {
+    color: white;
+  }
+}
+
+/* Inter font variations - SyncedSport style */
+.font-inter {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* SyncedSport-style Inter font weights */
+.font-inter-light {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300;
+}
+
+.font-inter-regular {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+}
+
+.font-inter-medium {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+}
+
+.font-inter-semibold {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+}
+
+.font-inter-bold {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+}
+
+/* Data table optimizations - Cloudflare style */
+.data-table {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  font-feature-settings: 'tnum' 1; /* Tabular numbers for better alignment */
+  width: 100%;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.data-table th {
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+/* Table cell optimizations */
+.data-table td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Mobile-first responsive font scaling */
+@media (min-width: 768px) {
+  .data-table {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (min-width: 1024px) {
+  .data-table {
+    font-size: 13px;
+  }
+}
+
+/* Cloudflare-style thin scrollbar */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; /* Firefox */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  border: none;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode scrollbar */
+.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Sidebar scrollbar - only visible on hover */
+.sidebar-scroll {
+  scrollbar-width: none; /* Firefox - hide by default */
+  scrollbar-color: transparent transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 0;
+  transition: width 0.2s ease;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+}
+
+/* Show scrollbar on hover */
+.sidebar-scroll:hover {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.dark .sidebar-scroll:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.dark .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.dark .sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Custom scrollbar utilities */
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Custom color utilities */
+  .text-success {
+    color: hsl(var(--success));
+  }
+  .text-success-foreground {
+    color: hsl(var(--success-foreground));
+  }
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  .bg-success-foreground {
+    background-color: hsl(var(--success-foreground));
+  }
+  .border-success {
+    border-color: hsl(var(--success));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  .text-warning-foreground {
+    color: hsl(var(--warning-foreground));
+  }
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  .bg-warning-foreground {
+    background-color: hsl(var(--warning-foreground));
+  }
+  .border-warning {
+    border-color: hsl(var(--warning));
+  }
+  
+  .text-info {
+    color: hsl(var(--info));
+  }
+  .text-info-foreground {
+    color: hsl(var(--info-foreground));
+  }
+  .bg-info {
+    background-color: hsl(var(--info));
+  }
+  .bg-info-foreground {
+    background-color: hsl(var(--info-foreground));
+  }
+  .border-info {
+    border-color: hsl(var(--info));
+  }
+
+  /* Role and Referee Level Badge Styles */
+  .badge {
+    @apply inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold;
+  }
+
+  .badge-referee-head {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .badge-referee-senior {
+    @apply bg-purple-100 text-purple-800 border border-purple-200;
+  }
+
+  .badge-referee-junior {
+    @apply bg-blue-100 text-blue-800 border border-blue-200;
+  }
+
+  .badge-referee-rookie {
+    @apply bg-green-100 text-green-800 border border-green-200;
+  }
+
+  .badge-referee-coach {
+    @apply bg-indigo-100 text-indigo-800 border border-indigo-200;
+  }
+
+  .badge-referee-base {
+    @apply bg-gray-100 text-gray-800 border border-gray-200;
+  }
+
+  .badge-default {
+    @apply bg-secondary text-secondary-foreground border border-border;
+  }
+
+  /* Dark mode variants */
+  .dark .badge-referee-head {
+    @apply bg-red-900 text-red-100 border-red-800;
+  }
+
+  .dark .badge-referee-senior {
+    @apply bg-purple-900 text-purple-100 border-purple-800;
+  }
+
+  .dark .badge-referee-junior {
+    @apply bg-blue-900 text-blue-100 border-blue-800;
+  }
+
+  .dark .badge-referee-rookie {
+    @apply bg-green-900 text-green-100 border-green-800;
+  }
+
+  .dark .badge-referee-coach {
+    @apply bg-indigo-900 text-indigo-100 border-indigo-800;
+  }
+
+  .dark .badge-referee-base {
+    @apply bg-gray-800 text-gray-100 border-gray-700;
+  }
+
+  /* Error States */
+  .error-container {
+    @apply p-8 text-center space-y-4;
+  }
+
+  .error-message {
+    @apply text-destructive font-medium;
+  }
+
+  .retry-button {
+    @apply bg-primary text-primary-foreground border-0 px-4 py-2 rounded-md cursor-pointer transition-colors;
+  }
+
+  .retry-button:hover {
+    @apply bg-primary/90;
+  }
+
+  .retry-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Empty States */
+  .empty-state {
+    @apply py-12 px-8 text-center;
+  }
+
+  .empty-state p {
+    @apply text-muted-foreground text-sm;
+  }
+
+  /* Loading States */
+  .loading-spinner {
+    @apply inline-block w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin;
+  }
+
+  .loading {
+    @apply flex items-center justify-center py-8 text-muted-foreground;
+  }
+
+  /* Role capability badges */
+  .capability-badge {
+    @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-medium bg-success/10 text-success border border-success/20 rounded-md;
+  }
+
+  /* White whistle indicator */
+  .white-whistle-indicator {
+    @apply inline-flex items-center text-xs text-muted-foreground;
+  }
+
+  /* Role badge container for multiple roles */
+  .role-badges {
+    @apply flex flex-wrap gap-1;
+  }
+
+  .role-badge {
+    @apply badge badge-default;
+  }
+
+  /* Referee stats and info */
+  .referee-stats {
+    @apply space-y-2 text-sm;
+  }
+
+  .referee-info {
+    @apply space-y-1 text-sm;
+  }
+
+  /* Mentee details styles */
+  .mentee-details {
+    @apply mt-4 p-4 bg-card border border-border rounded-md;
+  }
+
+  .mentee-details h4 {
+    @apply font-semibold text-base mb-2;
+  }
+
+  .mentee-details p {
+    @apply text-sm text-muted-foreground mb-1;
+  }
+
+  .mentee-details ul {
+    @apply list-disc list-inside space-y-1 text-sm;
+  }
+
+  .mentee-details li {
+    @apply text-muted-foreground;
+  }
+
+  /* Login form shake animation */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+    20%, 40%, 60%, 80% { transform: translateX(8px); }
+  }
+
+  .animate-shake {
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  /* Smooth sidebar transitions */
+  [data-sidebar="sidebar"] {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Fixed sidebar container transitions */
+  .group.peer[data-state] > div:last-child {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sidebar inset should transition smoothly */
+  [data-sidebar="sidebar"] + * {
+    transition: margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Keep sidebar menu buttons with consistent left-aligned icons */
+  [data-sidebar="menu-button"] {
+    padding-left: 0.75rem !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Icons always stay in the same position */
+  [data-sidebar="menu-button"] > svg:first-child {
+    margin-right: 0.75rem;
+  }
+
+  /* Text slides in/out but icon stays put */
+  [data-sidebar="menu-button"] > span {
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .group[data-collapsible="icon"] [data-sidebar="menu-button"] > span {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}

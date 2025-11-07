@@ -1,8 +1,56 @@
 {
+  "name": "sports-manager",
+  "version": "1.0.0",
+  "description": "Sports Management Platform - Monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"CERBOS,BACKEND,FRONTEND\" -c \"blue,yellow,green\" \"npm run dev:cerbos\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:cerbos": "docker-compose -f config/docker/docker-compose.cerbos.yml up",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "npm run dev",
+    "start:cerbos": "docker-compose -f config/docker/docker-compose.cerbos.yml up -d",
+    "stop:cerbos": "docker-compose -f config/docker/docker-compose.cerbos.yml down",
+    "restart:cerbos": "npm run stop:cerbos && npm run start:cerbos",
+    "logs:cerbos": "docker-compose -f config/docker/docker-compose.cerbos.yml logs -f",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build:all": "cd backend && npm run build && cd ../frontend && npm run build",
+    "test:all": "cd backend && npm test && cd ../frontend && npm test",
+    "lint:all": "cd backend && npm run lint && cd ../frontend && npm run lint",
+    "clean": "rimraf backend/dist backend/node_modules frontend/.next frontend/node_modules node_modules",
+    "docker:up": "docker-compose -f config/docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f config/docker/docker-compose.yml down",
+    "docker:logs": "docker-compose -f config/docker/docker-compose.yml logs -f",
+    "docker:rebuild": "docker-compose -f config/docker/docker-compose.yml up -d --build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/sports-manager.git"
+  },
+  "keywords": [
+    "sports",
+    "management",
+    "referee",
+    "scheduling"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "chrome-remote-interface": "^0.33.3",
-    "node-fetch": "^3.3.2",
-    "playwright": "^1.55.1",
-    "puppeteer": "^24.22.3"
+    "js-yaml": "^4.1.0",
+    "pg": "^8.16.3",
+    "puppeteer": "^24.25.0",
+    "react-dropzone": "^14.3.8"
   }
 }
