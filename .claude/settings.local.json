@@ -5,7 +5,10 @@
       "Bash(git tag:*)",
       "Bash(./setup-school-project.bat)",
       "Bash(cat:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nchore: Reorganize project structure and prepare for school project\n\nMajor reorganization and cleanup:\n- Move documentation to organized folders (docs/, __tests__/)\n- Create backup versions of modified files (-Js-PC suffix)\n- Clean up root directory structure\n- Update middleware and components\n- Prepare deployment configurations\n- Add school project separation documentation\n\nThis commit establishes a clean baseline before implementing\nthe school project (Team/Coach/Player portal).\n\nRelated to SENG513 school project setup.\nEOF\n)\")",
+      "Bash(xargs:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
