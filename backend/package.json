@@ -30,7 +30,7 @@
     "test:invitations:unit": "jest tests/services/emailService.test.js tests/routes/invitations.test.js",
     "test:invitations:integration": "jest tests/integration/invitations-integration.test.js",
     "test:invitations:edge-cases": "jest tests/edge-cases/invitations-edge-cases.test.js",
-    "lint": "eslint src/ --ext .js,.ts",
+    "lint": "eslint src/ --ext .js,.ts --max-warnings 99999",
     "lint:fix": "eslint src/ --ext .js,.ts --fix",
     "format": "prettier --write \"src/**/*.{js,ts}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts}\"",

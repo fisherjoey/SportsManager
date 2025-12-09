@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
+import { Star, Award, Zap, Shield, UserCheck } from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { Star, Award, Zap, Shield, UserCheck } from 'lucide-react'
 
 interface Role {
   id: string
@@ -38,13 +39,38 @@ const getContrastColor = (hexColor: string): string => {
   return luminance > 0.5 ? '#000000' : '#ffffff'
 }
 
-export function ScrollableRoleTabs({ 
-  roles = [], 
-  className, 
+export function ScrollableRoleTabs({
+  roles = [],
+  className,
   onRoleClick,
-  selectedRoleId 
+  selectedRoleId
 }: ScrollableRoleTabsProps) {
-  // Early return if no roles
+  // Hooks must be called before any early returns
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [scrollLeftState, setScrollLeft] = useState(0)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  // useEffect must also be before early return
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
+    setCanScrollLeft(scrollLeft > 0)
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+
+    const handleResize = () => {
+      if (!scrollRef.current) return
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [roles])
+
+  // Early return if no roles (after all hooks)
   if (!roles || roles.length === 0) {
     return null
   }
@@ -54,25 +80,18 @@ export function ScrollableRoleTabs({
     console.log('ScrollableRoleTabs roles:', roles)
   }
 
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [startX, setStartX] = useState(0)
-  const [scrollLeft, setScrollLeft] = useState(0)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
-
   const getRoleBadgeVariant = (role: Role) => {
     // Handle referee type roles with special styling
     if (role.category === 'referee_type') {
       switch (role.name) {
-        case 'Senior Referee':
-          return 'default'
-        case 'Junior Referee':
-          return 'secondary'  
-        case 'Rookie Referee':
-          return 'outline'
-        default:
-          return 'outline'
+      case 'Senior Referee':
+        return 'default'
+      case 'Junior Referee':
+        return 'secondary'  
+      case 'Rookie Referee':
+        return 'outline'
+      default:
+        return 'outline'
       }
     }
 
@@ -83,17 +102,17 @@ export function ScrollableRoleTabs({
 
     // Handle legacy roles
     switch (role.name.toLowerCase()) {
-      case 'super admin':
-      case 'admin':
-        return 'destructive'
-      case 'assignor':
-        return 'default'
-      case 'referee':
-        return 'secondary'
-      case 'league manager':
-        return 'outline'
-      default:
-        return 'outline'
+    case 'super admin':
+    case 'admin':
+      return 'destructive'
+    case 'assignor':
+      return 'default'
+    case 'referee':
+      return 'secondary'
+    case 'league manager':
+      return 'outline'
+    default:
+      return 'outline'
     }
   }
 
@@ -102,14 +121,14 @@ export function ScrollableRoleTabs({
       // Handle referee type roles
       if (role?.category === 'referee_type') {
         switch (role.name) {
-          case 'Senior Referee':
-            return <Star className="h-3 w-3 mr-1" />
-          case 'Junior Referee':
-            return <Award className="h-3 w-3 mr-1" />
-          case 'Rookie Referee':
-            return <Zap className="h-3 w-3 mr-1" />
-          default:
-            return <Zap className="h-3 w-3 mr-1" />
+        case 'Senior Referee':
+          return <Star className="h-3 w-3 mr-1" />
+        case 'Junior Referee':
+          return <Award className="h-3 w-3 mr-1" />
+        case 'Rookie Referee':
+          return <Zap className="h-3 w-3 mr-1" />
+        default:
+          return <Zap className="h-3 w-3 mr-1" />
         }
       }
 
@@ -121,15 +140,15 @@ export function ScrollableRoleTabs({
       // Handle legacy roles
       const roleName = role?.name?.toLowerCase() || ''
       switch (roleName) {
-        case 'super admin':
-        case 'admin':
-          return <Shield className="h-3 w-3 mr-1" />
-        case 'assignor':
-          return <UserCheck className="h-3 w-3 mr-1" />
-        case 'referee':
-          return <Zap className="h-3 w-3 mr-1" />
-        default:
-          return null
+      case 'super admin':
+      case 'admin':
+        return <Shield className="h-3 w-3 mr-1" />
+      case 'assignor':
+        return <UserCheck className="h-3 w-3 mr-1" />
+      case 'referee':
+        return <Zap className="h-3 w-3 mr-1" />
+      default:
+        return null
       }
     } catch (error) {
       console.warn('Error rendering role icon:', error, role)
@@ -139,18 +158,11 @@ export function ScrollableRoleTabs({
 
   const updateScrollState = () => {
     if (!scrollRef.current) return
-    
+
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
     setCanScrollLeft(scrollLeft > 0)
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
   }
-
-  useEffect(() => {
-    updateScrollState()
-    const handleResize = () => updateScrollState()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [roles])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return
@@ -181,7 +193,7 @@ export function ScrollableRoleTabs({
     e.preventDefault()
     const x = e.pageX - scrollRef.current.offsetLeft
     const walk = (x - startX) * 2 // Scroll speed multiplier
-    scrollRef.current.scrollLeft = scrollLeft - walk
+    scrollRef.current.scrollLeft = scrollLeftState - walk
     updateScrollState()
   }
 
@@ -198,7 +210,7 @@ export function ScrollableRoleTabs({
     
     const x = e.touches[0].pageX - scrollRef.current.offsetLeft
     const walk = (x - startX) * 1.5
-    scrollRef.current.scrollLeft = scrollLeft - walk
+    scrollRef.current.scrollLeft = scrollLeftState - walk
     updateScrollState()
   }
 
@@ -220,7 +232,7 @@ export function ScrollableRoleTabs({
   }
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Gradient fade indicators */}
       {canScrollLeft && (
         <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
@@ -232,13 +244,13 @@ export function ScrollableRoleTabs({
       <div
         ref={scrollRef}
         className={cn(
-          "flex items-center gap-2 overflow-x-auto scrollbar-none pb-2",
-          "cursor-grab select-none",
-          canScrollLeft || canScrollRight ? "px-2" : ""
+          'flex items-center gap-2 overflow-x-auto scrollbar-none pb-2',
+          'cursor-grab select-none',
+          canScrollLeft || canScrollRight ? 'px-2' : ''
         )}
         style={{
           scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
+          msOverflowStyle: 'none'
         }}
         onMouseDown={handleMouseDown}
         onMouseLeave={handleMouseLeave}
@@ -264,11 +276,11 @@ export function ScrollableRoleTabs({
               key={role.id}
               variant={hasCustomColor ? 'secondary' : getRoleBadgeVariant(role)}
               className={cn(
-                "flex items-center gap-1 whitespace-nowrap transition-all duration-200 hover:scale-105",
-                "cursor-pointer active:scale-95",
-                selectedRoleId === role.id && "ring-2 ring-primary ring-offset-2",
-                isDragging && "pointer-events-none",
-                hasCustomColor && "border"
+                'flex items-center gap-1 whitespace-nowrap transition-all duration-200 hover:scale-105',
+                'cursor-pointer active:scale-95',
+                selectedRoleId === role.id && 'ring-2 ring-primary ring-offset-2',
+                isDragging && 'pointer-events-none',
+                hasCustomColor && 'border'
               )}
               style={hasCustomColor ? {
                 backgroundColor: role.color,

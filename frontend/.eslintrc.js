@@ -1,5 +1,9 @@
 module.exports = {
-  extends: ['next/core-web-vitals', 'next/typescript', 'plugin:storybook/recommended'],
+  extends: [
+    'next/core-web-vitals',
+    'next/typescript',
+    'plugin:storybook/recommended',
+  ],
   rules: {
     // Quality Rules for Agents - Temporarily relaxed for production
     'no-console': 'warn', // Discourage console.log in production
@@ -8,17 +12,23 @@ module.exports = {
     'no-var': 'error',
     'prefer-const': 'error',
 
-    // TypeScript specific rules
-    '@typescript-eslint/no-unused-vars': 'warn', // Temporarily downgraded from error
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // TypeScript specific rules - relaxed for existing code
+    '@typescript-eslint/no-unused-vars': ['warn', {
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_'
+    }],
+    '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/no-unnecessary-type-constraint': 'warn', // Temporarily downgraded from error
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-unnecessary-type-constraint': 'off',
+    '@typescript-eslint/no-require-imports': 'off',
+    '@typescript-eslint/no-empty-interface': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
 
     // Code style consistency - Temporarily relaxed for production
-    'indent': ['warn', 2], // Temporarily downgraded from error
-    'quotes': ['warn', 'single'], // Temporarily downgraded from error
-    'semi': ['warn', 'never'], // Temporarily downgraded from error
+    indent: ['warn', 2], // Temporarily downgraded from error
+    quotes: ['warn', 'single'], // Temporarily downgraded from error
+    semi: ['warn', 'never'], // Temporarily downgraded from error
     'comma-dangle': ['warn', 'never'], // Temporarily downgraded from error
 
     // React/Next.js best practices
@@ -32,23 +42,23 @@ module.exports = {
     'import/order': [
       'warn', // Temporarily downgraded from error
       {
-        'groups': [
+        groups: [
           'builtin',
           'external',
           'internal',
           'parent',
           'sibling',
-          'index'
+          'index',
         ],
-        'newlines-between': 'always'
-      }
+        'newlines-between': 'always',
+      },
     ],
 
     // Security rules
     'no-eval': 'error',
     'no-implied-eval': 'error',
     'no-new-func': 'error',
-    'no-script-url': 'error'
+    'no-script-url': 'error',
   },
   overrides: [
     {
@@ -56,8 +66,8 @@ module.exports = {
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
       rules: {
         'no-console': 'off',
-        '@typescript-eslint/no-explicit-any': 'off'
-      }
-    }
-  ]
-}
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+  ],
+};

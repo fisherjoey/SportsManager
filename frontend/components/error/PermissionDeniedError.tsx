@@ -103,7 +103,7 @@ export function PermissionDeniedError({
       return `You don't have permission to ${actionText} ${resourceText}. Please contact your administrator if you believe this is an error.`
     }
 
-    return 'You don't have permission to access this feature. Please contact your administrator if you need access.'
+    return "You don't have permission to access this feature. Please contact your administrator if you need access."
   }
 
   const defaultDescription = generateDescription()

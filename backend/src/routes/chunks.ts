@@ -575,7 +575,7 @@ router.post('/:id/assign', authenticateToken, requireCerbosPermission({
       });
     }
 
-    let { referee_id, position_id, check_conflicts, override_conflicts } = value;
+    const { referee_id, position_id, check_conflicts, override_conflicts } = value;
 
     // Get chunk and its games
     const chunk = await db('game_chunks').where('id', id).first();
