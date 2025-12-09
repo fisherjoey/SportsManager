@@ -808,9 +808,9 @@ export class ErrorUtils {
    */
   static getErrorSeverity(error: Error): 'error' | 'warn' | 'info' {
     if (ApiError.isApiError(error)) {
-      if (!error.isOperational) return 'error';
-      if (error.statusCode >= 500) return 'error';
-      if (error.statusCode >= 400) return 'warn';
+      if (!error.isOperational) {return 'error';}
+      if (error.statusCode >= 500) {return 'error';}
+      if (error.statusCode >= 400) {return 'warn';}
       return 'info';
     }
     return 'error';
@@ -820,7 +820,7 @@ export class ErrorUtils {
    * Check if error should trigger monitoring alerts
    */
   static shouldAlert(error: Error): boolean {
-    if (!ApiError.isApiError(error)) return true;
+    if (!ApiError.isApiError(error)) {return true;}
     return !error.isOperational || error.statusCode >= 500;
   }
 

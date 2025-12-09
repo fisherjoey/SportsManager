@@ -159,9 +159,9 @@ router.get('/', authenticateToken, requireCerbosPermission({
   const totalQuery = db('game_fees as gf')
     .leftJoin('games as g', 'gf.game_id', 'g.id')
     .modify((q) => {
-      if (status) q.where('gf.payment_status', status as string);
-      if (gameId) q.where('gf.game_id', gameId as string);
-      if (startDate && endDate) q.whereBetween('g.game_date', [startDate as string, endDate as string]);
+      if (status) {q.where('gf.payment_status', status as string);}
+      if (gameId) {q.where('gf.game_id', gameId as string);}
+      if (startDate && endDate) {q.whereBetween('g.game_date', [startDate as string, endDate as string]);}
     })
     .count('gf.id as count')
     .first() as Promise<{ count: string }>;
@@ -296,7 +296,7 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
 
   // Build update object
   const updateData: Partial<GameFee> = {};
-  if (amount !== undefined) updateData.amount = amount;
+  if (amount !== undefined) {updateData.amount = amount;}
   if (paymentStatus !== undefined) {
     updateData.payment_status = paymentStatus;
     // Automatically set payment_date if status changes to paid
@@ -304,9 +304,9 @@ router.put('/:id', authenticateToken, requireCerbosPermission({
       updateData.payment_date = new Date();
     }
   }
-  if (paymentDate !== undefined) updateData.payment_date = paymentDate ? new Date(paymentDate) : null;
-  if (paymentMethod !== undefined) updateData.payment_method = paymentMethod;
-  if (notes !== undefined) updateData.notes = notes;
+  if (paymentDate !== undefined) {updateData.payment_date = paymentDate ? new Date(paymentDate) : null;}
+  if (paymentMethod !== undefined) {updateData.payment_method = paymentMethod;}
+  if (notes !== undefined) {updateData.notes = notes;}
 
   // Update the record
   await db('game_fees').where('id', id).update(updateData as any);

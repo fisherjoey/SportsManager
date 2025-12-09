@@ -961,7 +961,7 @@ describe('EmailService', () => {
         });
 
         consoleSpy.mockRestore();
-        if (originalKey) process.env.RESEND_API_KEY = originalKey;
+        if (originalKey) {process.env.RESEND_API_KEY = originalKey;}
       });
 
       it('should handle email sending errors gracefully', async () => {
@@ -1162,7 +1162,7 @@ describe('EmailService', () => {
         });
 
         consoleSpy.mockRestore();
-        if (originalKey) process.env.RESEND_API_KEY = originalKey;
+        if (originalKey) {process.env.RESEND_API_KEY = originalKey;}
       });
 
       it('should handle email sending errors gracefully', async () => {

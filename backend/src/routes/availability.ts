@@ -164,7 +164,7 @@ const windowIdParamSchema = Joi.object({
 // Helper function to check if user is a referee and can modify availability
 const canModifyAvailability = async (req: AuthenticatedRequest, refereeId: UUID): Promise<boolean> => {
   const isAdmin = req.user.role === 'admin';
-  if (isAdmin) return true;
+  if (isAdmin) {return true;}
 
   const isReferee = req.user.roles && req.user.roles.some((role: any) =>
     ['referee', 'Referee'].includes(role.name || role) ||
@@ -344,11 +344,11 @@ router.put('/:windowId',
 
     // Update window
     const updateData: any = {};
-    if (date) updateData.date = date;
-    if (start_time) updateData.start_time = start_time;
-    if (end_time) updateData.end_time = end_time;
-    if (typeof is_available === 'boolean') updateData.is_available = is_available;
-    if (reason !== undefined) updateData.reason = reason;
+    if (date) {updateData.date = date;}
+    if (start_time) {updateData.start_time = start_time;}
+    if (end_time) {updateData.end_time = end_time;}
+    if (typeof is_available === 'boolean') {updateData.is_available = is_available;}
+    if (reason !== undefined) {updateData.reason = reason;}
     updateData.updated_at = new Date();
 
     const [updatedWindow] = await db('referee_availability')

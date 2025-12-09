@@ -64,8 +64,8 @@ export function validationFix(req: Request, res: Response, next: NextFunction): 
 
       // Convert string booleans to actual booleans
       Object.keys(req.body).forEach(key => {
-        if (req.body[key] === 'true') req.body[key] = true;
-        if (req.body[key] === 'false') req.body[key] = false;
+        if (req.body[key] === 'true') {req.body[key] = true;}
+        if (req.body[key] === 'false') {req.body[key] = false;}
       });
     }
 
@@ -74,9 +74,9 @@ export function validationFix(req: Request, res: Response, next: NextFunction): 
       // Convert string booleans in query params
       Object.keys(req.query).forEach(key => {
         const value = req.query[key];
-        if (value === 'true') req.query[key] = true as any;
-        if (value === 'false') req.query[key] = false as any;
-        if (value === 'undefined' || value === '') delete req.query[key];
+        if (value === 'true') {req.query[key] = true as any;}
+        if (value === 'false') {req.query[key] = false as any;}
+        if (value === 'undefined' || value === '') {delete req.query[key];}
       });
     }
 

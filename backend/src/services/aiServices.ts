@@ -555,8 +555,8 @@ export class AIServices {
    * @private
    */
   private getActiveProvider(): AIProviderType {
-    if (process.env.OPENAI_API_KEY) return 'openai';
-    if (process.env.DEEPSEEK_API_KEY) return 'deepseek';
+    if (process.env.OPENAI_API_KEY) {return 'openai';}
+    if (process.env.DEEPSEEK_API_KEY) {return 'deepseek';}
     return 'none';
   }
 
@@ -667,7 +667,7 @@ export class AIServices {
    */
   private getFromCache<T>(key: string): T | null {
     const entry = this.responseCache.get(key);
-    if (!entry) return null;
+    if (!entry) {return null;}
 
     if (Date.now() > entry.expiresAt) {
       this.responseCache.delete(key);
@@ -897,7 +897,7 @@ export class AIServices {
    * @private
    */
   private calculateOverallConfidence(detections: any[]): number {
-    if (!detections || detections.length === 0) return 0;
+    if (!detections || detections.length === 0) {return 0;}
 
     // Simple confidence calculation - can be improved
     return Math.min(0.95, 0.5 + (detections.length * 0.01));
@@ -988,7 +988,7 @@ export class AIServices {
    * @private
    */
   private cleanString(value: any): string | null {
-    if (typeof value !== 'string' || !value.trim()) return null;
+    if (typeof value !== 'string' || !value.trim()) {return null;}
     return value.trim();
   }
 
@@ -997,7 +997,7 @@ export class AIServices {
    * @private
    */
   private cleanAmount(value: any): number | null {
-    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'number' && !isNaN(value)) {return value;}
     if (typeof value === 'string') {
       const cleaned = parseFloat(value.replace(/[^0-9.-]/g, ''));
       return isNaN(cleaned) ? null : cleaned;
@@ -1010,7 +1010,7 @@ export class AIServices {
    * @private
    */
   private cleanDate(value: any): string | null {
-    if (!value) return null;
+    if (!value) {return null;}
 
     // Basic date validation and cleaning
     const dateStr = String(value).trim();
@@ -1026,7 +1026,7 @@ export class AIServices {
    * @private
    */
   private cleanTime(value: any): string | null {
-    if (!value) return null;
+    if (!value) {return null;}
 
     const timeStr = String(value).trim();
     if (timeStr.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
@@ -1041,7 +1041,7 @@ export class AIServices {
    * @private
    */
   private cleanLineItems(items: any[]): ReceiptLineItem[] {
-    if (!Array.isArray(items)) return [];
+    if (!Array.isArray(items)) {return [];}
 
     return items.map(item => ({
       name: this.cleanString(item.name) || 'Unknown Item',

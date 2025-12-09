@@ -36,7 +36,7 @@ export function isEventLoopHealthy(lag: number): boolean {
  * Get performance status
  */
 export function getPerformanceStatus(lag: number): 'healthy' | 'warning' | 'critical' {
-  if (lag < 100) return 'healthy';
-  if (lag < 500) return 'warning';
+  if (lag < 100) {return 'healthy';}
+  if (lag < 500) {return 'warning';}
   return 'critical';
 }

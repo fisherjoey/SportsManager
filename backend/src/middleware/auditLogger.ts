@@ -63,7 +63,7 @@ class AuditLogger {
     return (req, res, next) => {
       const startTime = Date.now();
       let originalData = null;
-      let shouldAudit = this.shouldAuditRequest(req, resourceRoutes, excludeRoutes, logViewOperations);
+      const shouldAudit = this.shouldAuditRequest(req, resourceRoutes, excludeRoutes, logViewOperations);
 
       if (!shouldAudit) {
         return next();

@@ -807,10 +807,12 @@ function advancedPerformanceMonitor(options = {}) {
         }
       }
       
-      // Set performance headers
-      res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
-      res.set('X-Memory-Delta', `${((endMemory.heapUsed - startMemory.heapUsed) / 1024).toFixed(2)}KB`);
-      res.set('X-Request-ID', req.requestId || 'unknown');
+      // Set performance headers (only if headers haven't been sent)
+      if (!res.headersSent) {
+        res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
+        res.set('X-Memory-Delta', `${((endMemory.heapUsed - startMemory.heapUsed) / 1024).toFixed(2)}KB`);
+        res.set('X-Request-ID', req.requestId || 'unknown');
+      }
       
       return originalEnd.apply(this, args);
     };

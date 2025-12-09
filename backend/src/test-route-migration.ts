@@ -187,7 +187,7 @@ class RouteMigrationTester {
     console.log('\n📈 Results by Route:');
     const routeGroups = this.results.reduce((acc, result) => {
       const key = `${result.method} ${result.route}`;
-      if (!acc[key]) acc[key] = [];
+      if (!acc[key]) {acc[key] = [];}
       acc[key].push(result);
       return acc;
     }, {} as Record<string, any[]>);

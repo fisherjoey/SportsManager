@@ -385,7 +385,7 @@ export class DatabaseTestHelper {
         attempts++;
       } while (usedCombinations.has(combination) && attempts < 100);
 
-      if (attempts >= 100) break; // Avoid infinite loop
+      if (attempts >= 100) {break;} // Avoid infinite loop
 
       usedCombinations.add(combination);
 
@@ -692,7 +692,7 @@ export class DatabaseTestHelper {
    * Cleanup test database and connections
    */
   async cleanup(): Promise<void> {
-    if (!this.db) return;
+    if (!this.db) {return;}
 
     try {
       // Clear all data

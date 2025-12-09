@@ -21,8 +21,8 @@ export function toPrincipal(
   if (user.roles && user.roles.length > 0) {
     roles = user.roles
       .map((r: any) => {
-        if (typeof r === 'string') return r;
-        if (r && r.name) return r.name;
+        if (typeof r === 'string') {return r;}
+        if (r && r.name) {return r.name;}
         return null;
       })
       .filter(Boolean)

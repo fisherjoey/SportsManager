@@ -233,10 +233,10 @@ export class MockQueueClass<T = JobData> {
     }
 
     return this.jobs.filter(job => {
-      if (types.includes('waiting') && !job.processedOn) return true;
-      if (types.includes('active') && job.processedOn && !job.finishedOn) return true;
-      if (types.includes('completed') && job.finishedOn && !job.failedReason) return true;
-      if (types.includes('failed') && job.failedReason) return true;
+      if (types.includes('waiting') && !job.processedOn) {return true;}
+      if (types.includes('active') && job.processedOn && !job.finishedOn) {return true;}
+      if (types.includes('completed') && job.finishedOn && !job.failedReason) {return true;}
+      if (types.includes('failed') && job.failedReason) {return true;}
       return false;
     });
   }
@@ -768,13 +768,13 @@ export const setupQueueEventHandlers = <T = JobData>(
     onRemoved: JobEventHandler<T>;
   }>
 ): void => {
-  if (handlers.onWaiting) queue.on('waiting', handlers.onWaiting);
-  if (handlers.onActive) queue.on('active', handlers.onActive);
-  if (handlers.onCompleted) queue.on('completed', handlers.onCompleted);
-  if (handlers.onFailed) queue.on('failed', handlers.onFailed);
-  if (handlers.onProgress) queue.on('progress', handlers.onProgress);
-  if (handlers.onStalled) queue.on('stalled', handlers.onStalled);
-  if (handlers.onRemoved) queue.on('removed', handlers.onRemoved);
+  if (handlers.onWaiting) {queue.on('waiting', handlers.onWaiting);}
+  if (handlers.onActive) {queue.on('active', handlers.onActive);}
+  if (handlers.onCompleted) {queue.on('completed', handlers.onCompleted);}
+  if (handlers.onFailed) {queue.on('failed', handlers.onFailed);}
+  if (handlers.onProgress) {queue.on('progress', handlers.onProgress);}
+  if (handlers.onStalled) {queue.on('stalled', handlers.onStalled);}
+  if (handlers.onRemoved) {queue.on('removed', handlers.onRemoved);}
 };
 
 // Helper to add job with normalized priority

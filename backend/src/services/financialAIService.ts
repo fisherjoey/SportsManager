@@ -415,7 +415,7 @@ export class FinancialAIService {
       return recommendations.sort((a, b) => {
         const priorityOrder = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1 };
         const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-        if (priorityDiff !== 0) return priorityDiff;
+        if (priorityDiff !== 0) {return priorityDiff;}
         return b.confidenceScore - a.confidenceScore;
       });
     } catch (error) {
@@ -764,7 +764,7 @@ export class FinancialAIService {
    * Helper methods for calculations
    */
   private calculateLinearTrend(values: number[]): number {
-    if (values.length < 2) return 0;
+    if (values.length < 2) {return 0;}
 
     const n = values.length;
     const x = Array.from({ length: n }, (_, i) => i);
@@ -822,7 +822,7 @@ export class FinancialAIService {
   }
 
   private calculateVolatility(values: number[]): number {
-    if (values.length < 2) return 0;
+    if (values.length < 2) {return 0;}
 
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
@@ -865,10 +865,10 @@ export class FinancialAIService {
   }
 
   private calculateBudgetHealth(utilization: number, variances: BudgetVarianceDetail[]): FinancialInsights['overallBudgetHealth'] {
-    if (utilization > 0.95) return 'critical';
-    if (utilization > 0.85) return 'poor';
-    if (utilization > 0.75) return 'fair';
-    if (utilization > 0.65) return 'good';
+    if (utilization > 0.95) {return 'critical';}
+    if (utilization > 0.85) {return 'poor';}
+    if (utilization > 0.75) {return 'fair';}
+    if (utilization > 0.65) {return 'good';}
     return 'excellent';
   }
 
@@ -912,8 +912,8 @@ export class FinancialAIService {
   }
 
   private getVarianceStatusForBudget(variancePercentage: number): VarianceStatus {
-    if (variancePercentage > 10) return 'over_budget';
-    if (variancePercentage < -10) return 'under_budget';
+    if (variancePercentage > 10) {return 'over_budget';}
+    if (variancePercentage < -10) {return 'under_budget';}
     return 'on_budget';
   }
 
@@ -924,12 +924,12 @@ export class FinancialAIService {
       .limit(6)
       .select('amount', 'expense_date') as unknown as any[];
 
-    if (expenses.length < 3) return 'stable';
+    if (expenses.length < 3) {return 'stable';}
 
     const amounts = expenses.map(e => (e as any).amount);
     const trend = this.calculateLinearTrend(amounts);
 
-    if (Math.abs(trend) < 100) return 'stable';
+    if (Math.abs(trend) < 100) {return 'stable';}
     return trend > 0 ? 'increasing' : 'decreasing';
   }
 
@@ -976,7 +976,7 @@ export class FinancialAIService {
   }
 
   private async calculateAverageMonthlySpendFromData(spendingData: any[]): Promise<number> {
-    if (spendingData.length === 0) return 0;
+    if (spendingData.length === 0) {return 0;}
 
     const totalSpent = spendingData.reduce((sum, expense) => sum + (expense as any).amount, 0);
     const monthsSpan = 12;
@@ -984,7 +984,7 @@ export class FinancialAIService {
   }
 
   private async calculateSpendingVolatilityFromData(spendingData: any[]): Promise<number> {
-    if (spendingData.length === 0) return 0;
+    if (spendingData.length === 0) {return 0;}
 
     const amounts = spendingData.map(expense => (expense as any).amount);
     return this.calculateVolatility(amounts);
@@ -1016,7 +1016,7 @@ export class FinancialAIService {
 
     const categoryGroups = spendingData.reduce((groups, expense) => {
       const categoryId = (expense as any).category_id;
-      if (!groups[categoryId]) groups[categoryId] = [];
+      if (!groups[categoryId]) {groups[categoryId] = [];}
       groups[categoryId].push((expense as any).amount);
       return groups;
     }, {} as Record<string, number[]>);
@@ -1078,23 +1078,23 @@ export class FinancialAIService {
   }
 
   private determineCashFlowTrendFromData(trends: any[], netFlow: number): CashFlowTrendType {
-    if (trends.length < 2) return 'stable';
+    if (trends.length < 2) {return 'stable';}
 
     const recentTrends = trends.slice(-3).map(t => (t as any).netFlow);
     const avgRecent = recentTrends.reduce((sum, val) => sum + val, 0) / recentTrends.length;
 
-    if (avgRecent > 1000) return 'positive';
-    if (avgRecent < -1000) return 'negative';
+    if (avgRecent > 1000) {return 'positive';}
+    if (avgRecent < -1000) {return 'negative';}
 
     const trend = this.calculateLinearTrend(recentTrends);
-    if (trend > 0) return 'improving';
-    if (trend < 0) return 'declining';
+    if (trend > 0) {return 'improving';}
+    if (trend < 0) {return 'declining';}
 
     return 'stable';
   }
 
   private async projectNextPeriodCashFlowFromTrends(trends: any[], currentNetFlow: number): Promise<number> {
-    if (trends.length < 2) return currentNetFlow;
+    if (trends.length < 2) {return currentNetFlow;}
 
     const recentFlows = trends.slice(-3).map(t => (t as any).netFlow);
     const trend = this.calculateLinearTrend(recentFlows);
@@ -1103,7 +1103,7 @@ export class FinancialAIService {
   }
 
   private calculateCashFlowConfidenceFromTrends(trends: any[]): number {
-    if (trends.length < 3) return 0.5;
+    if (trends.length < 3) {return 0.5;}
 
     const flows = trends.map(t => (t as any).netFlow);
     const volatility = this.calculateVolatility(flows);

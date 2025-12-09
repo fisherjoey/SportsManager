@@ -249,7 +249,7 @@ describe('Multi-Tenancy Database Schema', () => {
         // Try to insert with invalid org_id - should fail
         const invalidOrgId = '00000000-0000-0000-0000-000000000000';
 
-        let insertData: any = { organization_id: invalidOrgId };
+        const insertData: any = { organization_id: invalidOrgId };
 
         // Add required fields per table
         if (tableName === 'users') {

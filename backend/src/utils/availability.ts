@@ -295,7 +295,7 @@ export function isTimeInWindow(time: string, window: AvailabilityWindow): boolea
  * @returns Array of merged windows
  */
 export function mergeOverlappingWindows(windows: AvailabilityWindow[]): AvailabilityWindow[] {
-  if (windows.length === 0) return [];
+  if (windows.length === 0) {return [];}
 
   // Sort windows by start time
   const sortedWindows = [...windows].sort((a, b) => a.start_time.localeCompare(b.start_time));

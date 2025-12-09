@@ -114,8 +114,8 @@ const querySchema = Joi.object({
 
 // Helper function to safely parse JSON
 function safeJsonParse(value: string | object | null): any {
-  if (!value) return null;
-  if (typeof value === 'object') return value;
+  if (!value) {return null;}
+  if (typeof value === 'object') {return value;}
   try {
     return JSON.parse(value);
   } catch {
@@ -419,13 +419,13 @@ router.put('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       updated_at: new Date()
     };
 
-    if (value.name !== undefined) updateData.name = value.name;
-    if (value.type !== undefined) updateData.type = value.type;
-    if (value.description !== undefined) updateData.description = value.description;
-    if (value.isActive !== undefined) updateData.is_active = value.isActive;
-    if (value.requiresApproval !== undefined) updateData.requires_approval = value.requiresApproval;
-    if (value.requiresPurchaseOrder !== undefined) updateData.requires_purchase_order = value.requiresPurchaseOrder;
-    if (value.autoApprovalLimit !== undefined) updateData.auto_approval_limit = value.autoApprovalLimit;
+    if (value.name !== undefined) {updateData.name = value.name;}
+    if (value.type !== undefined) {updateData.type = value.type;}
+    if (value.description !== undefined) {updateData.description = value.description;}
+    if (value.isActive !== undefined) {updateData.is_active = value.isActive;}
+    if (value.requiresApproval !== undefined) {updateData.requires_approval = value.requiresApproval;}
+    if (value.requiresPurchaseOrder !== undefined) {updateData.requires_purchase_order = value.requiresPurchaseOrder;}
+    if (value.autoApprovalLimit !== undefined) {updateData.auto_approval_limit = value.autoApprovalLimit;}
     if (value.approvalWorkflow !== undefined) {
       updateData.approval_workflow = value.approvalWorkflow ? JSON.stringify(value.approvalWorkflow) : null;
     }
@@ -435,16 +435,16 @@ router.put('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
     if (value.integrationConfig !== undefined) {
       updateData.integration_config = value.integrationConfig ? JSON.stringify(value.integrationConfig) : null;
     }
-    if (value.accountingCode !== undefined) updateData.accounting_code = value.accountingCode;
-    if (value.costCenter !== undefined) updateData.cost_center = value.costCenter;
+    if (value.accountingCode !== undefined) {updateData.accounting_code = value.accountingCode;}
+    if (value.costCenter !== undefined) {updateData.cost_center = value.costCenter;}
     if (value.allowedCategories !== undefined) {
       updateData.allowed_categories = JSON.stringify(value.allowedCategories);
     }
     if (value.userRestrictions !== undefined) {
       updateData.user_restrictions = value.userRestrictions ? JSON.stringify(value.userRestrictions) : null;
     }
-    if (value.spendingLimit !== undefined) updateData.spending_limit = value.spendingLimit;
-    if (value.spendingPeriod !== undefined) updateData.spending_period = value.spendingPeriod;
+    if (value.spendingLimit !== undefined) {updateData.spending_limit = value.spendingLimit;}
+    if (value.spendingPeriod !== undefined) {updateData.spending_period = value.spendingPeriod;}
 
     // Update payment method
     await db('payment_methods')

@@ -442,8 +442,8 @@ export type MonetaryAmount = number;
 
 // Helper functions for monetary calculations
 export function parseMonetaryAmount(value: string | number | null | undefined | any): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'object') return 0;
+  if (value === null || value === undefined) {return 0;}
+  if (typeof value === 'object') {return 0;}
   return typeof value === 'string' ? parseFloat(value) || 0 : Number(value) || 0;
 }
 

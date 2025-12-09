@@ -346,7 +346,7 @@ export class UserService extends BaseService<User> {
    * @returns Enhanced user with roles and computed properties
    */
   async enhanceUserWithRoles(user: User): Promise<EnhancedUser> {
-    if (!user) return user as unknown as EnhancedUser;
+    if (!user) {return user as unknown as EnhancedUser;}
 
     try {
       // Get all roles for the user

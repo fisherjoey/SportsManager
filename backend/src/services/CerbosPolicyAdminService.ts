@@ -143,7 +143,7 @@ export class CerbosPolicyAdminService {
 
   async listPolicies(): Promise<PolicyInfo[]> {
     try {
-      const response = await this.request<{ policyIds: string[] }>('GET', '/admin/policy');
+      const response = await this.request<{ policyIds: string[] }>('GET', '/admin/policies');
 
       // Parse policy IDs into PolicyInfo objects
       const policies: PolicyInfo[] = [];
@@ -563,7 +563,7 @@ export class CerbosPolicyAdminService {
   async checkHealth(): Promise<boolean> {
     try {
       const response = await fetch(`${this.adminApiUrl}/_cerbos/health`);
-      const data = await response.json();
+      const data = await response.json() as { status?: string };
       return data.status === 'SERVING';
     } catch {
       return false;
@@ -591,6 +591,120 @@ export class CerbosPolicyAdminService {
         derivedRoles: 0,
         principalPolicies: 0,
       };
+    }
+  }
+
+  /**
+   * Get all pages a role can access from the page resource policy
+   */
+  async getRolePageAccess(role: string): Promise<string[]> {
+    try {
+      const policy = await this.getResource('page');
+      if (!policy) {
+        return [];
+      }
+
+      const pages: string[] = [];
+
+      for (const rule of policy.resourcePolicy.rules) {
+        // Check if this rule applies to the role and allows access
+        if (rule.roles?.includes(role) &&
+            rule.effect === 'EFFECT_ALLOW' &&
+            rule.actions.some(a => a === 'access' || a === '*')) {
+
+          // Parse the condition to extract page IDs
+          // Expected format: request.resource.id in ["page1", "page2", ...]
+          const expr = rule.condition?.match?.expr;
+          if (expr) {
+            const match = expr.match(/request\.resource\.id\s+in\s+(\[.*?\])/);
+            if (match) {
+              try {
+                const pageIds = JSON.parse(match[1]);
+                if (Array.isArray(pageIds)) {
+                  pages.push(...pageIds);
+                }
+              } catch {
+                logger.warn('Failed to parse page IDs from condition', { expr });
+              }
+            }
+          } else {
+            // Rule without condition - role has access to all pages for this action
+            // This could happen for super_admin with actions: ['*']
+            logger.debug('Role has unconditional access rule', { role, actions: rule.actions });
+          }
+        }
+      }
+
+      return Array.from(new Set(pages)); // Remove duplicates
+    } catch (error: any) {
+      logger.error('Failed to get role page access', { role, error: error.message });
+      return [];
+    }
+  }
+
+  /**
+   * Set pages a role can access in the page resource policy
+   * Replaces any existing page access rules for this role
+   */
+  async setRolePageAccess(role: string, pages: string[]): Promise<void> {
+    try {
+      // Get or create the page resource policy
+      let policy = await this.getResource('page');
+
+      if (!policy) {
+        // Create the page resource policy with super_admin full access
+        policy = {
+          apiVersion: 'api.cerbos.dev/v1',
+          resourcePolicy: {
+            resource: 'page',
+            version: 'default',
+            rules: [
+              {
+                actions: ['*'],
+                effect: 'EFFECT_ALLOW' as const,
+                roles: ['super_admin'],
+              },
+            ],
+          },
+        };
+        logger.info('Creating new page resource policy');
+      }
+
+      // Remove existing page access rules for this role (but keep other rules)
+      policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter((rule: PolicyRule) => {
+        // Keep rules that don't apply to this role
+        if (!rule.roles?.includes(role)) {
+          return true;
+        }
+        // Keep rules that aren't 'access' action (could be other actions like 'manage')
+        if (!rule.actions.some(a => a === 'access')) {
+          return true;
+        }
+        // Remove this role's access rules
+        return false;
+      });
+
+      // Add new rule if pages are specified
+      if (pages.length > 0) {
+        const newRule: PolicyRule = {
+          actions: ['access'],
+          effect: 'EFFECT_ALLOW',
+          roles: [role],
+          condition: {
+            match: {
+              expr: `request.resource.id in ${JSON.stringify(pages)}`,
+            },
+          },
+        };
+        policy.resourcePolicy.rules.push(newRule);
+      }
+
+      // Save the policy
+      await this.putPolicy(policy);
+      logger.info('Role page access updated', { role, pageCount: pages.length });
+    } catch (error: any) {
+      logger.error('Failed to set role page access', { role, error: error.message });
+      throw new Error(`Failed to set page access for role ${role}: ${error.message}`);
     }
   }
 }

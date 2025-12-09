@@ -263,7 +263,7 @@ export function isValidTransactionType(type: string): type is 'expense' | 'payme
 
 // Utility functions
 export function parseMonetaryAmount(value: string | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
+  if (value === null || value === undefined) {return 0;}
   return typeof value === 'string' ? parseFloat(value) || 0 : Number(value) || 0;
 }
 
@@ -280,7 +280,7 @@ export function calculateNetIncome(revenue: number, wages: number, expenses: num
 }
 
 export function calculatePercentage(part: number, total: number): number {
-  if (total === 0) return 0;
+  if (total === 0) {return 0;}
   return (part / total) * 100;
 }
 

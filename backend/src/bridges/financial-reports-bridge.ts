@@ -108,7 +108,7 @@ module.exports.handleReportError = (error, reportType) => {
 
 // Monetary calculation helpers for backward compatibility
 module.exports.parseAmount = (value) => {
-  if (value === null || value === undefined) return 0;
+  if (value === null || value === undefined) {return 0;}
   return typeof value === 'string' ? parseFloat(value) || 0 : value;
 };
 
@@ -117,7 +117,7 @@ module.exports.formatAmount = (value) => {
 };
 
 module.exports.calculateVariance = (actual, budgeted) => {
-  if (!budgeted || budgeted === 0) return 0;
+  if (!budgeted || budgeted === 0) {return 0;}
   return ((actual - budgeted) / budgeted) * 100;
 };
 
@@ -127,7 +127,7 @@ module.exports.roundPercentage = (value) => {
 
 // Date handling helpers
 module.exports.parseDate = (dateString) => {
-  if (!dateString) return null;
+  if (!dateString) {return null;}
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? null : date;
 };

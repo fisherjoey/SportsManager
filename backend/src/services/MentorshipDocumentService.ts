@@ -502,8 +502,8 @@ class MentorshipDocumentService extends BaseService {
    * @returns {string} Formatted file size
    */
   formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    if (!bytes || bytes < 0) return 'Unknown';
+    if (bytes === 0) {return '0 Bytes';}
+    if (!bytes || bytes < 0) {return 'Unknown';}
 
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];

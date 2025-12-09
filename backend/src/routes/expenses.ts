@@ -157,7 +157,7 @@ const calculateFileHash = async (filePath: string): Promise<string> => {
 };
 
 const parseLineItems = (lineItems: string | LineItem[] | null): LineItem[] => {
-  if (!lineItems) return [];
+  if (!lineItems) {return [];}
 
   try {
     return typeof lineItems === 'string' ? JSON.parse(lineItems) : lineItems;

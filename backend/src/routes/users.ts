@@ -225,9 +225,9 @@ const updateUser = async (
   
   // Build update object
   const updateData: any = {};
-  if (email !== undefined) updateData.email = email;
-  if (name !== undefined) updateData.name = name;
-  if (role !== undefined) updateData.role = role;  // Keep legacy role for backward compatibility
+  if (email !== undefined) {updateData.email = email;}
+  if (name !== undefined) {updateData.name = name;}
+  if (role !== undefined) {updateData.role = role;}  // Keep legacy role for backward compatibility
   
   // Hash password if provided
   if (password) {

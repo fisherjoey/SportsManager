@@ -863,7 +863,7 @@ Referee Contact: ${data.referee.email}
         console.log(`To: ${data.email}`);
         console.log(`Title: ${data.title}`);
         console.log(`Message: ${data.message}`);
-        if (data.link) console.log(`Link: ${data.link}`);
+        if (data.link) {console.log(`Link: ${data.link}`);}
         return {
           success: true,
           message: 'Email service not configured - notification logged to console'

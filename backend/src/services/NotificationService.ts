@@ -86,7 +86,7 @@ export class NotificationService {
    * Determine if email should be sent based on type and preferences
    */
   private shouldSendEmail(type: string, prefs: any): boolean {
-    if (!prefs) return true; // Default to sending if no preferences set
+    if (!prefs) {return true;} // Default to sending if no preferences set
 
     switch (type) {
       case 'assignment':
@@ -106,8 +106,8 @@ export class NotificationService {
    * Determine if SMS should be sent based on type and preferences
    */
   private shouldSendSMS(type: string, prefs: any, phone: string | null): boolean {
-    if (!phone) return false; // Can't send SMS without phone number
-    if (!prefs) return false; // Default to not sending SMS unless explicitly enabled
+    if (!phone) {return false;} // Can't send SMS without phone number
+    if (!prefs) {return false;} // Default to not sending SMS unless explicitly enabled
 
     switch (type) {
       case 'assignment':

@@ -10,75 +10,87 @@
 
 import express, { Response, NextFunction } from 'express';
 import * as Joi from 'joi';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as yaml from 'js-yaml';
 import { authenticateToken } from '../../middleware/auth';
 import { requireCerbosPermission } from '../../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../../types/auth.types';
 import RoleService from '../../services/RoleService';
 import db from '../../config/database';
+import CerbosPolicyAdminService, { ResourceInfo, PolicyRule } from '../../services/CerbosPolicyAdminService';
 
 // Initialize router
 const router = express.Router();
 
 // Initialize services
 const roleService = new RoleService(db);
+const cerbosAdmin = new CerbosPolicyAdminService();
 
-// Cerbos policies directory
-const CERBOS_POLICIES_DIR = process.env.CERBOS_POLICIES_DIR || path.join(__dirname, '..', '..', '..', '..', 'cerbos', 'policies');
+// ==========================================
+// Caching Infrastructure for Admin API calls
+// ==========================================
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = {
+  resources: null as CacheEntry<ResourceInfo[]> | null,
+};
+
+const CACHE_TTL = 30000; // 30 seconds
+
+function isCacheValid<T>(entry: CacheEntry<T> | null): boolean {
+  if (!entry) {return false;}
+  return Date.now() - entry.timestamp < CACHE_TTL;
+}
+
+async function getCachedResources(): Promise<ResourceInfo[]> {
+  if (isCacheValid(cache.resources)) {
+    return cache.resources!.data;
+  }
+
+  const resources = await cerbosAdmin.listResources();
+  cache.resources = { data: resources, timestamp: Date.now() };
+  return resources;
+}
+
+function invalidateCache(): void {
+  cache.resources = null;
+}
 
 /**
- * Helper function to get permissions for a role from Cerbos policies
+ * Helper function to get permissions for a role from Cerbos via Admin API
  */
 async function getRolePermissionsFromCerbos(roleCode: string): Promise<string[]> {
   try {
     const permissions: string[] = [];
 
-    // Log the directory we're trying to read
-    console.log(`[PERMISSIONS DEBUG] Reading from directory: ${CERBOS_POLICIES_DIR}`);
-    console.log(`[PERMISSIONS DEBUG] Current working directory: ${process.cwd()}`);
+    // Get all resource policies via Admin API (cached)
+    const resources = await getCachedResources();
 
-    // Read all policy files to find where this role has permissions
-    const files = await fs.readdir(CERBOS_POLICIES_DIR);
-    const yamlFiles = files.filter(file => file.endsWith('.yaml') && !file.startsWith('_'));
-
-    for (const file of yamlFiles) {
-      const filePath = path.join(CERBOS_POLICIES_DIR, file);
-      const content = await fs.readFile(filePath, 'utf-8');
-
-      try {
-        const policy = yaml.load(content) as any;
-
-        if (policy?.resourcePolicy?.rules) {
-          for (const rule of policy.resourcePolicy.rules) {
-            // Check if this role is in the roles array for this rule
-            if (rule.roles && rule.roles.includes(roleCode)) {
-              // Add the actions with the resource prefix
-              const resource = policy.resourcePolicy.resource;
-              if (rule.actions) {
-                for (const action of rule.actions) {
-                  permissions.push(`${resource}:${action}`);
-                }
-              }
+    for (const resource of resources) {
+      for (const rule of resource.rules || []) {
+        // Check if this role is in the roles array for this rule
+        if (rule.roles && rule.roles.includes(roleCode) && rule.effect === 'EFFECT_ALLOW') {
+          // Add the actions with the resource prefix
+          if (rule.actions) {
+            for (const action of rule.actions) {
+              permissions.push(`${resource.kind}:${action}`);
             }
           }
         }
-      } catch (parseError) {
-        console.warn(`Error parsing YAML file ${file}:`, parseError);
       }
     }
 
     // Remove duplicates and return
     return [...new Set(permissions)];
   } catch (error) {
-    console.error('Error reading permissions from Cerbos:', error);
+    console.error('Error reading permissions from Cerbos Admin API:', error);
     return [];
   }
 }
 
 /**
- * Helper function to update Cerbos policies for a role
+ * Helper function to update Cerbos policies for a role via Admin API
  */
 async function updateCerbosPoliciesForRole(roleName: string, permissions: string[] = []): Promise<void> {
   try {
@@ -93,92 +105,104 @@ async function updateCerbosPoliciesForRole(roleName: string, permissions: string
       permissionsByResource.get(resource)!.push(action);
     }
 
-    // Create or update policy files for each resource
-    for (const [resource, actions] of permissionsByResource) {
-      const policyFile = `${resource}.yaml`;
-      const policyPath = path.join(CERBOS_POLICIES_DIR, policyFile);
+    // Get all existing resources via Admin API
+    const existingResources = await cerbosAdmin.listResources();
+    const allResources = new Set<string>(existingResources.map(r => r.kind));
 
-      let policy: any;
-
-      // Try to read existing policy
-      try {
-        const existingContent = await fs.readFile(policyPath, 'utf-8');
-        policy = yaml.load(existingContent) as any;
-
-        // Remove existing rules for this role
-        if (policy?.resourcePolicy?.rules) {
-          policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
-            (rule: any) => !rule.roles?.includes(roleName)
-          );
-        }
-      } catch (err) {
-        // File doesn't exist, create new policy
-        policy = {
-          apiVersion: 'api.cerbos.dev/v1',
-          resourcePolicy: {
-            version: 'default',
-            resource: resource,
-            rules: []
-          }
-        };
-      }
-
-      // Add new rule for this role
-      if (actions.length > 0) {
-        if (!policy.resourcePolicy) {
-          policy.resourcePolicy = { version: 'default', resource, rules: [] };
-        }
-        if (!policy.resourcePolicy.rules) {
-          policy.resourcePolicy.rules = [];
-        }
-
-        policy.resourcePolicy.rules.push({
-          actions: actions,
-          effect: 'EFFECT_ALLOW',
-          roles: [roleName]
-        });
-      }
-
-      // Write the policy file
-      const yamlContent = yaml.dump(policy, { sortKeys: false });
-      await fs.writeFile(policyPath, '---\n' + yamlContent, 'utf-8');
-      console.log(`Updated Cerbos policy for resource ${resource} with role ${roleName}`);
+    // Also add resources from new permissions
+    for (const resource of permissionsByResource.keys()) {
+      allResources.add(resource);
     }
+
+    // Update each resource policy
+    for (const resource of allResources) {
+      const actions = permissionsByResource.get(resource) || [];
+
+      try {
+        const policy = await cerbosAdmin.getResource(resource);
+
+        if (policy) {
+          // Remove existing rules for this role
+          policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
+            (rule: PolicyRule) => !rule.roles?.includes(roleName)
+          );
+
+          // Add new rule if there are actions
+          if (actions.length > 0) {
+            policy.resourcePolicy.rules.push({
+              actions,
+              effect: 'EFFECT_ALLOW',
+              roles: [roleName]
+            });
+          }
+
+          // Update via Admin API
+          await cerbosAdmin.putPolicy(policy);
+          console.log(`Updated Cerbos policy for resource ${resource} via Admin API for role ${roleName}`);
+        } else if (actions.length > 0) {
+          // Create new resource policy
+          const newPolicy = {
+            apiVersion: 'api.cerbos.dev/v1',
+            resourcePolicy: {
+              version: 'default',
+              resource,
+              importDerivedRoles: ['common_roles'],
+              rules: [{
+                actions,
+                effect: 'EFFECT_ALLOW' as const,
+                roles: [roleName]
+              }]
+            }
+          };
+          await cerbosAdmin.putPolicy(newPolicy);
+          console.log(`Created Cerbos policy for resource ${resource} via Admin API for role ${roleName}`);
+        }
+      } catch (error) {
+        console.error(`Error updating policy for resource ${resource}:`, error);
+        // Continue with other resources even if one fails
+      }
+    }
+
+    // Invalidate cache after write operations
+    invalidateCache();
   } catch (error) {
-    console.error('Error updating Cerbos policies:', error);
+    console.error('Error updating Cerbos policies via Admin API:', error);
     // Don't throw - we want the role to be created in DB even if Cerbos update fails
   }
 }
 
 /**
- * Helper function to remove a role from all Cerbos policies
+ * Helper function to remove a role from all Cerbos policies via Admin API
  */
 async function removeRoleFromCerbosPolicies(roleName: string): Promise<void> {
   try {
-    const files = await fs.readdir(CERBOS_POLICIES_DIR);
-    const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+    const resources = await cerbosAdmin.listResources();
 
-    for (const file of yamlFiles) {
-      const filePath = path.join(CERBOS_POLICIES_DIR, file);
-      const content = await fs.readFile(filePath, 'utf-8');
-      const policy = yaml.load(content) as any;
+    for (const resource of resources) {
+      try {
+        const policy = await cerbosAdmin.getResource(resource.kind);
 
-      if (policy?.resourcePolicy?.rules) {
-        const originalLength = policy.resourcePolicy.rules.length;
-        policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
-          (rule: any) => !rule.roles?.includes(roleName)
-        );
+        if (policy?.resourcePolicy?.rules) {
+          const originalLength = policy.resourcePolicy.rules.length;
+          policy.resourcePolicy.rules = policy.resourcePolicy.rules.filter(
+            (rule: PolicyRule) => !rule.roles?.includes(roleName)
+          );
 
-        // Only write if we actually removed something
-        if (policy.resourcePolicy.rules.length < originalLength) {
-          const yamlContent = yaml.dump(policy, { sortKeys: false });
-          await fs.writeFile(filePath, '---\n' + yamlContent, 'utf-8');
-          console.log(`Removed role ${roleName} from ${file}`);
+          // Only update if we actually removed something
+          if (policy.resourcePolicy.rules.length < originalLength) {
+            await cerbosAdmin.putPolicy(policy);
+            console.log(`Removed role ${roleName} from ${resource.kind} via Admin API`);
+          }
         }
+      } catch (error) {
+        console.error(`Error removing role from ${resource.kind}:`, error);
       }
     }
+
+    // Invalidate cache after write operations
+    invalidateCache();
   } catch (error) {
-    console.error('Error removing role from Cerbos policies:', error);
+    console.error('Error removing role from Cerbos policies via Admin API:', error);
   }
 }
 
@@ -447,8 +471,14 @@ router.put('/:roleId', authenticateToken, requireCerbosPermission({
       return;
     }
 
-    const { permissions, permission_ids, ...roleData } = value as RoleUpdateData & { permissions?: string[]; permission_ids?: string[] };
+    const { permissions, permission_ids, pages, ...roleData } = value as RoleUpdateData & { permissions?: string[]; permission_ids?: string[]; pages?: string[] };
     const role = await roleService.updateRole(roleId, roleData as any);
+
+    // Save page access to Cerbos
+    if (pages !== undefined) {
+      const roleCode = role.code || role.name.toLowerCase().replace(/\s+/g, '_');
+      await cerbosAdmin.setRolePageAccess(roleCode, pages);
+    }
 
     // If permissions are provided, update Cerbos policies
     // Use role.code for Cerbos (e.g., 'admin') while role.name is display name (e.g., 'Admin')

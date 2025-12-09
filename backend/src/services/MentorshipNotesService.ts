@@ -477,7 +477,7 @@ class MentorshipNotesService extends BaseService {
 
     // Basic sanitization - remove potentially dangerous tags and attributes
     // In production, consider using a proper HTML sanitization library like DOMPurify
-    let sanitized = content
+    const sanitized = content
       // Remove script tags and content
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       // Remove on* event handlers
@@ -511,10 +511,10 @@ class MentorshipNotesService extends BaseService {
   async afterUpdate(note, previousNote, options) {
     if (this.options.enableAuditTrail) {
       const changes = [];
-      if (previousNote.title !== note.title) changes.push('title');
-      if (previousNote.content !== note.content) changes.push('content');
-      if (previousNote.note_type !== note.note_type) changes.push('type');
-      if (previousNote.is_private !== note.is_private) changes.push('privacy');
+      if (previousNote.title !== note.title) {changes.push('title');}
+      if (previousNote.content !== note.content) {changes.push('content');}
+      if (previousNote.note_type !== note.note_type) {changes.push('type');}
+      if (previousNote.is_private !== note.is_private) {changes.push('privacy');}
 
       if (changes.length > 0) {
         console.log(`Mentorship note updated: ${note.id}, changed: ${changes.join(', ')}`);

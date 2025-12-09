@@ -70,8 +70,8 @@ describe('Reports Routes', () => {
     (mockDb as any).then = jest.fn((callback: Function) => callback([]));
     // Mock raw queries
     mockDb.raw.mockImplementation((sql: string) => {
-      if (sql.includes('COUNT')) return 'COUNT(*)';
-      if (sql.includes('EXTRACT')) return 'EXTRACT(DOW FROM games.game_date)';
+      if (sql.includes('COUNT')) {return 'COUNT(*)';}
+      if (sql.includes('EXTRACT')) {return 'EXTRACT(DOW FROM games.game_date)';}
       return sql;
     });
   });

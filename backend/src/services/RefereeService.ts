@@ -154,7 +154,7 @@ export default class RefereeService extends BaseService<RefereeProfileEntity> {
    */
   private get userService(): any {
     if (!this._userService) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const UserService = require('./UserService');
       this._userService = new UserService(this.db);
     }
@@ -167,7 +167,7 @@ export default class RefereeService extends BaseService<RefereeProfileEntity> {
    */
   private get roleService(): any {
     if (!this._roleService) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const RoleService = require('./RoleService');
       this._roleService = new RoleService(this.db);
     }
@@ -245,7 +245,7 @@ export default class RefereeService extends BaseService<RefereeProfileEntity> {
       if (!refereeType) {
         refereeType = await this.getRefereeType(userId);
       }
-      if (!refereeType) return false;
+      if (!refereeType) {return false;}
 
       if (!profile) {
         // Get profile data directly from DB without calling getRefereeProfile to avoid circular dependency

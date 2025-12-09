@@ -107,7 +107,7 @@ const parseInt = (value: string | undefined, defaultValue: number): number => {
 };
 
 const parseBoolean = (value: string | undefined, defaultValue: boolean): boolean => {
-  if (value === undefined) return defaultValue;
+  if (value === undefined) {return defaultValue;}
   return value !== 'false';
 };
 
@@ -202,7 +202,7 @@ export class AIConfig {
    * Parse AI provider with validation
    */
   private parseAIProvider(value: string | undefined, defaultValue: AIProvider): AIProvider {
-    if (!value) return defaultValue;
+    if (!value) {return defaultValue;}
 
     const validProviders: AIProvider[] = ['openai', 'deepseek', 'auto'];
     return validProviders.includes(value as AIProvider) ? value as AIProvider : defaultValue;

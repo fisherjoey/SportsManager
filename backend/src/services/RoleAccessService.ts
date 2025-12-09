@@ -2,19 +2,23 @@
 
 /**
  * @fileoverview Role Access Service
- * 
- * Manages database-driven access control for:
- * - Page/view access
- * - API endpoint access
- * - Feature flags
- * - Data scopes
- * 
- * All access control is now database-driven, removing hardcoded permissions
+ *
+ * Manages access control for:
+ * - Page/view access (via Cerbos)
+ * - API endpoint access (database)
+ * - Feature flags (database)
+ * - Data scopes (database)
+ *
+ * Page access control has been migrated to Cerbos resource policies.
  */
 
 import db from '../config/database';
 import { createAuditLog, AUDIT_EVENTS  } from '../middleware/auditTrail';
 import CacheService from './CacheService';
+import CerbosPolicyAdminService from './CerbosPolicyAdminService';
+
+// Initialize Cerbos Admin API service
+const cerbosAdmin = new CerbosPolicyAdminService();
 
 class RoleAccessService {
   constructor() {
@@ -23,19 +27,39 @@ class RoleAccessService {
   }
 
   /**
-   * Get all page access settings for a role
+   * Get all page access settings for a role (from Cerbos)
    */
   async getPageAccess(roleId) {
     try {
-      const cacheKey = `${this.cachePrefix}pages:${roleId}`;
-      const cached = await CacheService.get(cacheKey);
-      if (cached) return cached;
+      // First get the role name from the roleId
+      const role = await db('roles').where('id', roleId).first();
+      if (!role) {
+        return [];
+      }
 
-      const pageAccess = await db('role_page_access')
-        .where('role_id', roleId)
-        .select('page_path', 'page_name', 'page_category', 'page_description', 'can_access', 'conditions')
-        .orderBy('page_category', 'asc')
-        .orderBy('page_name', 'asc');
+      const cacheKey = `${this.cachePrefix}pages:${role.name}`;
+      const cached = await CacheService.get(cacheKey);
+      if (cached) {return cached;}
+
+      // Get page IDs from Cerbos
+      const pageIds = await cerbosAdmin.getRolePageAccess(role.name);
+
+      // Get the page registry for metadata
+      const pageRegistry = await this.getPageRegistry();
+      const pageMap = new Map(pageRegistry.map(p => [p.path, p]));
+
+      // Build page access list with metadata
+      const pageAccess = pageIds.map(pageId => {
+        const pageInfo = pageMap.get(pageId);
+        return {
+          page_path: pageId,
+          page_name: pageInfo?.name || pageId,
+          page_category: pageInfo?.category || 'Other',
+          page_description: pageInfo?.description || '',
+          can_access: true,
+          conditions: null
+        };
+      });
 
       await CacheService.set(cacheKey, pageAccess, this.cacheTTL);
       return pageAccess;
@@ -46,50 +70,30 @@ class RoleAccessService {
   }
 
   /**
-   * Set page access for a role (bulk update)
+   * Set page access for a role (via Cerbos)
    */
   async setPageAccess(roleId, pageAccessList, userId) {
-    const trx = await db.transaction();
-
     try {
-      // Delete existing page access for this role
-      await trx('role_page_access')
-        .where('role_id', roleId)
-        .delete();
-
-      // Insert new page access settings
-      if (pageAccessList && pageAccessList.length > 0) {
-        const records = pageAccessList.map(access => ({
-          role_id: roleId,
-          page_path: access.page_path,
-          page_name: access.page_name,
-          page_category: access.page_category,
-          page_description: access.page_description,
-          can_access: access.can_access,
-          conditions: access.conditions ? JSON.stringify(access.conditions) : null
-        }));
-
-        await trx('role_page_access').insert(records);
+      // First get the role name from the roleId
+      const role = await db('roles').where('id', roleId).first();
+      if (!role) {
+        throw new Error('Role not found');
       }
 
-      // Create audit log
-      await trx('access_control_audit').insert({
-        user_id: userId,
-        action_type: 'modify',
-        resource_type: 'page',
-        role_id: roleId,
-        new_value: JSON.stringify(pageAccessList),
-        reason: 'Bulk update page access'
-      });
+      // Extract page paths that have can_access = true
+      const allowedPages = pageAccessList
+        .filter(access => access.can_access)
+        .map(access => access.page_path);
 
-      await trx.commit();
+      // Update Cerbos policy
+      await cerbosAdmin.setRolePageAccess(role.name, allowedPages);
 
       // Clear cache
       await this.clearRoleCache(roleId);
+      await CacheService.del(`${this.cachePrefix}pages:${role.name}`);
 
       return { success: true, message: 'Page access updated successfully' };
     } catch (error) {
-      await trx.rollback();
       console.error('Error setting page access:', error);
       throw error;
     }
@@ -102,7 +106,7 @@ class RoleAccessService {
     try {
       const cacheKey = `${this.cachePrefix}apis:${roleId}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached) return cached;
+      if (cached) {return cached;}
 
       const apiAccess = await db('role_api_access')
         .where('role_id', roleId)
@@ -176,7 +180,7 @@ class RoleAccessService {
     try {
       const cacheKey = `${this.cachePrefix}features:${roleId}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached) return cached;
+      if (cached) {return cached;}
 
       const features = await db('role_features')
         .where('role_id', roleId)
@@ -249,7 +253,7 @@ class RoleAccessService {
     try {
       const cacheKey = `${this.cachePrefix}scopes:${roleId}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached) return cached;
+      if (cached) {return cached;}
 
       const scopes = await db('role_data_scopes')
         .where('role_id', roleId)
@@ -266,13 +270,13 @@ class RoleAccessService {
   }
 
   /**
-   * Check if a user can access a specific page
+   * Check if a user can access a specific page (via Cerbos)
    */
   async checkPageAccess(userId, pagePath) {
     try {
       const cacheKey = `${this.cachePrefix}user_page:${userId}:${pagePath}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached !== null) return cached;
+      if (cached !== null) {return cached;}
 
       // Get user's roles
       const userRoles = await db('user_roles')
@@ -286,17 +290,27 @@ class RoleAccessService {
         return false;
       }
 
-      // Check if any of the user's roles have access to this page
-      const roleIds = userRoles.map(r => r.id);
-      const access = await db('role_page_access')
-        .whereIn('role_id', roleIds)
-        .where('page_path', pagePath)
-        .where('can_access', true)
-        .first();
+      // Super Admin and Admin have access to all pages
+      const hasSuperAccess = userRoles.some(r =>
+        r.name === 'super_admin' || r.name === 'admin' ||
+        r.name === 'Super Admin' || r.name === 'Admin'
+      );
+      if (hasSuperAccess) {
+        await CacheService.set(cacheKey, true, this.cacheTTL);
+        return true;
+      }
 
-      const hasAccess = !!access;
-      await CacheService.set(cacheKey, hasAccess, this.cacheTTL);
-      return hasAccess;
+      // Check if any of the user's roles have access to this page via Cerbos
+      for (const role of userRoles) {
+        const rolePages = await cerbosAdmin.getRolePageAccess(role.name);
+        if (rolePages.includes(pagePath)) {
+          await CacheService.set(cacheKey, true, this.cacheTTL);
+          return true;
+        }
+      }
+
+      await CacheService.set(cacheKey, false, this.cacheTTL);
+      return false;
     } catch (error) {
       console.error('Error checking page access:', error);
       return false; // Fail closed
@@ -310,7 +324,7 @@ class RoleAccessService {
     try {
       const cacheKey = `${this.cachePrefix}user_api:${userId}:${method}:${endpoint}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached !== null) return cached;
+      if (cached !== null) {return cached;}
 
       // Get user's roles
       const userRoles = await db('user_roles')
@@ -372,7 +386,7 @@ class RoleAccessService {
     try {
       const cacheKey = `${this.cachePrefix}user_feature:${userId}:${featureCode}`;
       const cached = await CacheService.get(cacheKey);
-      if (cached !== null) return cached;
+      if (cached !== null) {return cached;}
 
       // Get user's roles
       const userRoles = await db('user_roles')

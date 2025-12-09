@@ -223,7 +223,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
    */
   async checkRefereeConflicts(game: GameData, referee: RefereeData): Promise<RefereeConflictCheck> {
     const warnings: string[] = [];
-    let hasConflict = false;
+    const hasConflict = false;
 
     try {
       // Check for back-to-back games (less than 45 minutes between games)
@@ -378,17 +378,17 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
     const gameFSA = gamePostal.substring(0, 3);
 
     // Same FSA = very close
-    if (refereeFSA === gameFSA) return 0.95;
+    if (refereeFSA === gameFSA) {return 0.95;}
 
     // Calculate character differences
     let differences = 0;
     for (let i = 0; i < Math.min(refereeFSA.length, gameFSA.length); i++) {
-      if (refereeFSA[i] !== gameFSA[i]) differences++;
+      if (refereeFSA[i] !== gameFSA[i]) {differences++;}
     }
 
-    if (differences === 1) return 0.8;
-    if (differences === 2) return 0.6;
-    if (differences === 3) return 0.4;
+    if (differences === 1) {return 0.8;}
+    if (differences === 2) {return 0.6;}
+    if (differences === 3) {return 0.4;}
     return 0.3;
   }
 
@@ -413,7 +413,7 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
       const gameEnd = new Date(gameStart.getTime() + 2 * 60 * 60 * 1000);
 
       for (const window of availability.rows) {
-        if (!window.is_available) continue;
+        if (!window.is_available) {continue;}
 
         const windowStart = new Date(`${game.game_date} ${window.start_time}`);
         const windowEnd = new Date(`${game.game_date} ${window.end_time}`);
@@ -443,11 +443,11 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
     const refereeLevel = levelMapping[referee.level] || 1;
     const gameLevel = levelMapping[game.level] || 2;
 
-    if (refereeLevel === gameLevel) return 1.0;
-    if (refereeLevel === gameLevel + 1) return 0.9;
-    if (refereeLevel > gameLevel + 1) return 0.7;
-    if (refereeLevel === gameLevel - 1) return 0.8;
-    if (refereeLevel < gameLevel - 1) return 0.4;
+    if (refereeLevel === gameLevel) {return 1.0;}
+    if (refereeLevel === gameLevel + 1) {return 0.9;}
+    if (refereeLevel > gameLevel + 1) {return 0.7;}
+    if (refereeLevel === gameLevel - 1) {return 0.8;}
+    if (refereeLevel < gameLevel - 1) {return 0.4;}
     return 0.6;
   }
 
@@ -526,25 +526,25 @@ class AIAssignmentService implements AIAssignmentServiceInterface {
   ): string {
     const factors: string[] = [];
 
-    if (proximityScore >= 0.8) factors.push('excellent proximity');
-    else if (proximityScore >= 0.6) factors.push('good proximity');
-    else if (proximityScore >= 0.4) factors.push('moderate proximity');
-    else factors.push('distant location');
+    if (proximityScore >= 0.8) {factors.push('excellent proximity');}
+    else if (proximityScore >= 0.6) {factors.push('good proximity');}
+    else if (proximityScore >= 0.4) {factors.push('moderate proximity');}
+    else {factors.push('distant location');}
 
-    if (availabilityScore >= 0.8) factors.push('high availability');
-    else if (availabilityScore >= 0.6) factors.push('good availability');
-    else factors.push('limited availability');
+    if (availabilityScore >= 0.8) {factors.push('high availability');}
+    else if (availabilityScore >= 0.6) {factors.push('good availability');}
+    else {factors.push('limited availability');}
 
-    if (experienceScore >= 0.9) factors.push('perfect level match');
-    else if (experienceScore >= 0.8) factors.push('good experience level');
-    else if (experienceScore >= 0.6) factors.push('adequate experience');
-    else factors.push('experience concerns');
+    if (experienceScore >= 0.9) {factors.push('perfect level match');}
+    else if (experienceScore >= 0.8) {factors.push('good experience level');}
+    else if (experienceScore >= 0.6) {factors.push('adequate experience');}
+    else {factors.push('experience concerns');}
 
-    if (performanceScore >= 0.8) factors.push('strong historical performance');
-    else if (performanceScore >= 0.6) factors.push('good performance record');
+    if (performanceScore >= 0.8) {factors.push('strong historical performance');}
+    else if (performanceScore >= 0.6) {factors.push('good performance record');}
 
-    if (historicalBonus > 0.2) factors.push('excellent historical pattern');
-    else if (historicalBonus > 0.1) factors.push('positive historical pattern');
+    if (historicalBonus > 0.2) {factors.push('excellent historical pattern');}
+    else if (historicalBonus > 0.1) {factors.push('positive historical pattern');}
 
     return `Recommended based on: ${factors.join(', ')}`;
   }
@@ -561,8 +561,8 @@ async function buildSuggestionsQuery(params: SuggestionQueryParams): Promise<Sug
   const { page, limit } = pagination;
   const offset = (page - 1) * limit;
 
-  let whereConditions: string[] = [];
-  let queryParams: any[] = [];
+  const whereConditions: string[] = [];
+  const queryParams: any[] = [];
   let paramIndex = 1;
 
   // Build WHERE conditions

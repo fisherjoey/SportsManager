@@ -38,7 +38,7 @@ const generateKeyWithEmail = (req: Request): string => {
 
 // Helper function to check if user has admin role
 const isAdminUser = (user?: UserWithRoles): boolean => {
-  if (!user) return false;
+  if (!user) {return false;}
 
   const userRoles = user.roles || [user.role];
   return userRoles.includes('admin') || user.role === 'admin';
