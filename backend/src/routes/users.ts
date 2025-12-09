@@ -188,7 +188,7 @@ const createUser = async (
       white_whistle: false,
       wage_per_game: null,
       referee_level_id: null,
-      is_active: true,
+      availability_status: 'active',  // Uses text field, not is_active boolean
       email_verified: false
     });
     console.log('User created successfully:', newUser.id);
@@ -285,7 +285,7 @@ const deleteUser = async (
   
   // Soft delete by setting deleted_at timestamp
   await userService.update(userId, { 
-    is_active: false
+    availability_status: 'inactive'  // Soft delete using availability_status
   } as any);
   
   return ResponseFormatter.sendSuccess(res, null, 'User deleted successfully');

@@ -7,16 +7,23 @@ server:
   grpcListenAddr: ":3593"
   adminAPI:
     enabled: true
-    # No authentication for development - SECURE THIS IN PRODUCTION
     adminCredentials:
-      username: ""
-      passwordHash: ""
+      username: "cerbos"
+      passwordHash: "JDJiJDEwJG04M3pYUlMvTFpScjFEb3FpdnJZUmVURmxBZmVyd0RUclpzTlJjZzdOMEd6UFZFMi90YjAy"
 
 storage:
-  driver: "disk"
-  disk:
-    directory: "/policies"
-    watchForChanges: true
+  driver: "postgres"
+  postgres:
+    url: "${CERBOS_DB_URL}"
+    connPool:
+      maxLifeTime: 60m
+      maxIdleTime: 45s
+      maxOpen: 4
+      maxIdle: 1
+    connRetry:
+      maxAttempts: 3
+      initialInterval: 1s
+      maxInterval: 30s
 
 # Audit logging for compliance
 audit:

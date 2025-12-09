@@ -396,39 +396,47 @@ export function LoginForm() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDemoLogin('admin@test.com')}
+                    onClick={() => handleDemoLogin('admin@cmba.ca', 'admin123')}
                     className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
                   >
                     <strong className="block text-foreground group-hover:text-primary">Admin</strong>
-                    <span className="text-muted-foreground">admin@test.com</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('admin@cmba.ca')}
-                    className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
-                  >
-                    <strong className="block text-foreground group-hover:text-primary">CMBA Admin</strong>
                     <span className="text-muted-foreground">admin@cmba.ca</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDemoLogin('admin@refassign.com')}
+                    onClick={() => handleDemoLogin('assignor@cmba.ca', 'admin123')}
                     className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
                   >
-                    <strong className="block text-foreground group-hover:text-primary">System Admin</strong>
-                    <span className="text-muted-foreground">admin@refassign.com</span>
+                    <strong className="block text-foreground group-hover:text-primary">Assignment Manager</strong>
+                    <span className="text-muted-foreground">assignor@cmba.ca</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDemoLogin('referee@test.com')}
+                    onClick={() => handleDemoLogin('coordinator@cmba.ca', 'admin123')}
                     className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
                   >
-                    <strong className="block text-foreground group-hover:text-primary">Test Referee</strong>
+                    <strong className="block text-foreground group-hover:text-primary">Referee Coordinator</strong>
+                    <span className="text-muted-foreground">coordinator@cmba.ca</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoLogin('senior.ref@cmba.ca', 'referee123')}
+                    className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
+                  >
+                    <strong className="block text-foreground group-hover:text-primary">Senior Referee</strong>
+                    <span className="text-muted-foreground">senior.ref@cmba.ca</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoLogin('referee@test.com', 'referee123')}
+                    className="w-full text-left p-2 rounded hover:bg-background transition-colors text-xs group"
+                  >
+                    <strong className="block text-foreground group-hover:text-primary">Junior Referee</strong>
                     <span className="text-muted-foreground">referee@test.com</span>
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
-                  <strong>Passwords:</strong> Super Admin uses "admin123", all others use "password"
+                  <strong>Passwords:</strong> Admin accounts use "admin123", referee accounts use "referee123"
                 </p>
               </div>
             </CollapsibleContent>

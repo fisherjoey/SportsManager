@@ -3,14 +3,11 @@ import Joi from 'joi';
 import { authenticateToken } from '../middleware/auth';
 import { requireCerbosPermission } from '../middleware/requireCerbosPermission';
 import { AuthenticatedRequest } from '../types/auth.types';
-import CerbosPolicyService from '../services/CerbosPolicyService';
+import CerbosPolicyAdminService from '../services/CerbosPolicyAdminService';
 import { logger } from '../utils/logger';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 
-const execAsync = promisify(exec);
 const router = express.Router();
-const policyService = new CerbosPolicyService();
+const policyService = new CerbosPolicyAdminService();
 
 const createResourceSchema = Joi.object({
   kind: Joi.string().min(2).max(50).pattern(/^[a-z][a-z0-9_]*$/).required(),
@@ -452,6 +449,103 @@ router.get('/derived-roles', authenticateToken, requireCerbosPermission({
     logger.error('Failed to get derived roles', { error: error.message, userId: req.user?.id });
     res.status(500).json({
       error: 'Failed to retrieve derived roles',
+      details: error.message,
+    });
+  }
+});
+
+// Get all policies from Cerbos Admin API
+router.get('/policies', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:policies',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const policies = await policyService.listPolicies();
+
+    res.json({
+      success: true,
+      data: { policies },
+      message: 'Policies retrieved successfully',
+    });
+  } catch (error: any) {
+    logger.error('Failed to list policies', { error: error.message, userId: req.user?.id });
+    res.status(500).json({
+      error: 'Failed to retrieve policies',
+      details: error.message,
+    });
+  }
+});
+
+// Upload/update a policy via Admin API
+router.put('/policies', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'update:policy',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const policy = (req as any).body;
+
+    if (!policy) {
+      res.status(400).json({
+        error: 'Validation failed',
+        details: 'Policy body is required',
+      });
+      return;
+    }
+
+    const result = await policyService.putPolicy(policy);
+
+    logger.info('Policy uploaded via Admin API', { userId: req.user?.id });
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Policy uploaded successfully',
+    });
+  } catch (error: any) {
+    logger.error('Failed to upload policy', { error: error.message, userId: req.user?.id });
+    res.status(500).json({
+      error: 'Failed to upload policy',
+      details: error.message,
+    });
+  }
+});
+
+// Get Cerbos health status
+router.get('/health', authenticateToken, async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const health = await policyService.checkHealth();
+
+    res.json({
+      success: true,
+      data: health,
+      message: 'Health check completed',
+    });
+  } catch (error: any) {
+    logger.error('Failed to check Cerbos health', { error: error.message, userId: req.user?.id });
+    res.status(503).json({
+      error: 'Cerbos health check failed',
+      details: error.message,
+    });
+  }
+});
+
+// Get policy statistics
+router.get('/stats', authenticateToken, requireCerbosPermission({
+  resource: 'cerbos_policy',
+  action: 'view:stats',
+}), async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const stats = await policyService.getStats();
+
+    res.json({
+      success: true,
+      data: stats,
+      message: 'Statistics retrieved successfully',
+    });
+  } catch (error: any) {
+    logger.error('Failed to get policy stats', { error: error.message, userId: req.user?.id });
+    res.status(500).json({
+      error: 'Failed to retrieve statistics',
       details: error.message,
     });
   }

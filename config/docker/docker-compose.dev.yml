@@ -15,6 +15,7 @@ services:
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
       - ../../backend/seeds:/docker-entrypoint-initdb.d
+      - ../../database-init:/docker-entrypoint-initdb.d/cerbos:ro
     ports:
       - "5432:5432"
     networks:
@@ -62,6 +63,11 @@ services:
       DISABLE_REDIS: ${DISABLE_REDIS:-false}
       API_URL: http://backend:3001
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # Cerbos
+      CERBOS_HOST: cerbos:3593
+      CERBOS_TLS: false
+      CERBOS_CACHE_ENABLED: true
+      CERBOS_CACHE_TTL: 300000
       # Hot reload optimization
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
       WATCHPACK_POLLING: ${WATCHPACK_POLLING:-false}
@@ -83,6 +89,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      cerbos:
         condition: service_healthy
     command: >
       sh -c "
@@ -131,22 +139,27 @@ services:
     depends_on:
       - backend
 
-  # Cerbos Authorization Service
+  # Cerbos Authorization Service (PostgreSQL-backed)
   cerbos:
     image: ghcr.io/cerbos/cerbos:latest
     container_name: sports_manager_cerbos_dev
     restart: unless-stopped
+    environment:
+      CERBOS_DB_URL: "postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@postgres:5432/${DB_NAME:-sports_management}?sslmode=disable&search_path=cerbos"
     ports:
-      - "3592:3592"  # gRPC port
-      - "3593:3593"  # HTTP port
+      - "3592:3592"  # HTTP port
+      - "3593:3593"  # gRPC port
     volumes:
-      - ../../cerbos/policies:/policies
       - ../../cerbos/config/config.yaml:/config.yaml
+      - cerbos_data_dev:/data
     command: ["server", "--config=/config.yaml"]
     networks:
       - sports_network_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "cerbosctl", "version"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3592/_cerbos/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -157,3 +170,4 @@ networks:
 
 volumes:
   postgres_data_dev:
+  cerbos_data_dev:

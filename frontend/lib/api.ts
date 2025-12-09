@@ -3682,6 +3682,150 @@ class ApiClient {
     })
   }
 
+  // Cerbos Admin API endpoints (PostgreSQL-backed)
+  async getCerbosResources() {
+    return this.request<{
+      success: boolean;
+      data: { resources: string[] };
+      message: string;
+    }>('/cerbos/resources')
+  }
+
+  async getCerbosResource(kind: string) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/cerbos/resources/${kind}`)
+  }
+
+  async createCerbosResource(data: { kind: string; version?: string; importDerivedRoles?: string[] }) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>('/cerbos/resources', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateCerbosResource(kind: string, policy: any) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/cerbos/resources/${kind}`, {
+      method: 'PUT',
+      body: JSON.stringify(policy)
+    })
+  }
+
+  async deleteCerbosResource(kind: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/cerbos/resources/${kind}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getCerbosResourceActions(kind: string) {
+    return this.request<{
+      success: boolean;
+      data: { actions: string[] };
+      message: string;
+    }>(`/cerbos/resources/${kind}/actions`)
+  }
+
+  async addCerbosResourceAction(kind: string, data: { action: string; roles?: Record<string, { effect: string; condition?: string }> }) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/cerbos/resources/${kind}/actions`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async removeCerbosResourceAction(kind: string, action: string) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/cerbos/resources/${kind}/actions/${action}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getCerbosRoleRules(kind: string, role: string) {
+    return this.request<{
+      success: boolean;
+      data: { rules: Record<string, { effect: string; condition?: string }> };
+      message: string;
+    }>(`/cerbos/resources/${kind}/roles/${role}`)
+  }
+
+  async setCerbosRoleRules(kind: string, role: string, rules: Record<string, { effect: string; condition?: string }>) {
+    return this.request<{
+      success: boolean;
+      data: { policy: any };
+      message: string;
+    }>(`/cerbos/resources/${kind}/roles/${role}`, {
+      method: 'PUT',
+      body: JSON.stringify(rules)
+    })
+  }
+
+  async getCerbosDerivedRoles() {
+    return this.request<{
+      success: boolean;
+      data: { derivedRoles: any };
+      message: string;
+    }>('/cerbos/derived-roles')
+  }
+
+  async getAllCerbosPoliciesFromAdmin() {
+    return this.request<{
+      success: boolean;
+      data: { policies: any[] };
+      message: string;
+    }>('/cerbos/policies')
+  }
+
+  async uploadCerbosPolicy(policy: any) {
+    return this.request<{
+      success: boolean;
+      data: any;
+      message: string;
+    }>('/cerbos/policies', {
+      method: 'PUT',
+      body: JSON.stringify(policy)
+    })
+  }
+
+  async getCerbosHealth() {
+    return this.request<{
+      success: boolean;
+      data: { healthy: boolean; status?: string };
+      message: string;
+    }>('/cerbos/health')
+  }
+
+  async getCerbosStats() {
+    return this.request<{
+      success: boolean;
+      data: {
+        totalPolicies: number;
+        resourcePolicies: number;
+        derivedRoles: number;
+        principalPolicies: number;
+      };
+      message: string;
+    }>('/cerbos/stats')
+  }
+
   // Unified Role Management endpoints
   async getUnifiedRoles() {
     return this.request<{

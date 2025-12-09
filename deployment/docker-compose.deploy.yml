@@ -14,6 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database-dumps:/docker-entrypoint-initdb.d:ro
+      - ../database-init:/docker-entrypoint-initdb.d/cerbos:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -23,17 +24,22 @@ services:
     networks:
       - sportsmanager-network
 
-  # Cerbos Authorization Server
+  # Cerbos Authorization Server (PostgreSQL-backed)
   cerbos:
     image: ghcr.io/cerbos/cerbos:latest
     container_name: sportsmanager-cerbos
     command: server --config=/config/config.yaml
+    environment:
+      CERBOS_DB_URL: "postgres://postgres:${DB_PASSWORD:-postgres123}@postgres:5432/sports_management?sslmode=disable&search_path=cerbos"
     ports:
       - "3592:3592"  # HTTP API
       - "3593:3593"  # gRPC API
     volumes:
-      - ../cerbos-policies:/policies:ro
       - ../cerbos/config:/config:ro
+      - cerbos_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "/cerbos", "healthcheck", "--addr=:3592"]
@@ -146,4 +152,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  cerbos_data:
     driver: local

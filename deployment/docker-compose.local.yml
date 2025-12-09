@@ -13,7 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data_local:/var/lib/postgresql/data
-      # Seed data moved to backend startup script to run after migrations
+      - ../database-init:/docker-entrypoint-initdb.d/cerbos:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -23,20 +23,25 @@ services:
     networks:
       - sportsmanager-local
 
-  # Cerbos Authorization Server
+  # Cerbos Authorization Server (PostgreSQL-backed)
   cerbos:
     image: ghcr.io/cerbos/cerbos:latest
     container_name: sportsmanager-cerbos-local
     command: server --config=/config/config.yaml
+    environment:
+      CERBOS_DB_URL: "postgres://postgres:postgres123@postgres:5432/sports_management?sslmode=disable&search_path=cerbos"
     ports:
       - "3592:3592"  # HTTP API
       - "3593:3593"  # gRPC API
     volumes:
-      - ../cerbos-policies:/policies:ro
       - ../cerbos/config:/config:ro
+      - cerbos_data_local:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/cerbos", "healthcheck", "--config=/config/config.yaml"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3592/_cerbos/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -151,4 +156,6 @@ networks:
 
 volumes:
   postgres_data_local:
+    driver: local
+  cerbos_data_local:
     driver: local

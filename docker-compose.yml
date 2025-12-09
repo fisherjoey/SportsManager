@@ -1,19 +1,56 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sportsmanager-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: sports_management
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - sportsmanager-network
+
   cerbos:
     image: ghcr.io/cerbos/cerbos:latest
     container_name: sportsmanager-cerbos
     command: server --config=/config/config.yaml
+    environment:
+      CERBOS_DB_URL: "postgres://postgres:${DB_PASSWORD:-postgres123}@postgres:5432/sports_management?sslmode=disable&search_path=cerbos"
     ports:
       - "3592:3592"  # HTTP API
       - "3593:3593"  # gRPC API
     volumes:
-      - ./cerbos/policies:/policies:ro
       - ./cerbos/config:/config:ro
+      - cerbos_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3592/_cerbos/health"]
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - sportsmanager-network
+
+networks:
+  sportsmanager-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  cerbos_data:
+    driver: local
