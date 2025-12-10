@@ -43,7 +43,7 @@ interface ExpenseApprovalDetailsProps {
     submitted_date: string
     submitted_by_name: string
     submitted_by_email: string
-    urgency_level: 'low' | 'normal' | 'high' | 'critical'
+    urgency_level: 'low' | 'normal' | 'high' | 'urgent'
     current_approval_stage: string
     approval_deadline: string
     receipt_filename?: string
@@ -137,8 +137,8 @@ export function ExpenseApprovalDetails({ expense, onApproved, onRejected }: Expe
         method: 'POST',
         body: JSON.stringify({
           decision: 'rejected',
-          rejection_reason: rejectionReason,
-          notes: 'Expense rejected'
+          reason: rejectionReason,
+          allow_resubmission: true
         })
       })
 

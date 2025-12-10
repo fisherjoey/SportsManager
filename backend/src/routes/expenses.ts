@@ -48,6 +48,9 @@ import {
 import receiptProcessingService from '../services/receiptProcessingService';
 import approvalWorkflowService from '../services/ApprovalWorkflowService';
 import paymentMethodService from '../services/paymentMethodService';
+
+// Import submodule routes (from parallel sessions)
+import expenseSubmoduleRoutes from './expenses/index';
 import { referenceCache, clearUserCache } from '../middleware/responseCache';
 import { createQueue } from '../config/queue';
 
@@ -660,5 +663,8 @@ router.get('/receipts/:id',
     }
   }
 );
+
+// Mount submodule routes (reference data, approvals, pending - from parallel sessions)
+router.use(expenseSubmoduleRoutes);
 
 export default router;

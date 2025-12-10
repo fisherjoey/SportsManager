@@ -44,7 +44,7 @@ interface PendingExpense {
   submitted_date: string
   submitted_by_name: string
   submitted_by_email: string
-  urgency_level: 'low' | 'normal' | 'high' | 'critical'
+  urgency_level: 'low' | 'normal' | 'high' | 'urgent'
   current_approval_stage: string
   approval_deadline: string
   receipt_filename?: string
@@ -141,8 +141,8 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
         selectedExpenses.map(expenseId =>
           apiClient.rejectExpense(expenseId, {
             decision: 'rejected',
-            rejection_reason: 'bulk_rejection',
-            notes: 'Bulk rejection - requires more information'
+            reason: 'Bulk rejection - requires more information',
+            allow_resubmission: true
           })
         )
       )
@@ -196,7 +196,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
       low: { variant: 'outline' as const, color: 'text-gray-500' },
       normal: { variant: 'secondary' as const, color: 'text-blue-500' },
       high: { variant: 'default' as const, color: 'text-orange-500' },
-      critical: { variant: 'destructive' as const, color: 'text-red-500' }
+      urgent: { variant: 'destructive' as const, color: 'text-red-500' }
     }
 
     const config = variants[urgency as keyof typeof variants] || variants.normal
@@ -312,7 +312,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
 

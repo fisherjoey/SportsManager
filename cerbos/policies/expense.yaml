@@ -3,17 +3,93 @@ apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: "default"
   resource: "expense"
+  importDerivedRoles:
+    - common_roles
   rules:
+    # Full management access for admins
     - actions:
         - view
         - view:list
         - view:details
         - view:stats
+        - view:pending
         - create
         - update
         - delete
+        - approve
+        - reject
         - manage
       effect: EFFECT_ALLOW
       roles:
         - admin
         - super_admin
+
+    # Approval access for assignors and assignment managers
+    - actions:
+        - view:pending
+        - approve
+        - reject
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - assignment_manager
+      name: expense-approvers
+
+    # Reference data access for all authenticated users
+    - actions:
+        - view:categories
+        - view:vendors
+      effect: EFFECT_ALLOW
+      roles:
+        - admin
+        - super_admin
+        - assignor
+        - assignment_manager
+        - referee
+        - junior_referee
+        - senior_referee
+        - head_referee
+        - rookie_referee
+        - referee_coach
+        - referee_coordinator
+        - mentor
+        - mentorship_coordinator
+        - coach
+      name: reference-data-access
+
+    # Users can view their own expenses
+    - actions:
+        - view
+        - view:list
+        - view:details
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      name: view-own-expenses
+
+    # Users can create and update their own expenses (before approval)
+    - actions:
+        - create
+        - update
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - owner
+      condition:
+        match:
+          any:
+            of:
+              - expr: "!has(request.resource.attr.status) || request.resource.attr.status in ['draft', 'pending', 'rejected_resubmittable']"
+      name: manage-own-draft-expenses
+
+    # Same organization users can view expenses in their org (for approvers)
+    - actions:
+        - view
+        - view:list
+        - view:pending
+      effect: EFFECT_ALLOW
+      derivedRoles:
+        - same_organization
+      roles:
+        - assignor
+        - assignment_manager
+      name: org-expense-visibility

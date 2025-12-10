@@ -48,6 +48,7 @@ import reportsRoutes from './routes/reports';
 import calendarRoutes from './routes/calendar';
 import healthRoutes from './routes/health';
 import expenseRoutes from './routes/expenses';
+import expenseModuleRoutes from './routes/expenses/index';
 import budgetRoutes from './routes/budgets';
 import paymentMethodRoutes from './routes/payment-methods';
 import purchaseOrderRoutes from './routes/purchase-orders';
@@ -200,6 +201,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/notifications', notificationRoutes);
 // Expenses API routes
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/expenses', expenseModuleRoutes); // Session 3/4: Approval & reference routes
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);

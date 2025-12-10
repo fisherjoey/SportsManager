@@ -524,3 +524,132 @@ export interface PaymentMethodService {
   ): Promise<{ valid: boolean; errors: string[]; warnings: string[] }>;
   getAvailablePaymentMethods(organizationId: string): Promise<PaymentMethod[]>;
 }
+
+// =====================================================
+// Types for Expense Approval Workflow (Sessions 2-5)
+// =====================================================
+
+/**
+ * Filters for querying pending expenses
+ * Used by Session 2: GET /api/expenses/pending
+ */
+export interface PendingExpenseFilters {
+  payment_method?: string;
+  urgency?: ExpenseUrgency;
+  amount_min?: number;
+  amount_max?: number;
+  search?: string;
+  category?: string;
+  date_from?: Date;
+  date_to?: Date;
+  submitter_id?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: 'amount' | 'date' | 'urgency' | 'submitter';
+  sort_order?: 'asc' | 'desc';
+}
+
+/**
+ * Detailed pending expense with all related data
+ * Used by Session 2: GET /api/expenses/pending/:id
+ */
+export interface PendingExpenseDetail {
+  id: string;
+  receipt_id: string;
+  user_id: string;
+  organization_id: string;
+  vendor_name: string;
+  total_amount: number;
+  transaction_date: Date;
+  category: {
+    id: string;
+    name: string;
+    code: string;
+    color: string;
+  } | null;
+  payment_method: {
+    id: string;
+    name: string;
+    type: PaymentMethodType;
+  } | null;
+  submitter: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  description?: string;
+  business_purpose?: string;
+  expense_urgency: ExpenseUrgency;
+  urgency_justification?: string;
+  receipt: {
+    id: string;
+    filename: string;
+    file_path: string;
+    processing_status: string;
+  };
+  approval_status: ApprovalStatus;
+  approval_history: ApprovalHistoryItem[];
+  submitted_at: Date;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/**
+ * Summary item for pending expenses list
+ */
+export interface PendingExpenseSummary {
+  id: string;
+  vendor_name: string;
+  total_amount: number;
+  transaction_date: Date;
+  category_name: string | null;
+  category_color: string | null;
+  submitter_name: string;
+  expense_urgency: ExpenseUrgency;
+  payment_method_name: string | null;
+  approval_status: ApprovalStatus;
+  submitted_at: Date;
+  days_pending: number;
+}
+
+/**
+ * Vendor reference data for dropdowns
+ * Used by Session 4: GET /api/expenses/vendors
+ */
+export interface VendorReference {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  is_preferred?: boolean;
+  active: boolean;
+}
+
+/**
+ * Category reference data for dropdowns
+ * Used by Session 4: GET /api/expenses/categories
+ */
+export interface CategoryReference {
+  id: string;
+  name: string;
+  code: string;
+  color_code: string;
+  description?: string;
+  requires_approval: boolean;
+  approval_threshold?: number;
+  active: boolean;
+}
+
+/**
+ * Payment method reference data for dropdowns
+ * Used by Session 4: GET /api/expenses/payment-methods
+ */
+export interface PaymentMethodReference {
+  id: string;
+  name: string;
+  type: PaymentMethodType;
+  description?: string;
+  requires_approval: boolean;
+  auto_approval_limit?: number;
+  is_active: boolean;
+}

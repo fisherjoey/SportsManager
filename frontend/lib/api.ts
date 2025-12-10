@@ -2351,17 +2351,21 @@ class ApiClient {
     amount_min?: string;
     amount_max?: string;
     search?: string;
+    page?: number;
+    limit?: number;
   }) {
-    const queryString = params ? new URLSearchParams(params as Record<string, string>).toString() : ''
+    const queryString = params ? new URLSearchParams(
+      Object.entries(params)
+        .filter(([_, v]) => v !== undefined && v !== '')
+        .reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {})
+    ).toString() : ''
     return this.request<{
+      success: boolean;
       expenses: any[];
-      summary: {
-        total_pending: number;
-        overdue_count: number;
-        high_priority_count: number;
-        total_amount: number;
-      };
-    }>(`/expenses/pending-approval${queryString ? `?${queryString}` : ''}`)
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/expenses/pending${queryString ? `?${queryString}` : ''}`)
   }
 
   async approveExpense(expenseId: string, data: {
@@ -2381,8 +2385,8 @@ class ApiClient {
 
   async rejectExpense(expenseId: string, data: {
     decision: 'rejected';
-    rejection_reason: string;
-    notes?: string;
+    reason: string;
+    allow_resubmission: boolean;
   }) {
     return this.request<{
       success: boolean;
