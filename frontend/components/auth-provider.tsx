@@ -18,6 +18,7 @@ import type { PagePermission } from '@/lib/types'
 import { useToast } from '@/components/ui/use-toast'
 import PermissionUtils from '@/lib/permissions'
 import { getAuthToken, deleteAuthToken } from '@/lib/cookies'
+import { canAccessPage as checkPageAccess, PAGE_TO_PERMISSIONS } from '@/lib/page-permissions'
 
 /**
  * Type definition for the Authentication Context
@@ -329,10 +330,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true
     }
 
-    // Check page permissions map
-    const permission = pagePermissions.get(pageId)
-    return permission?.access ?? false
-  }, [user, isAuthenticated, pagePermissions])
+    // Derive page access from user permissions
+    // Convert permissions array to string array for checking
+    const userPermissionStrings = permissions.map(p =>
+      typeof p === 'string' ? p : (p.code || p.name || '')
+    ).filter(Boolean)
+
+    return checkPageAccess(pageId, userPermissionStrings)
+  }, [user, isAuthenticated, permissions])
 
   const refreshPagePermissions = useCallback(async (): Promise<void> => {
     await fetchPagePermissions()

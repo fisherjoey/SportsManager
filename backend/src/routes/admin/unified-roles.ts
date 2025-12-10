@@ -191,7 +191,13 @@ async function updateCerbosPermissions(roleName: string, permissions: string[]):
   const permissionsByResource = new Map<string, string[]>();
 
   for (const permission of permissions) {
-    const [resource, action] = permission.split(':');
+    // Split only on first colon to preserve nested actions like "view:list", "view:details"
+    const colonIndex = permission.indexOf(':');
+    if (colonIndex === -1) continue; // Skip invalid permissions
+
+    const resource = permission.substring(0, colonIndex);
+    const action = permission.substring(colonIndex + 1);
+
     if (!permissionsByResource.has(resource)) {
       permissionsByResource.set(resource, []);
     }
@@ -314,13 +320,12 @@ router.get('/',
       for (const roleName of cerbosRoles) {
         const metadata = metadataMap.get(roleName);
         const permissions = await getRolePermissions(roleName);
-        const pages = await cerbosAdmin.getRolePageAccess(roleName);
 
         unifiedRoles.push({
           name: roleName,
           description: metadata?.description || `${roleName} role`,
           permissions,
-          pages,
+          pages: [], // Page access is derived from permissions on frontend
           userCount: countMap.get(roleName) || 0,
           color: metadata?.color || '#6B7280',
           source: metadata ? 'both' : 'cerbos'
@@ -330,12 +335,11 @@ router.get('/',
       // Add any database-only roles (shouldn't exist, but handle gracefully)
       for (const dbRole of dbRoles) {
         if (!cerbosRoles.has(dbRole.name)) {
-          const pages = await cerbosAdmin.getRolePageAccess(dbRole.name);
           unifiedRoles.push({
             name: dbRole.name,
             description: dbRole.description || '',
             permissions: [],
-            pages,
+            pages: [], // Page access is derived from permissions on frontend
             userCount: countMap.get(dbRole.name) || 0,
             color: dbRole.color || '#6B7280',
             source: 'database'
@@ -446,14 +450,11 @@ router.get('/:name',
         .count('* as count')
         .first();
 
-      // Get pages from Cerbos
-      const pages = await cerbosAdmin.getRolePageAccess(name);
-
       const role: UnifiedRole = {
         name,
         description: dbRole?.description || `${name} role`,
         permissions,
-        pages,
+        pages: [], // Page access is derived from permissions on frontend
         userCount: parseInt(userCount?.count || '0'),
         color: dbRole?.color || '#6B7280',
         source: dbRole ? 'both' : 'cerbos'
@@ -514,10 +515,8 @@ router.post('/',
         await updateCerbosPermissions(name, permissions);
       }
 
-      // Save page access to Cerbos
-      if (pages && pages.length > 0) {
-        await cerbosAdmin.setRolePageAccess(name, pages);
-      }
+      // Note: Page access is now derived from permissions on the frontend
+      // No separate page access storage needed
 
       // Create role metadata in database
       const [newRole] = await (db as any)('roles')
@@ -585,10 +584,8 @@ router.put('/:name',
         await updateCerbosPermissions(name, permissions);
       }
 
-      // Update page access in Cerbos if provided
-      if (pages !== undefined) {
-        await cerbosAdmin.setRolePageAccess(name, pages);
-      }
+      // Note: Page access is now derived from permissions on the frontend
+      // No separate page access storage needed
 
       // Update or create metadata in database
       const existingRole = await (db as any)('roles')
@@ -622,11 +619,6 @@ router.put('/:name',
         ? permissions
         : await getRolePermissions(name);
 
-      // Get updated pages (either what was just saved or fetch from Cerbos)
-      const updatedPages = pages !== undefined
-        ? pages
-        : await cerbosAdmin.getRolePageAccess(name);
-
       res.json({
         success: true,
         data: {
@@ -634,7 +626,7 @@ router.put('/:name',
             name,
             description: description || existingRole?.description || `${name} role`,
             permissions: updatedPermissions,
-            pages: updatedPages,
+            pages: [], // Page access is derived from permissions on frontend
             color: color || existingRole?.color || '#6B7280',
             source: 'both'
           }

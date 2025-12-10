@@ -98,7 +98,13 @@ async function updateCerbosPoliciesForRole(roleName: string, permissions: string
     const permissionsByResource = new Map<string, string[]>();
 
     for (const permission of permissions) {
-      const [resource, action] = permission.split(':');
+      // Split only on first colon to preserve nested actions like "view:list", "view:details"
+      const colonIndex = permission.indexOf(':');
+      if (colonIndex === -1) continue; // Skip invalid permissions
+
+      const resource = permission.substring(0, colonIndex);
+      const action = permission.substring(colonIndex + 1);
+
       if (!permissionsByResource.has(resource)) {
         permissionsByResource.set(resource, []);
       }
@@ -474,11 +480,8 @@ router.put('/:roleId', authenticateToken, requireCerbosPermission({
     const { permissions, permission_ids, pages, ...roleData } = value as RoleUpdateData & { permissions?: string[]; permission_ids?: string[]; pages?: string[] };
     const role = await roleService.updateRole(roleId, roleData as any);
 
-    // Save page access to Cerbos
-    if (pages !== undefined) {
-      const roleCode = role.code || role.name.toLowerCase().replace(/\s+/g, '_');
-      await cerbosAdmin.setRolePageAccess(roleCode, pages);
-    }
+    // TODO: Page access is now derived from permissions on the frontend
+    // No separate page access storage needed
 
     // If permissions are provided, update Cerbos policies
     // Use role.code for Cerbos (e.g., 'admin') while role.name is display name (e.g., 'Admin')

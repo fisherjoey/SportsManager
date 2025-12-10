@@ -4,21 +4,18 @@
  * @fileoverview Role Access Service
  *
  * Manages access control for:
- * - Page/view access (via Cerbos)
+ * - Page/view access (DEPRECATED - now derived from permissions on frontend)
  * - API endpoint access (database)
  * - Feature flags (database)
  * - Data scopes (database)
  *
- * Page access control has been migrated to Cerbos resource policies.
+ * NOTE: Page access is now derived from role permissions on the frontend.
+ * The page access methods are kept for backwards compatibility but return empty data.
  */
 
 import db from '../config/database';
 import { createAuditLog, AUDIT_EVENTS  } from '../middleware/auditTrail';
 import CacheService from './CacheService';
-import CerbosPolicyAdminService from './CerbosPolicyAdminService';
-
-// Initialize Cerbos Admin API service
-const cerbosAdmin = new CerbosPolicyAdminService();
 
 class RoleAccessService {
   constructor() {
@@ -27,42 +24,18 @@ class RoleAccessService {
   }
 
   /**
-   * Get all page access settings for a role (from Cerbos)
+   * Get all page access settings for a role
+   *
+   * DEPRECATED: Page access is now derived from permissions on the frontend.
+   * This method is kept for backwards compatibility but returns empty data.
+   * Use the permission-based page access mapping on the frontend instead.
    */
   async getPageAccess(roleId) {
     try {
-      // First get the role name from the roleId
-      const role = await db('roles').where('id', roleId).first();
-      if (!role) {
-        return [];
-      }
-
-      const cacheKey = `${this.cachePrefix}pages:${role.name}`;
-      const cached = await CacheService.get(cacheKey);
-      if (cached) {return cached;}
-
-      // Get page IDs from Cerbos
-      const pageIds = await cerbosAdmin.getRolePageAccess(role.name);
-
-      // Get the page registry for metadata
-      const pageRegistry = await this.getPageRegistry();
-      const pageMap = new Map(pageRegistry.map(p => [p.path, p]));
-
-      // Build page access list with metadata
-      const pageAccess = pageIds.map(pageId => {
-        const pageInfo = pageMap.get(pageId);
-        return {
-          page_path: pageId,
-          page_name: pageInfo?.name || pageId,
-          page_category: pageInfo?.category || 'Other',
-          page_description: pageInfo?.description || '',
-          can_access: true,
-          conditions: null
-        };
-      });
-
-      await CacheService.set(cacheKey, pageAccess, this.cacheTTL);
-      return pageAccess;
+      // Page access is now derived from permissions on the frontend
+      // Return empty array for backwards compatibility
+      console.warn('DEPRECATED: getPageAccess() is deprecated. Page access is now derived from permissions on the frontend.');
+      return [];
     } catch (error) {
       console.error('Error getting page access:', error);
       throw error;
@@ -70,29 +43,18 @@ class RoleAccessService {
   }
 
   /**
-   * Set page access for a role (via Cerbos)
+   * Set page access for a role
+   *
+   * DEPRECATED: Page access is now derived from permissions on the frontend.
+   * This method is kept for backwards compatibility but is a no-op.
+   * Use permission management instead to control page access.
    */
   async setPageAccess(roleId, pageAccessList, userId) {
     try {
-      // First get the role name from the roleId
-      const role = await db('roles').where('id', roleId).first();
-      if (!role) {
-        throw new Error('Role not found');
-      }
-
-      // Extract page paths that have can_access = true
-      const allowedPages = pageAccessList
-        .filter(access => access.can_access)
-        .map(access => access.page_path);
-
-      // Update Cerbos policy
-      await cerbosAdmin.setRolePageAccess(role.name, allowedPages);
-
-      // Clear cache
-      await this.clearRoleCache(roleId);
-      await CacheService.del(`${this.cachePrefix}pages:${role.name}`);
-
-      return { success: true, message: 'Page access updated successfully' };
+      // Page access is now derived from permissions on the frontend
+      // This is a no-op for backwards compatibility
+      console.warn('DEPRECATED: setPageAccess() is deprecated. Page access is now derived from permissions on the frontend.');
+      return { success: true, message: 'Page access is now derived from permissions - no action needed' };
     } catch (error) {
       console.error('Error setting page access:', error);
       throw error;
@@ -270,7 +232,12 @@ class RoleAccessService {
   }
 
   /**
-   * Check if a user can access a specific page (via Cerbos)
+   * Check if a user can access a specific page
+   *
+   * DEPRECATED: Page access is now derived from permissions on the frontend.
+   * This method is kept for backwards compatibility.
+   * It returns true for super_admin/admin roles, false for others.
+   * Use the permission-based page access mapping on the frontend instead.
    */
   async checkPageAccess(userId, pagePath) {
     try {
@@ -300,15 +267,9 @@ class RoleAccessService {
         return true;
       }
 
-      // Check if any of the user's roles have access to this page via Cerbos
-      for (const role of userRoles) {
-        const rolePages = await cerbosAdmin.getRolePageAccess(role.name);
-        if (rolePages.includes(pagePath)) {
-          await CacheService.set(cacheKey, true, this.cacheTTL);
-          return true;
-        }
-      }
-
+      // Page access is now derived from permissions on the frontend
+      // Return false here - the frontend should use permission-based checks
+      console.warn('DEPRECATED: checkPageAccess() is deprecated. Page access should be derived from permissions on the frontend.');
       await CacheService.set(cacheKey, false, this.cacheTTL);
       return false;
     } catch (error) {

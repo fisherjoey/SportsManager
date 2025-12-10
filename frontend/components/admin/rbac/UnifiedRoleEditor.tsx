@@ -1,27 +1,29 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2, Shield, Users, Settings, FileText } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Shield, Users, Settings, FileText } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
+import { derivePageAccessFromPermissions, PAGE_TO_PERMISSIONS } from '@/lib/page-permissions'
 import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,
+  TabsTrigger
 } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -51,7 +53,7 @@ const PERMISSION_GROUPS = {
     { id: 'user:update', label: 'Update users' },
     { id: 'user:delete', label: 'Delete users' },
     { id: 'user:view:roles', label: 'View user roles' },
-    { id: 'user:manage', label: 'Manage all user operations' },
+    { id: 'user:manage', label: 'Manage all user operations' }
   ],
   'Role Management': [
     { id: 'role:view', label: 'View roles' },
@@ -60,7 +62,7 @@ const PERMISSION_GROUPS = {
     { id: 'role:create', label: 'Create roles' },
     { id: 'role:update', label: 'Update roles' },
     { id: 'role:delete', label: 'Delete roles' },
-    { id: 'role:manage', label: 'Manage all role operations' },
+    { id: 'role:manage', label: 'Manage all role operations' }
   ],
   'Game Management': [
     { id: 'game:view', label: 'View games' },
@@ -69,7 +71,7 @@ const PERMISSION_GROUPS = {
     { id: 'game:create', label: 'Create games' },
     { id: 'game:update', label: 'Update games' },
     { id: 'game:delete', label: 'Delete games' },
-    { id: 'game:manage', label: 'Manage all game operations' },
+    { id: 'game:manage', label: 'Manage all game operations' }
   ],
   'Assignment Management': [
     { id: 'assignment:view', label: 'View assignments' },
@@ -78,7 +80,7 @@ const PERMISSION_GROUPS = {
     { id: 'assignment:create', label: 'Create assignments' },
     { id: 'assignment:update', label: 'Update assignments' },
     { id: 'assignment:delete', label: 'Delete assignments' },
-    { id: 'assignment:self', label: 'Self-assign to games' },
+    { id: 'assignment:self', label: 'Self-assign to games' }
   ],
   'Referee Management': [
     { id: 'referee:view', label: 'View referees' },
@@ -87,7 +89,7 @@ const PERMISSION_GROUPS = {
     { id: 'referee:create', label: 'Create referee profiles' },
     { id: 'referee:update', label: 'Update referee profiles' },
     { id: 'referee:delete', label: 'Delete referee profiles' },
-    { id: 'referee:evaluate', label: 'Evaluate referees' },
+    { id: 'referee:evaluate', label: 'Evaluate referees' }
   ],
   'System Administration': [
     { id: 'system:admin', label: 'Full system administration' },
@@ -96,8 +98,8 @@ const PERMISSION_GROUPS = {
     { id: 'system:view:audit', label: 'View audit logs' },
     { id: 'cerbos_policy:view', label: 'View Cerbos policies' },
     { id: 'cerbos_policy:manage', label: 'Manage Cerbos policies' },
-    { id: 'organization:manage', label: 'Manage organization settings' },
-  ],
+    { id: 'organization:manage', label: 'Manage organization settings' }
+  ]
 }
 
 // Available pages grouped by category
@@ -109,21 +111,21 @@ const PAGE_GROUPS = {
     { id: 'admin_notifications_broadcast', label: 'Broadcast Notifications' },
     { id: 'admin_users', label: 'User Management' },
     { id: 'admin_roles', label: 'Role Management' },
-    { id: 'admin_settings', label: 'System Settings' },
+    { id: 'admin_settings', label: 'System Settings' }
   ],
   'Financial Pages': [
     { id: 'financial_dashboard', label: 'Financial Dashboard' },
     { id: 'financial_budgets', label: 'Budget Management' },
-    { id: 'budget', label: 'Budget Overview' },
+    { id: 'budget', label: 'Budget Overview' }
   ],
   'Core Pages': [
     { id: 'games', label: 'Games Management' },
     { id: 'resources', label: 'Resource Centre' },
-    { id: 'notifications', label: 'Notifications' },
+    { id: 'notifications', label: 'Notifications' }
   ],
   'Settings Pages': [
-    { id: 'settings_notifications', label: 'Notification Settings' },
-  ],
+    { id: 'settings_notifications', label: 'Notification Settings' }
+  ]
 }
 
 export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRoleEditorProps) {
@@ -132,14 +134,16 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#6B7280',
+    color: '#6B7280'
   })
   const [permissions, setPermissions] = useState<string[]>([])
-  const [selectedPages, setSelectedPages] = useState<string[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [availablePermissions, setAvailablePermissions] = useState<Record<string, string[]>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
+
+  // Derive accessible pages from selected permissions
+  const derivedPages = derivePageAccessFromPermissions(permissions)
 
   // Fetch available permissions from backend
   useEffect(() => {
@@ -170,10 +174,9 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
       setFormData({
         name: role.name,
         description: role.description || '',
-        color: role.color || '#6B7280',
+        color: role.color || '#6B7280'
       })
       setPermissions(role.permissions || [])
-      setSelectedPages(role.pages || [])
       // Expand groups that have selected permissions
       const groupsToExpand = new Set<string>()
       for (const [resource, perms] of Object.entries(availablePermissions)) {
@@ -186,10 +189,9 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
       setFormData({
         name: '',
         description: '',
-        color: '#6B7280',
+        color: '#6B7280'
       })
       setPermissions([])
-      setSelectedPages([])
       setExpandedGroups(new Set())
     }
   }, [role, availablePermissions])
@@ -221,10 +223,10 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
     try {
       if (role) {
         // Update existing role - don't send name field since it shouldn't change
+        // Note: pages are derived from permissions, so we don't send them separately
         const payload = {
           description: formData.description || `${formData.name} role`,
           permissions,
-          pages: selectedPages,
           color: formData.color
         }
 
@@ -232,23 +234,23 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
         await apiClient.updateUnifiedRole(role.id || role.name, payload)
         toast({
           title: 'Role Updated',
-          description: `Successfully updated role "${formData.name}" with ${permissions.length} permissions and ${selectedPages.length} pages`,
+          description: `Successfully updated role "${formData.name}" with ${permissions.length} permissions (grants access to ${derivedPages.length} pages)`,
           duration: 3000
         })
       } else {
         // Create new role - include name field and validate format
+        // Note: pages are derived from permissions, so we don't send them separately
         const payload = {
           name: formData.name,
           description: formData.description || `${formData.name} role`,
           permissions,
-          pages: selectedPages,
           color: formData.color
         }
 
         await apiClient.createUnifiedRole(payload)
         toast({
           title: 'Role Created',
-          description: `Successfully created role "${formData.name}" with ${permissions.length} permissions and ${selectedPages.length} pages`,
+          description: `Successfully created role "${formData.name}" with ${permissions.length} permissions (grants access to ${derivedPages.length} pages)`,
           duration: 3000
         })
       }
@@ -273,14 +275,6 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
       prev.includes(permissionId)
         ? prev.filter(p => p !== permissionId)
         : [...prev, permissionId]
-    )
-  }
-
-  const togglePage = (pageId: string) => {
-    setSelectedPages(prev =>
-      prev.includes(pageId)
-        ? prev.filter(p => p !== pageId)
-        : [...prev, pageId]
     )
   }
 
@@ -309,20 +303,6 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
     }
   }
 
-  const selectAllPagesInGroup = (group: string) => {
-    const groupPages = PAGE_GROUPS[group as keyof typeof PAGE_GROUPS]
-    const allGroupPageIds = groupPages.map(p => p.id)
-    const hasAll = allGroupPageIds.every(id => selectedPages.includes(id))
-
-    if (hasAll) {
-      // Deselect all in group
-      setSelectedPages(prev => prev.filter(p => !allGroupPageIds.includes(p)))
-    } else {
-      // Select all in group
-      setSelectedPages(prev => [...new Set([...prev, ...allGroupPageIds])])
-    }
-  }
-
   const getGroupSelectionState = (resource: string) => {
     const resourcePermissions = availablePermissions[resource] || []
     const selectedCount = resourcePermissions.filter(perm => permissions.includes(perm)).length
@@ -332,13 +312,10 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
     return 'some'
   }
 
-  const getPageGroupSelectionState = (group: string) => {
+  // Get derived page count for a group (read-only display)
+  const getDerivedPageCount = (group: string) => {
     const groupPages = PAGE_GROUPS[group as keyof typeof PAGE_GROUPS]
-    const selectedCount = groupPages.filter(p => selectedPages.includes(p.id)).length
-
-    if (selectedCount === 0) return 'none'
-    if (selectedCount === groupPages.length) return 'all'
-    return 'some'
+    return groupPages.filter(p => derivedPages.includes(p.id)).length
   }
 
   return (
@@ -367,7 +344,7 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
               </TabsTrigger>
               <TabsTrigger value="pages">
                 <FileText className="h-4 w-4 mr-2" />
-                Pages ({selectedPages.length})
+                Pages ({derivedPages.length})
               </TabsTrigger>
             </TabsList>
 
@@ -387,7 +364,7 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                       setFormData({ ...formData, name: e.target.value })
                     }
                   }}
-                  placeholder={role ? "" : "e.g., super_admin, referee_coordinator"}
+                  placeholder={role ? '' : 'e.g., super_admin, referee_coordinator'}
                   disabled={loading || !!role}
                   required
                 />
@@ -546,15 +523,17 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
 
             <TabsContent value="pages" className="mt-4">
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Control which pages users with this role can access in the application.
-                </p>
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Page access is derived from permissions.</strong> The pages shown below will be accessible based on the permissions selected in the Permissions tab. To change page access, add or remove the relevant permissions.
+                  </p>
+                </div>
 
-                <ScrollArea className="h-[400px] rounded-md border p-4">
+                <ScrollArea className="h-[350px] rounded-md border p-4">
                   <div className="space-y-4">
                     {Object.entries(PAGE_GROUPS).map(([group, groupPages]) => {
                       const isExpanded = expandedGroups.has(group)
-                      const selectionState = getPageGroupSelectionState(group)
+                      const accessibleCount = getDerivedPageCount(group)
 
                       return (
                         <div key={group} className="space-y-2">
@@ -568,41 +547,41 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                                 {isExpanded ? '▼' : '▶'}
                               </span>
                               {group}
-                              <Badge variant="outline" className="ml-1">
-                                {groupPages.filter(p => selectedPages.includes(p.id)).length}/{groupPages.length}
+                              <Badge variant={accessibleCount > 0 ? 'default' : 'outline'} className="ml-1">
+                                {accessibleCount}/{groupPages.length}
                               </Badge>
                             </button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => selectAllPagesInGroup(group)}
-                              className="text-xs"
-                            >
-                              {selectionState === 'all' ? 'Deselect All' : 'Select All'}
-                            </Button>
                           </div>
 
                           {isExpanded && (
                             <div className="ml-6 space-y-2">
-                              {groupPages.map((page) => (
-                                <label
-                                  key={page.id}
-                                  className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded-md transition-colors"
-                                >
-                                  <Checkbox
-                                    checked={selectedPages.includes(page.id)}
-                                    onCheckedChange={() => togglePage(page.id)}
-                                    disabled={loading}
-                                  />
-                                  <div className="flex-1">
-                                    <span className="text-sm">{page.label}</span>
-                                    <code className="ml-2 text-xs text-muted-foreground">
-                                      {page.id}
-                                    </code>
+                              {groupPages.map((page) => {
+                                const hasAccess = derivedPages.includes(page.id)
+                                const requiredPerms = PAGE_TO_PERMISSIONS[page.id] || []
+                                const grantingPerms = requiredPerms.filter(p => permissions.includes(p))
+
+                                return (
+                                  <div
+                                    key={page.id}
+                                    className={`flex items-center space-x-2 p-2 rounded-md ${hasAccess ? 'bg-green-50 dark:bg-green-950' : 'bg-gray-50 dark:bg-gray-900 opacity-60'}`}
+                                  >
+                                    <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                    <div className="flex-1">
+                                      <span className="text-sm">{page.label}</span>
+                                      {hasAccess && grantingPerms.length > 0 && (
+                                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                                          via {grantingPerms[0]}{grantingPerms.length > 1 ? ` +${grantingPerms.length - 1} more` : ''}
+                                        </span>
+                                      )}
+                                      {!hasAccess && (
+                                        <span className="ml-2 text-xs text-muted-foreground">
+                                          needs: {requiredPerms.slice(0, 2).join(' or ')}{requiredPerms.length > 2 ? '...' : ''}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                </label>
-                              ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>
@@ -613,8 +592,8 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
 
                 <div className="mt-4 p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    <strong>{selectedPages.length}</strong> page{selectedPages.length !== 1 ? 's' : ''} selected.
-                    These pages will be accessible to users with this role.
+                    <strong>{derivedPages.length}</strong> page{derivedPages.length !== 1 ? 's' : ''} accessible.
+                    Users with this role will be able to access these pages based on their permissions.
                   </p>
                 </div>
               </div>
