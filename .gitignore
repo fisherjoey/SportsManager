@@ -78,3 +78,7 @@ logs
 *storybook.log
 storybook-static
 .claude/settings.local.json
+
+# Git worktrees (Crystal)
+/worktrees/
+/worktree-*/
