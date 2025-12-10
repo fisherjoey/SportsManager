@@ -4115,6 +4115,136 @@ class ApiClient {
     return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`)
   }
 
+  /**
+   * Get current user's mentee profile (uses authenticated user's ID to find mentee record)
+   */
+  async getMyMenteeProfile(): Promise<ApiResponse<{
+    id: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    dateOfBirth?: string;
+    profilePhotoUrl?: string;
+    emergencyContact?: { name?: string; phone?: string };
+    address?: { street?: string; city?: string; provinceState?: string; postalZipCode?: string };
+    profile?: { currentLevel?: string; developmentGoals: string[]; strengths: string[]; areasForImprovement: string[] };
+    mentor?: { id: string; firstName: string; lastName: string; email: string; specialization?: string };
+    stats: { totalGames: number; completedGames: number; upcomingGames: number; mentorshipDays: number };
+    createdAt: string;
+    updatedAt: string;
+  }>> {
+    return this.get(`/mentees/me`)
+  }
+
+  /**
+   * Get mentee profile with stats
+   * @param menteeId - UUID of the mentee
+   */
+  async getMenteeProfile(menteeId: string): Promise<ApiResponse<{
+    id: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    dateOfBirth?: string;
+    profilePhotoUrl?: string;
+    emergencyContact?: { name?: string; phone?: string };
+    address?: { street?: string; city?: string; provinceState?: string; postalZipCode?: string };
+    profile?: { currentLevel?: string; developmentGoals: string[]; strengths: string[]; areasForImprovement: string[] };
+    mentor?: { id: string; firstName: string; lastName: string; email: string; specialization?: string };
+    stats: { totalGames: number; completedGames: number; upcomingGames: number; mentorshipDays: number };
+    createdAt: string;
+    updatedAt: string;
+  }>> {
+    return this.get(`/mentees/${menteeId}`)
+  }
+
+  /**
+   * Get mentee analytics (summary, by level, by month, recent activity)
+   * @param menteeId - UUID of the mentee
+   */
+  async getMenteeAnalytics(menteeId: string): Promise<ApiResponse<{
+    summary: { totalGames: number; completedGames: number; acceptanceRate: number; completionRate: number };
+    byLevel: Array<{ level: string; games: number; completed: number }>;
+    byMonth: Array<{ month: string; games: number; completed: number }>;
+    recentActivity: Array<{ date: string; action: string; details: string }>;
+  }>> {
+    return this.get(`/mentees/${menteeId}/analytics`)
+  }
+
+  /**
+   * Get current user's mentees (uses authenticated user's ID to find mentor record)
+   * @param params - Pagination and filter options
+   */
+  async getMyMentees(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'active' | 'completed' | 'paused' | 'terminated';
+  }): Promise<ApiResponse<{
+    mentorId: string;
+    mentees: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      profilePhotoUrl?: string;
+      currentLevel?: string;
+      assignmentStatus: string;
+      startDate: string;
+      endDate?: string;
+      stats: { totalGames: number; completedGames: number; upcomingGames: number };
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
+
+    const queryString = searchParams.toString()
+    return this.get(`/mentors/me/mentees${queryString ? `?${queryString}` : ''}`)
+  }
+
+  /**
+   * Get mentor's assigned mentees with stats
+   * @param mentorId - UUID of the mentor
+   * @param params - Pagination and filter options
+   */
+  async getMentorMentees(mentorId: string, params?: {
+    page?: number;
+    limit?: number;
+    status?: 'active' | 'completed' | 'paused' | 'terminated';
+  }): Promise<ApiResponse<{
+    mentees: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      profilePhotoUrl?: string;
+      currentLevel?: string;
+      assignmentStatus: string;
+      startDate: string;
+      endDate?: string;
+      stats: { totalGames: number; completedGames: number; upcomingGames: number };
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
+
+    const queryString = searchParams.toString()
+    return this.get(`/mentors/${mentorId}/mentees${queryString ? `?${queryString}` : ''}`)
+  }
+
   // ==================== CHUNK METHODS ====================
 
   /**

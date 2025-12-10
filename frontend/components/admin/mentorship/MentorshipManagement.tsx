@@ -11,7 +11,9 @@ import {
   Pause,
   Play,
   Search,
-  Filter
+  Filter,
+  Pencil,
+  Trash2
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,6 +62,11 @@ interface Mentorship {
   mentee_id: string
   mentor?: User
   mentee?: User
+  // Flat fields returned by API
+  mentor_name?: string
+  mentee_name?: string
+  mentor_email?: string
+  mentee_email?: string
   start_date: string
   end_date?: string
   status: 'active' | 'paused' | 'completed' | 'terminated'
@@ -73,6 +80,8 @@ export function MentorshipManagement() {
   const [mentees, setMentees] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingMentorship, setEditingMentorship] = useState<Mentorship | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [updatingMentorships, setUpdatingMentorships] = useState<Set<string>>(new Set())
@@ -83,6 +92,17 @@ export function MentorshipManagement() {
     mentor_id: '',
     mentee_id: '',
     start_date: new Date().toISOString().split('T')[0],
+    end_date: '',
+    notes: ''
+  })
+
+  // Form state for editing mentorship
+  const [editForm, setEditForm] = useState({
+    mentor_id: '',
+    mentee_id: '',
+    start_date: '',
+    end_date: '',
+    status: '' as 'active' | 'paused' | 'completed' | 'terminated' | '',
     notes: ''
   })
 
@@ -149,7 +169,16 @@ export function MentorshipManagement() {
         return
       }
 
-      const response = await apiClient.post('/mentorships', newMentorship)
+      // Build payload, only include end_date if it has a value
+      const payload = {
+        mentor_id: newMentorship.mentor_id,
+        mentee_id: newMentorship.mentee_id,
+        start_date: newMentorship.start_date,
+        notes: newMentorship.notes || undefined,
+        ...(newMentorship.end_date ? { end_date: newMentorship.end_date } : {})
+      }
+
+      const response = await apiClient.post('/mentorships', payload)
 
       toast({
         title: 'Success',
@@ -165,6 +194,7 @@ export function MentorshipManagement() {
         mentor_id: '',
         mentee_id: '',
         start_date: new Date().toISOString().split('T')[0],
+        end_date: '',
         notes: ''
       })
 
@@ -246,13 +276,125 @@ export function MentorshipManagement() {
     }
   }
 
+  const openEditDialog = (mentorship: Mentorship) => {
+    setEditingMentorship(mentorship)
+    setEditForm({
+      mentor_id: mentorship.mentor_id,
+      mentee_id: mentorship.mentee_id,
+      start_date: mentorship.start_date ? new Date(mentorship.start_date).toISOString().split('T')[0] : '',
+      end_date: mentorship.end_date ? new Date(mentorship.end_date).toISOString().split('T')[0] : '',
+      status: mentorship.status,
+      notes: mentorship.notes || ''
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const updateMentorship = async () => {
+    if (!editingMentorship) return
+
+    try {
+      setUpdatingMentorships(prev => new Set(prev).add(editingMentorship.id))
+
+      const payload: Record<string, any> = {}
+
+      // Only include changed fields
+      if (editForm.status && editForm.status !== editingMentorship.status) {
+        payload.status = editForm.status
+      }
+      if (editForm.start_date !== new Date(editingMentorship.start_date).toISOString().split('T')[0]) {
+        payload.start_date = editForm.start_date
+      }
+      if (editForm.end_date !== (editingMentorship.end_date ? new Date(editingMentorship.end_date).toISOString().split('T')[0] : '')) {
+        payload.end_date = editForm.end_date || null
+      }
+      if (editForm.notes !== (editingMentorship.notes || '')) {
+        payload.notes = editForm.notes || null
+      }
+
+      if (Object.keys(payload).length === 0) {
+        toast({
+          title: 'No Changes',
+          description: 'No changes were made to the mentorship',
+        })
+        setIsEditDialogOpen(false)
+        return
+      }
+
+      await apiClient.put(`/mentorships/${editingMentorship.id}`, payload)
+
+      toast({
+        title: 'Success',
+        description: 'Mentorship updated successfully'
+      })
+
+      await loadData()
+      setIsEditDialogOpen(false)
+      setEditingMentorship(null)
+
+    } catch (error: any) {
+      console.error('Failed to update mentorship:', error)
+      toast({
+        title: 'Error',
+        description: error.response?.data?.error || 'Failed to update mentorship',
+        variant: 'destructive'
+      })
+    } finally {
+      if (editingMentorship) {
+        setUpdatingMentorships(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(editingMentorship.id)
+          return newSet
+        })
+      }
+    }
+  }
+
+  const deleteMentorship = async (mentorshipId: string) => {
+    if (!confirm('Are you sure you want to delete this mentorship? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setUpdatingMentorships(prev => new Set(prev).add(mentorshipId))
+
+      await apiClient.delete(`/mentorships/${mentorshipId}`)
+
+      toast({
+        title: 'Success',
+        description: 'Mentorship deleted successfully'
+      })
+
+      await loadData()
+
+    } catch (error: any) {
+      console.error('Failed to delete mentorship:', error)
+      toast({
+        title: 'Error',
+        description: error.response?.data?.error || 'Failed to delete mentorship',
+        variant: 'destructive'
+      })
+    } finally {
+      setUpdatingMentorships(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(mentorshipId)
+        return newSet
+      })
+    }
+  }
+
   // Filter mentorships based on search and status
   const filteredMentorships = mentorships.filter(m => {
+    // Support both flat fields (from API) and nested objects
+    const mentorName = m.mentor_name || m.mentor?.name || ''
+    const menteeName = m.mentee_name || m.mentee?.name || ''
+    const mentorEmail = m.mentor_email || m.mentor?.email || ''
+    const menteeEmail = m.mentee_email || m.mentee?.email || ''
+
     const matchesSearch = searchQuery === '' ||
-      m.mentor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.mentee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.mentor?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.mentee?.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      mentorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      menteeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mentorEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      menteeEmail.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === 'all' || m.status === statusFilter
 
@@ -320,7 +462,7 @@ export function MentorshipManagement() {
                     <Label htmlFor="mentor">Select Mentor</Label>
                     <Select
                       value={newMentorship.mentor_id}
-                      onValueChange={(value) => setNewMentorship({ ...newMentorship, mentor_id: value })}
+                      onValueChange={(value: string) => setNewMentorship({ ...newMentorship, mentor_id: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a mentor..." />
@@ -344,7 +486,7 @@ export function MentorshipManagement() {
                     <Label htmlFor="mentee">Select Mentee</Label>
                     <Select
                       value={newMentorship.mentee_id}
-                      onValueChange={(value) => setNewMentorship({ ...newMentorship, mentee_id: value })}
+                      onValueChange={(value: string) => setNewMentorship({ ...newMentorship, mentee_id: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a mentee..." />
@@ -387,13 +529,25 @@ export function MentorshipManagement() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="start_date">Start Date</Label>
-                    <Input
-                      type="date"
-                      value={newMentorship.start_date}
-                      onChange={(e) => setNewMentorship({ ...newMentorship, start_date: e.target.value })}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start_date">Start Date</Label>
+                      <Input
+                        type="date"
+                        value={newMentorship.start_date}
+                        onChange={(e) => setNewMentorship({ ...newMentorship, start_date: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="end_date">End Date (Optional)</Label>
+                      <Input
+                        type="date"
+                        value={newMentorship.end_date}
+                        onChange={(e) => setNewMentorship({ ...newMentorship, end_date: e.target.value })}
+                        min={newMentorship.start_date}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -494,6 +648,7 @@ export function MentorshipManagement() {
                   <TableHead>Mentor</TableHead>
                   <TableHead>Mentee</TableHead>
                   <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -503,18 +658,23 @@ export function MentorshipManagement() {
                   <TableRow key={mentorship.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{mentorship.mentor?.name || 'Unknown'}</div>
-                        <div className="text-xs text-muted-foreground">{mentorship.mentor?.email}</div>
+                        <div className="font-medium">{mentorship.mentor_name || mentorship.mentor?.name || 'Unknown'}</div>
+                        <div className="text-xs text-muted-foreground">{mentorship.mentor_email || mentorship.mentor?.email}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{mentorship.mentee?.name || 'Unknown'}</div>
-                        <div className="text-xs text-muted-foreground">{mentorship.mentee?.email}</div>
+                        <div className="font-medium">{mentorship.mentee_name || mentorship.mentee?.name || 'Unknown'}</div>
+                        <div className="text-xs text-muted-foreground">{mentorship.mentee_email || mentorship.mentee?.email}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {new Date(mentorship.start_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {mentorship.end_date
+                        ? new Date(mentorship.end_date).toLocaleDateString()
+                        : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(mentorship.status)}
@@ -555,6 +715,7 @@ export function MentorshipManagement() {
                             variant="outline"
                             onClick={() => updateMentorshipStatus(mentorship.id, 'completed')}
                             disabled={updatingMentorships.has(mentorship.id)}
+                            title="Mark as completed"
                           >
                             {updatingMentorships.has(mentorship.id) ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -563,6 +724,25 @@ export function MentorshipManagement() {
                             )}
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditDialog(mentorship)}
+                          disabled={updatingMentorships.has(mentorship.id)}
+                          title="Edit mentorship"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteMentorship(mentorship.id)}
+                          disabled={updatingMentorships.has(mentorship.id)}
+                          className="text-destructive hover:text-destructive"
+                          title="Delete mentorship"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -572,6 +752,99 @@ export function MentorshipManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Mentorship Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Mentorship</DialogTitle>
+            <DialogDescription>
+              Update the mentorship details below
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Mentor</Label>
+              <div className="p-2 bg-muted rounded-md text-sm">
+                {editingMentorship?.mentor_name || editingMentorship?.mentor?.name || 'Unknown'}
+              </div>
+              <p className="text-xs text-muted-foreground">Mentor cannot be changed after creation</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Mentee</Label>
+              <div className="p-2 bg-muted rounded-md text-sm">
+                {editingMentorship?.mentee_name || editingMentorship?.mentee?.name || 'Unknown'}
+              </div>
+              <p className="text-xs text-muted-foreground">Mentee cannot be changed after creation</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_status">Status</Label>
+              <Select
+                value={editForm.status}
+                onValueChange={(value: string) => setEditForm({ ...editForm, status: value as 'active' | 'paused' | 'completed' | 'terminated' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_start_date">Start Date</Label>
+                <Input
+                  type="date"
+                  value={editForm.start_date}
+                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_end_date">End Date</Label>
+                <Input
+                  type="date"
+                  value={editForm.end_date}
+                  onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                  min={editForm.start_date}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_notes">Notes</Label>
+              <Input
+                placeholder="Add notes about this mentorship..."
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={updateMentorship}
+              disabled={editingMentorship ? updatingMentorships.has(editingMentorship.id) : false}
+            >
+              {editingMentorship && updatingMentorships.has(editingMentorship.id) ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

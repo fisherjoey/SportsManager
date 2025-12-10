@@ -77,6 +77,7 @@ import resourcesRoutes from './routes/resources';
 // Import mentorship routes
 import mentorshipRoutes from './routes/mentorships';
 import menteeGamesRoutes from './routes/mentee-games';
+import newMenteeRoutes, { mentorRoutes } from './routes/mentorship';
 
 // Import admin routes
 import adminRoleRoutes from './routes/admin/roles';
@@ -228,7 +229,9 @@ app.use('/api/resources', resourcesRoutes);
 
 // Mentorship routes
 app.use('/api/mentorships', mentorshipRoutes);
-app.use('/api/mentees', menteeGamesRoutes);
+app.use('/api/mentees', newMenteeRoutes);  // New mentee profile, games, analytics (takes priority)
+app.use('/api/mentees', menteeGamesRoutes); // Legacy mentee games routes
+app.use('/api/mentors', mentorRoutes);     // New mentor's mentees endpoint
 
 // Admin routes
 app.use('/api/admin/roles', adminRoleRoutes);

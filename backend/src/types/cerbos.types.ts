@@ -29,7 +29,8 @@ export type ResourceType =
   | 'financial_dashboard'
   | 'employee'
   | 'maintenance'
-  | 'page';
+  | 'page'
+  | 'mentorship';
 
 export type ResourceAction =
   | 'view'
@@ -101,7 +102,15 @@ export type ResourceAction =
   | 'view:stats'
   | 'manage'
   | 'accept'
-  | 'create:games';
+  | 'create:games'
+  | 'view:games'
+  | 'view:analytics'
+  | 'view:mentees'
+  | 'view:pending'
+  | 'view:categories'
+  | 'view:vendors'
+  | 'view:policies'
+  | 'update:policy';
 
 export interface CerbosPrincipal {
   id: string;

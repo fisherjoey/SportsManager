@@ -634,6 +634,7 @@ export const MentorshipSchemas = {
     mentor_id: BaseSchemas.id,
     mentee_id: BaseSchemas.id,
     start_date: Joi.date().iso().required(),
+    end_date: BaseSchemas.optionalDate,
     notes: BaseSchemas.notes
   }),
 
@@ -642,8 +643,9 @@ export const MentorshipSchemas = {
    */
   update: Joi.object({
     status: Joi.string().valid('active', 'paused', 'completed', 'terminated').optional(),
-    notes: BaseSchemas.notes,
-    end_date: BaseSchemas.optionalDate
+    start_date: Joi.date().iso().optional(),
+    end_date: BaseSchemas.optionalDate,
+    notes: BaseSchemas.notes
   }),
 
   /**

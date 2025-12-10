@@ -23,6 +23,7 @@ interface MentorshipData {
   mentor_id: string;
   mentee_id: string;
   start_date: string;
+  end_date?: string;
   notes?: string;
 }
 
@@ -125,7 +126,7 @@ class MentorshipService extends BaseService {
     options: CreateMentorshipOptions = {}
   ): Promise<MentorshipRecord> {
     try {
-      const { mentor_id, mentee_id, start_date, notes } = mentorshipData;
+      const { mentor_id, mentee_id, start_date, end_date, notes } = mentorshipData;
 
       // Validate required fields
       if (!mentor_id || !mentee_id || !start_date) {
@@ -150,6 +151,7 @@ class MentorshipService extends BaseService {
         mentor_id,
         mentee_id,
         start_date,
+        end_date: end_date || null,
         status: 'active',
         notes: notes || null
       };

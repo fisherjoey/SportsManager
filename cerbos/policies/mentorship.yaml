@@ -3,18 +3,25 @@ apiVersion: api.cerbos.dev/v1
 resourcePolicy:
   version: "default"
   resource: "mentorship"
+  importDerivedRoles:
+    - common_roles
   rules:
     # Super Admin has full access to all actions
     - actions: ['*']
       effect: EFFECT_ALLOW
       roles:
         - super_admin
+      name: super-admin-full-access
+
     # Admin has specific permissions
     - actions:
         - view
         - view:list
         - view:details
         - view:stats
+        - view:games
+        - view:analytics
+        - view:mentees
         - create
         - update
         - delete
@@ -22,3 +29,54 @@ resourcePolicy:
       effect: EFFECT_ALLOW
       roles:
         - admin
+      name: admin-full-access
+
+    # Mentorship coordinators can view all mentorship data
+    - actions:
+        - view
+        - view:list
+        - view:details
+        - view:games
+        - view:analytics
+        - view:mentees
+      effect: EFFECT_ALLOW
+      roles:
+        - mentorship_coordinator
+      name: coordinator-view-access
+
+    # Mentors can view their own mentees
+    - actions:
+        - view
+        - view:games
+        - view:analytics
+        - view:mentees
+      effect: EFFECT_ALLOW
+      roles:
+        - mentor
+      derivedRoles:
+        - owner
+      name: mentor-view-own-mentees
+
+    # Mentees can view their own profile and data
+    - actions:
+        - view
+        - view:games
+        - view:analytics
+      effect: EFFECT_ALLOW
+      roles:
+        - mentee
+        - referee
+        - junior_referee
+      derivedRoles:
+        - owner
+      name: mentee-view-own-data
+
+    # Assignment managers can view mentorship for assignment purposes
+    - actions:
+        - view
+        - view:games
+      effect: EFFECT_ALLOW
+      roles:
+        - assignor
+        - assignment_manager
+      name: assignor-view-for-assignments

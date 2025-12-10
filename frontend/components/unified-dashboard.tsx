@@ -33,6 +33,7 @@ import { AvailabilityCalendar } from '@/components/availability-calendar'
 import { ExpenseFormIntegrated } from '@/components/expense-form-integrated'
 import { ExpenseListEnhanced } from '@/components/expense-list-enhanced'
 import { UnifiedAccessControlDashboard } from '@/components/admin/access-control/UnifiedAccessControlDashboard'
+import { MentorshipManagement } from '@/components/admin/mentorship/MentorshipManagement'
 
 export function UnifiedDashboard() {
   const router = useRouter()
@@ -138,6 +139,8 @@ export function UnifiedDashboard() {
     case 'profile': return 'Profile Settings'
     case 'organization-settings': return 'Organization Settings'
     case 'admin-access-control': return 'Access Control'
+    case '/mentorship': return 'Mentorship'
+    case 'mentorship': return 'Mentorship'
     default: return 'Dashboard'
     }
   }
@@ -256,7 +259,12 @@ export function UnifiedDashboard() {
       return <OrganizationSettings />
     case 'admin-access-control':
       return <UnifiedAccessControlDashboard />
-      
+
+      // Mentorship
+    case '/mentorship':
+    case 'mentorship':
+      return <MentorshipManagement />
+
       // Financial Management - Coming Soon
     case 'financial-dashboard':
     case 'financial-receipts':

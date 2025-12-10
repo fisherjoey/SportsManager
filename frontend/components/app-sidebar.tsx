@@ -224,13 +224,18 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     },
     {
       title: 'AI Assignments',
-      url: 'ai-assignments', 
+      url: 'ai-assignments',
       icon: Bot
     },
     {
       title: 'Referee Management',
       url: 'referees',
       icon: Users
+    },
+    {
+      title: 'Mentorship',
+      url: 'mentorship',
+      icon: UserCheck
     }
   ]
 
