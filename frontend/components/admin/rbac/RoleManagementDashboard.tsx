@@ -1,17 +1,20 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Plus, Shield, Users, AlertCircle } from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
-import { Plus, Shield, Users, AlertCircle } from 'lucide-react'
+import { apiClient } from '@/lib/api'
+
 import { UnifiedRoleEditor } from './UnifiedRoleEditor'
 import { RoleCard } from './RoleCard'
 import { PermissionMatrix } from './PermissionMatrix'
 import { UserRoleManager } from './UserRoleManager'
-import { apiClient } from '@/lib/api'
+
 
 interface Role {
   id: string
@@ -38,16 +41,16 @@ export function RoleManagementDashboard() {
 
   const fetchRoles = async () => {
     try {
-      console.log('Fetching roles from /api/admin/unified-roles');
-      console.log('Token:', localStorage.getItem('auth_token')?.substring(0, 20) + '...');
+      console.log('Fetching roles from /api/admin/unified-roles')
+      console.log('Token:', localStorage.getItem('auth_token')?.substring(0, 20) + '...')
 
       // Fetch all unified roles (includes permissions from Cerbos)
       const data = await apiClient.getUnifiedRoles()
-      console.log('Unified roles data:', data);
+      console.log('Unified roles data:', data)
 
       // Transform unified roles to match existing role structure
-      const rolesArray = data.data?.roles || data.roles || [];
-      console.log('Roles array to transform:', rolesArray);
+      const rolesArray = data.data?.roles || data.roles || []
+      console.log('Roles array to transform:', rolesArray)
 
       const transformedRoles = rolesArray.map(role => ({
         ...role,
@@ -57,7 +60,7 @@ export function RoleManagementDashboard() {
         permission_count: role.permission_count || role.permissionCount || 0 // Add permission_count field
       }))
 
-      console.log('Transformed roles:', transformedRoles);
+      console.log('Transformed roles:', transformedRoles)
       setRoles(transformedRoles)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load roles'

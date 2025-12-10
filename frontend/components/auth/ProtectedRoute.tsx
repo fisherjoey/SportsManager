@@ -12,11 +12,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { Loader2, ShieldOff, Home, LogIn, AlertCircle } from 'lucide-react'
+
 import { useAuth } from '@/components/auth-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, ShieldOff, Home, LogIn, AlertCircle } from 'lucide-react'
 
 interface ProtectedRouteProps {
   children: React.ReactNode

@@ -1,47 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/components/ui/use-toast'
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu'
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { 
   Upload,
   Download,
@@ -62,6 +21,48 @@ import {
   User,
   Tag
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/use-toast'
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu'
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
 import { apiClient } from '@/lib/api'
 import { MenteeDocument, type DocumentCategory } from '@/types/mentorship'
 
@@ -109,7 +110,7 @@ export function DocumentManager({
     if (file) {
       setUploadForm({
         ...uploadForm,
-        title: uploadForm.title || file.name.replace(/\.[^/.]+$/, ""), // Remove extension for title
+        title: uploadForm.title || file.name.replace(/\.[^/.]+$/, '') // Remove extension for title
       })
     }
   }
@@ -148,8 +149,8 @@ export function DocumentManager({
 
       const response = await apiClient.post('/mentee-documents', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'multipart/form-data'
+        }
       })
 
       if (response.data) {
@@ -186,7 +187,7 @@ export function DocumentManager({
   const handleDownload = async (document: MenteeDocument) => {
     try {
       const response = await apiClient.get(`/mentee-documents/${document.id}/download`, {
-        responseType: 'blob',
+        responseType: 'blob'
       })
       
       const url = window.URL.createObjectURL(new Blob([response.data]))

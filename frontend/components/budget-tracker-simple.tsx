@@ -1,10 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge' 
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   DollarSign,
   TrendingUp, 
@@ -24,6 +20,11 @@ import {
   YAxis,
   CartesianGrid
 } from 'recharts'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge' 
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 

@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/nextjs'
 
 // Initialize Sentry (called in _app.tsx or app/layout.tsx)
 export function initMonitoring() {
@@ -10,11 +10,11 @@ export function initMonitoring() {
       beforeSend(event, hint) {
         // Don't send events in development unless explicitly enabled
         if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_SENTRY_DEBUG) {
-          return null;
+          return null
         }
-        return event;
-      },
-    });
+        return event
+      }
+    })
   }
 }
 
@@ -29,7 +29,7 @@ export function trackCriticalAction(action: string, data?: Record<string, any>) 
     'payment_initiated',
     'profile_updated',
     'availability_changed'
-  ];
+  ]
 
   if (criticalActions.includes(action)) {
     // Send to Sentry as breadcrumb
@@ -39,12 +39,12 @@ export function trackCriticalAction(action: string, data?: Record<string, any>) 
         message: action,
         level: 'info',
         data
-      });
+      })
     }
 
     // Also log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('CRITICAL_ACTION:', action, data);
+      console.log('CRITICAL_ACTION:', action, data)
     }
   }
 }
@@ -54,11 +54,11 @@ export function logError(error: Error, context?: Record<string, any>) {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.captureException(error, {
       extra: context
-    });
+    })
   }
 
   // Always log to console
-  console.error('APPLICATION_ERROR:', error, context);
+  console.error('APPLICATION_ERROR:', error, context)
 }
 
 // Track performance issues
@@ -68,10 +68,10 @@ export function trackPerformance(operation: string, duration: number) {
       Sentry.captureMessage(`Slow operation: ${operation}`, {
         level: 'warning',
         extra: { duration }
-      });
+      })
     }
 
-    console.warn(`SLOW_OPERATION: ${operation} took ${duration}ms`);
+    console.warn(`SLOW_OPERATION: ${operation} took ${duration}ms`)
   }
 }
 
@@ -83,7 +83,7 @@ export function trackPageView(path: string, userId?: string) {
       message: `Page view: ${path}`,
       level: 'info',
       data: { userId }
-    });
+    })
   }
 }
 
@@ -95,9 +95,9 @@ export function setUserContext(user: { id: string; email: string; role: string }
         id: user.id,
         email: user.email,
         role: user.role
-      });
+      })
     } else {
-      Sentry.setUser(null);
+      Sentry.setUser(null)
     }
   }
 }

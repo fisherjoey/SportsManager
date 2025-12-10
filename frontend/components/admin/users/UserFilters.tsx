@@ -1,4 +1,6 @@
-"use client"
+'use client'
+
+import { Search, Filter, X, Download } from 'lucide-react'
 
 import { Input } from '@/components/ui/input'
 import {
@@ -6,10 +8,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, X, Download } from 'lucide-react'
 
 interface UserFiltersProps {
   filters: {

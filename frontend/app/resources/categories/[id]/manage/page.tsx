@@ -3,23 +3,6 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Breadcrumb,
-  BreadcrumbEllipsis,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
 import { 
   ArrowLeft,
   Settings,
@@ -35,6 +18,24 @@ import {
   Lock,
   Eye
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 // Import our new components
@@ -279,18 +280,18 @@ function ActivityFeed({ categoryId }: { categoryId: string }) {
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'upload':
-        return <FileText className="h-4 w-4 text-green-600" />
-      case 'download':
-        return <Activity className="h-4 w-4 text-blue-600" />
-      case 'permission_change':
-        return <Shield className="h-4 w-4 text-orange-600" />
-      case 'manager_added':
-        return <Users className="h-4 w-4 text-purple-600" />
-      case 'manager_removed':
-        return <Users className="h-4 w-4 text-red-600" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
+    case 'upload':
+      return <FileText className="h-4 w-4 text-green-600" />
+    case 'download':
+      return <Activity className="h-4 w-4 text-blue-600" />
+    case 'permission_change':
+      return <Shield className="h-4 w-4 text-orange-600" />
+    case 'manager_added':
+      return <Users className="h-4 w-4 text-purple-600" />
+    case 'manager_removed':
+      return <Users className="h-4 w-4 text-red-600" />
+    default:
+      return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
 
@@ -381,27 +382,27 @@ export default function CategoryManagePage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'inactive':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />
-      case 'archived':
-        return <AlertCircle className="h-4 w-4 text-red-600" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />
+    case 'active':
+      return <CheckCircle className="h-4 w-4 text-green-600" />
+    case 'inactive':
+      return <AlertCircle className="h-4 w-4 text-yellow-600" />
+    case 'archived':
+      return <AlertCircle className="h-4 w-4 text-red-600" />
+    default:
+      return <AlertCircle className="h-4 w-4 text-gray-600" />
     }
   }
 
   const getVisibilityIcon = (visibility: string) => {
     switch (visibility) {
-      case 'public':
-        return <Globe className="h-4 w-4 text-blue-600" />
-      case 'restricted':
-        return <Shield className="h-4 w-4 text-orange-600" />
-      case 'private':
-        return <Lock className="h-4 w-4 text-red-600" />
-      default:
-        return <Globe className="h-4 w-4 text-gray-600" />
+    case 'public':
+      return <Globe className="h-4 w-4 text-blue-600" />
+    case 'restricted':
+      return <Shield className="h-4 w-4 text-orange-600" />
+    case 'private':
+      return <Lock className="h-4 w-4 text-red-600" />
+    default:
+      return <Globe className="h-4 w-4 text-gray-600" />
     }
   }
 

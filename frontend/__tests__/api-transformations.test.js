@@ -1,15 +1,15 @@
-import { ApiClient } from '../lib/api'
+import { ApiClient } from '../lib/api';
 
 // Mock fetch globally
-global.fetch = jest.fn()
+global.fetch = jest.fn();
 
 describe('API Data Transformations', () => {
-  let apiClient
-  
+  let apiClient;
+
   beforeEach(() => {
-    apiClient = new ApiClient('http://localhost:3001/api')
-    fetch.mockClear()
-  })
+    apiClient = new ApiClient('http://localhost:3001/api');
+    fetch.mockClear();
+  });
 
   describe('getReferees data transformation', () => {
     test('transforms backend referee data to frontend format correctly', async () => {
@@ -23,25 +23,29 @@ describe('API Data Transformations', () => {
             level: 'Elite',
             location: 'Northwest Calgary',
             is_available: true,
-            certifications: ['NCCP Level 3 Basketball', 'Basketball Canada Certified'],
+            certifications: [
+              'NCCP Level 3 Basketball',
+              'Basketball Canada Certified',
+            ],
             preferred_positions: ['Lead Official', 'Center Official'],
             wage_per_game: '85.00',
-            notes: '3 years officiating basketball in Northwest Basketball Association',
+            notes:
+              '3 years officiating basketball in Northwest Basketball Association',
             max_distance: 15,
             postal_code: 'T2J 5W7',
             created_at: '2025-01-01T00:00:00Z',
-            updated_at: '2025-01-01T00:00:00Z'
-          }
+            updated_at: '2025-01-01T00:00:00Z',
+          },
         ],
-        pagination: { page: 1, limit: 50 }
-      }
+        pagination: { page: 1, limit: 50 },
+      };
 
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockBackendResponse
-      })
+        json: async () => mockBackendResponse,
+      });
 
-      const result = await apiClient.getReferees()
+      const result = await apiClient.getReferees();
 
       expect(result).toEqual({
         success: true,
@@ -56,20 +60,24 @@ describe('API Data Transformations', () => {
               certificationLevel: 'Elite',
               location: 'Northwest Calgary',
               isAvailable: true,
-              certifications: ['NCCP Level 3 Basketball', 'Basketball Canada Certified'],
+              certifications: [
+                'NCCP Level 3 Basketball',
+                'Basketball Canada Certified',
+              ],
               preferredPositions: ['Lead Official', 'Center Official'],
               wagePerGame: '85.00',
-              notes: '3 years officiating basketball in Northwest Basketball Association',
+              notes:
+                '3 years officiating basketball in Northwest Basketball Association',
               maxDistance: 15,
               postalCode: 'T2J 5W7',
               createdAt: '2025-01-01T00:00:00Z',
-              updatedAt: '2025-01-01T00:00:00Z'
-            }
+              updatedAt: '2025-01-01T00:00:00Z',
+            },
           ],
-          pagination: { page: 1, limit: 50 }
-        }
-      })
-    })
+          pagination: { page: 1, limit: 50 },
+        },
+      });
+    });
 
     test('handles missing optional fields gracefully', async () => {
       const mockBackendResponse = {
@@ -89,18 +97,18 @@ describe('API Data Transformations', () => {
             max_distance: null,
             postal_code: null,
             created_at: '2025-01-01T00:00:00Z',
-            updated_at: '2025-01-01T00:00:00Z'
-          }
+            updated_at: '2025-01-01T00:00:00Z',
+          },
         ],
-        pagination: { page: 1, limit: 50 }
-      }
+        pagination: { page: 1, limit: 50 },
+      };
 
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockBackendResponse
-      })
+        json: async () => mockBackendResponse,
+      });
 
-      const result = await apiClient.getReferees()
+      const result = await apiClient.getReferees();
 
       expect(result.data.referees[0]).toEqual(
         expect.objectContaining({
@@ -109,33 +117,36 @@ describe('API Data Transformations', () => {
           wagePerGame: null,
           notes: null,
           maxDistance: null,
-          postalCode: null
+          postalCode: null,
         })
-      )
-    })
+      );
+    });
 
     test('transforms search and filter parameters correctly', async () => {
-      const mockBackendResponse = { data: [], pagination: { page: 1, limit: 50 } }
-      
+      const mockBackendResponse = {
+        data: [],
+        pagination: { page: 1, limit: 50 },
+      };
+
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockBackendResponse
-      })
+        json: async () => mockBackendResponse,
+      });
 
       await apiClient.getReferees({
         certificationLevel: 'Elite',
         available: true,
         search: 'Mike',
         page: 2,
-        limit: 25
-      })
+        limit: 25,
+      });
 
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:3001/api/referees?level=Elite&available=true&search=Mike&page=2&limit=25',
         expect.any(Object)
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('getSingleReferee data transformation', () => {
     test('transforms single referee response correctly', async () => {
@@ -157,17 +168,17 @@ describe('API Data Transformations', () => {
             max_distance: 15,
             postal_code: 'T2J 5W7',
             created_at: '2025-01-01T00:00:00Z',
-            updated_at: '2025-01-01T00:00:00Z'
-          }
-        }
-      }
+            updated_at: '2025-01-01T00:00:00Z',
+          },
+        },
+      };
 
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockBackendResponse
-      })
+        json: async () => mockBackendResponse,
+      });
 
-      const result = await apiClient.getReferee('ref-1')
+      const result = await apiClient.getReferee('ref-1');
 
       expect(result).toEqual({
         success: true,
@@ -188,12 +199,12 @@ describe('API Data Transformations', () => {
             maxDistance: 15,
             postalCode: 'T2J 5W7',
             createdAt: '2025-01-01T00:00:00Z',
-            updatedAt: '2025-01-01T00:00:00Z'
-          }
-        }
-      })
-    })
-  })
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+      });
+    });
+  });
 
   describe('getAvailableReferees data transformation', () => {
     test('transforms available referees list correctly', async () => {
@@ -213,16 +224,16 @@ describe('API Data Transformations', () => {
           max_distance: 15,
           postal_code: 'T2J 5W7',
           created_at: '2025-01-01T00:00:00Z',
-          updated_at: '2025-01-01T00:00:00Z'
-        }
-      ]
+          updated_at: '2025-01-01T00:00:00Z',
+        },
+      ];
 
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockBackendResponse
-      })
+        json: async () => mockBackendResponse,
+      });
 
-      const result = await apiClient.getAvailableReferees('game-1')
+      const result = await apiClient.getAvailableReferees('game-1');
 
       expect(result).toEqual([
         {
@@ -241,11 +252,11 @@ describe('API Data Transformations', () => {
           maxDistance: 15,
           postalCode: 'T2J 5W7',
           createdAt: '2025-01-01T00:00:00Z',
-          updatedAt: '2025-01-01T00:00:00Z'
-        }
-      ])
-    })
-  })
+          updatedAt: '2025-01-01T00:00:00Z',
+        },
+      ]);
+    });
+  });
 
   describe('error handling', () => {
     test('handles API errors gracefully', async () => {
@@ -253,16 +264,16 @@ describe('API Data Transformations', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: async () => ({ error: 'Server error' })
-      })
+        json: async () => ({ error: 'Server error' }),
+      });
 
-      await expect(apiClient.getReferees()).rejects.toThrow()
-    })
+      await expect(apiClient.getReferees()).rejects.toThrow();
+    });
 
     test('handles network errors gracefully', async () => {
-      fetch.mockRejectedValueOnce(new Error('Network error'))
+      fetch.mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(apiClient.getReferees()).rejects.toThrow('Network error')
-    })
-  })
-})
+      await expect(apiClient.getReferees()).rejects.toThrow('Network error');
+    });
+  });
+});

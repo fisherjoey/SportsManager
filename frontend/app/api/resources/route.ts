@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+
+import { NextResponse } from 'next/server'
 import matter from 'gray-matter'
 
 export interface ResourceItem {
@@ -46,7 +47,7 @@ export async function GET() {
           url: data.url,
           downloadUrl: data.downloadUrl,
           lastUpdated: data.lastUpdated || new Date().toISOString().split('T')[0],
-          isNew: data.isNew || false,
+          isNew: data.isNew || false
         } as ResourceItem
       })
 

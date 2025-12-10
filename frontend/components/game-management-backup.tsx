@@ -1,37 +1,37 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState, useEffect } from 'react'
+import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Plus, Users, MapPin, Calendar, Clock, Eye, Edit, Trash2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
-import { FilterableTable, type ColumnDef } from "@/components/ui/filterable-table"
-import { mockGames, mockReferees, type Game, type Referee } from "@/lib/mock-data"
-import { formatTeamName, formatGameMatchup } from "@/lib/team-utils"
-import { PageLayout } from "@/components/ui/page-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { StatsGrid } from "@/components/ui/stats-grid"
-import { GameFilters, applyGameFilters, type ActiveFilters } from "@/components/ui/game-filters"
+  SelectValue
+} from '@/components/ui/select'
+import { useToast } from '@/components/ui/use-toast'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+import { mockGames, mockReferees, type Game, type Referee } from '@/lib/mock-data'
+import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
+import { PageLayout } from '@/components/ui/page-layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
 
 export function GameManagement() {
   const [games, setGames] = useState<Game[]>([])
@@ -59,9 +59,9 @@ export function GameManagement() {
       } catch (error) {
         console.error('Error loading games:', error)
         toast({
-          title: "Error",
-          description: "Failed to load games.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load games.',
+          variant: 'destructive'
         })
       } finally {
         setLoading(false)
@@ -76,14 +76,14 @@ export function GameManagement() {
     const newGame = {
       id: (games.length + 1).toString(),
       ...gameData,
-      status: "unassigned" as const,
-      assignedReferees: [],
+      status: 'unassigned' as const,
+      assignedReferees: []
     }
     setGames([...games, newGame])
     setIsCreateDialogOpen(false)
     toast({
-      title: "Game created",
-      description: "New game has been added successfully.",
+      title: 'Game created',
+      description: 'New game has been added successfully.'
     })
   }
 
@@ -94,9 +94,9 @@ export function GameManagement() {
     const targetGame = games.find(g => g.id === gameId)
     if (!targetGame) {
       toast({
-        title: "Error",
-        description: "Game not found.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Game not found.',
+        variant: 'destructive'
       })
       return
     }
@@ -107,9 +107,9 @@ export function GameManagement() {
     // Check if game is already full
     if (currentReferees.length >= refsNeeded) {
       toast({
-        title: "Error",
+        title: 'Error',
         description: `Game already has the maximum number of referees (${refsNeeded}).`,
-        variant: "destructive",
+        variant: 'destructive'
       })
       return
     }
@@ -118,9 +118,9 @@ export function GameManagement() {
     const referee = mockReferees.find((r) => r.id === refereeId)
     if (!referee) {
       toast({
-        title: "Error",
-        description: "Referee not found.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Referee not found.',
+        variant: 'destructive'
       })
       return
     }
@@ -137,7 +137,7 @@ export function GameManagement() {
           return {
             ...game,
             assignedReferees: updatedReferees,
-            status: updatedReferees.length >= newRefsNeeded ? "assigned" : "partial" as const,
+            status: updatedReferees.length >= newRefsNeeded ? 'assigned' : 'partial' as const
           }
         }
         return game
@@ -145,8 +145,8 @@ export function GameManagement() {
     )
 
     toast({
-      title: "Referee assigned",
-      description: `${referee.name} has been assigned to the game.`,
+      title: 'Referee assigned',
+      description: `${referee.name} has been assigned to the game.`
     })
     
     // Close the assign dialog
@@ -154,10 +154,10 @@ export function GameManagement() {
   }
 
   const handleMarkUpForGrabs = (gameId: string) => {
-    setGames(games.map((game) => (game.id === gameId ? { ...game, status: "up-for-grabs" as const } : game)))
+    setGames(games.map((game) => (game.id === gameId ? { ...game, status: 'up-for-grabs' as const } : game)))
     toast({
-      title: "Game marked as available",
-      description: "Game is now available for referees to pick up.",
+      title: 'Game marked as available',
+      description: 'Game is now available for referees to pick up.'
     })
   }
 
@@ -170,8 +170,8 @@ export function GameManagement() {
     }))
     
     toast({
-      title: "Game updated",
-      description: `${field} has been updated successfully.`,
+      title: 'Game updated',
+      description: `${field} has been updated successfully.`
     })
   }
 
@@ -187,15 +187,15 @@ export function GameManagement() {
       setGames(prevGames => [...prevGames, ...newGames])
       
       toast({
-        title: "Games imported successfully",
-        description: `Imported ${newGames.length} new games from CSV file.`,
+        title: 'Games imported successfully',
+        description: `Imported ${newGames.length} new games from CSV file.`
       })
     } catch (error) {
       console.error('Import error:', error)
       toast({
-        title: "Import failed",
-        description: "There was an error importing the games.",
-        variant: "destructive",
+        title: 'Import failed',
+        description: 'There was an error importing the games.',
+        variant: 'destructive'
       })
     }
   }
@@ -206,25 +206,25 @@ export function GameManagement() {
   // Stats for the games overview (based on filtered games)
   const stats = [
     {
-      title: "Total Games",
+      title: 'Total Games',
       value: filteredGames.length,
       icon: Calendar,
-      color: "text-blue-600",
+      color: 'text-blue-600'
     },
     {
-      title: "Unassigned",
-      value: filteredGames.filter((g) => g.status === "unassigned").length,
+      title: 'Unassigned',
+      value: filteredGames.filter((g) => g.status === 'unassigned').length,
       icon: Clock,
-      color: "text-red-600",
+      color: 'text-red-600'
     },
     {
-      title: "Assigned",
-      value: filteredGames.filter((g) => g.status === "assigned").length,
+      title: 'Assigned',
+      value: filteredGames.filter((g) => g.status === 'assigned').length,
       icon: Users,
-      color: "text-green-600",
+      color: 'text-green-600'
     },
     {
-      title: "This Week",
+      title: 'This Week',
       value: filteredGames.filter((g) => {
         const gameDate = new Date(g.date)
         const now = new Date()
@@ -232,8 +232,8 @@ export function GameManagement() {
         return gameDate >= now && gameDate <= weekFromNow
       }).length,
       icon: Calendar,
-      color: "text-purple-600",
-    },
+      color: 'text-purple-600'
+    }
   ]
 
   // Column definitions for the games table - simplified layout as requested
@@ -411,14 +411,14 @@ export function GameManagement() {
         <DialogTrigger asChild>
           <div></div>
         </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Game</DialogTitle>
-                  <DialogDescription>Add a new game to the system.</DialogDescription>
-                </DialogHeader>
-                <GameForm onSubmit={handleCreateGame} />
-              </DialogContent>
-            </Dialog>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Game</DialogTitle>
+            <DialogDescription>Add a new game to the system.</DialogDescription>
+          </DialogHeader>
+          <GameForm onSubmit={handleCreateGame} />
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Referee Dialog */}
       {gameToAssign && (
@@ -438,8 +438,8 @@ export function GameManagement() {
             setGames(games.map((game) => game.id === updatedGame.id ? updatedGame : game))
             setGameToEdit(null)
             toast({
-              title: "Game updated",
-              description: "Game details have been updated successfully.",
+              title: 'Game updated',
+              description: 'Game details have been updated successfully.'
             })
           }}
           onClose={() => setGameToEdit(null)}
@@ -452,16 +452,16 @@ export function GameManagement() {
 function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
   const { toast } = useToast()
   const [formData, setFormData] = useState({
-    homeTeam: "",
-    awayTeam: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    postalCode: "",
-    level: "",
-    gameType: "Competitive",
-    payRate: "",
+    homeTeam: '',
+    awayTeam: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    location: '',
+    postalCode: '',
+    level: '',
+    gameType: 'Competitive',
+    payRate: ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -470,9 +470,9 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
     // Validate that end time is after start time
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       toast({
-        title: "Invalid Time Range",
-        description: "End time must be after start time.",
-        variant: "destructive",
+        title: 'Invalid Time Range',
+        description: 'End time must be after start time.',
+        variant: 'destructive'
       })
       return
     }
@@ -480,19 +480,19 @@ function GameForm({ onSubmit }: { onSubmit: (data: any) => void }) {
     onSubmit({
       ...formData,
       time: formData.startTime, // Map startTime to time for compatibility
-      payRate: Number.parseFloat(formData.payRate),
+      payRate: Number.parseFloat(formData.payRate)
     })
     setFormData({
-      homeTeam: "",
-      awayTeam: "",
-      date: "",
-      startTime: "",
-      endTime: "",
-      location: "",
-      postalCode: "",
-      level: "",
-      gameType: "Competitive",
-      payRate: "",
+      homeTeam: '',
+      awayTeam: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      postalCode: '',
+      level: '',
+      gameType: 'Competitive',
+      payRate: ''
     })
   }
 
@@ -632,7 +632,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
   allGames: any[];
   onClose?: () => void;
 }) {
-  const [selectedReferee, setSelectedReferee] = useState("")
+  const [selectedReferee, setSelectedReferee] = useState('')
   const [availableReferees, setAvailableReferees] = useState<Referee[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
@@ -656,18 +656,18 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
       if (currentAssignments.includes(referee.name)) return false
       
       // Check if referee is already assigned to a game at the same time
-      const gameDate = game.date || game.game_date;
-      const gameTime = game.time || game.game_time;
+      const gameDate = game.date || game.game_date
+      const gameTime = game.time || game.game_time
       
       const conflictingGame = allGames.find(g => {
-        const gDate = g.date || g.game_date;
-        const gTime = g.time || g.game_time;
+        const gDate = g.date || g.game_date
+        const gTime = g.time || g.game_time
         
         return g.id !== game.id && 
                gDate === gameDate && 
                gTime === gameTime &&
                (g.assignedReferees?.includes(referee.name) || 
-                g.assignments?.some(a => a.referee_name === referee.name));
+                g.assignments?.some(a => a.referee_name === referee.name))
       })
       
       return !conflictingGame
@@ -678,9 +678,9 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
     
     if (filteredReferees.length === 0) {
       toast({
-        title: "No Available Referees",
-        description: "No referees are available for this time slot.",
-        variant: "destructive",
+        title: 'No Available Referees',
+        description: 'No referees are available for this time slot.',
+        variant: 'destructive'
       })
     }
     
@@ -695,16 +695,16 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
       // Double-check referee limits
       if (currentReferees.length >= refsNeeded) {
         toast({
-          title: "Game Full",
+          title: 'Game Full',
           description: `This game already has the maximum number of referees (${refsNeeded}).`,
-          variant: "destructive",
+          variant: 'destructive'
         })
         onClose?.()
         return
       }
       
       onAssign(game.id, selectedReferee)
-      setSelectedReferee("")
+      setSelectedReferee('')
       onClose?.()
     }
   }
@@ -725,7 +725,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
         <div className="space-y-4">
           <Select value={selectedReferee} onValueChange={setSelectedReferee} disabled={loading}>
             <SelectTrigger>
-              <SelectValue placeholder={loading ? "Loading referees..." : "Select a referee"} />
+              <SelectValue placeholder={loading ? 'Loading referees...' : 'Select a referee'} />
             </SelectTrigger>
             <SelectContent>
               {availableReferees.length > 0 ? (
@@ -744,7 +744,7 @@ function AssignRefereeDialog({ game, onAssign, allGames, onClose }: {
             </SelectContent>
           </Select>
           <Button onClick={handleAssign} disabled={!selectedReferee || loading} className="w-full">
-            {loading ? "Loading..." : "Assign Referee"}
+            {loading ? 'Loading...' : 'Assign Referee'}
           </Button>
         </div>
       </DialogContent>
@@ -772,7 +772,7 @@ function EditGameDialog({ game, onSave, onClose }: {
     season: game.season || '',
     wageMultiplier: game.wageMultiplier || '1.0',
     wageMultiplierReason: game.wageMultiplierReason || '',
-    refsNeeded: (game.refsNeeded || game.refs_needed || 2).toString(),
+    refsNeeded: (game.refsNeeded || game.refs_needed || 2).toString()
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -781,9 +781,9 @@ function EditGameDialog({ game, onSave, onClose }: {
     // Validate that end time is after start time
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       toast({
-        title: "Invalid Time Range",
-        description: "End time must be after start time.",
-        variant: "destructive",
+        title: 'Invalid Time Range',
+        description: 'End time must be after start time.',
+        variant: 'destructive'
       })
       return
     }
@@ -805,7 +805,7 @@ function EditGameDialog({ game, onSave, onClose }: {
       wageMultiplier: formData.wageMultiplier,
       wageMultiplierReason: formData.wageMultiplierReason,
       refsNeeded: parseInt(formData.refsNeeded),
-      refs_needed: parseInt(formData.refsNeeded), // Keep both for compatibility
+      refs_needed: parseInt(formData.refsNeeded) // Keep both for compatibility
     }
     
     onSave(updatedGame)

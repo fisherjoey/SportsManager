@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronRight, Home } from 'lucide-react'
+import { ShieldOff } from 'lucide-react'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -15,7 +16,6 @@ import { Button } from '@/components/ui/button'
 import { usePermissions } from '@/hooks/usePermissions'
 import { getPagePermissions, isViewAllowedForRole, getRoleConfig } from '@/lib/rbac-config'
 import { useAuth } from '@/components/auth-provider'
-import { ShieldOff } from 'lucide-react'
 
 export function ContentManagerDashboard() {
   const { user } = useAuth()

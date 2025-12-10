@@ -1,8 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { 
   Lock, 
   Unlock, 
@@ -13,6 +11,9 @@ import {
   AlertTriangle,
   Info
 } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { AccessLevel, PermissionSummary } from '@/lib/types/resources'
 
 interface ResourceAccessIndicatorProps {
@@ -163,13 +164,13 @@ export function ResourceAccessIndicator({
 
   const content = () => {
     switch (variant) {
-      case 'icon':
-        return renderIcon()
-      case 'full':
-        return renderFull()
-      case 'badge':
-      default:
-        return renderBadge()
+    case 'icon':
+      return renderIcon()
+    case 'full':
+      return renderFull()
+    case 'badge':
+    default:
+      return renderBadge()
     }
   }
 

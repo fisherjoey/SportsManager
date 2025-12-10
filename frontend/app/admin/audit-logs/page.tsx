@@ -1,6 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import {
+  Shield,
+  Activity,
+  Download,
+  AlertCircle,
+  TrendingUp,
+  Users,
+  Clock,
+  Settings
+} from 'lucide-react'
+
 import { PageAccessGuard } from '@/components/page-access-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -16,16 +27,6 @@ import {
   AuditLogPreset,
   ExportOptions
 } from '@/lib/types/audit'
-import {
-  Shield,
-  Activity,
-  Download,
-  AlertCircle,
-  TrendingUp,
-  Users,
-  Clock,
-  Settings
-} from 'lucide-react'
 
 interface AuditLogsPageState {
   entries: AuditLogEntry[]

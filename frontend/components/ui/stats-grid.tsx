@@ -30,17 +30,17 @@ const colorMap = {
   success: 'text-success',
   warning: 'text-warning',
   destructive: 'text-destructive',
-  info: 'text-info',
+  info: 'text-info'
 }
 
 function getTrendIcon(trend: 'positive' | 'negative' | 'neutral') {
   switch (trend) {
-    case 'positive':
-      return <TrendingUp className="h-3 w-3 text-success" />
-    case 'negative':
-      return <TrendingDown className="h-3 w-3 text-destructive" />
-    default:
-      return <Minus className="h-3 w-3 text-muted-foreground" />
+  case 'positive':
+    return <TrendingUp className="h-3 w-3 text-success" />
+  case 'negative':
+    return <TrendingDown className="h-3 w-3 text-destructive" />
+  default:
+    return <Minus className="h-3 w-3 text-muted-foreground" />
   }
 }
 
@@ -82,10 +82,10 @@ export function StatsGrid({
                 <div className="flex items-center gap-1 mt-2">
                   {getTrendIcon(stat.change.trend)}
                   <span className={cn(
-                    "text-xs font-medium",
+                    'text-xs font-medium',
                     stat.change.trend === 'positive' ? 'text-success' :
-                    stat.change.trend === 'negative' ? 'text-destructive' :
-                    'text-muted-foreground'
+                      stat.change.trend === 'negative' ? 'text-destructive' :
+                        'text-muted-foreground'
                   )}>
                     {stat.change.value > 0 && '+'}{stat.change.value}%
                   </span>

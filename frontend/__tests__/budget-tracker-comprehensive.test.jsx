@@ -3,7 +3,13 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { BudgetTracker } from '@/components/budget-tracker';
@@ -19,7 +25,7 @@ jest.mock('@/lib/api', () => ({
     createBudget: jest.fn(),
     updateBudget: jest.fn(),
     deleteBudget: jest.fn(),
-  }
+  },
 }));
 
 // Mock the toast system
@@ -29,7 +35,9 @@ jest.mock('@/components/ui/use-toast', () => ({
 
 // Mock recharts for testing
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   BarChart: ({ children }) => <div data-testid="bar-chart">{children}</div>,
   LineChart: ({ children }) => <div data-testid="line-chart">{children}</div>,
   PieChart: ({ children }) => <div data-testid="pie-chart">{children}</div>,
@@ -51,15 +59,15 @@ const mockBudgetPeriods = [
     name: 'FY 2024',
     start_date: '2024-01-01',
     end_date: '2024-12-31',
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'period-2',
     name: 'Q1 2024',
     start_date: '2024-01-01',
     end_date: '2024-03-31',
-    status: 'draft'
-  }
+    status: 'draft',
+  },
 ];
 
 const mockBudgetCategories = [
@@ -68,15 +76,15 @@ const mockBudgetCategories = [
     name: 'Operations',
     code: 'OPS',
     category_type: 'operating_expenses',
-    color_code: '#0088FE'
+    color_code: '#0088FE',
   },
   {
     id: 'category-2',
     name: 'Marketing',
     code: 'MKT',
     category_type: 'marketing',
-    color_code: '#00C49F'
-  }
+    color_code: '#00C49F',
+  },
 ];
 
 const mockBudgets = [
@@ -96,7 +104,7 @@ const mockBudgets = [
     period_end: '2024-12-31',
     owner_name: 'John Doe',
     owner_id: 'user-1',
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'budget-2',
@@ -114,8 +122,8 @@ const mockBudgets = [
     period_end: '2024-12-31',
     owner_name: 'Jane Smith',
     owner_id: 'user-2',
-    status: 'exceeded'
-  }
+    status: 'exceeded',
+  },
 ];
 
 describe('BudgetTracker Component', () => {
@@ -123,18 +131,18 @@ describe('BudgetTracker Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Default API responses
     apiClient.getBudgetPeriods.mockResolvedValue({
       periods: mockBudgetPeriods,
-      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 }
+      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
     });
-    
+
     apiClient.getBudgetCategories.mockResolvedValue({
       categories: mockBudgetCategories,
-      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 }
+      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
     });
-    
+
     apiClient.getBudgets.mockResolvedValue({
       budgets: mockBudgets,
       summary: {
@@ -143,9 +151,9 @@ describe('BudgetTracker Component', () => {
         totalSpent: 13500,
         totalCommitted: 0,
         totalReserved: 0,
-        totalAvailable: 1500
+        totalAvailable: 1500,
       },
-      pagination: { page: 1, limit: 100, total: 2, totalPages: 1 }
+      pagination: { page: 1, limit: 100, total: 2, totalPages: 1 },
     });
   });
 
@@ -162,12 +170,18 @@ describe('BudgetTracker Component', () => {
         expect(screen.getByText('Budget Management')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Track budget performance and spending across categories')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Track budget performance and spending across categories'
+        )
+      ).toBeInTheDocument();
       expect(screen.getByText('New Budget')).toBeInTheDocument();
     });
 
     test('handles error when loading initial data', async () => {
-      apiClient.getBudgetPeriods.mockRejectedValue(new Error('Failed to load periods'));
+      apiClient.getBudgetPeriods.mockRejectedValue(
+        new Error('Failed to load periods')
+      );
 
       render(<BudgetTracker />);
 
@@ -176,22 +190,26 @@ describe('BudgetTracker Component', () => {
       });
 
       expect(toast).toHaveBeenCalledWith({
-        title: "Error",
-        description: "Failed to load budget periods and categories",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load budget periods and categories',
+        variant: 'destructive',
       });
     });
 
     test('shows message when no budget periods exist', async () => {
       apiClient.getBudgetPeriods.mockResolvedValue({
         periods: [],
-        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
       });
 
       render(<BudgetTracker />);
 
       await waitFor(() => {
-        expect(screen.getByText('No budget periods found. Please create budget periods first.')).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            'No budget periods found. Please create budget periods first.'
+          )
+        ).toBeInTheDocument();
       });
     });
   });
@@ -268,7 +286,7 @@ describe('BudgetTracker Component', () => {
       expect(apiClient.getBudgets).toHaveBeenCalledWith({
         period_id: 'period-1',
         page: 1,
-        limit: 100
+        limit: 100,
       });
     });
   });
@@ -295,14 +313,14 @@ describe('BudgetTracker Component', () => {
 
       // Click on Budgets tab
       await user.click(screen.getByText('Budgets'));
-      
+
       // Should show budget cards
       expect(screen.getByText('Operations Budget')).toBeInTheDocument();
       expect(screen.getByText('Marketing Budget')).toBeInTheDocument();
 
       // Click on Analytics tab
       await user.click(screen.getByText('Analytics'));
-      
+
       // Should show analytics content
       expect(screen.getByText('Budget Forecast')).toBeInTheDocument();
       expect(screen.getByText('Variance Analysis')).toBeInTheDocument();
@@ -374,7 +392,11 @@ describe('BudgetTracker Component', () => {
       await user.click(screen.getByText('New Budget'));
 
       expect(screen.getByText('Create New Budget')).toBeInTheDocument();
-      expect(screen.getByText('Create a new budget allocation for a specific period and category.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Create a new budget allocation for a specific period and category.'
+        )
+      ).toBeInTheDocument();
     });
 
     test('validates required fields in create form', async () => {
@@ -390,9 +412,9 @@ describe('BudgetTracker Component', () => {
       await user.click(screen.getByText('Create Budget'));
 
       expect(toast).toHaveBeenCalledWith({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
+        title: 'Validation Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
       });
     });
 
@@ -402,8 +424,8 @@ describe('BudgetTracker Component', () => {
         budget: {
           id: 'new-budget-1',
           name: 'New Test Budget',
-          allocated_amount: 2000
-        }
+          allocated_amount: 2000,
+        },
       });
 
       render(<BudgetTracker />);
@@ -416,25 +438,30 @@ describe('BudgetTracker Component', () => {
 
       // Fill in the form
       await user.type(screen.getByLabelText(/Budget Name/), 'New Test Budget');
-      await user.type(screen.getByLabelText(/Description/), 'Test budget description');
+      await user.type(
+        screen.getByLabelText(/Description/),
+        'Test budget description'
+      );
       await user.type(screen.getByLabelText(/Allocated Amount/), '2000');
       await user.type(screen.getByLabelText(/Responsible Person/), 'Test User');
 
       // Note: Select components would need additional mocking for full test
       // For now, we'll test the API call
-      
+
       await user.click(screen.getByText('Create Budget'));
 
       await waitFor(() => {
         expect(toast).toHaveBeenCalledWith({
-          title: "Success",
-          description: "Budget created successfully"
+          title: 'Success',
+          description: 'Budget created successfully',
         });
       });
     });
 
     test('handles budget creation errors', async () => {
-      apiClient.createBudget.mockRejectedValue(new Error('Budget creation failed'));
+      apiClient.createBudget.mockRejectedValue(
+        new Error('Budget creation failed')
+      );
 
       render(<BudgetTracker />);
 
@@ -452,9 +479,9 @@ describe('BudgetTracker Component', () => {
 
       await waitFor(() => {
         expect(toast).toHaveBeenCalledWith({
-          title: "Error",
-          description: "Budget creation failed",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Budget creation failed',
+          variant: 'destructive',
         });
       });
     });
@@ -472,21 +499,23 @@ describe('BudgetTracker Component', () => {
 
       // Find and click the dropdown menu for Operations Budget
       const dropdownTriggers = screen.getAllByRole('button', { name: '' });
-      const menuTrigger = dropdownTriggers.find(button => 
-        button.querySelector('[data-testid="more-horizontal"]') || 
-        button.textContent === '' &&
-        button.closest('[class*="card"]')
+      const menuTrigger = dropdownTriggers.find(
+        (button) =>
+          button.querySelector('[data-testid="more-horizontal"]') ||
+          (button.textContent === '' && button.closest('[class*="card"]'))
       );
-      
+
       if (menuTrigger) {
         await user.click(menuTrigger);
-        
+
         // Click Edit Budget option
         const editButton = screen.getByText('Edit Budget');
         await user.click(editButton);
 
         expect(screen.getByText('Edit Budget')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Operations Budget')).toBeInTheDocument();
+        expect(
+          screen.getByDisplayValue('Operations Budget')
+        ).toBeInTheDocument();
       }
     });
 
@@ -496,8 +525,8 @@ describe('BudgetTracker Component', () => {
         budget: {
           id: 'budget-1',
           name: 'Updated Operations Budget',
-          allocated_amount: 12000
-        }
+          allocated_amount: 12000,
+        },
       });
 
       render(<BudgetTracker />);
@@ -536,7 +565,11 @@ describe('BudgetTracker Component', () => {
       });
 
       expect(screen.getByText('Category Performance')).toBeInTheDocument();
-      expect(screen.getByText('Budget utilization across different expense categories')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Budget utilization across different expense categories'
+        )
+      ).toBeInTheDocument();
     });
 
     test('renders analytics tab charts', async () => {
@@ -564,9 +597,9 @@ describe('BudgetTracker Component', () => {
           totalSpent: 0,
           totalCommitted: 0,
           totalReserved: 0,
-          totalAvailable: 0
+          totalAvailable: 0,
         },
-        pagination: { page: 1, limit: 100, total: 0, totalPages: 0 }
+        pagination: { page: 1, limit: 100, total: 0, totalPages: 0 },
       });
 
       render(<BudgetTracker />);
@@ -585,13 +618,15 @@ describe('BudgetTracker Component', () => {
       render(<BudgetTracker />);
 
       await waitFor(() => {
-        expect(screen.getByText('Failed to load budget data')).toBeInTheDocument();
+        expect(
+          screen.getByText('Failed to load budget data')
+        ).toBeInTheDocument();
       });
 
       expect(toast).toHaveBeenCalledWith({
-        title: "Error",
-        description: "Failed to load budget data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load budget data',
+        variant: 'destructive',
       });
     });
 
@@ -599,7 +634,7 @@ describe('BudgetTracker Component', () => {
       apiClient.getBudgets.mockResolvedValue({
         budgets: mockBudgets,
         // Missing summary
-        pagination: { page: 1, limit: 100, total: 2, totalPages: 1 }
+        pagination: { page: 1, limit: 100, total: 2, totalPages: 1 },
       });
 
       render(<BudgetTracker />);
@@ -655,7 +690,7 @@ describe('BudgetTracker Component', () => {
 
       // Check for accessible form elements
       await user.click(screen.getByText('New Budget'));
-      
+
       expect(screen.getByLabelText(/Budget Name/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Allocated Amount/)).toBeInTheDocument();
     });
@@ -670,7 +705,7 @@ describe('BudgetTracker Component', () => {
       // Test tab navigation
       const newBudgetButton = screen.getByText('New Budget');
       expect(newBudgetButton).toBeInTheDocument();
-      
+
       // Button should be focusable
       newBudgetButton.focus();
       expect(document.activeElement).toBe(newBudgetButton);
@@ -699,7 +734,7 @@ describe('BudgetTracker Component', () => {
     test('refreshes data after budget operations', async () => {
       apiClient.createBudget.mockResolvedValue({
         success: true,
-        budget: { id: 'new-budget', name: 'New Budget' }
+        budget: { id: 'new-budget', name: 'New Budget' },
       });
 
       render(<BudgetTracker />);

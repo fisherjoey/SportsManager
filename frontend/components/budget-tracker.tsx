@@ -1,17 +1,6 @@
-"use client"
+'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -28,14 +17,6 @@ import {
   Trash2,
   MoreHorizontal
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { 
   BarChart, 
   Bar, 
@@ -51,6 +32,26 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/components/auth-provider'
@@ -241,8 +242,8 @@ function BudgetTrackerInner() {
       
       toast({
         title: `${operationName} Warning`,
-        description: "Some data may not be fully loaded. Please refresh if issues persist.",
-        variant: "destructive"
+        description: 'Some data may not be fully loaded. Please refresh if issues persist.',
+        variant: 'destructive'
       })
       
       return fallback
@@ -284,22 +285,22 @@ function BudgetTrackerInner() {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
       
       // Provide specific error messages based on the error type
-      let userMessage = "Failed to load budget periods and categories."
+      let userMessage = 'Failed to load budget periods and categories.'
       if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        userMessage = "Network error: Please check your internet connection and try again."
+        userMessage = 'Network error: Please check your internet connection and try again.'
       } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
-        userMessage = "Session expired: Please log in again to continue."
+        userMessage = 'Session expired: Please log in again to continue.'
       } else if (errorMessage.includes('404')) {
-        userMessage = "Budget configuration not found: Please contact your administrator."
+        userMessage = 'Budget configuration not found: Please contact your administrator.'
       } else if (errorMessage.includes('500')) {
-        userMessage = "Server error: Please try again in a few minutes or contact support."
+        userMessage = 'Server error: Please try again in a few minutes or contact support.'
       }
       
       setError(`Unable to load budget setup data: ${errorMessage}`)
       toast({
-        title: "Initial Data Loading Failed",
+        title: 'Initial Data Loading Failed',
         description: userMessage,
-        variant: "destructive"
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -386,24 +387,24 @@ function BudgetTrackerInner() {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
       
       // Provide specific error messages based on the error type
-      let userMessage = "Failed to load budget data."
+      let userMessage = 'Failed to load budget data.'
       if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        userMessage = "Network connection error: Please check your internet connection and refresh the page."
+        userMessage = 'Network connection error: Please check your internet connection and refresh the page.'
       } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
-        userMessage = "Authentication error: Please log in again to view budget data."
+        userMessage = 'Authentication error: Please log in again to view budget data.'
       } else if (errorMessage.includes('403')) {
-        userMessage = "Access denied: You don't have permission to view these budgets."
+        userMessage = 'Access denied: You don\'t have permission to view these budgets.'
       } else if (errorMessage.includes('404')) {
-        userMessage = "Budget period not found: The selected period may have been deleted."
+        userMessage = 'Budget period not found: The selected period may have been deleted.'
       } else if (errorMessage.includes('500')) {
-        userMessage = "Server error: Our servers are experiencing issues. Please try again later."
+        userMessage = 'Server error: Our servers are experiencing issues. Please try again later.'
       }
       
       setError(`Unable to load budget information: ${errorMessage}`)
       toast({
-        title: "Budget Data Loading Failed",
+        title: 'Budget Data Loading Failed',
         description: userMessage,
-        variant: "destructive"
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -534,9 +535,9 @@ function BudgetTrackerInner() {
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-      case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />
-      case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />
-      default: return <div className="h-4 w-4" />
+    case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />
+    case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />
+    default: return <div className="h-4 w-4" />
     }
   }
 
@@ -571,18 +572,18 @@ function BudgetTrackerInner() {
     const errors: string[] = []
     
     if (!formData.name?.trim()) {
-      errors.push("Budget Name is required")
+      errors.push('Budget Name is required')
     }
     if (!formData.period_id) {
-      errors.push("Budget Period must be selected")
+      errors.push('Budget Period must be selected')
     }
     if (!formData.category_id) {
-      errors.push("Category must be selected")
+      errors.push('Category must be selected')
     }
     if (!formData.allocated_amount || isNaN(parseFloat(formData.allocated_amount))) {
-      errors.push("Valid Allocated Amount is required")
+      errors.push('Valid Allocated Amount is required')
     } else if (parseFloat(formData.allocated_amount) <= 0) {
-      errors.push("Allocated Amount must be greater than zero")
+      errors.push('Allocated Amount must be greater than zero')
     }
     
     return { isValid: errors.length === 0, errors }
@@ -592,9 +593,9 @@ function BudgetTrackerInner() {
     const validation = validateBudgetForm()
     if (!validation.isValid) {
       toast({
-        title: "Validation Error",
-        description: validation.errors.join(", "),
-        variant: "destructive"
+        title: 'Validation Error',
+        description: validation.errors.join(', '),
+        variant: 'destructive'
       })
       return
     }
@@ -614,8 +615,8 @@ function BudgetTrackerInner() {
       
       if (response.success) {
         toast({
-          title: "Success",
-          description: "Budget created successfully"
+          title: 'Success',
+          description: 'Budget created successfully'
         })
         setShowCreateModal(false)
         resetForm()
@@ -627,23 +628,23 @@ function BudgetTrackerInner() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
-      let userMessage = "Failed to create budget."
+      let userMessage = 'Failed to create budget.'
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
-        userMessage = "A budget with this name already exists in the selected period."
+        userMessage = 'A budget with this name already exists in the selected period.'
       } else if (errorMessage.includes('validation')) {
-        userMessage = "Please check all required fields and ensure the amount is valid."
+        userMessage = 'Please check all required fields and ensure the amount is valid.'
       } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
-        userMessage = "Session expired: Please log in again to create budgets."
+        userMessage = 'Session expired: Please log in again to create budgets.'
       } else if (errorMessage.includes('403')) {
-        userMessage = "Permission denied: You don't have permission to create budgets."
+        userMessage = 'Permission denied: You don\'t have permission to create budgets.'
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        userMessage = "Network error: Please check your connection and try again."
+        userMessage = 'Network error: Please check your connection and try again.'
       }
       
       toast({
-        title: "Budget Creation Failed",
+        title: 'Budget Creation Failed',
         description: userMessage,
-        variant: "destructive"
+        variant: 'destructive'
       })
     } finally {
       setFormLoading(false)
@@ -654,9 +655,9 @@ function BudgetTrackerInner() {
     const budget = budgets.find(b => b.id === budgetId)
     if (!budget) {
       toast({
-        title: "Error",
-        description: "Budget not found",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Budget not found',
+        variant: 'destructive'
       })
       return
     }
@@ -669,9 +670,9 @@ function BudgetTrackerInner() {
   const handleSaveEditBudget = async () => {
     if (!editingBudget) {
       toast({
-        title: "Error",
-        description: "No budget selected for editing",
-        variant: "destructive"
+        title: 'Error',
+        description: 'No budget selected for editing',
+        variant: 'destructive'
       })
       return
     }
@@ -679,9 +680,9 @@ function BudgetTrackerInner() {
     const validation = validateBudgetForm()
     if (!validation.isValid) {
       toast({
-        title: "Validation Error",
-        description: validation.errors.join(", "),
-        variant: "destructive"
+        title: 'Validation Error',
+        description: validation.errors.join(', '),
+        variant: 'destructive'
       })
       return
     }
@@ -701,8 +702,8 @@ function BudgetTrackerInner() {
       
       if (response.success) {
         toast({
-          title: "Success",
-          description: "Budget updated successfully"
+          title: 'Success',
+          description: 'Budget updated successfully'
         })
         setShowEditModal(false)
         setEditingBudget(null)
@@ -715,25 +716,25 @@ function BudgetTrackerInner() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
-      let userMessage = "Failed to update budget."
+      let userMessage = 'Failed to update budget.'
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
-        userMessage = "A budget with this name already exists in the selected period."
+        userMessage = 'A budget with this name already exists in the selected period.'
       } else if (errorMessage.includes('validation')) {
-        userMessage = "Please check all required fields and ensure the amount is valid."
+        userMessage = 'Please check all required fields and ensure the amount is valid.'
       } else if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
-        userMessage = "Session expired: Please log in again to update budgets."
+        userMessage = 'Session expired: Please log in again to update budgets.'
       } else if (errorMessage.includes('403')) {
-        userMessage = "Permission denied: You don't have permission to update this budget."
+        userMessage = 'Permission denied: You don\'t have permission to update this budget.'
       } else if (errorMessage.includes('404')) {
-        userMessage = "Budget not found: It may have been deleted by another user."
+        userMessage = 'Budget not found: It may have been deleted by another user.'
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        userMessage = "Network error: Please check your connection and try again."
+        userMessage = 'Network error: Please check your connection and try again.'
       }
       
       toast({
-        title: "Budget Update Failed",
+        title: 'Budget Update Failed',
         description: userMessage,
-        variant: "destructive"
+        variant: 'destructive'
       })
     } finally {
       setFormLoading(false)
@@ -744,9 +745,9 @@ function BudgetTrackerInner() {
     const budget = budgets.find(b => b.id === budgetId)
     if (!budget) {
       toast({
-        title: "Budget Not Found",
-        description: "The selected budget could not be found. Please refresh the page and try again.",
-        variant: "destructive"
+        title: 'Budget Not Found',
+        description: 'The selected budget could not be found. Please refresh the page and try again.',
+        variant: 'destructive'
       })
       return
     }
@@ -765,7 +766,7 @@ function BudgetTrackerInner() {
       const response = await retryApiCall(() => apiClient.deleteBudget(budgetId))
       if (response.success) {
         toast({
-          title: "Budget Deleted",
+          title: 'Budget Deleted',
           description: `"${budget.name}" has been successfully deleted.`
         })
         await loadBudgetData()
@@ -776,9 +777,9 @@ function BudgetTrackerInner() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : `Failed to delete budget "${budget.name}". Please check your connection and try again.`
       toast({
-        title: "Deletion Failed",
+        title: 'Deletion Failed',
         description: errorMessage,
-        variant: "destructive"
+        variant: 'destructive'
       })
     } finally {
       setFormLoading(false)
@@ -1065,7 +1066,7 @@ function BudgetTrackerInner() {
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Budget
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast({ title: "Analytics", description: "Analytics view coming soon" })}>
+                          <DropdownMenuItem onClick={() => toast({ title: 'Analytics', description: 'Analytics view coming soon' })}>
                             <BarChart3 className="h-4 w-4 mr-2" />
                             View Analytics
                           </DropdownMenuItem>

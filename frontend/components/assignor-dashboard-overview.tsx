@@ -96,7 +96,7 @@ export function AssignorDashboardOverview() {
           refsNeeded: g.refsNeeded || 2,
           assignedCount: g.assignedCount || 0,
           status: g.assignedCount === 0 ? 'unassigned' : 
-                  g.assignedCount < (g.refsNeeded || 2) ? 'partial' : 'assigned'
+            g.assignedCount < (g.refsNeeded || 2) ? 'partial' : 'assigned'
         }))
       
       // Fetch referees
@@ -283,9 +283,9 @@ export function AssignorDashboardOverview() {
                     <Badge 
                       variant={
                         assignment.status === 'accepted' ? 'success' :
-                        assignment.status === 'declined' ? 'destructive' :
-                        assignment.status === 'completed' ? 'secondary' :
-                        'default'
+                          assignment.status === 'declined' ? 'destructive' :
+                            assignment.status === 'completed' ? 'secondary' :
+                              'default'
                       }
                     >
                       {assignment.status}

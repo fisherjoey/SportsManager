@@ -1,6 +1,7 @@
 'use client'
 
 import { DollarSign } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 interface VenueCostDisplayProps {

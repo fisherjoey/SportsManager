@@ -3,6 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Editor } from '@tinymce/tinymce-react'
 import { useTheme } from 'next-themes'
+import { 
+  Save, Eye, X, Upload, AlertCircle, FileEdit, Shield, Info, Users
+} from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,9 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Save, Eye, X, Upload, AlertCircle, FileEdit, Shield, Info, Users
-} from 'lucide-react'
 import { ResourceAccessIndicator } from '@/components/resources/ResourceAccessIndicator'
 import { AccessLevel, Role } from '@/lib/types'
 
@@ -496,7 +497,7 @@ export function ResourceEditor({
             <Input
               id="external-url"
               type="url"
-              placeholder={type === 'video' ? "https://youtube.com/watch?v=... or https://vimeo.com/..." : "https://example.com/resource"}
+              placeholder={type === 'video' ? 'https://youtube.com/watch?v=... or https://vimeo.com/...' : 'https://example.com/resource'}
               value={externalUrl}
               onChange={(e) => setExternalUrl(e.target.value)}
               className="w-full"
@@ -681,38 +682,38 @@ export function ResourceEditor({
             </label>
             <div className="border border-input rounded-lg overflow-hidden bg-background">
               <Editor
-              key={editorKey}
-              ref={editorRef}
-              apiKey="g7uhwpygdstjbgrssf1s8x665vjg9ep442amg14895x8bq0q"
-              value={content}
-              onEditorChange={(content) => setContent(content)}
-              onInit={(evt, editor) => {
-                editorRef.current = editor
-              }}
-              init={{
-                height: 500,
-                menubar: false,
-                plugins: [
-                  'lists', 'link', 'image', 'preview', 'code', 'fullscreen',
-                  'media', 'table', 'wordcount', 'paste'
-                ],
-                toolbar: 'undo redo | blocks | bold italic | ' +
+                key={editorKey}
+                ref={editorRef}
+                apiKey="g7uhwpygdstjbgrssf1s8x665vjg9ep442amg14895x8bq0q"
+                value={content}
+                onEditorChange={(content) => setContent(content)}
+                onInit={(evt, editor) => {
+                  editorRef.current = editor
+                }}
+                init={{
+                  height: 500,
+                  menubar: false,
+                  plugins: [
+                    'lists', 'link', 'image', 'preview', 'code', 'fullscreen',
+                    'media', 'table', 'wordcount', 'paste'
+                  ],
+                  toolbar: 'undo redo | blocks | bold italic | ' +
                 'bullist numlist | link image media | code | preview fullscreen',
                 
-                // Dynamic skin based on theme
-                skin: resolvedTheme === 'dark' ? 'oxide-dark' : 'oxide',
-                content_css: resolvedTheme === 'dark' ? 'dark' : 'default',
+                  // Dynamic skin based on theme
+                  skin: resolvedTheme === 'dark' ? 'oxide-dark' : 'oxide',
+                  content_css: resolvedTheme === 'dark' ? 'dark' : 'default',
                 
-                branding: false,
-                promotion: false,
-                statusbar: false,
-                elementpath: false,
-                resize: false,
+                  branding: false,
+                  promotion: false,
+                  statusbar: false,
+                  elementpath: false,
+                  resize: false,
                 
-                // File picker for images/media
-                file_picker_callback: filePickerCallback
-              }}
-            />
+                  // File picker for images/media
+                  file_picker_callback: filePickerCallback
+                }}
+              />
             </div>
           </div>
         ) : type === 'link' ? (
@@ -801,20 +802,20 @@ export function ResourceEditor({
         {/* File Upload Drop Zone - Only for document and mixed types */}
         {(type === 'document' || type === 'mixed') && (
           <div className="space-y-2">
-          <label className="text-sm font-medium">Attachments</label>
-          <div 
-            className="border-2 border-dashed border-input rounded-lg p-6 text-center hover:border-muted-foreground transition-colors bg-muted/50"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-muted-foreground">
+            <label className="text-sm font-medium">Attachments</label>
+            <div 
+              className="border-2 border-dashed border-input rounded-lg p-6 text-center hover:border-muted-foreground transition-colors bg-muted/50"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-muted-foreground">
               Drop files here or click to upload
-            </p>
-            <p className="text-xs text-muted-foreground">
+              </p>
+              <p className="text-xs text-muted-foreground">
               Supports: PDF, DOC, MP4, MOV, JPG, PNG (Max 10MB each)
-            </p>
-          </div>
+              </p>
+            </div>
           </div>
         )}
 

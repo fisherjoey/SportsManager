@@ -1,5 +1,8 @@
 'use client'
 
+import { MoreVertical, Edit, Eye, Trash2, DollarSign, Phone, Mail, User } from 'lucide-react'
+import { useState } from 'react'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,8 +10,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Edit, Eye, Trash2, DollarSign, Phone, Mail, User } from 'lucide-react'
-import { useState } from 'react'
 
 interface Role {
   id: string

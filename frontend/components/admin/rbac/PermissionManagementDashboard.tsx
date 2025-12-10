@@ -1,15 +1,6 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { useToast } from '@/components/ui/use-toast'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { 
   Shield, 
   Search, 
@@ -24,6 +15,16 @@ import {
   ChevronRight,
   RefreshCw
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { useToast } from '@/components/ui/use-toast'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { apiClient } from '@/lib/api'
 
 interface Permission {
@@ -252,7 +253,7 @@ export function PermissionManagementDashboard() {
             </div>
             <div className="flex gap-2">
               <Button
-                variant={selectedCategory === null ? "default" : "outline"}
+                variant={selectedCategory === null ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedCategory(null)}
               >
@@ -261,7 +262,7 @@ export function PermissionManagementDashboard() {
               {categories.map(category => (
                 <Button
                   key={category.name}
-                  variant={selectedCategory === category.name ? "default" : "outline"}
+                  variant={selectedCategory === category.name ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedCategory(category.name)}
                 >

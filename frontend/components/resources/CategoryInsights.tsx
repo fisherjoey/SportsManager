@@ -1,12 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { 
   BarChart, 
   Bar, 
@@ -39,6 +33,13 @@ import {
   Target,
   Zap
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { cn } from '@/lib/utils'
 
 interface CategoryInsightsProps {
@@ -74,28 +75,28 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 const chartConfig = {
   downloads: {
-    label: "Downloads",
-    color: "#2563eb",
+    label: 'Downloads',
+    color: '#2563eb'
   },
   views: {
-    label: "Views", 
-    color: "#60a5fa",
+    label: 'Views', 
+    color: '#60a5fa'
   },
   uploads: {
-    label: "Uploads",
-    color: "#34d399",
+    label: 'Uploads',
+    color: '#34d399'
   },
   activeUsers: {
-    label: "Active Users",
-    color: "#f59e0b",
+    label: 'Active Users',
+    color: '#f59e0b'
   },
   newUsers: {
-    label: "New Users",
-    color: "#10b981",
+    label: 'New Users',
+    color: '#10b981'
   },
   returningUsers: {
-    label: "Returning Users",
-    color: "#8b5cf6",
+    label: 'Returning Users',
+    color: '#8b5cf6'
   }
 }
 
@@ -227,7 +228,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
 
   if (isLoading) {
     return (
-      <div className={cn("space-y-6", className)}>
+      <div className={cn('space-y-6', className)}>
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -247,7 +248,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
   if (!data) return null
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
@@ -275,7 +276,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
             onClick={handleRefresh} 
             disabled={refreshing}
           >
-            <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
+            <RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} />
             Refresh
           </Button>
         </div>
@@ -292,7 +293,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
             <div className="text-2xl font-bold">{data.downloads[2]?.value.toLocaleString()}</div>
             <div className="flex items-center text-xs">
               {getTrendIcon(data.downloads[2]?.change)}
-              <span className={cn("ml-1", getTrendColor(data.downloads[2]?.change))}>
+              <span className={cn('ml-1', getTrendColor(data.downloads[2]?.change))}>
                 {Math.abs(data.downloads[2]?.change)}% from last month
               </span>
             </div>
@@ -308,7 +309,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
             <div className="text-2xl font-bold">{data.views[2]?.value.toLocaleString()}</div>
             <div className="flex items-center text-xs">
               {getTrendIcon(data.views[2]?.change)}
-              <span className={cn("ml-1", getTrendColor(data.views[2]?.change))}>
+              <span className={cn('ml-1', getTrendColor(data.views[2]?.change))}>
                 {Math.abs(data.views[2]?.change)}% from last month
               </span>
             </div>

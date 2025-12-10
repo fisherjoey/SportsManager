@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
+
 import { ResourceRenderer } from '@/components/resource-centre'
 
 export default async function ResourceDocPage({
-  params,
+  params
 }: {
   params: Promise<{ slug: string[] }>
 }) {

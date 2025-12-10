@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { NotificationList } from '@/components/NotificationList';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { NotificationList } from '@/components/NotificationList'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 /**
  * Notifications Page
@@ -14,5 +14,5 @@ export default function NotificationsPage() {
     <ProtectedRoute>
       <NotificationList />
     </ProtectedRoute>
-  );
+  )
 }

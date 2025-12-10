@@ -89,7 +89,7 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
   
   // Account Management
   'dashboard-view:profile': [], // All authenticated users can access their profile
-  'dashboard-view:organization-settings': [PERMISSIONS.SETTINGS.ORGANIZATION],
+  'dashboard-view:organization-settings': [PERMISSIONS.SETTINGS.ORGANIZATION]
 }
 
 /**
@@ -165,7 +165,7 @@ export const API_PERMISSIONS: Record<string, string[]> = {
   'POST /api/finance/transactions': [PERMISSIONS.FINANCE.CREATE],
   'PUT /api/finance/transactions/:id/approve': [PERMISSIONS.FINANCE.APPROVE],
   'GET /api/finance/budgets': [PERMISSIONS.FINANCE.READ],
-  'PUT /api/finance/budgets': [PERMISSIONS.FINANCE.MANAGE],
+  'PUT /api/finance/budgets': [PERMISSIONS.FINANCE.MANAGE]
 }
 
 /**

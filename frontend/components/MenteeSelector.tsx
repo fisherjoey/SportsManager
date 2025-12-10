@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Users, ChevronDown } from 'lucide-react'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Users, ChevronDown } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -175,28 +176,28 @@ export function MenteeSelector({
                 </div>
               </SelectItem>
               {mentees.map((mentee) => (
-            <SelectItem key={mentee.id} value={mentee.id}>
-              <div className="flex items-center justify-between w-full">
-                <div className="flex flex-col">
-                  <span className="font-medium">{mentee.name}</span>
-                  <span className="text-xs text-muted-foreground">{mentee.email}</span>
-                </div>
-                <div className="flex items-center space-x-1 ml-2">
-                  {mentee.level && (
-                    <Badge variant="secondary" className="text-xs">
-                      {mentee.level}
-                    </Badge>
-                  )}
-                  <Badge 
-                    variant={mentee.status === 'active' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {mentee.status}
-                  </Badge>
-                </div>
-              </div>
-            </SelectItem>
-          ))}
+                <SelectItem key={mentee.id} value={mentee.id}>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{mentee.name}</span>
+                      <span className="text-xs text-muted-foreground">{mentee.email}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 ml-2">
+                      {mentee.level && (
+                        <Badge variant="secondary" className="text-xs">
+                          {mentee.level}
+                        </Badge>
+                      )}
+                      <Badge 
+                        variant={mentee.status === 'active' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {mentee.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
             </>
           )}
         </SelectContent>

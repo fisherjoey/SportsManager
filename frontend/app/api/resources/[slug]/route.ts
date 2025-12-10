@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+
+import { NextResponse } from 'next/server'
 import matter from 'gray-matter'
+
 import { ResourceItem } from '../route'
 
 const resourcesDirectory = path.join(process.cwd(), 'content', 'resources')
@@ -32,7 +34,7 @@ export async function GET(
       url: data.url,
       downloadUrl: data.downloadUrl,
       lastUpdated: data.lastUpdated || new Date().toISOString().split('T')[0],
-      isNew: data.isNew || false,
+      isNew: data.isNew || false
     }
 
     return NextResponse.json(resource)

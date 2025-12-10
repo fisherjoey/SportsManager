@@ -12,6 +12,7 @@ import {
   SortAsc,
   SortDesc
 } from 'lucide-react'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,9 +33,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/components/ui/use-toast'
-import { AuditLogFilters } from './AuditLogFilters'
-import { AuditLogEntry, AuditLogEntryCompact } from './AuditLogEntry'
-import { AuditLogStatsComponent } from './AuditLogStats'
 import {
   AuditLogEntry as AuditEntry,
   AuditLogFilters as Filters,
@@ -43,6 +41,10 @@ import {
   ExportOptions,
   ACTION_CONFIG
 } from '@/lib/types/audit'
+
+import { AuditLogFilters } from './AuditLogFilters'
+import { AuditLogEntry, AuditLogEntryCompact } from './AuditLogEntry'
+import { AuditLogStatsComponent } from './AuditLogStats'
 
 interface AuditLogViewerProps {
   // Data
@@ -140,28 +142,28 @@ export function AuditLogViewer({
       let aValue: any, bValue: any
 
       switch (sortField) {
-        case 'timestamp':
-          aValue = new Date(a.timestamp).getTime()
-          bValue = new Date(b.timestamp).getTime()
-          break
-        case 'user':
-          aValue = a.user?.name || 'Unknown'
-          bValue = b.user?.name || 'Unknown'
-          break
-        case 'action':
-          aValue = ACTION_CONFIG[a.action]?.label || a.action
-          bValue = ACTION_CONFIG[b.action]?.label || b.action
-          break
-        case 'resource':
-          aValue = a.resource_name || a.resource_type
-          bValue = b.resource_name || b.resource_type
-          break
-        case 'success':
-          aValue = a.success ? 1 : 0
-          bValue = b.success ? 1 : 0
-          break
-        default:
-          return 0
+      case 'timestamp':
+        aValue = new Date(a.timestamp).getTime()
+        bValue = new Date(b.timestamp).getTime()
+        break
+      case 'user':
+        aValue = a.user?.name || 'Unknown'
+        bValue = b.user?.name || 'Unknown'
+        break
+      case 'action':
+        aValue = ACTION_CONFIG[a.action]?.label || a.action
+        bValue = ACTION_CONFIG[b.action]?.label || b.action
+        break
+      case 'resource':
+        aValue = a.resource_name || a.resource_type
+        bValue = b.resource_name || b.resource_type
+        break
+      case 'success':
+        aValue = a.success ? 1 : 0
+        bValue = b.success ? 1 : 0
+        break
+      default:
+        return 0
       }
 
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
@@ -206,8 +208,8 @@ export function AuditLogViewer({
       {children}
       {sortField === field && (
         sortDirection === 'desc' ? 
-        <SortDesc className="ml-2 h-4 w-4" /> : 
-        <SortAsc className="ml-2 h-4 w-4" />
+          <SortDesc className="ml-2 h-4 w-4" /> : 
+          <SortAsc className="ml-2 h-4 w-4" />
       )}
     </Button>
   )
@@ -244,10 +246,10 @@ export function AuditLogViewer({
                 >
                   <TableCell>
                     <Badge 
-                      variant={entry.success ? "default" : "destructive"}
+                      variant={entry.success ? 'default' : 'destructive'}
                       className="text-xs"
                     >
-                      {entry.success ? "OK" : "ERR"}
+                      {entry.success ? 'OK' : 'ERR'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">

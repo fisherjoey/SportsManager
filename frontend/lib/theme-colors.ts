@@ -9,7 +9,7 @@ export const chartColors = {
   success: 'hsl(var(--chart-2))',
   warning: 'hsl(var(--chart-3))',
   destructive: 'hsl(var(--chart-4))',
-  info: 'hsl(var(--chart-5))',
+  info: 'hsl(var(--chart-5))'
 }
 
 // Chart color arrays for data visualization
@@ -18,7 +18,7 @@ export const chartColorArray = [
   'hsl(var(--chart-2))',
   'hsl(var(--chart-3))',
   'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
+  'hsl(var(--chart-5))'
 ]
 
 // Status colors with semantic meaning
@@ -53,7 +53,7 @@ export const statusColors = {
   // Neutral states
   draft: 'hsl(var(--muted))',
   inactive: 'hsl(var(--muted))',
-  disabled: 'hsl(var(--muted))',
+  disabled: 'hsl(var(--muted))'
 }
 
 // Get status color class names for Tailwind
@@ -229,15 +229,15 @@ export function hexToHSL(hex: string): string {
     s = l > 0.5 ? diff / (2 - sum) : diff / sum
     
     switch (max) {
-      case r:
-        h = ((g - b) / diff + (g < b ? 6 : 0)) / 6
-        break
-      case g:
-        h = ((b - r) / diff + 2) / 6
-        break
-      case b:
-        h = ((r - g) / diff + 4) / 6
-        break
+    case r:
+      h = ((g - b) / diff + (g < b ? 6 : 0)) / 6
+      break
+    case g:
+      h = ((b - r) / diff + 2) / 6
+      break
+    case b:
+      h = ((r - g) / diff + 4) / 6
+      break
     }
   }
   

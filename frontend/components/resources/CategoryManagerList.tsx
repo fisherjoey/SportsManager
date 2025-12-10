@@ -1,20 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { DataTable } from '@/components/data-table/DataTable'
 import { 
   UserPlus, 
   Search, 
@@ -34,8 +20,24 @@ import {
   AlertTriangle,
   Download
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { format, addDays } from 'date-fns'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DataTable } from '@/components/data-table/DataTable'
+import { cn } from '@/lib/utils'
+
 
 interface CategoryManager {
   id: string
@@ -179,53 +181,53 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner':
-        return <Crown className="h-4 w-4 text-yellow-600" />
-      case 'manager':
-        return <Shield className="h-4 w-4 text-blue-600" />
-      case 'contributor':
-        return <User className="h-4 w-4 text-green-600" />
-      default:
-        return <User className="h-4 w-4 text-gray-600" />
+    case 'owner':
+      return <Crown className="h-4 w-4 text-yellow-600" />
+    case 'manager':
+      return <Shield className="h-4 w-4 text-blue-600" />
+    case 'contributor':
+      return <User className="h-4 w-4 text-green-600" />
+    default:
+      return <User className="h-4 w-4 text-gray-600" />
     }
   }
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'owner':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      case 'manager':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'contributor':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    case 'owner':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+    case 'manager':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+    case 'contributor':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'inactive':
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case 'pending':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />
-      default:
-        return <XCircle className="h-4 w-4 text-gray-600" />
+    case 'active':
+      return <CheckCircle className="h-4 w-4 text-green-600" />
+    case 'inactive':
+      return <XCircle className="h-4 w-4 text-red-600" />
+    case 'pending':
+      return <AlertTriangle className="h-4 w-4 text-yellow-600" />
+    default:
+      return <XCircle className="h-4 w-4 text-gray-600" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'inactive':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    case 'active':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+    case 'inactive':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
@@ -256,11 +258,11 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
     setManagers(prev => prev.map(manager => 
       manager.id === currentManager.id 
         ? { 
-            ...manager, 
-            role: formData.role,
-            expiresAt: formData.expiresAt?.toISOString().split('T')[0],
-            permissions: ROLE_PERMISSIONS[formData.role]
-          }
+          ...manager, 
+          role: formData.role,
+          expiresAt: formData.expiresAt?.toISOString().split('T')[0],
+          permissions: ROLE_PERMISSIONS[formData.role]
+        }
         : manager
     ))
     
@@ -301,7 +303,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
 
   if (isLoading) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={cn('space-y-4', className)}>
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
           <div className="space-y-3">
@@ -315,7 +317,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
@@ -499,11 +501,11 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-sm font-medium">{manager.name}</h3>
-                    <Badge variant="secondary" className={cn("text-xs", getRoleColor(manager.role))}>
+                    <Badge variant="secondary" className={cn('text-xs', getRoleColor(manager.role))}>
                       <span className="mr-1">{getRoleIcon(manager.role)}</span>
                       {manager.role}
                     </Badge>
-                    <Badge variant="outline" className={cn("text-xs", getStatusColor(manager.status))}>
+                    <Badge variant="outline" className={cn('text-xs', getStatusColor(manager.status))}>
                       <span className="mr-1">{getStatusIcon(manager.status)}</span>
                       {manager.status}
                     </Badge>

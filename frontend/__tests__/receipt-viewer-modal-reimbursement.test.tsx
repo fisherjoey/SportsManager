@@ -45,7 +45,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
     extractedData: {
       merchant: 'Walmart',
       date: '2024-01-15',
-      amount: 25.50,
+      amount: 25.5,
       category: 'Office Supplies',
       confidence: 0.95,
       items: [
@@ -53,39 +53,39 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
           description: 'Notebook',
           quantity: 2,
           unitPrice: 5.99,
-          totalPrice: 11.98
+          totalPrice: 11.98,
         },
         {
           description: 'Pens',
           quantity: 1,
           unitPrice: 13.52,
-          totalPrice: 13.52
-        }
-      ]
-    }
+          totalPrice: 13.52,
+        },
+      ],
+    },
   };
 
   const mockUsers = [
     { id: 'user-1', email: 'john@example.com', role: 'admin' },
     { id: 'user-2', email: 'jane@example.com', role: 'manager' },
-    { id: 'user-3', email: 'bob@example.com', role: 'referee' }
+    { id: 'user-3', email: 'bob@example.com', role: 'referee' },
   ];
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue('mock-auth-token');
-    
+
     // Mock successful users fetch
     (global.fetch as jest.Mock).mockImplementation((url) => {
       if (url === '/api/users') {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ users: mockUsers })
+          json: () => Promise.resolve({ users: mockUsers }),
         });
       }
       return Promise.resolve({
         ok: false,
-        json: () => Promise.resolve({ error: 'Not found' })
+        json: () => Promise.resolve({ error: 'Not found' }),
       });
     });
   });
@@ -102,9 +102,15 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Reimbursement Assignment')).toBeInTheDocument();
-        expect(screen.getByText('Select a user for reimbursement')).toBeInTheDocument();
-        expect(screen.getByText('Reimbursement Notes (Optional)')).toBeInTheDocument();
+        expect(
+          screen.getByText('Reimbursement Assignment')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText('Select a user for reimbursement')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText('Reimbursement Notes (Optional)')
+        ).toBeInTheDocument();
       });
     });
 
@@ -119,7 +125,9 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Select a user for reimbursement')).toBeInTheDocument();
+        expect(
+          screen.getByText('Select a user for reimbursement')
+        ).toBeInTheDocument();
       });
 
       // Click to open dropdown
@@ -127,7 +135,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       await userEvent.click(selectTrigger);
 
       await waitFor(() => {
-        mockUsers.forEach(user => {
+        mockUsers.forEach((user) => {
           expect(screen.getByText(user.email)).toBeInTheDocument();
         });
       });
@@ -135,7 +143,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
     test('should handle user selection', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <ReceiptViewerModal
           receiptId="receipt-123"
@@ -167,7 +175,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
     test('should handle notes input', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <ReceiptViewerModal
           receiptId="receipt-123"
@@ -177,7 +185,9 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
         />
       );
 
-      const notesTextarea = screen.getByPlaceholderText('Add any notes about this reimbursement...');
+      const notesTextarea = screen.getByPlaceholderText(
+        'Add any notes about this reimbursement...'
+      );
       await user.type(notesTextarea, 'This is a test reimbursement note');
 
       expect(notesTextarea).toHaveValue('This is a test reimbursement note');
@@ -201,7 +211,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
     test('should enable assign button when user is selected', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <ReceiptViewerModal
           receiptId="receipt-123"
@@ -232,31 +242,35 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
   describe('Reimbursement Assignment API Integration', () => {
     test('should successfully assign reimbursement', async () => {
       const user = userEvent.setup();
-      
+
       // Mock successful assignment response
       (global.fetch as jest.Mock).mockImplementation((url, options) => {
         if (url === '/api/users') {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ users: mockUsers })
+            json: () => Promise.resolve({ users: mockUsers }),
           });
         }
-        if (url.includes('/assign-reimbursement') && options?.method === 'POST') {
+        if (
+          url.includes('/assign-reimbursement') &&
+          options?.method === 'POST'
+        ) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              message: 'Reimbursement assignment updated successfully',
-              expenseData: {
-                reimbursement_user_id: 'user-1',
-                reimbursement_user_email: 'john@example.com',
-                reimbursement_notes: 'Test assignment'
-              }
-            })
+            json: () =>
+              Promise.resolve({
+                message: 'Reimbursement assignment updated successfully',
+                expenseData: {
+                  reimbursement_user_id: 'user-1',
+                  reimbursement_user_email: 'john@example.com',
+                  reimbursement_notes: 'Test assignment',
+                },
+              }),
           });
         }
         return Promise.resolve({
           ok: false,
-          json: () => Promise.resolve({ error: 'Not found' })
+          json: () => Promise.resolve({ error: 'Not found' }),
         });
       });
 
@@ -276,7 +290,9 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       await user.click(screen.getByText('john@example.com'));
 
       // Add notes
-      const notesTextarea = screen.getByPlaceholderText('Add any notes about this reimbursement...');
+      const notesTextarea = screen.getByPlaceholderText(
+        'Add any notes about this reimbursement...'
+      );
       await user.type(notesTextarea, 'Test assignment');
 
       // Click assign button
@@ -290,7 +306,9 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
       // Wait for success state
       await waitFor(() => {
-        expect(screen.getByText('Assigned for Reimbursement')).toBeInTheDocument();
+        expect(
+          screen.getByText('Assigned for Reimbursement')
+        ).toBeInTheDocument();
         expect(screen.getByText('User: john@example.com')).toBeInTheDocument();
         expect(screen.getByText('Notes: Test assignment')).toBeInTheDocument();
       });
@@ -302,12 +320,12 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer mock-auth-token'
+            Authorization: 'Bearer mock-auth-token',
           },
           body: JSON.stringify({
             userId: 'user-1',
-            notes: 'Test assignment'
-          })
+            notes: 'Test assignment',
+          }),
         })
       );
     });
@@ -315,7 +333,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
     test('should handle assignment API errors', async () => {
       const user = userEvent.setup();
       const mockToast = jest.fn();
-      
+
       // Mock the toast function
       jest.mock('@/components/ui/use-toast', () => ({
         toast: mockToast,
@@ -326,20 +344,24 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
         if (url === '/api/users') {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ users: mockUsers })
+            json: () => Promise.resolve({ users: mockUsers }),
           });
         }
-        if (url.includes('/assign-reimbursement') && options?.method === 'POST') {
+        if (
+          url.includes('/assign-reimbursement') &&
+          options?.method === 'POST'
+        ) {
           return Promise.resolve({
             ok: false,
-            json: () => Promise.resolve({
-              error: 'Expense data not found for this receipt'
-            })
+            json: () =>
+              Promise.resolve({
+                error: 'Expense data not found for this receipt',
+              }),
           });
         }
         return Promise.resolve({
           ok: false,
-          json: () => Promise.resolve({ error: 'Not found' })
+          json: () => Promise.resolve({ error: 'Not found' }),
         });
       });
 
@@ -370,23 +392,26 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
     test('should show loading state during assignment', async () => {
       const user = userEvent.setup();
       let resolveAssignment: (value: any) => void;
-      
+
       // Mock delayed assignment response
       (global.fetch as jest.Mock).mockImplementation((url, options) => {
         if (url === '/api/users') {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ users: mockUsers })
+            json: () => Promise.resolve({ users: mockUsers }),
           });
         }
-        if (url.includes('/assign-reimbursement') && options?.method === 'POST') {
+        if (
+          url.includes('/assign-reimbursement') &&
+          options?.method === 'POST'
+        ) {
           return new Promise((resolve) => {
             resolveAssignment = resolve;
           });
         }
         return Promise.resolve({
           ok: false,
-          json: () => Promise.resolve({ error: 'Not found' })
+          json: () => Promise.resolve({ error: 'Not found' }),
         });
       });
 
@@ -417,17 +442,20 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       // Complete the request
       resolveAssignment!({
         ok: true,
-        json: () => Promise.resolve({
-          message: 'Reimbursement assignment updated successfully',
-          expenseData: {
-            reimbursement_user_id: 'user-1',
-            reimbursement_user_email: 'john@example.com'
-          }
-        })
+        json: () =>
+          Promise.resolve({
+            message: 'Reimbursement assignment updated successfully',
+            expenseData: {
+              reimbursement_user_id: 'user-1',
+              reimbursement_user_email: 'john@example.com',
+            },
+          }),
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Assigned for Reimbursement')).toBeInTheDocument();
+        expect(
+          screen.getByText('Assigned for Reimbursement')
+        ).toBeInTheDocument();
       });
     });
   });
@@ -438,8 +466,8 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
         ...mockReceipt,
         reimbursementData: {
           reimbursement_user_email: 'john@example.com',
-          reimbursement_notes: 'Approved for reimbursement'
-        }
+          reimbursement_notes: 'Approved for reimbursement',
+        },
       };
 
       render(
@@ -460,7 +488,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
       // Mock component state with existing assignment
       const mockReimbursementData = {
         reimbursement_user_email: 'john@example.com',
-        reimbursement_notes: 'Already assigned'
+        reimbursement_notes: 'Already assigned',
       };
 
       // This test would need the component to be updated to handle existing assignments
@@ -486,12 +514,12 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
         if (url === '/api/users') {
           return Promise.resolve({
             ok: false,
-            json: () => Promise.resolve({ error: 'Failed to fetch users' })
+            json: () => Promise.resolve({ error: 'Failed to fetch users' }),
           });
         }
         return Promise.resolve({
           ok: false,
-          json: () => Promise.resolve({ error: 'Not found' })
+          json: () => Promise.resolve({ error: 'Not found' }),
         });
       });
 
@@ -506,7 +534,9 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
       // Should still render the component
       await waitFor(() => {
-        expect(screen.getByText('Reimbursement Assignment')).toBeInTheDocument();
+        expect(
+          screen.getByText('Reimbursement Assignment')
+        ).toBeInTheDocument();
       });
 
       // Dropdown should still be present but empty
@@ -516,13 +546,13 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
     test('should handle network errors during assignment', async () => {
       const user = userEvent.setup();
-      
+
       // Mock network error
       (global.fetch as jest.Mock).mockImplementation((url, options) => {
         if (url === '/api/users') {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ users: mockUsers })
+            json: () => Promise.resolve({ users: mockUsers }),
           });
         }
         if (url.includes('/assign-reimbursement')) {
@@ -530,7 +560,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
         }
         return Promise.resolve({
           ok: false,
-          json: () => Promise.resolve({ error: 'Not found' })
+          json: () => Promise.resolve({ error: 'Not found' }),
         });
       });
 
@@ -560,7 +590,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
     test('should handle missing authentication token', async () => {
       const user = userEvent.setup();
-      
+
       // Mock missing token
       mockLocalStorage.getItem.mockReturnValue(null);
 
@@ -575,13 +605,15 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
       // Should still render but may not load users
       await waitFor(() => {
-        expect(screen.getByText('Reimbursement Assignment')).toBeInTheDocument();
+        expect(
+          screen.getByText('Reimbursement Assignment')
+        ).toBeInTheDocument();
       });
     });
 
     test('should validate form before submission', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <ReceiptViewerModal
           receiptId="receipt-123"
@@ -617,19 +649,21 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
       // Check for proper labeling
       expect(screen.getByText('Assign to User')).toBeInTheDocument();
-      expect(screen.getByText('Reimbursement Notes (Optional)')).toBeInTheDocument();
-      
+      expect(
+        screen.getByText('Reimbursement Notes (Optional)')
+      ).toBeInTheDocument();
+
       // Check for proper form controls
       const selectTrigger = screen.getByRole('combobox');
       expect(selectTrigger).toBeInTheDocument();
-      
+
       const textArea = screen.getByRole('textbox');
       expect(textArea).toBeInTheDocument();
     });
 
     test('should support keyboard navigation', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <ReceiptViewerModal
           receiptId="receipt-123"
@@ -641,7 +675,7 @@ describe('ReceiptViewerModal - Reimbursement Functionality', () => {
 
       // Tab through form elements
       await user.tab();
-      
+
       // Should be able to navigate to select
       const selectTrigger = screen.getByRole('combobox');
       expect(selectTrigger).toHaveClass('focus-visible:ring-2'); // Or similar focus class

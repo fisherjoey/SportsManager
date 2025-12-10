@@ -10,13 +10,14 @@ import {
   UserCheck, Settings, Plus, Edit, Trash2,
   FolderOpen, FileCheck, Eye, Clock, ShieldCheck
 } from 'lucide-react'
+import { Info } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceManager } from '@/components/resource-centre/ResourceManager'
 import { ResourceEditor } from '@/components/resource-centre/ResourceEditor'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info } from 'lucide-react'
 
 interface ResourceRendererProps {
   slug: string
@@ -366,55 +367,55 @@ export function ResourceCentre({ onNavigate }: ResourceCentreProps) {
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => {
-          const IconComponent = category.icon
-          return (
-            <Card key={category.title} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                    <IconComponent className="h-5 w-5" />
+            const IconComponent = category.icon
+            return (
+              <Card key={category.title} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                      <IconComponent className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">
+                        {category.title}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {category.description}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">
-                      {category.title}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {category.description}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {category.items.map((item) => {
-                    const ItemIcon = item.icon
-                    return (
-                      <button
-                        key={item.slug}
-                        onClick={() => onNavigate?.(`resources/${item.slug}`)}
-                        className="w-full flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors group text-left"
-                      >
-                        <div className="p-1.5 bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary rounded transition-colors">
-                          <ItemIcon className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {item.description}
-                          </p>
-                        </div>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
-                      </button>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {category.items.map((item) => {
+                      const ItemIcon = item.icon
+                      return (
+                        <button
+                          key={item.slug}
+                          onClick={() => onNavigate?.(`resources/${item.slug}`)}
+                          className="w-full flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors group text-left"
+                        >
+                          <div className="p-1.5 bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary rounded transition-colors">
+                            <ItemIcon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
+                              {item.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {item.description}
+                            </p>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>

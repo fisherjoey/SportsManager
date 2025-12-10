@@ -81,7 +81,7 @@ class ApiClient {
       // Use cookie utility for consistent cookie management
       setAuthToken(token, {
         maxAge: 604800, // 7 days (matches JWT expiry)
-        sameSite: 'lax',
+        sameSite: 'lax'
       })
     }
   }
@@ -2713,7 +2713,7 @@ class ApiClient {
         byPriority: {},
         byType: {}
       }
-    });
+    })
   }
 
   // Notification broadcast endpoint
@@ -3151,7 +3151,7 @@ class ApiClient {
 
   // Permission Management API Methods
   async getUserPermissions(userId?: string) {
-    const endpoint = userId ? `/admin/permissions/users/${userId}` : '/auth/refresh-permissions';
+    const endpoint = userId ? `/admin/permissions/users/${userId}` : '/auth/refresh-permissions'
     return this.request<{
       success: boolean;
       permissions: Permission[];
@@ -3225,7 +3225,7 @@ class ApiClient {
     return this.request<{
       success: boolean;
       data: { roles: any[] };
-    }>(`/users/roles`)
+    }>('/users/roles')
   }
 
   async getRoleById(roleId: string) {
@@ -3542,7 +3542,7 @@ class ApiClient {
     }>('/users', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(userData)
     })
@@ -3555,7 +3555,7 @@ class ApiClient {
     }>(`/users/${userId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(userData)
     })
@@ -3991,21 +3991,21 @@ class ApiClient {
     status?: 'active' | 'inactive' | 'completed';
     role?: 'mentor' | 'mentee';
   }): Promise<ApiResponse<any[]>> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.status) searchParams.append('status', params.status);
-    if (params?.role) searchParams.append('role', params.role);
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
+    if (params?.role) searchParams.append('role', params.role)
 
-    const queryString = searchParams.toString();
-    return this.get(`/mentorships${queryString ? `?${queryString}` : ''}`);
+    const queryString = searchParams.toString()
+    return this.get(`/mentorships${queryString ? `?${queryString}` : ''}`)
   }
 
   /**
    * Get mentorship details
    */
   async getMentorship(id: string): Promise<ApiResponse<any>> {
-    return this.get(`/mentorships/${id}`);
+    return this.get(`/mentorships/${id}`)
   }
 
   /**
@@ -4015,16 +4015,16 @@ class ApiClient {
     status?: 'active' | 'inactive' | 'completed';
     includeDetails?: boolean;
   }): Promise<ApiResponse<any[]>> {
-    const searchParams = new URLSearchParams();
-    if (params?.status) searchParams.append('status', params.status);
-    if (params?.includeDetails) searchParams.append('include_details', params.includeDetails.toString());
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.append('status', params.status)
+    if (params?.includeDetails) searchParams.append('include_details', params.includeDetails.toString())
 
-    const queryString = searchParams.toString();
+    const queryString = searchParams.toString()
     const endpoint = mentorId 
       ? `/mentorships/mentor/${mentorId}/mentees${queryString ? `?${queryString}` : ''}`
-      : `/mentorships/my-mentees${queryString ? `?${queryString}` : ''}`;
+      : `/mentorships/my-mentees${queryString ? `?${queryString}` : ''}`
     
-    return this.get(endpoint);
+    return this.get(endpoint)
   }
 
   /**
@@ -4039,17 +4039,17 @@ class ApiClient {
     sort_by?: 'game_date' | 'wage';
     sort_order?: 'asc' | 'desc';
   }): Promise<ApiResponse<any[]>> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.status) searchParams.append('status', params.status);
-    if (params?.date_from) searchParams.append('date_from', params.date_from);
-    if (params?.date_to) searchParams.append('date_to', params.date_to);
-    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
-    if (params?.sort_order) searchParams.append('sort_order', params.sort_order);
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
+    if (params?.date_from) searchParams.append('date_from', params.date_from)
+    if (params?.date_to) searchParams.append('date_to', params.date_to)
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by)
+    if (params?.sort_order) searchParams.append('sort_order', params.sort_order)
 
-    const queryString = searchParams.toString();
-    return this.get(`/mentees/${menteeId}/games${queryString ? `?${queryString}` : ''}`);
+    const queryString = searchParams.toString()
+    return this.get(`/mentees/${menteeId}/games${queryString ? `?${queryString}` : ''}`)
   }
 
   /**
@@ -4060,13 +4060,13 @@ class ApiClient {
     days_ahead?: number;
     include_details?: boolean;
   }): Promise<ApiResponse<any>> {
-    const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.days_ahead) searchParams.append('days_ahead', params.days_ahead.toString());
-    if (params?.include_details) searchParams.append('include_details', params.include_details.toString());
+    const searchParams = new URLSearchParams()
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.days_ahead) searchParams.append('days_ahead', params.days_ahead.toString())
+    if (params?.include_details) searchParams.append('include_details', params.include_details.toString())
 
-    const queryString = searchParams.toString();
-    return this.get(`/mentees/${menteeId}/games/upcoming${queryString ? `?${queryString}` : ''}`);
+    const queryString = searchParams.toString()
+    return this.get(`/mentees/${menteeId}/games/upcoming${queryString ? `?${queryString}` : ''}`)
   }
 
   /**
@@ -4080,16 +4080,16 @@ class ApiClient {
     season?: string;
     include_analytics?: boolean;
   }): Promise<ApiResponse<any>> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.date_from) searchParams.append('date_from', params.date_from);
-    if (params?.date_to) searchParams.append('date_to', params.date_to);
-    if (params?.season) searchParams.append('season', params.season);
-    if (params?.include_analytics !== undefined) searchParams.append('include_analytics', params.include_analytics.toString());
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.date_from) searchParams.append('date_from', params.date_from)
+    if (params?.date_to) searchParams.append('date_to', params.date_to)
+    if (params?.season) searchParams.append('season', params.season)
+    if (params?.include_analytics !== undefined) searchParams.append('include_analytics', params.include_analytics.toString())
 
-    const queryString = searchParams.toString();
-    return this.get(`/mentees/${menteeId}/games/history${queryString ? `?${queryString}` : ''}`);
+    const queryString = searchParams.toString()
+    return this.get(`/mentees/${menteeId}/games/history${queryString ? `?${queryString}` : ''}`)
   }
 
   /**
@@ -4101,14 +4101,14 @@ class ApiClient {
     season?: string;
     compare_to_previous?: boolean;
   }): Promise<ApiResponse<any>> {
-    const searchParams = new URLSearchParams();
-    if (params?.date_from) searchParams.append('date_from', params.date_from);
-    if (params?.date_to) searchParams.append('date_to', params.date_to);
-    if (params?.season) searchParams.append('season', params.season);
-    if (params?.compare_to_previous) searchParams.append('compare_to_previous', params.compare_to_previous.toString());
+    const searchParams = new URLSearchParams()
+    if (params?.date_from) searchParams.append('date_from', params.date_from)
+    if (params?.date_to) searchParams.append('date_to', params.date_to)
+    if (params?.season) searchParams.append('season', params.season)
+    if (params?.compare_to_previous) searchParams.append('compare_to_previous', params.compare_to_previous.toString())
 
-    const queryString = searchParams.toString();
-    return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`);
+    const queryString = searchParams.toString()
+    return this.get(`/mentees/${menteeId}/games/analytics${queryString ? `?${queryString}` : ''}`)
   }
 
   // ==================== CHUNK METHODS ====================
@@ -4138,7 +4138,7 @@ class ApiClient {
    * Create a new chunk
    */
   async createChunk(data: import('./types/chunks').CreateChunkRequest) {
-    return this.request<{ chunk: import('./types/chunks').GameChunk }>(`/chunks`, {
+    return this.request<{ chunk: import('./types/chunks').GameChunk }>('/chunks', {
       method: 'POST',
       body: JSON.stringify(data)
     })
@@ -4178,7 +4178,7 @@ class ApiClient {
    * Auto-create chunks based on criteria
    */
   async autoCreateChunks(data: import('./types/chunks').AutoCreateChunksRequest) {
-    return this.request<{ chunks_created: number; chunks: import('./types/chunks').GameChunk[] }>(`/chunks/auto-create`, {
+    return this.request<{ chunks_created: number; chunks: import('./types/chunks').GameChunk[] }>('/chunks/auto-create', {
       method: 'POST',
       body: JSON.stringify(data)
     })

@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { PageAccessGuard } from '@/components/page-access-guard';
-import { NotificationPreferences } from '@/components/NotificationPreferences';
+import { PageAccessGuard } from '@/components/page-access-guard'
+import { NotificationPreferences } from '@/components/NotificationPreferences'
 
 /**
  * Notification Settings Page
@@ -14,5 +14,5 @@ export default function NotificationSettingsPage() {
     <PageAccessGuard pageId="settings_notifications">
       <NotificationPreferences />
     </PageAccessGuard>
-  );
+  )
 }

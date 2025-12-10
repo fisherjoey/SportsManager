@@ -19,14 +19,14 @@ export function VenueFacilitiesDisplay({
   const facilitiesArray = Array.isArray(facilities)
     ? facilities
     : facilities
-    ? (() => {
+      ? (() => {
         try {
           return JSON.parse(facilities)
         } catch {
           return []
         }
       })()
-    : []
+      : []
 
   if (!facilitiesArray || facilitiesArray.length === 0) {
     return (

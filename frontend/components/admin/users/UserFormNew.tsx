@@ -1,20 +1,21 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2, Mail, User, Shield, Key, Check, X, Phone, MapPin, Calendar, Users, Building, CreditCard, Bell } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Mail, User, Shield, Key, Check, X, Phone, MapPin, Calendar, Users, Building, CreditCard, Bell } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -26,21 +27,21 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
+  CommandItem
+} from '@/components/ui/command'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import { User as UserType, CommunicationPreferences, BankingInfo } from '@/types/user'
 
 interface Role {
@@ -905,7 +906,7 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
                       >
                         {selectedRoles.length > 0 
                           ? getSelectedRoleNames()
-                          : "Select roles..."}
+                          : 'Select roles...'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0">
@@ -920,8 +921,8 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
                             >
                               <Check
                                 className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedRoles.includes(role.id) ? "opacity-100" : "opacity-0"
+                                  'mr-2 h-4 w-4',
+                                  selectedRoles.includes(role.id) ? 'opacity-100' : 'opacity-0'
                                 )}
                               />
                               <div className="flex-1">
@@ -968,7 +969,7 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder={user ? "Leave blank to keep current" : "Enter password"}
+                        placeholder={user ? 'Leave blank to keep current' : 'Enter password'}
                       />
                     </div>
 

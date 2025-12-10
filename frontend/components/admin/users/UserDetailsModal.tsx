@@ -1,17 +1,5 @@
-"use client"
+'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { 
   Mail, 
   User, 
@@ -32,6 +20,18 @@ import {
   Star
 } from 'lucide-react'
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
 import { User as UserType, getUserDisplayName, getUserFullAddress, getYearsOfExperience } from '@/types/user'
 
 interface UserDetailsModalProps {
@@ -69,14 +69,14 @@ export function UserDetailsModal({ user, open, onClose, onEdit }: UserDetailsMod
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'destructive'
-      case 'assignor':
-        return 'default'
-      case 'referee':
-        return 'secondary'
-      default:
-        return 'outline'
+    case 'admin':
+      return 'destructive'
+    case 'assignor':
+      return 'default'
+    case 'referee':
+      return 'secondary'
+    default:
+      return 'outline'
     }
   }
 
@@ -94,7 +94,7 @@ export function UserDetailsModal({ user, open, onClose, onEdit }: UserDetailsMod
           {/* User Profile Section */}
           <div className="flex items-start space-x-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={`/placeholder-user.jpg`} />
+              <AvatarImage src={'/placeholder-user.jpg'} />
               <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -433,15 +433,15 @@ export function UserDetailsModal({ user, open, onClose, onEdit }: UserDetailsMod
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">White Whistle</span>
-                    <Badge variant={user.referee_profile.is_white_whistle ? "default" : "outline"}>
-                      {user.referee_profile.is_white_whistle ? "Yes" : "No"}
+                    <Badge variant={user.referee_profile.is_white_whistle ? 'default' : 'outline'}>
+                      {user.referee_profile.is_white_whistle ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Show White Whistle</span>
-                    <Badge variant={user.referee_profile.show_white_whistle ? "default" : "outline"}>
-                      {user.referee_profile.show_white_whistle ? "Yes" : "No"}
+                    <Badge variant={user.referee_profile.show_white_whistle ? 'default' : 'outline'}>
+                      {user.referee_profile.show_white_whistle ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                 </div>

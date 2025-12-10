@@ -1,7 +1,8 @@
-"use client"
+'use client'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { ScrollableRoleTabs } from './scrollable-role-tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const mockRoles = [
   { id: '1', name: 'Senior Referee', category: 'referee_type' },

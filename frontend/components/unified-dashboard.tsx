@@ -119,26 +119,26 @@ export function UnifiedDashboard() {
 
   const getPageTitle = () => {
     switch (activeView) {
-      case 'dashboard': return 'Dashboard'
-      case 'leagues': return 'League Management'
-      case 'tournaments': return 'Tournament Generator'
-      case 'games': return 'Games'
-      case 'assigning': return 'Game Assignment'
-      case 'ai-assignments': return 'AI Assignments'
-      case 'locations': return 'Teams & Locations'
-      case 'referees': return 'Referees'
-      case 'calendar': return 'Calendar'
-      case 'communications': return 'Communications'
-      case 'resources': return 'Resource Centre'
-      case 'assignments': return 'My Assignments'
-      case 'available': return 'Available Games'
-      case 'availability': return 'My Availability'
-      case 'expenses': return 'My Expenses'
-      case 'expense-create': return 'Submit Expense'
-      case 'profile': return 'Profile Settings'
-      case 'organization-settings': return 'Organization Settings'
-      case 'admin-access-control': return 'Access Control'
-      default: return 'Dashboard'
+    case 'dashboard': return 'Dashboard'
+    case 'leagues': return 'League Management'
+    case 'tournaments': return 'Tournament Generator'
+    case 'games': return 'Games'
+    case 'assigning': return 'Game Assignment'
+    case 'ai-assignments': return 'AI Assignments'
+    case 'locations': return 'Teams & Locations'
+    case 'referees': return 'Referees'
+    case 'calendar': return 'Calendar'
+    case 'communications': return 'Communications'
+    case 'resources': return 'Resource Centre'
+    case 'assignments': return 'My Assignments'
+    case 'available': return 'Available Games'
+    case 'availability': return 'My Availability'
+    case 'expenses': return 'My Expenses'
+    case 'expense-create': return 'Submit Expense'
+    case 'profile': return 'Profile Settings'
+    case 'organization-settings': return 'Organization Settings'
+    case 'admin-access-control': return 'Access Control'
+    default: return 'Dashboard'
     }
   }
 
@@ -198,99 +198,99 @@ export function UnifiedDashboard() {
     }
 
     switch (activeView) {
-      // Core pages
-      case 'dashboard':
-        return getDashboardComponent()
+    // Core pages
+    case 'dashboard':
+      return getDashboardComponent()
       
       // Sports Management
-      case 'leagues':
-        return <LeagueCreation />
-      case 'tournaments':
-        return <TournamentGenerator />
-      case 'games':
-        return <GamesManagementPage initialDateFilter={gameManagementDateFilter} />
-      case 'assigning':
-        return <GameAssignmentBoard />
-      case 'ai-assignments':
-        return <AIAssignmentsEnterprise />
-      case 'locations':
-        return <TeamsLocationsPage />
-      case 'referees':
-        return <RefereeManagement />
-      case 'calendar':
-        return <CalendarView 
-          onDateClick={(date: string) => {
-            setGameManagementDateFilter(date)
-            handleViewChange('games')
-          }} 
-        />
-      case 'communications':
-        return <CommunicationsManagement />
-      case 'resources':
-        // Check if user prefers new or old resource centre
-        return <ResourceCentreNew />
+    case 'leagues':
+      return <LeagueCreation />
+    case 'tournaments':
+      return <TournamentGenerator />
+    case 'games':
+      return <GamesManagementPage initialDateFilter={gameManagementDateFilter} />
+    case 'assigning':
+      return <GameAssignmentBoard />
+    case 'ai-assignments':
+      return <AIAssignmentsEnterprise />
+    case 'locations':
+      return <TeamsLocationsPage />
+    case 'referees':
+      return <RefereeManagement />
+    case 'calendar':
+      return <CalendarView 
+        onDateClick={(date: string) => {
+          setGameManagementDateFilter(date)
+          handleViewChange('games')
+        }} 
+      />
+    case 'communications':
+      return <CommunicationsManagement />
+    case 'resources':
+      // Check if user prefers new or old resource centre
+      return <ResourceCentreNew />
       
       // Referee-specific pages
-      case 'assignments':
-        return <MyAssignments />
-      case 'available':
-        return <AvailableGames />
-      case 'availability':
-        if (user?.referee_id) {
-          return <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} />
-        }
-        return <div className="p-4 text-center text-muted-foreground">
+    case 'assignments':
+      return <MyAssignments />
+    case 'available':
+      return <AvailableGames />
+    case 'availability':
+      if (user?.referee_id) {
+        return <AvailabilityCalendar refereeId={user.referee_id} canEdit={true} />
+      }
+      return <div className="p-4 text-center text-muted-foreground">
           Please complete your referee profile to manage availability.
-        </div>
+      </div>
       
       // Expense Management
-      case 'expenses':
-        return <ExpenseListEnhanced onCreateExpense={() => handleViewChange('expense-create')} />
-      case 'expense-create':
-        return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange('expenses')} />
+    case 'expenses':
+      return <ExpenseListEnhanced onCreateExpense={() => handleViewChange('expense-create')} />
+    case 'expense-create':
+      return <ExpenseFormIntegrated onExpenseCreated={() => handleViewChange('expenses')} />
       
       // Settings & Admin
-      case 'profile':
-        return <ProfileSettings />
-      case 'organization-settings':
-        return <OrganizationSettings />
-      case 'admin-access-control':
-        return <UnifiedAccessControlDashboard />
+    case 'profile':
+      return <ProfileSettings />
+    case 'organization-settings':
+      return <OrganizationSettings />
+    case 'admin-access-control':
+      return <UnifiedAccessControlDashboard />
       
       // Financial Management - Coming Soon
-      case 'financial-dashboard':
-      case 'financial-receipts':
-      case 'financial-budgets':
-      case 'financial-expenses':
-      case 'financial-expense-create':
-      case 'financial-expense-approvals':
-      case 'financial-reports':
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-8">
-            <div className="text-center space-y-4 max-w-md">
-              <DollarSign className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
-              <h2 className="text-2xl font-bold text-muted-foreground">Financial Module Coming Soon</h2>
-              <p className="text-muted-foreground">
+    case 'financial-dashboard':
+    case 'financial-receipts':
+    case 'financial-budgets':
+    case 'financial-expenses':
+    case 'financial-expense-create':
+    case 'financial-expense-approvals':
+    case 'financial-reports':
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <DollarSign className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+            <h2 className="text-2xl font-bold text-muted-foreground">Financial Module Coming Soon</h2>
+            <p className="text-muted-foreground">
                 The financial management features are scheduled for release next month. 
                 Check back soon for budget tracking, expense management, and financial reporting.
-              </p>
-              <div className="pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleViewChange('dashboard')}
-                  className="gap-2"
-                >
-                  <Home className="h-4 w-4" />
+            </p>
+            <div className="pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => handleViewChange('dashboard')}
+                className="gap-2"
+              >
+                <Home className="h-4 w-4" />
                   Return to Dashboard
-                </Button>
-              </div>
+              </Button>
             </div>
           </div>
-        )
+        </div>
+      )
       
       // Default fallback
-      default:
-        return getDashboardComponent()
+    default:
+      return getDashboardComponent()
     }
   }
 

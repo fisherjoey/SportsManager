@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, DollarSign, Home } from 'lucide-react'
+import { ShieldOff } from 'lucide-react'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -42,7 +43,6 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { usePageAccess } from '@/hooks/usePageAccess'
 import { useAuth } from '@/components/auth-provider'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ShieldOff } from 'lucide-react'
 
 
 export function AdminDashboard() {

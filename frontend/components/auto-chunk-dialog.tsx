@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { Calendar, MapPin, Layers, Info } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -18,7 +19,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,7 +53,7 @@ export function AutoChunkDialog({
   onOpenChange,
   onConfirm,
   availableLocations,
-  availableLeagues,
+  availableLeagues
 }: AutoChunkDialogProps) {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -97,7 +98,7 @@ export function AutoChunkDialog({
     const params: AutoChunkParams = {
       dateRange: {
         start_date: startDate,
-        end_date: endDate,
+        end_date: endDate
       },
       locations: selectedLocations,
       leagues: selectedLeagues.length > 0 ? selectedLeagues : availableLeagues,
@@ -105,8 +106,8 @@ export function AutoChunkDialog({
         group_by: groupBy,
         min_games: minGames,
         max_games: maxGames,
-        max_time_gap: maxTimeGap,
-      },
+        max_time_gap: maxTimeGap
+      }
     }
     onConfirm(params)
   }

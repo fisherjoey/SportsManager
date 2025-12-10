@@ -1,13 +1,14 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Bell, Mail, MessageSquare, Save, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { notificationsApi, NotificationPreferences as NotificationPrefsType } from '@/lib/notifications-api';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect } from 'react'
+import { Bell, Mail, MessageSquare, Save, Loader2 } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { notificationsApi, NotificationPreferences as NotificationPrefsType } from '@/lib/notifications-api'
+import { useToast } from '@/components/ui/use-toast'
 
 /**
  * NotificationPreferences Component
@@ -16,7 +17,7 @@ import { useToast } from '@/components/ui/use-toast';
  * Allows users to configure email, SMS, and in-app notification settings.
  */
 export function NotificationPreferences() {
-  const { toast } = useToast();
+  const { toast } = useToast()
   const [preferences, setPreferences] = useState<NotificationPrefsType>({
     email_assignments: true,
     email_reminders: true,
@@ -24,10 +25,10 @@ export function NotificationPreferences() {
     sms_assignments: true,
     sms_reminders: true,
     in_app_enabled: true
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
 
   /**
    * Fetch current preferences
@@ -35,23 +36,23 @@ export function NotificationPreferences() {
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        setIsLoading(true);
-        const data = await notificationsApi.getPreferences();
-        setPreferences(data);
+        setIsLoading(true)
+        const data = await notificationsApi.getPreferences()
+        setPreferences(data)
       } catch (error) {
-        console.error('Error fetching notification preferences:', error);
+        console.error('Error fetching notification preferences:', error)
         toast({
           title: 'Error',
           description: 'Failed to load notification preferences.',
           variant: 'destructive'
-        });
+        })
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchPreferences();
-  }, [toast]);
+    fetchPreferences()
+  }, [toast])
 
   /**
    * Handle preference change
@@ -60,35 +61,35 @@ export function NotificationPreferences() {
     setPreferences(prev => ({
       ...prev,
       [key]: value
-    }));
-    setHasChanges(true);
-  };
+    }))
+    setHasChanges(true)
+  }
 
   /**
    * Save preferences
    */
   const handleSave = async () => {
     try {
-      setIsSaving(true);
-      const updated = await notificationsApi.updatePreferences(preferences);
-      setPreferences(updated);
-      setHasChanges(false);
+      setIsSaving(true)
+      const updated = await notificationsApi.updatePreferences(preferences)
+      setPreferences(updated)
+      setHasChanges(false)
 
       toast({
         title: 'Success',
         description: 'Notification preferences updated successfully.'
-      });
+      })
     } catch (error) {
-      console.error('Error saving notification preferences:', error);
+      console.error('Error saving notification preferences:', error)
       toast({
         title: 'Error',
         description: 'Failed to save notification preferences. Please try again.',
         variant: 'destructive'
-      });
+      })
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   if (isLoading) {
     return (
@@ -99,7 +100,7 @@ export function NotificationPreferences() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -263,5 +264,5 @@ export function NotificationPreferences() {
         </Button>
       </div>
     </div>
-  );
+  )
 }

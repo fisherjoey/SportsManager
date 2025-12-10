@@ -1,17 +1,18 @@
-"use client"
+'use client'
 
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Upload, Calendar, AlertCircle, CheckCircle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
-import { api } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useCallback } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { Upload, Calendar, AlertCircle, CheckCircle, X } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
+import { api } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
 interface CalendarUploadProps {
   onUploadComplete?: (result: any) => void;
@@ -49,10 +50,10 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
   defaultGameType = 'League',
   leagueId
 }) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [options, setOptions] = useState<UploadOptions>({
     overwriteExisting: false,
     autoCreateTeams: false,
@@ -60,22 +61,22 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
     defaultLevel,
     defaultGameType,
     leagueId
-  });
+  })
 
-  const { toast } = useToast();
+  const { toast } = useToast()
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
+      const file = acceptedFiles[0]
       if (file.name.endsWith('.ics') || file.type === 'text/calendar') {
-        setFile(file);
-        setError(null);
-        setUploadResult(null);
+        setFile(file)
+        setError(null)
+        setUploadResult(null)
       } else {
-        setError('Please select a valid .ics calendar file');
+        setError('Please select a valid .ics calendar file')
       }
     }
-  }, []);
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -84,34 +85,34 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
     },
     maxFiles: 1,
     multiple: false
-  });
+  })
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file to upload');
-      return;
+      setError('Please select a file to upload')
+      return
     }
 
-    setUploading(true);
-    setError(null);
+    setUploading(true)
+    setError(null)
 
-    const formData = new FormData();
-    formData.append('calendar', file);
+    const formData = new FormData()
+    formData.append('calendar', file)
 
     // Append options to FormData
     Object.entries(options).forEach(([key, value]) => {
       if (value !== undefined) {
-        formData.append(key, value.toString());
+        formData.append(key, value.toString())
       }
-    });
+    })
 
     try {
-      const token = localStorage.getItem('auth_token');  // Changed from 'token' to 'auth_token'
-      console.log('Token exists:', !!token);
-      console.log('Token value:', token);
+      const token = localStorage.getItem('auth_token')  // Changed from 'token' to 'auth_token'
+      console.log('Token exists:', !!token)
+      console.log('Token value:', token)
 
       if (!token) {
-        throw new Error('No authentication token found. Please log in again.');
+        throw new Error('No authentication token found. Please log in again.')
       }
 
       const response = await fetch('http://localhost:3001/api/calendar/upload', {
@@ -120,54 +121,54 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
           'Authorization': `Bearer ${token}`
         },
         body: formData
-      });
+      })
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
 
-      const data = await response.json();
-      console.log('Response data:', data);
+      const data = await response.json()
+      console.log('Response data:', data)
 
       if (response.ok && data.success) {
-        setUploadResult(data.data);
+        setUploadResult(data.data)
         toast({
           title: 'Calendar Imported',
-          description: `Imported ${data.data.imported} games, skipped ${data.data.skipped}, failed ${data.data.failed}`,
-        });
+          description: `Imported ${data.data.imported} games, skipped ${data.data.skipped}, failed ${data.data.failed}`
+        })
 
         if (onUploadComplete) {
-          onUploadComplete(data.data);
+          onUploadComplete(data.data)
         }
       } else {
         console.error('Upload failed - Response:', {
           status: response.status,
           statusText: response.statusText,
           data: data
-        });
-        throw new Error(data.error?.message || data.error || `Failed to upload calendar (${response.status})`);
+        })
+        throw new Error(data.error?.message || data.error || `Failed to upload calendar (${response.status})`)
       }
     } catch (err) {
-      console.error('Upload error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload calendar';
-      setError(errorMessage);
+      console.error('Upload error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload calendar'
+      setError(errorMessage)
       toast({
         title: 'Upload Failed',
         description: errorMessage,
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const clearFile = () => {
-    setFile(null);
-    setUploadResult(null);
-    setError(null);
-  };
+    setFile(null)
+    setUploadResult(null)
+    setError(null)
+  }
 
-  const gameLevels = ['Youth', 'U10', 'U12', 'U14', 'U16', 'U18', 'Adult', 'Varsity', 'JV'];
-  const gameTypes = ['League', 'Tournament', 'Playoff', 'Exhibition', 'Scrimmage'];
+  const gameLevels = ['Youth', 'U10', 'U12', 'U14', 'U16', 'U18', 'Adult', 'Varsity', 'JV']
+  const gameTypes = ['League', 'Tournament', 'Playoff', 'Exhibition', 'Scrimmage']
 
   return (
     <Card>
@@ -463,8 +464,8 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
                         game.status === 'imported'
                           ? 'bg-green-50 dark:bg-green-900/20'
                           : game.status === 'skipped'
-                          ? 'bg-yellow-50 dark:bg-yellow-900/20'
-                          : 'bg-red-50 dark:bg-red-900/20'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                            : 'bg-red-50 dark:bg-red-900/20'
                       }`}
                     >
                       {game.status === 'imported' && <CheckCircle className="h-3 w-3 text-green-600" />}
@@ -501,7 +502,7 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
         )}
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default CalendarUpload;
+export default CalendarUpload

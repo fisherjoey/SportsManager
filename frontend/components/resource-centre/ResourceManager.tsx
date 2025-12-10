@@ -1,6 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { 
+  Search, Plus, Edit, Trash2, Eye, Download, 
+  Filter, MoreHorizontal, Loader2, AlertCircle,
+  ChevronLeft, ChevronRight
+} from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,13 +21,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
-import { 
-  Search, Plus, Edit, Trash2, Eye, Download, 
-  Filter, MoreHorizontal, Loader2, AlertCircle,
-  ChevronLeft, ChevronRight
-} from 'lucide-react'
+
 import { ResourceEditor } from './ResourceEditor'
 
 interface ContentItem {

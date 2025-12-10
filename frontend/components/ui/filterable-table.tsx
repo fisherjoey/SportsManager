@@ -664,8 +664,8 @@ export function FilterableTable<T extends Record<string, any>>({
       accessorFn: typeof col.accessor === 'function'
         ? (row: T) => row
         : typeof col.accessor === 'string'
-        ? (row: T) => (row as any)[col.accessor as string]
-        : (row: T) => (row as any)[col.id],
+          ? (row: T) => (row as any)[col.accessor as string]
+          : (row: T) => (row as any)[col.id],
       header: ({ column: tanstackColumn }) => (
         <FilterableHeader column={col} tanstackColumn={tanstackColumn} />
       ),

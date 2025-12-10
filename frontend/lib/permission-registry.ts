@@ -8,9 +8,10 @@
  * @module lib/permission-registry
  */
 
-import { PERMISSIONS } from './permissions'
 import fs from 'fs'
 import path from 'path'
+
+import { PERMISSIONS } from './permissions'
 
 export interface PermissionDefinition {
   id: string
@@ -177,7 +178,7 @@ export class PermissionRegistry {
         // Simple regex patterns to detect route definitions
         const patterns = [
           /router\.(get|post|put|patch|delete)\(['"`]([^'"`]+)['"`]/gi,
-          /app\.(get|post|put|patch|delete)\(['"`]([^'"`]+)['"`]/gi,
+          /app\.(get|post|put|patch|delete)\(['"`]([^'"`]+)['"`]/gi
         ]
         
         patterns.forEach(pattern => {
@@ -192,7 +193,7 @@ export class PermissionRegistry {
                 method,
                 path,
                 requiredPermissions: [],
-                description: `Auto-detected endpoint`,
+                description: 'Auto-detected endpoint',
                 autoDetected: true,
                 configured: false
               }
@@ -237,7 +238,7 @@ export class PermissionRegistry {
     unconfiguredPages: string[]
     unconfiguredApis: string[]
     errors: string[]
-  } {
+    } {
     const errors: string[] = []
     
     // Check for unconfigured pages

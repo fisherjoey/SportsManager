@@ -1,18 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useToast } from '@/components/ui/use-toast'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Progress } from '@/components/ui/progress'
 import { 
   User, 
   Calendar, 
@@ -38,6 +26,19 @@ import {
   Users,
   Activity
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/use-toast'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Progress } from '@/components/ui/progress'
 import { 
   Dialog,
   DialogContent,
@@ -45,14 +46,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from '@/components/ui/dialog'
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { apiClient } from '@/lib/api'
 import { 
@@ -70,6 +71,7 @@ import {
   type SessionType
 } from '@/types/mentorship'
 import { RichTextEditor } from '@/components/rich-text-editor'
+
 import { DocumentManager } from './DocumentManager'
 
 interface MenteeDetailsViewProps {
@@ -349,7 +351,7 @@ function ProfileTab({ mentee, editing, onEdit, onSave, onCancel }: {
     street_address: mentee.street_address || '',
     city: mentee.city || '',
     province_state: mentee.province_state || '',
-    postal_zip_code: mentee.postal_zip_code || '',
+    postal_zip_code: mentee.postal_zip_code || ''
   })
 
   const handleSave = async () => {

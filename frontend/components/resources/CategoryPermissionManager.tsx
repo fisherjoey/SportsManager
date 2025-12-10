@@ -1,14 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Switch } from '@/components/ui/switch'
 import { 
   Save, 
   Folder, 
@@ -20,7 +12,15 @@ import {
   FileText,
   ArrowRight
 } from 'lucide-react'
-import { PermissionMatrix } from './PermissionMatrix'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Switch } from '@/components/ui/switch'
 import { 
   ResourceCategory,
   CategoryPermission, 
@@ -29,6 +29,9 @@ import {
   Role,
   CategoryPermissionForm
 } from '@/lib/types'
+
+import { PermissionMatrix } from './PermissionMatrix'
+
 
 interface CategoryPermissionManagerProps {
   category: ResourceCategory
@@ -116,12 +119,12 @@ export function CategoryPermissionManager({
       prev.map(perm => 
         perm.roleId === roleId
           ? {
-              ...perm,
-              permissions: {
-                ...perm.permissions,
-                [permission]: granted
-              }
+            ...perm,
+            permissions: {
+              ...perm.permissions,
+              [permission]: granted
             }
+          }
           : perm
       )
     )

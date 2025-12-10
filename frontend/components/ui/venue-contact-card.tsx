@@ -1,6 +1,7 @@
 'use client'
 
 import { Phone, Mail, User } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 

@@ -218,9 +218,9 @@ export function MenteeGamesView({
         <Badge
           variant={
             game.status === 'completed' ? 'default' :
-            game.status === 'accepted' ? 'secondary' :
-            game.status === 'pending' ? 'outline' : 
-            'destructive'
+              game.status === 'accepted' ? 'secondary' :
+                game.status === 'pending' ? 'outline' : 
+                  'destructive'
           }
         >
           {game.status.charAt(0).toUpperCase() + game.status.slice(1)}
@@ -290,7 +290,7 @@ export function MenteeGamesView({
         </div>
         <div className="flex items-center space-x-2">
           <Button
-            variant={showAnalytics ? "default" : "outline"}
+            variant={showAnalytics ? 'default' : 'outline'}
             size="sm"
             onClick={() => setShowAnalytics(!showAnalytics)}
           >

@@ -12,6 +12,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
+
 import { PermissionRegistry } from './permission-registry'
 import { PERMISSIONS } from './permissions'
 

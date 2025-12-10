@@ -1,6 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  Plus, 
+  MoreVertical, 
+  Eye, 
+  MessageSquare, 
+  Calendar, 
+  BookOpen, 
+  TrendingUp,
+  Clock,
+  CheckCircle
+} from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,20 +31,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreVertical, 
-  Eye, 
-  MessageSquare, 
-  Calendar, 
-  BookOpen, 
-  TrendingUp,
-  Clock,
-  CheckCircle
-} from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { Mentee, getMenteeProgress, getMenteeStatusColor, formatSessionDuration } from '@/types/mentorship'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'

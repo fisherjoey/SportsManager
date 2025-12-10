@@ -30,7 +30,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 
 interface AppSidebarProps {
@@ -560,44 +560,44 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                         {section.items.map((item) => (
                           <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton 
-                          onMouseEnter={(e) => {
-                            hoveredItemRef.current = e.currentTarget
-                          }}
-                          onClick={() => {
-                            // In click mode when collapsed, expand sidebar on icon click
-                            if (state === 'collapsed' && interactionMode === 'click') {
-                              const now = Date.now()
-                              // Double-click detection (within 500ms)
-                              if (now - lastClickTime.current < 500) {
-                                // Double-click: toggle pin
-                                handlePinToggle()
-                              } else {
-                                // Single click: expand temporarily
-                                setOpen(true)
-                                // Auto-collapse after 5 seconds if not pinned
-                                if (!isPinned) {
-                                  setTimeout(() => {
-                                    if (!isPinned) setOpen(false)
-                                  }, 5000)
+                              onMouseEnter={(e) => {
+                                hoveredItemRef.current = e.currentTarget
+                              }}
+                              onClick={() => {
+                                // In click mode when collapsed, expand sidebar on icon click
+                                if (state === 'collapsed' && interactionMode === 'click') {
+                                  const now = Date.now()
+                                  // Double-click detection (within 500ms)
+                                  if (now - lastClickTime.current < 500) {
+                                    // Double-click: toggle pin
+                                    handlePinToggle()
+                                  } else {
+                                    // Single click: expand temporarily
+                                    setOpen(true)
+                                    // Auto-collapse after 5 seconds if not pinned
+                                    if (!isPinned) {
+                                      setTimeout(() => {
+                                        if (!isPinned) setOpen(false)
+                                      }, 5000)
+                                    }
+                                  }
+                                  lastClickTime.current = now
                                 }
-                              }
-                              lastClickTime.current = now
-                            }
-                            setActiveView(item.url)
-                          }} 
-                          isActive={activeView === item.url}
-                          tooltip={state === 'collapsed' ? `${item.title}${interactionMode === 'click' ? ' (Double-click to pin)' : ''}` : item.title}
-                          className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
-                        >
-                          <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground group-data-[collapsible=icon]:mr-0" />
-                          <span className="truncate text-left group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
+                                setActiveView(item.url)
+                              }} 
+                              isActive={activeView === item.url}
+                              tooltip={state === 'collapsed' ? `${item.title}${interactionMode === 'click' ? ' (Double-click to pin)' : ''}` : item.title}
+                              className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
+                            >
+                              <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground group-data-[collapsible=icon]:mr-0" />
+                              <span className="truncate text-left group-data-[collapsible=icon]:hidden">{item.title}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
                   )}
-              </SidebarGroup>
+                </SidebarGroup>
               )
             })}
           </>

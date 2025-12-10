@@ -1,37 +1,6 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useToast } from '@/components/ui/use-toast'
 import {
   Users,
   UserPlus,
@@ -44,6 +13,38 @@ import {
   Search,
   Filter
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useToast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 
 interface User {
@@ -152,7 +153,7 @@ export function MentorshipManagement() {
 
       toast({
         title: 'Success',
-        description: 'Mentorship created successfully',
+        description: 'Mentorship created successfully'
       })
 
       // Reload data
@@ -205,7 +206,7 @@ export function MentorshipManagement() {
 
       toast({
         title: 'Success',
-        description: `Mentorship status updated to ${status}`,
+        description: `Mentorship status updated to ${status}`
       })
 
       // Reload data to reflect changes

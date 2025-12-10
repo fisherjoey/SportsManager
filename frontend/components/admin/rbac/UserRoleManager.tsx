@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Search, Loader2, Users, UserPlus, UserMinus, Mail } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +18,6 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/components/ui/use-toast'
-import { Search, Loader2, Users, UserPlus, UserMinus, Mail } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface User {
@@ -220,7 +221,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
         
         toast({
           title: 'Success',
-          description: `Updated users for role ${role.name}`,
+          description: `Updated users for role ${role.name}`
         })
         
         onSuccess()
@@ -228,7 +229,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
       } else {
         toast({
           title: 'No Changes',
-          description: 'No changes were made to user assignments',
+          description: 'No changes were made to user assignments'
         })
       }
 
@@ -328,8 +329,8 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                         currentRoleUsers.has(user.id)
                           ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
                           : selectedUsers.has(user.id)
-                          ? 'bg-accent border-accent-foreground/20'
-                          : 'hover:bg-muted/50'
+                            ? 'bg-accent border-accent-foreground/20'
+                            : 'hover:bg-muted/50'
                       }`}
                     >
                       <Checkbox

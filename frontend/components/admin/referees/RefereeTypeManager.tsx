@@ -1,17 +1,18 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2, AlertTriangle } from 'lucide-react'
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
-import { Loader2, AlertTriangle } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 
 interface RefereeType {

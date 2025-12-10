@@ -256,8 +256,8 @@ export function ContentManagerDashboardOverview() {
                       <Badge 
                         variant={
                           resource.status === 'published' ? 'success' :
-                          resource.status === 'review' ? 'warning' :
-                          'secondary'
+                            resource.status === 'review' ? 'warning' :
+                              'secondary'
                         }
                       >
                         {resource.status}
@@ -308,8 +308,8 @@ export function ContentManagerDashboardOverview() {
                     <Badge 
                       variant={
                         comm.status === 'sent' ? 'success' :
-                        comm.status === 'scheduled' ? 'default' :
-                        'secondary'
+                          comm.status === 'scheduled' ? 'default' :
+                            'secondary'
                       }
                     >
                       {comm.status}

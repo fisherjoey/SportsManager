@@ -1,13 +1,15 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2, Shield, CheckSquare, Square } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,7 +17,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Shield, CheckSquare, Square } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface Permission {

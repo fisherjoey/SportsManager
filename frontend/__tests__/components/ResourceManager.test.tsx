@@ -1,6 +1,6 @@
 /**
  * Frontend Component Tests for Resource Manager
- * 
+ *
  * These tests will FAIL initially (Red Phase) - this is expected in TDD!
  * We'll implement the components to make them pass.
  */
@@ -31,7 +31,7 @@ describe('ResourceManager Component', () => {
       status: 'published',
       created_at: '2024-01-15T10:00:00Z',
       updated_at: '2024-01-15T10:00:00Z',
-      author: { id: 1, name: 'John Admin' }
+      author: { id: 1, name: 'John Admin' },
     },
     {
       id: 2,
@@ -42,14 +42,14 @@ describe('ResourceManager Component', () => {
       status: 'draft',
       created_at: '2024-01-14T09:00:00Z',
       updated_at: '2024-01-14T09:00:00Z',
-      author: { id: 1, name: 'John Admin' }
-    }
+      author: { id: 1, name: 'John Admin' },
+    },
   ];
 
   const mockCategories = [
     { id: 1, name: 'Training Materials', slug: 'training-materials' },
     { id: 2, name: 'Procedures', slug: 'procedures' },
-    { id: 3, name: 'Member Services', slug: 'member-services' }
+    { id: 3, name: 'Member Services', slug: 'member-services' },
   ];
 
   test('should render resource list with content items', async () => {
@@ -59,22 +59,26 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
       expect(screen.getByText('Referee Training Manual')).toBeInTheDocument();
       expect(screen.getByText('Game Day Procedures')).toBeInTheDocument();
-      expect(screen.getByText('Complete training guide for new referees')).toBeInTheDocument();
+      expect(
+        screen.getByText('Complete training guide for new referees')
+      ).toBeInTheDocument();
     });
 
     // Check status badges
@@ -88,15 +92,24 @@ describe('ResourceManager Component', () => {
 
   test('should show loading state while fetching data', async () => {
     // Mock slow API response
-    (global.fetch as jest.Mock).mockImplementation(() => 
-      new Promise(resolve => setTimeout(() => resolve({
-        ok: true,
-        json: async () => ({ items: [], pagination: {} })
-      }), 100))
+    (global.fetch as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                json: async () => ({ items: [], pagination: {} }),
+              }),
+            100
+          )
+        )
     );
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     expect(screen.getByText('Loading resources...')).toBeInTheDocument();
@@ -106,12 +119,16 @@ describe('ResourceManager Component', () => {
   test('should handle API errors gracefully', async () => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
-      expect(screen.getByText('Error loading resources. Please try again.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Error loading resources. Please try again.')
+      ).toBeInTheDocument();
       expect(screen.getByText('Retry')).toBeInTheDocument();
     });
   });
@@ -122,24 +139,26 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Second call for filtered results
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           items: [mockContentItems[0]], // Only training material
-          pagination: { page: 1, limit: 10, total: 1, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 1, pages: 1 },
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -164,24 +183,26 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Search results
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           items: [mockContentItems[0]],
-          pagination: { page: 1, limit: 10, total: 1, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 1, pages: 1 },
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -191,42 +212,47 @@ describe('ResourceManager Component', () => {
     // Search
     const searchInput = screen.getByPlaceholderText('Search resources...');
     await user.type(searchInput, 'referee');
-    
+
     // Debounced search should trigger after typing
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/content/items?search=referee'),
-        expect.any(Object)
-      );
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/api/content/items?search=referee'),
+          expect.any(Object)
+        );
+      },
+      { timeout: 1000 }
+    );
   });
 
   test('should handle pagination', async () => {
     const paginatedResponse = {
       items: mockContentItems,
-      pagination: { page: 1, limit: 10, total: 25, pages: 3 }
+      pagination: { page: 1, limit: 10, total: 25, pages: 3 },
     };
 
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => paginatedResponse
+        json: async () => paginatedResponse,
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Page 2 response
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           items: [mockContentItems[1]],
-          pagination: { page: 2, limit: 10, total: 25, pages: 3 }
-        })
+          pagination: { page: 2, limit: 10, total: 25, pages: 3 },
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -251,16 +277,18 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: [],
-          pagination: { page: 1, limit: 10, total: 0, pages: 0 }
-        })
+          pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -283,24 +311,26 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Full content for editing
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           ...mockContentItems[0],
-          content: '<h1>Training Content</h1><p>Full content here</p>'
-        })
+          content: '<h1>Training Content</h1><p>Full content here</p>',
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -313,7 +343,9 @@ describe('ResourceManager Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Edit Resource')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Referee Training Manual')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('Referee Training Manual')
+      ).toBeInTheDocument();
     });
   });
 
@@ -323,29 +355,31 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Delete response
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true })
+        json: async () => ({ success: true }),
       })
       // Refresh after delete
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           items: [mockContentItems[1]], // Item removed
-          pagination: { page: 1, limit: 10, total: 1, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 1, pages: 1 },
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -358,8 +392,12 @@ describe('ResourceManager Component', () => {
 
     // Confirm deletion
     expect(screen.getByText('Confirm Deletion')).toBeInTheDocument();
-    expect(screen.getByText('Are you sure you want to delete "Referee Training Manual"?')).toBeInTheDocument();
-    
+    expect(
+      screen.getByText(
+        'Are you sure you want to delete "Referee Training Manual"?'
+      )
+    ).toBeInTheDocument();
+
     const confirmButton = screen.getByText('Delete');
     await user.click(confirmButton);
 
@@ -367,7 +405,7 @@ describe('ResourceManager Component', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/content/items/1',
         expect.objectContaining({
-          method: 'DELETE'
+          method: 'DELETE',
         })
       );
     });
@@ -379,16 +417,18 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -405,29 +445,31 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       })
       // Bulk delete response
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ deleted: 2 })
+        json: async () => ({ deleted: 2 }),
       })
       // Refresh after bulk delete
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           items: [],
-          pagination: { page: 1, limit: 10, total: 0, pages: 0 }
-        })
+          pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+        }),
       });
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {
@@ -455,7 +497,7 @@ describe('ResourceManager Component', () => {
         '/api/content/items/bulk-delete',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ ids: [1, 2] })
+          body: JSON.stringify({ ids: [1, 2] }),
         })
       );
     });
@@ -467,27 +509,29 @@ describe('ResourceManager Component', () => {
         ok: true,
         json: async () => ({
           items: mockContentItems,
-          pagination: { page: 1, limit: 10, total: 2, pages: 1 }
-        })
+          pagination: { page: 1, limit: 10, total: 2, pages: 1 },
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCategories
+        json: async () => mockCategories,
       });
 
     // Mock URL.createObjectURL and download
     global.URL.createObjectURL = jest.fn(() => 'mock-url');
     global.URL.revokeObjectURL = jest.fn();
-    
+
     const mockLink = {
       href: '',
       download: '',
-      click: jest.fn()
+      click: jest.fn(),
     };
     jest.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
 
-    const { ResourceManager } = await import('../../components/resource-centre/ResourceManager');
-    
+    const { ResourceManager } = await import(
+      '../../components/resource-centre/ResourceManager'
+    );
+
     render(<ResourceManager />);
 
     await waitFor(() => {

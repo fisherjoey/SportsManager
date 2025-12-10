@@ -6,6 +6,7 @@ import {
   BookOpen, GraduationCap, AlertCircle, Shield, Clipboard,
   Filter, X, Upload, Link2, Video, Image, Eye, Users
 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -850,8 +851,8 @@ export function ResourceCentreNew() {
                   onChange={(e) => setUploadForm({...uploadForm, file: e.target.files?.[0] || null})}
                   accept={
                     uploadForm.type === 'image' ? 'image/*' :
-                    uploadForm.type === 'video' ? 'video/*' :
-                    '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv'
+                      uploadForm.type === 'video' ? 'video/*' :
+                        '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv'
                   }
                 />
               </div>

@@ -1,4 +1,6 @@
-"use client"
+'use client'
+
+import { MoreVertical, Edit, Trash, Shield, Users, Power, Lock, UserPlus, Crown } from 'lucide-react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,9 +10,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Edit, Trash, Shield, Users, Power, Lock, UserPlus, Crown } from 'lucide-react'
 
 interface RoleCardProps {
   role: {

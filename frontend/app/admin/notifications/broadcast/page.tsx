@@ -1,6 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import {
+  Bell,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  Users,
+  Info,
+  RefreshCw,
+  Eye
+} from 'lucide-react'
+
 import { PageAccessGuard } from '@/components/page-access-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,7 +24,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -26,20 +37,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/components/ui/use-toast'
 import { notificationsApi, BroadcastNotificationData } from '@/lib/notifications-api'
-import {
-  Bell,
-  Send,
-  AlertCircle,
-  CheckCircle2,
-  Users,
-  Info,
-  RefreshCw,
-  Eye
-} from 'lucide-react'
 
 interface Role {
   name: string;
@@ -68,7 +69,7 @@ function BroadcastNotificationPageContent() {
     type: 'system',
     link: '',
     sendToAll: false,
-    selectedRoles: [],
+    selectedRoles: []
   })
 
   const [formErrors, setFormErrors] = useState<FormErrors>({})
@@ -107,7 +108,7 @@ function BroadcastNotificationPageContent() {
           { name: 'admin', description: 'Full system access' },
           { name: 'referee', description: 'Basic referee access' },
           { name: 'referee_coach', description: 'Referee coach access' },
-          { name: 'evaluator', description: 'Evaluator access' },
+          { name: 'evaluator', description: 'Evaluator access' }
         ])
       }
     } catch (error) {
@@ -117,7 +118,7 @@ function BroadcastNotificationPageContent() {
         { name: 'admin', description: 'Full system access' },
         { name: 'referee', description: 'Basic referee access' },
         { name: 'referee_coach', description: 'Referee coach access' },
-        { name: 'evaluator', description: 'Evaluator access' },
+        { name: 'evaluator', description: 'Evaluator access' }
       ])
     } finally {
       setIsLoadingRoles(false)
@@ -177,7 +178,7 @@ function BroadcastNotificationPageContent() {
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors in the form',
-        variant: 'destructive',
+        variant: 'destructive'
       })
       return
     }
@@ -197,7 +198,7 @@ function BroadcastNotificationPageContent() {
         link: formData.link.trim() || undefined,
         target_audience: {
           all_users: formData.sendToAll,
-          roles: formData.sendToAll ? undefined : formData.selectedRoles,
+          roles: formData.sendToAll ? undefined : formData.selectedRoles
         }
       }
 
@@ -210,7 +211,7 @@ function BroadcastNotificationPageContent() {
 
       toast({
         title: 'Notification Sent Successfully',
-        description: `Broadcast sent to ${result.createdCount} of ${result.recipientCount} users`,
+        description: `Broadcast sent to ${result.createdCount} of ${result.recipientCount} users`
       })
 
       // Reset form
@@ -220,7 +221,7 @@ function BroadcastNotificationPageContent() {
         type: 'system',
         link: '',
         sendToAll: false,
-        selectedRoles: [],
+        selectedRoles: []
       })
       setFormErrors({})
       setShowPreview(false)
@@ -230,7 +231,7 @@ function BroadcastNotificationPageContent() {
       toast({
         title: 'Broadcast Failed',
         description: error instanceof Error ? error.message : 'Failed to send notification. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       })
     } finally {
       setIsSending(false)
@@ -239,15 +240,15 @@ function BroadcastNotificationPageContent() {
 
   const getNotificationIcon = () => {
     switch (formData.type) {
-      case 'assignment':
-        return '📋'
-      case 'status_change':
-        return '🔄'
-      case 'reminder':
-        return '⏰'
-      case 'system':
-      default:
-        return '📢'
+    case 'assignment':
+      return '📋'
+    case 'status_change':
+      return '🔄'
+    case 'reminder':
+      return '⏰'
+    case 'system':
+    default:
+      return '📢'
     }
   }
 

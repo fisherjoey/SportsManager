@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+
 import { ProtectedRoute } from '@/components/protected-route'
 
 export const metadata: Metadata = {
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 export default function ResourceLayout({
-  children,
+  children
 }: {
   children: React.ReactNode
 }) {

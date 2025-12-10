@@ -1115,70 +1115,70 @@ export function GameAssignmentBoard() {
             <>
               {/* Action Buttons */}
               <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {editingChunkId ? (
-                <>
-                  <Button onClick={updateChunk} disabled={selectedGames.length === 0}>
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                <div className="flex items-center space-x-2">
+                  {editingChunkId ? (
+                    <>
+                      <Button onClick={updateChunk} disabled={selectedGames.length === 0}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
                     Update Chunk ({selectedGames.length})
-                  </Button>
-                  <Button variant="outline" onClick={cancelEditChunk}>
-                    <XCircle className="h-4 w-4 mr-2" />
+                      </Button>
+                      <Button variant="outline" onClick={cancelEditChunk}>
+                        <XCircle className="h-4 w-4 mr-2" />
                     Cancel Edit
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button onClick={createChunk} disabled={selectedGames.length === 0}>
-                    <Plus className="h-4 w-4 mr-2" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button onClick={createChunk} disabled={selectedGames.length === 0}>
+                        <Plus className="h-4 w-4 mr-2" />
                     Create Chunk ({selectedGames.length})
-                  </Button>
-                  <Button variant="outline" onClick={autoChunkByLocation}>
-                    <Layers className="h-4 w-4 mr-2" />
+                      </Button>
+                      <Button variant="outline" onClick={autoChunkByLocation}>
+                        <Layers className="h-4 w-4 mr-2" />
                     Auto-Chunk by Location
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" onClick={expandAll}>
-                <ChevronDown className="h-4 w-4 mr-1" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm" onClick={expandAll}>
+                    <ChevronDown className="h-4 w-4 mr-1" />
                 Expand All
-              </Button>
-              <Button variant="ghost" size="sm" onClick={collapseAll}>
-                <ChevronRight className="h-4 w-4 mr-1" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={collapseAll}>
+                    <ChevronRight className="h-4 w-4 mr-1" />
                 Collapse All
-              </Button>
-            </div>
-          </div>
+                  </Button>
+                </div>
+              </div>
 
-          {/* Grouped Games View */}
-          <div className="space-y-4">
-            {groupedGames.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No games found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
-                </CardContent>
-              </Card>
-            ) : (
-              groupedGames.map((locationGroup) => (
-                <GroupedLocationView
-                  key={locationGroup.location}
-                  locationGroup={locationGroup}
-                  isExpanded={expandedLocations.has(locationGroup.location)}
-                  selectedGames={selectedGames}
-                  expandedDates={expandedDates}
-                  onToggleLocation={() => toggleLocation(locationGroup.location)}
-                  onToggleDate={toggleDate}
-                  onSelectAllInLocation={() => selectAllInLocation(locationGroup.location)}
-                  onSelectAllInDate={selectAllInDate}
-                  onGameSelect={handleGameSelect}
-                />
-              ))
-            )}
-          </div>
+              {/* Grouped Games View */}
+              <div className="space-y-4">
+                {groupedGames.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No games found</h3>
+                      <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  groupedGames.map((locationGroup) => (
+                    <GroupedLocationView
+                      key={locationGroup.location}
+                      locationGroup={locationGroup}
+                      isExpanded={expandedLocations.has(locationGroup.location)}
+                      selectedGames={selectedGames}
+                      expandedDates={expandedDates}
+                      onToggleLocation={() => toggleLocation(locationGroup.location)}
+                      onToggleDate={toggleDate}
+                      onSelectAllInLocation={() => selectAllInLocation(locationGroup.location)}
+                      onSelectAllInDate={selectAllInDate}
+                      onGameSelect={handleGameSelect}
+                    />
+                  ))
+                )}
+              </div>
             </>
           )}
         </>
@@ -1198,7 +1198,7 @@ export function GameAssignmentBoard() {
                 Collapse All
               </Button>
               <Button variant="ghost" size="sm" onClick={fetchChunks} disabled={isLoadingChunks}>
-                <RotateCcw className={cn("h-4 w-4 mr-1", isLoadingChunks && "animate-spin")} />
+                <RotateCcw className={cn('h-4 w-4 mr-1', isLoadingChunks && 'animate-spin')} />
                 Refresh
               </Button>
               <Button variant="outline" onClick={() => setActiveTab('games')}>
@@ -1249,7 +1249,7 @@ export function GameAssignmentBoard() {
                 const isPastDate = new Date(dateGroup.date) < new Date(new Date().toDateString())
 
                 return (
-                  <Card key={dateGroup.date} className={cn("border-l-4", isPastDate ? "border-l-muted-foreground opacity-60" : "border-l-primary")}>
+                  <Card key={dateGroup.date} className={cn('border-l-4', isPastDate ? 'border-l-muted-foreground opacity-60' : 'border-l-primary')}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <button

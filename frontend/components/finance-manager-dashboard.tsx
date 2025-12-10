@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronRight, Home, DollarSign } from 'lucide-react'
+import { ShieldOff } from 'lucide-react'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -11,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { usePermissions } from '@/hooks/usePermissions'
 import { getPagePermissions, isViewAllowedForRole, getRoleConfig } from '@/lib/rbac-config'
 import { useAuth } from '@/components/auth-provider'
-import { ShieldOff } from 'lucide-react'
 
 export function FinanceManagerDashboard() {
   const { user } = useAuth()
@@ -102,8 +102,8 @@ export function FinanceManagerDashboard() {
     // Finance Manager role-specific permissions
     if (user?.role === 'finance_manager') {
       const allowedViews = ['dashboard', 'financial-dashboard', 'financial-receipts', 'financial-budgets', 
-                           'financial-expenses', 'financial-expense-create', 'financial-expense-approvals', 
-                           'financial-reports', 'profile']
+        'financial-expenses', 'financial-expense-create', 'financial-expense-approvals', 
+        'financial-reports', 'profile']
       return allowedViews.includes(view)
     }
     

@@ -1,20 +1,22 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Plus, Users, Shield, AlertCircle, Search, Filter, Download, MoreVertical, Edit, Eye, Trash2, DollarSign, UserCog } from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
-import { Plus, Users, Shield, AlertCircle, Search, Filter, Download, MoreVertical, Edit, Eye, Trash2, DollarSign, UserCog } from 'lucide-react'
-import { UserForm } from './UserFormNew'
-import { UserDetailsModal } from './UserDetailsModal'
 import { apiClient } from '@/lib/api'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { User, Role, getUserDisplayName, getYearsOfExperience, getExperienceLevel, getUserFullAddress } from '@/types/user'
+
+import { UserDetailsModal } from './UserDetailsModal'
+import { UserForm } from './UserFormNew'
 
 export function UserManagementDashboard() {
   const [users, setUsers] = useState<User[]>([])
@@ -116,7 +118,7 @@ export function UserManagementDashboard() {
       
       toast({
         title: 'User Deleted',
-        description: `${userToDelete.name || userToDelete.email} has been deleted`,
+        description: `${userToDelete.name || userToDelete.email} has been deleted`
       })
       
       fetchUsers()
@@ -143,7 +145,7 @@ export function UserManagementDashboard() {
       
       toast({
         title: 'Wage Updated',
-        description: `Referee wage updated to $${newWage.toFixed(2)} per game`,
+        description: `Referee wage updated to $${newWage.toFixed(2)} per game`
       })
       
       fetchUsers() // Refresh the data
@@ -166,7 +168,7 @@ export function UserManagementDashboard() {
       
       toast({
         title: 'Referee Type Updated',
-        description: `Referee type changed to ${newType}`,
+        description: `Referee type changed to ${newType}`
       })
       
       fetchUsers() // Refresh the data
@@ -420,7 +422,7 @@ export function UserManagementDashboard() {
             </div>
           )
         }
-      },
+      }
     ]
 
     if (showRefereeColumns) {

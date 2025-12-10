@@ -1,24 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageAccessGuard } from '@/components/page-access-guard'
-import { useAuth } from '@/components/auth-provider'
-import { LoginForm } from '@/components/login-form'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   LineChart,
   Line,
@@ -34,6 +17,25 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
+
+import { PageAccessGuard } from '@/components/page-access-guard'
+import { useAuth } from '@/components/auth-provider'
+import { LoginForm } from '@/components/login-form'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+
 
 interface DashboardData {
   summary: {
@@ -567,9 +569,9 @@ function FinancialDashboardPageContent() {
                         <Badge 
                           variant={
                             transaction.status === 'completed' ? 'success' :
-                            transaction.status === 'pending' ? 'outline' :
-                            transaction.status === 'approved' ? 'default' :
-                            'secondary'
+                              transaction.status === 'pending' ? 'outline' :
+                                transaction.status === 'approved' ? 'default' :
+                                  'secondary'
                           }
                         >
                           {transaction.status}

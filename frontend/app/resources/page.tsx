@@ -6,5 +6,5 @@ export default function ResourcesPage() {
 
 export const metadata = {
   title: 'Resource Centre - Sports Management',
-  description: 'Access important documents, training materials, and resources for referees and administrators.',
+  description: 'Access important documents, training materials, and resources for referees and administrators.'
 }

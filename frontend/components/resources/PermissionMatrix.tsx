@@ -1,11 +1,12 @@
 'use client'
 
 import React from 'react'
+import { InfoIcon, Users, Shield, Eye, Edit, Trash, Settings } from 'lucide-react'
+
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { InfoIcon, Users, Shield, Eye, Edit, Trash, Settings } from 'lucide-react'
 import { PermissionMatrix as PermissionMatrixType, PermissionType, Role } from '@/lib/types'
 
 interface PermissionMatrixProps {
@@ -40,31 +41,31 @@ const defaultPermissionIcons: Record<PermissionType, React.ReactNode> = {
 
 const getPermissionTooltip = (permission: PermissionType): string => {
   switch (permission) {
-    case 'view':
-      return 'Can view and read the resource'
-    case 'create':
-      return 'Can create new resources in this category'
-    case 'edit':
-      return 'Can modify existing resources'
-    case 'delete':
-      return 'Can delete resources'
-    case 'manage':
-      return 'Can manage permissions and grant access to others'
-    default:
-      return ''
+  case 'view':
+    return 'Can view and read the resource'
+  case 'create':
+    return 'Can create new resources in this category'
+  case 'edit':
+    return 'Can modify existing resources'
+  case 'delete':
+    return 'Can delete resources'
+  case 'manage':
+    return 'Can manage permissions and grant access to others'
+  default:
+    return ''
   }
 }
 
 const getSourceBadgeColor = (source?: string) => {
   switch (source) {
-    case 'direct':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    case 'category':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    case 'system':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+  case 'direct':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+  case 'category':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  case 'system':
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
   }
 }
 

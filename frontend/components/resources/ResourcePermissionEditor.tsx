@@ -1,13 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { 
   Save, 
   Shield, 
@@ -18,8 +11,14 @@ import {
   Lock,
   Unlock
 } from 'lucide-react'
-import { PermissionMatrix } from './PermissionMatrix'
-import { ResourceAccessDetails } from './ResourceAccessIndicator'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { 
   Resource, 
   ResourcePermission, 
@@ -30,6 +29,10 @@ import {
   PermissionSummary,
   Role
 } from '@/lib/types'
+
+import { PermissionMatrix } from './PermissionMatrix'
+import { ResourceAccessDetails } from './ResourceAccessIndicator'
+
 
 interface ResourcePermissionEditorProps {
   resource: Resource
@@ -142,13 +145,13 @@ export function ResourcePermissionEditor({
       prev.map(perm => 
         perm.roleId === roleId
           ? {
-              ...perm,
-              permissions: {
-                ...perm.permissions,
-                [permission]: granted
-              },
-              source: 'direct'
-            }
+            ...perm,
+            permissions: {
+              ...perm.permissions,
+              [permission]: granted
+            },
+            source: 'direct'
+          }
           : perm
       )
     )

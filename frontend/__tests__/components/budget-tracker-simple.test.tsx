@@ -24,12 +24,20 @@ jest.mock('../../components/ui/use-toast', () => ({
 
 // Mock Recharts components
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  PieChart: ({ children }: { children: React.ReactNode }) => <div data-testid="pie-chart">{children}</div>,
-  Pie: ({ children }: { children: React.ReactNode }) => <div data-testid="pie">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  PieChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="pie-chart">{children}</div>
+  ),
+  Pie: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="pie">{children}</div>
+  ),
   Cell: () => <div data-testid="cell" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
@@ -47,7 +55,7 @@ const mockBudgetData = {
       allocated: 50000,
       spent: 2500,
       percentage: 5,
-      color: '#0088FE'
+      color: '#0088FE',
     },
     {
       id: 2,
@@ -55,7 +63,7 @@ const mockBudgetData = {
       allocated: 10000,
       spent: 750,
       percentage: 7.5,
-      color: '#00C49F'
+      color: '#00C49F',
     },
     {
       id: 3,
@@ -63,7 +71,7 @@ const mockBudgetData = {
       allocated: 5000,
       spent: 0,
       percentage: 0,
-      color: '#FFBB28'
+      color: '#FFBB28',
     },
     {
       id: 4,
@@ -71,8 +79,8 @@ const mockBudgetData = {
       allocated: 8000,
       spent: 0,
       percentage: 0,
-      color: '#FF8042'
-    }
+      color: '#FF8042',
+    },
   ],
   summary: {
     totalAllocated: 73000,
@@ -80,13 +88,13 @@ const mockBudgetData = {
     overallUtilization: 4.45,
     remainingBudget: 69750,
     categoriesOverBudget: 0,
-    categoriesNearLimit: 0
+    categoriesNearLimit: 0,
   },
   period: {
     month: 8,
     year: 2025,
-    monthName: 'August'
-  }
+    monthName: 'August',
+  },
 };
 
 describe('BudgetTracker Component', () => {
@@ -96,7 +104,7 @@ describe('BudgetTracker Component', () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockBudgetData),
-      statusText: 'OK'
+      statusText: 'OK',
     });
   });
 
@@ -107,7 +115,9 @@ describe('BudgetTracker Component', () => {
   describe('Loading State', () => {
     it('should show loading spinner initially', async () => {
       // Mock fetch to never resolve
-      (global.fetch as jest.Mock).mockImplementation(() => new Promise(() => {}));
+      (global.fetch as jest.Mock).mockImplementation(
+        () => new Promise(() => {})
+      );
 
       render(<BudgetTracker />);
 
@@ -123,7 +133,9 @@ describe('BudgetTracker Component', () => {
         expect(screen.getByText('Budget Tracker')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Track budget utilization for August 2025')).toBeInTheDocument();
+      expect(
+        screen.getByText('Track budget utilization for August 2025')
+      ).toBeInTheDocument();
     });
 
     it('should display summary cards with correct values', async () => {
@@ -138,7 +150,9 @@ describe('BudgetTracker Component', () => {
 
       expect(screen.getByText('Allocated this month')).toBeInTheDocument();
       expect(screen.getByText('Available to spend')).toBeInTheDocument();
-      expect(screen.getByText('Over budget (0 near limit)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Over budget (0 near limit)')
+      ).toBeInTheDocument();
     });
 
     it('should display budget categories with progress bars', async () => {
@@ -188,9 +202,9 @@ describe('BudgetTracker Component', () => {
           'http://localhost:3001/api/budget-tracker/utilization',
           {
             headers: {
-              'Authorization': 'Bearer fake-token',
-              'Content-Type': 'application/json'
-            }
+              Authorization: 'Bearer fake-token',
+              'Content-Type': 'application/json',
+            },
           }
         );
       });
@@ -200,29 +214,31 @@ describe('BudgetTracker Component', () => {
   describe('Error Handling', () => {
     it('should display error message when API call fails', async () => {
       const mockToast = require('../../components/ui/use-toast').toast;
-      
+
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         statusText: 'Internal Server Error',
-        status: 500
+        status: 500,
       });
 
       render(<BudgetTracker />);
 
       await waitFor(() => {
-        expect(screen.getByText('Failed to load budget data: Internal Server Error')).toBeInTheDocument();
+        expect(
+          screen.getByText('Failed to load budget data: Internal Server Error')
+        ).toBeInTheDocument();
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Failed to load budget data: Internal Server Error',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     });
 
     it('should handle network errors', async () => {
       const mockToast = require('../../components/ui/use-toast').toast;
-      
+
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       render(<BudgetTracker />);
@@ -234,7 +250,7 @@ describe('BudgetTracker Component', () => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Network error',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     });
 
@@ -248,9 +264,9 @@ describe('BudgetTracker Component', () => {
           'http://localhost:3001/api/budget-tracker/utilization',
           {
             headers: {
-              'Authorization': 'Bearer null',
-              'Content-Type': 'application/json'
-            }
+              Authorization: 'Bearer null',
+              'Content-Type': 'application/json',
+            },
           }
         );
       });
@@ -268,7 +284,7 @@ describe('BudgetTracker Component', () => {
             allocated: 1000,
             spent: 1200,
             percentage: 120,
-            color: '#FF0000'
+            color: '#FF0000',
           },
           {
             id: 2,
@@ -276,7 +292,7 @@ describe('BudgetTracker Component', () => {
             allocated: 1000,
             spent: 850,
             percentage: 85,
-            color: '#FFA500'
+            color: '#FFA500',
           },
           {
             id: 3,
@@ -284,14 +300,14 @@ describe('BudgetTracker Component', () => {
             allocated: 1000,
             spent: 500,
             percentage: 50,
-            color: '#00FF00'
-          }
-        ]
+            color: '#00FF00',
+          },
+        ],
       };
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(overBudgetData)
+        json: () => Promise.resolve(overBudgetData),
       });
 
       render(<BudgetTracker />);
@@ -320,20 +336,20 @@ describe('BudgetTracker Component', () => {
             allocated: 1234.56,
             spent: 987.65,
             percentage: 80,
-            color: '#0088FE'
-          }
+            color: '#0088FE',
+          },
         ],
         summary: {
           ...mockBudgetData.summary,
           totalAllocated: 1234.56,
           totalSpent: 987.65,
-          remainingBudget: 246.91
-        }
+          remainingBudget: 246.91,
+        },
       };
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(customBudgetData)
+        json: () => Promise.resolve(customBudgetData),
       });
 
       render(<BudgetTracker />);
@@ -350,22 +366,22 @@ describe('BudgetTracker Component', () => {
     it('should handle zero values', async () => {
       const zeroBudgetData = {
         ...mockBudgetData,
-        budgets: mockBudgetData.budgets.map(budget => ({
+        budgets: mockBudgetData.budgets.map((budget) => ({
           ...budget,
           spent: 0,
-          percentage: 0
+          percentage: 0,
         })),
         summary: {
           ...mockBudgetData.summary,
           totalSpent: 0,
           overallUtilization: 0,
-          remainingBudget: mockBudgetData.summary.totalAllocated
-        }
+          remainingBudget: mockBudgetData.summary.totalAllocated,
+        },
       };
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(zeroBudgetData)
+        json: () => Promise.resolve(zeroBudgetData),
       });
 
       render(<BudgetTracker />);
@@ -411,8 +427,13 @@ describe('BudgetTracker Component', () => {
 
       // The exact number of progress elements depends on the Progress component implementation
       // but we can verify the categories are rendered with their data
-      const categories = ['Referee Wages', 'Operations', 'Equipment', 'Administration'];
-      categories.forEach(category => {
+      const categories = [
+        'Referee Wages',
+        'Operations',
+        'Equipment',
+        'Administration',
+      ];
+      categories.forEach((category) => {
         expect(screen.getByText(category)).toBeInTheDocument();
       });
     });

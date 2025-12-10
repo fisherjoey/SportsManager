@@ -66,7 +66,11 @@
       "Bash(git worktree:*)",
       "Bash(git reset:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

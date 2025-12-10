@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { Brain, CheckCircle2, AlertTriangle, Users, Calendar, MapPin, Clock } from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Brain, CheckCircle2, AlertTriangle, Users, Calendar, MapPin, Clock } from 'lucide-react'
 
 // Demo data for testing
 const demoGames = [

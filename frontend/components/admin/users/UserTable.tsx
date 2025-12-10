@@ -1,25 +1,6 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { 
   MoreVertical, 
   Edit, 
@@ -35,6 +16,26 @@ import {
   Star,
   Award
 } from 'lucide-react'
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { getYearsOfExperience } from '@/types/user'
 import { EditableWage } from '@/components/admin/referees/EditableWage'
 import { RefereeTypeManager } from '@/components/admin/referees/RefereeTypeManager'
@@ -111,14 +112,14 @@ export function UserTable({
     // Handle referee type roles with special styling
     if (role.category === 'referee_type') {
       switch (role.name) {
-        case 'Senior Referee':
-          return 'default'
-        case 'Junior Referee':
-          return 'secondary'  
-        case 'Rookie Referee':
-          return 'outline'
-        default:
-          return 'outline'
+      case 'Senior Referee':
+        return 'default'
+      case 'Junior Referee':
+        return 'secondary'  
+      case 'Rookie Referee':
+        return 'outline'
+      default:
+        return 'outline'
       }
     }
 
@@ -129,17 +130,17 @@ export function UserTable({
 
     // Handle legacy roles
     switch (role.name.toLowerCase()) {
-      case 'super admin':
-      case 'admin':
-        return 'destructive'
-      case 'assignor':
-        return 'default'
-      case 'referee':
-        return 'secondary'
-      case 'league manager':
-        return 'outline'
-      default:
-        return 'outline'
+    case 'super admin':
+    case 'admin':
+      return 'destructive'
+    case 'assignor':
+      return 'default'
+    case 'referee':
+      return 'secondary'
+    case 'league manager':
+      return 'outline'
+    default:
+      return 'outline'
     }
   }
 
@@ -147,14 +148,14 @@ export function UserTable({
     // Handle referee type roles
     if (role.category === 'referee_type') {
       switch (role.name) {
-        case 'Senior Referee':
-          return <Star className="h-3 w-3 mr-1" />
-        case 'Junior Referee':
-          return <UserCheck className="h-3 w-3 mr-1" />
-        case 'Rookie Referee':
-          return <Shield className="h-3 w-3 mr-1" />
-        default:
-          return <UserCheck className="h-3 w-3 mr-1" />
+      case 'Senior Referee':
+        return <Star className="h-3 w-3 mr-1" />
+      case 'Junior Referee':
+        return <UserCheck className="h-3 w-3 mr-1" />
+      case 'Rookie Referee':
+        return <Shield className="h-3 w-3 mr-1" />
+      default:
+        return <UserCheck className="h-3 w-3 mr-1" />
       }
     }
 
@@ -165,13 +166,13 @@ export function UserTable({
 
     // Handle legacy roles
     switch (role.name.toLowerCase()) {
-      case 'super admin':
-      case 'admin':
-        return <Shield className="h-3 w-3 mr-1" />
-      case 'assignor':
-        return <UserCheck className="h-3 w-3 mr-1" />
-      default:
-        return null
+    case 'super admin':
+    case 'admin':
+      return <Shield className="h-3 w-3 mr-1" />
+    case 'assignor':
+      return <UserCheck className="h-3 w-3 mr-1" />
+    default:
+      return null
     }
   }
 
@@ -229,7 +230,7 @@ export function UserTable({
               <TableCell>
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={`/placeholder-user.jpg`} />
+                    <AvatarImage src={'/placeholder-user.jpg'} />
                     <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                   </Avatar>
                   <div>

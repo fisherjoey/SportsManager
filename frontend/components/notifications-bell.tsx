@@ -1,35 +1,36 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react'
+import { Bell } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { formatDistanceToNow } from 'date-fns'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { notificationsApi, Notification } from '@/lib/notifications-api';
-import { formatDistanceToNow } from 'date-fns';
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { notificationsApi, Notification } from '@/lib/notifications-api'
 
 /**
  * Get icon for notification type
  */
 function getNotificationIcon(type: Notification['type']): string {
   switch (type) {
-    case 'assignment':
-      return '📋';
-    case 'status_change':
-      return '🔄';
-    case 'reminder':
-      return '⏰';
-    case 'system':
-      return '⚙️';
-    default:
-      return '📢';
+  case 'assignment':
+    return '📋'
+  case 'status_change':
+    return '🔄'
+  case 'reminder':
+    return '⏰'
+  case 'system':
+    return '⚙️'
+  default:
+    return '📢'
   }
 }
 
@@ -41,11 +42,11 @@ function getNotificationIcon(type: Notification['type']): string {
  * Polls for new notifications every 60 seconds.
  */
 export function NotificationsBell() {
-  const router = useRouter();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   /**
    * Fetch unread count and recent notifications
@@ -55,68 +56,68 @@ export function NotificationsBell() {
       const [count, notificationData] = await Promise.all([
         notificationsApi.getUnreadCount(),
         notificationsApi.getNotifications({ limit: 5 })
-      ]);
+      ])
 
-      setUnreadCount(count);
-      setRecentNotifications(notificationData.notifications);
+      setUnreadCount(count)
+      setRecentNotifications(notificationData.notifications)
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications:', error)
     }
-  };
+  }
 
   /**
    * Handle notification click
    */
   const handleNotificationClick = async (notification: Notification) => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
 
       // Mark as read
       if (!notification.is_read) {
-        await notificationsApi.markAsRead(notification.id);
+        await notificationsApi.markAsRead(notification.id)
 
         // Update local state
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(prev => Math.max(0, prev - 1))
         setRecentNotifications(prev =>
           prev.map(n =>
             n.id === notification.id ? { ...n, is_read: true } : n
           )
-        );
+        )
       }
 
       // Navigate to link if available
       if (notification.link) {
-        router.push(notification.link);
+        router.push(notification.link)
       }
 
-      setIsOpen(false);
+      setIsOpen(false)
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('Error marking notification as read:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   /**
    * Initial fetch and polling setup
    */
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications()
 
     // Poll every 60 seconds
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 60000)
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(interval)
+  }, [])
 
   /**
    * Refresh when dropdown opens
    */
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications();
+      fetchNotifications()
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -198,13 +199,13 @@ export function NotificationsBell() {
         <DropdownMenuItem
           className="text-center justify-center cursor-pointer text-sm font-medium text-primary"
           onClick={() => {
-            router.push('/notifications');
-            setIsOpen(false);
+            router.push('/notifications')
+            setIsOpen(false)
           }}
         >
           View All Notifications
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

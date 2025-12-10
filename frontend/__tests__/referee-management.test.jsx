@@ -1,25 +1,25 @@
-import React from 'react'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import '@testing-library/jest-dom'
-import { RefereeManagement } from '../components/referee-management'
-import { useApi } from '../lib/api'
-import { useToast } from '../components/ui/use-toast'
+import React from 'react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { RefereeManagement } from '../components/referee-management';
+import { useApi } from '../lib/api';
+import { useToast } from '../components/ui/use-toast';
 
 // Mock dependencies
-jest.mock('../lib/api')
-jest.mock('../components/ui/use-toast')
+jest.mock('../lib/api');
+jest.mock('../components/ui/use-toast');
 
-const mockToast = jest.fn()
+const mockToast = jest.fn();
 const mockApi = {
   getReferees: jest.fn(),
-  createInvitation: jest.fn()
-}
+  createInvitation: jest.fn(),
+};
 
 beforeEach(() => {
-  useApi.mockReturnValue(mockApi)
-  useToast.mockReturnValue({ toast: mockToast })
-  jest.clearAllMocks()
-})
+  useApi.mockReturnValue(mockApi);
+  useToast.mockReturnValue({ toast: mockToast });
+  jest.clearAllMocks();
+});
 
 const mockReferees = [
   {
@@ -38,7 +38,7 @@ const mockReferees = [
     maxDistance: 15,
     postalCode: 'T2J 5W7',
     createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z'
+    updatedAt: '2025-01-01T00:00:00Z',
   },
   {
     id: 'ref-2',
@@ -56,7 +56,7 @@ const mockReferees = [
     maxDistance: 20,
     postalCode: 'T1Y 9L0',
     createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z'
+    updatedAt: '2025-01-01T00:00:00Z',
   },
   {
     id: 'ref-3',
@@ -74,268 +74,275 @@ const mockReferees = [
     maxDistance: 25,
     postalCode: 'T2W 8E0',
     createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z'
-  }
-]
+    updatedAt: '2025-01-01T00:00:00Z',
+  },
+];
 
 describe('RefereeManagement Component', () => {
   describe('Data Loading', () => {
     test('loads referees on component mount', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
+        data: { referees: mockReferees },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(mockApi.getReferees).toHaveBeenCalledWith({ limit: 100 })
-      })
-    })
+        expect(mockApi.getReferees).toHaveBeenCalledWith({ limit: 100 });
+      });
+    });
 
     test('displays loading state initially', () => {
-      mockApi.getReferees.mockImplementation(() => new Promise(() => {})) // Never resolves
+      mockApi.getReferees.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument()
-    })
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
 
     test('handles API errors gracefully', async () => {
-      mockApi.getReferees.mockRejectedValue(new Error('API Error'))
+      mockApi.getReferees.mockRejectedValue(new Error('API Error'));
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith({
           title: 'Error',
           description: 'Failed to load referees. Please try again.',
-          variant: 'destructive'
-        })
-      })
-    })
-  })
+          variant: 'destructive',
+        });
+      });
+    });
+  });
 
   describe('Statistics Display', () => {
     beforeEach(async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
-    })
+        data: { referees: mockReferees },
+      });
+    });
 
     test('calculates total referees correctly', async () => {
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText('Total Referees')).toBeInTheDocument()
-        expect(screen.getByText('3')).toBeInTheDocument() // 3 mock referees
-      })
-    })
+        expect(screen.getByText('Total Referees')).toBeInTheDocument();
+        expect(screen.getByText('3')).toBeInTheDocument(); // 3 mock referees
+      });
+    });
 
     test('calculates elite level referees correctly', async () => {
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText('Elite Level')).toBeInTheDocument()
-        expect(screen.getByText('1')).toBeInTheDocument() // 1 elite referee in mock data
-      })
-    })
+        expect(screen.getByText('Elite Level')).toBeInTheDocument();
+        expect(screen.getByText('1')).toBeInTheDocument(); // 1 elite referee in mock data
+      });
+    });
 
     test('handles empty referee list', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: [] }
-      })
+        data: { referees: [] },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText('Total Referees')).toBeInTheDocument()
-        expect(screen.getByText('0')).toBeInTheDocument()
-      })
-    })
+        expect(screen.getByText('Total Referees')).toBeInTheDocument();
+        expect(screen.getByText('0')).toBeInTheDocument();
+      });
+    });
 
     test('handles non-array referee data safely', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: null }
-      })
+        data: { referees: null },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
         // Should not crash and should show 0 stats
-        expect(screen.getByText('Total Referees')).toBeInTheDocument()
-        expect(screen.getByText('0')).toBeInTheDocument()
-      })
-    })
-  })
+        expect(screen.getByText('Total Referees')).toBeInTheDocument();
+        expect(screen.getByText('0')).toBeInTheDocument();
+      });
+    });
+  });
 
   describe('Data Table Integration', () => {
     beforeEach(async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
-    })
+        data: { referees: mockReferees },
+      });
+    });
 
     test('passes referee data to DataTable', async () => {
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText('Mike Johnson')).toBeInTheDocument()
-        expect(screen.getByText('Sarah Connor')).toBeInTheDocument()
-        expect(screen.getByText('David Martinez')).toBeInTheDocument()
-      })
-    })
+        expect(screen.getByText('Mike Johnson')).toBeInTheDocument();
+        expect(screen.getByText('Sarah Connor')).toBeInTheDocument();
+        expect(screen.getByText('David Martinez')).toBeInTheDocument();
+      });
+    });
 
     test('enables view toggle for table/cards', async () => {
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
         // Check that view toggle buttons are present
-        const tableViewButton = screen.getByRole('button', { name: /table view/i })
-        const cardViewButton = screen.getByRole('button', { name: /card view/i })
-        
-        expect(tableViewButton || cardViewButton).toBeInTheDocument()
-      })
-    })
-  })
+        const tableViewButton = screen.getByRole('button', {
+          name: /table view/i,
+        });
+        const cardViewButton = screen.getByRole('button', {
+          name: /card view/i,
+        });
+
+        expect(tableViewButton || cardViewButton).toBeInTheDocument();
+      });
+    });
+  });
 
   describe('Referee Invitation', () => {
     beforeEach(async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
-    })
+        data: { referees: mockReferees },
+      });
+    });
 
     test('opens invitation dialog when invite button is clicked', async () => {
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        const inviteButton = screen.getByText('Invite New Referee')
-        fireEvent.click(inviteButton)
-        
-        expect(screen.getByText('Invite Referee')).toBeInTheDocument()
-        expect(screen.getByLabelText('Email')).toBeInTheDocument()
-        expect(screen.getByLabelText('First Name')).toBeInTheDocument()
-        expect(screen.getByLabelText('Last Name')).toBeInTheDocument()
-      })
-    })
+        const inviteButton = screen.getByText('Invite New Referee');
+        fireEvent.click(inviteButton);
+
+        expect(screen.getByText('Invite Referee')).toBeInTheDocument();
+        expect(screen.getByLabelText('Email')).toBeInTheDocument();
+        expect(screen.getByLabelText('First Name')).toBeInTheDocument();
+        expect(screen.getByLabelText('Last Name')).toBeInTheDocument();
+      });
+    });
 
     test('submits invitation form successfully', async () => {
       mockApi.createInvitation.mockResolvedValue({
-        data: { invitation_link: 'http://example.com/invite/123' }
-      })
+        data: { invitation_link: 'http://example.com/invite/123' },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        const inviteButton = screen.getByText('Invite New Referee')
-        fireEvent.click(inviteButton)
-      })
+        const inviteButton = screen.getByText('Invite New Referee');
+        fireEvent.click(inviteButton);
+      });
 
       // Fill out the form
       fireEvent.change(screen.getByLabelText('Email'), {
-        target: { value: 'new.referee@cmba.ca' }
-      })
+        target: { value: 'new.referee@cmba.ca' },
+      });
       fireEvent.change(screen.getByLabelText('First Name'), {
-        target: { value: 'John' }
-      })
+        target: { value: 'John' },
+      });
       fireEvent.change(screen.getByLabelText('Last Name'), {
-        target: { value: 'Doe' }
-      })
+        target: { value: 'Doe' },
+      });
 
       // Submit the form
-      const submitButton = screen.getByText('Send Invitation')
-      fireEvent.click(submitButton)
+      const submitButton = screen.getByText('Send Invitation');
+      fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(mockApi.createInvitation).toHaveBeenCalledWith({
           email: 'new.referee@cmba.ca',
           firstName: 'John',
           lastName: 'Doe',
-          role: 'referee'
-        })
+          role: 'referee',
+        });
 
         expect(mockToast).toHaveBeenCalledWith({
           title: 'Invitation sent',
-          description: 'Invitation sent to new.referee@cmba.ca. They will receive an email with signup instructions.'
-        })
-      })
-    })
+          description:
+            'Invitation sent to new.referee@cmba.ca. They will receive an email with signup instructions.',
+        });
+      });
+    });
 
     test('handles invitation API errors', async () => {
-      mockApi.createInvitation.mockRejectedValue(new Error('API Error'))
+      mockApi.createInvitation.mockRejectedValue(new Error('API Error'));
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        const inviteButton = screen.getByText('Invite New Referee')
-        fireEvent.click(inviteButton)
-      })
+        const inviteButton = screen.getByText('Invite New Referee');
+        fireEvent.click(inviteButton);
+      });
 
       // Fill out and submit the form
       fireEvent.change(screen.getByLabelText('Email'), {
-        target: { value: 'new.referee@cmba.ca' }
-      })
+        target: { value: 'new.referee@cmba.ca' },
+      });
       fireEvent.change(screen.getByLabelText('First Name'), {
-        target: { value: 'John' }
-      })
+        target: { value: 'John' },
+      });
       fireEvent.change(screen.getByLabelText('Last Name'), {
-        target: { value: 'Doe' }
-      })
+        target: { value: 'Doe' },
+      });
 
-      const submitButton = screen.getByText('Send Invitation')
-      fireEvent.click(submitButton)
+      const submitButton = screen.getByText('Send Invitation');
+      fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith({
           title: 'Error',
           description: 'Failed to send invitation. Please try again.',
-          variant: 'destructive'
-        })
-      })
-    })
-  })
+          variant: 'destructive',
+        });
+      });
+    });
+  });
 
   describe('CMBA Data Validation', () => {
     test('displays Calgary-specific locations correctly', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
+        data: { referees: mockReferees },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText('Northwest Calgary')).toBeInTheDocument()
-        expect(screen.getByText('Northeast Calgary')).toBeInTheDocument()
-        expect(screen.getByText('Southwest Calgary')).toBeInTheDocument()
-      })
-    })
+        expect(screen.getByText('Northwest Calgary')).toBeInTheDocument();
+        expect(screen.getByText('Northeast Calgary')).toBeInTheDocument();
+        expect(screen.getByText('Southwest Calgary')).toBeInTheDocument();
+      });
+    });
 
     test('displays basketball-specific certifications', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
+        data: { referees: mockReferees },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText(/NCCP Level 3 Basketball/)).toBeInTheDocument()
-        expect(screen.getByText(/Basketball Canada Certified/)).toBeInTheDocument()
-      })
-    })
+        expect(screen.getByText(/NCCP Level 3 Basketball/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Basketball Canada Certified/)
+        ).toBeInTheDocument();
+      });
+    });
 
     test('displays appropriate wage ranges for different levels', async () => {
       mockApi.getReferees.mockResolvedValue({
-        data: { referees: mockReferees }
-      })
+        data: { referees: mockReferees },
+      });
 
-      render(<RefereeManagement />)
+      render(<RefereeManagement />);
 
       await waitFor(() => {
         // Elite: $85, Competitive: $65, Recreational: $45
-        expect(screen.getByText(/85\.00/)).toBeInTheDocument()
-        expect(screen.getByText(/65\.00/)).toBeInTheDocument()
-        expect(screen.getByText(/45\.00/)).toBeInTheDocument()
-      })
-    })
-  })
-})
+        expect(screen.getByText(/85\.00/)).toBeInTheDocument();
+        expect(screen.getByText(/65\.00/)).toBeInTheDocument();
+        expect(screen.getByText(/45\.00/)).toBeInTheDocument();
+      });
+    });
+  });
+});

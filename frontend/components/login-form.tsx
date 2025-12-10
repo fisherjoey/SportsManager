@@ -239,8 +239,8 @@ export function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <Card className={cn(
-        "w-full max-w-md transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-5",
-        shake && "animate-shake"
+        'w-full max-w-md transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-5',
+        shake && 'animate-shake'
       )}>
         <CardHeader className="text-center space-y-2">
           <div className="flex justify-center mb-4">
@@ -315,8 +315,8 @@ export function LoginForm() {
                   aria-required="true"
                   aria-invalid={!!loginError}
                   className={cn(
-                    "transition-all",
-                    showPasswordToggle && "pr-10"
+                    'transition-all',
+                    showPasswordToggle && 'pr-10'
                   )}
                 />
                 {showPasswordToggle && (
@@ -376,8 +376,8 @@ export function LoginForm() {
             <CollapsibleTrigger className="w-full p-3 bg-muted/50 hover:bg-muted rounded-lg transition-colors text-sm font-medium text-left flex items-center justify-between group">
               <span>Demo Accounts</span>
               <span className={cn(
-                "text-muted-foreground transition-transform",
-                showDemoAccounts && "rotate-180"
+                'text-muted-foreground transition-transform',
+                showDemoAccounts && 'rotate-180'
               )}>▼</span>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2">

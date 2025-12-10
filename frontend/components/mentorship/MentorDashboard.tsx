@@ -1,11 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useToast } from '@/components/ui/use-toast'
 import { 
   Users, 
   TrendingUp, 
@@ -20,6 +15,12 @@ import {
   Plus,
   Eye
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
 import { Mentor, Mentee, getMenteeProgress, getMenteeStatusColor } from '@/types/mentorship'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'

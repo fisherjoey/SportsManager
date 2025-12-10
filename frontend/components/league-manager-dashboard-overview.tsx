@@ -256,8 +256,8 @@ export function LeagueManagerDashboardOverview() {
                       <Badge 
                         variant={
                           league.status === 'active' ? 'success' :
-                          league.status === 'upcoming' ? 'default' :
-                          'secondary'
+                            league.status === 'upcoming' ? 'default' :
+                              'secondary'
                         }
                       >
                         {league.status}

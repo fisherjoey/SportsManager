@@ -29,7 +29,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -39,7 +39,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 
 interface GamesManagementPageProps {
@@ -800,7 +800,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
     <PageLayout>
       <PageHeader
         icon={Calendar}
-        title={selectedMenteeId ? `${selectedMenteeName}'s Games` : "Game Management"}
+        title={selectedMenteeId ? `${selectedMenteeName}'s Games` : 'Game Management'}
         description={
           selectedMenteeId 
             ? `Viewing game assignments and performance for ${selectedMenteeName}`
@@ -976,7 +976,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
             onUploadComplete={(result) => {
               toast({
                 title: 'Import Complete',
-                description: `Successfully imported ${result.imported} games`,
+                description: `Successfully imported ${result.imported} games`
               })
               setCalendarUploadOpen(false)
               // Refresh games list

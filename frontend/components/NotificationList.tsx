@@ -1,31 +1,32 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Bell, Trash2, CheckCheck, Filter } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { notificationsApi, Notification } from '@/lib/notifications-api';
-import { formatDistanceToNow } from 'date-fns';
-import { EmptyState } from '@/components/ui/empty-state';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect } from 'react'
+import { Bell, Trash2, CheckCheck, Filter } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { formatDistanceToNow } from 'date-fns'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { notificationsApi, Notification } from '@/lib/notifications-api'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useToast } from '@/components/ui/use-toast'
 
 /**
  * Get icon for notification type
  */
 function getNotificationIcon(type: Notification['type']): string {
   switch (type) {
-    case 'assignment':
-      return '📋';
-    case 'status_change':
-      return '🔄';
-    case 'reminder':
-      return '⏰';
-    case 'system':
-      return '⚙️';
-    default:
-      return '📢';
+  case 'assignment':
+    return '📋'
+  case 'status_change':
+    return '🔄'
+  case 'reminder':
+    return '⏰'
+  case 'system':
+    return '⚙️'
+  default:
+    return '📢'
   }
 }
 
@@ -34,16 +35,16 @@ function getNotificationIcon(type: Notification['type']): string {
  */
 function getNotificationColor(type: Notification['type']): string {
   switch (type) {
-    case 'assignment':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
-    case 'status_change':
-      return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
-    case 'reminder':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-    case 'system':
-      return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300';
-    default:
-      return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300';
+  case 'assignment':
+    return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+  case 'status_change':
+    return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+  case 'reminder':
+    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+  case 'system':
+    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300'
+  default:
+    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300'
   }
 }
 
@@ -58,45 +59,45 @@ function getNotificationColor(type: Notification['type']): string {
  * - Click to navigate to linked pages
  */
 export function NotificationList() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const itemsPerPage = 20;
+  const router = useRouter()
+  const { toast } = useToast()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const itemsPerPage = 20
 
   /**
    * Fetch notifications
    */
   const fetchNotifications = async () => {
     try {
-      setIsLoading(true);
-      const offset = (currentPage - 1) * itemsPerPage;
+      setIsLoading(true)
+      const offset = (currentPage - 1) * itemsPerPage
 
       const data = await notificationsApi.getNotifications({
         unread_only: showUnreadOnly,
         limit: itemsPerPage,
         offset
-      });
+      })
 
-      setNotifications(data.notifications);
-      setUnreadCount(data.unreadCount);
-      setTotal(data.total);
+      setNotifications(data.notifications)
+      setUnreadCount(data.unreadCount)
+      setTotal(data.total)
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications:', error)
       toast({
         title: 'Error',
         description: 'Failed to load notifications. Please try again.',
         variant: 'destructive'
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   /**
    * Handle notification click
@@ -105,109 +106,109 @@ export function NotificationList() {
     try {
       // Mark as read
       if (!notification.is_read) {
-        await notificationsApi.markAsRead(notification.id);
+        await notificationsApi.markAsRead(notification.id)
 
         // Update local state
         setNotifications(prev =>
           prev.map(n =>
             n.id === notification.id ? { ...n, is_read: true } : n
           )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        )
+        setUnreadCount(prev => Math.max(0, prev - 1))
       }
 
       // Navigate to link if available
       if (notification.link) {
-        router.push(notification.link);
+        router.push(notification.link)
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('Error marking notification as read:', error)
       toast({
         title: 'Error',
         description: 'Failed to mark notification as read.',
         variant: 'destructive'
-      });
+      })
     }
-  };
+  }
 
   /**
    * Handle mark all as read
    */
   const handleMarkAllAsRead = async () => {
     try {
-      const count = await notificationsApi.markAllAsRead();
+      const count = await notificationsApi.markAllAsRead()
 
       setNotifications(prev =>
         prev.map(n => ({ ...n, is_read: true }))
-      );
-      setUnreadCount(0);
+      )
+      setUnreadCount(0)
 
       toast({
         title: 'Success',
         description: `Marked ${count} notification${count !== 1 ? 's' : ''} as read.`
-      });
+      })
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error('Error marking all as read:', error)
       toast({
         title: 'Error',
         description: 'Failed to mark all notifications as read.',
         variant: 'destructive'
-      });
+      })
     }
-  };
+  }
 
   /**
    * Handle delete notification
    */
   const handleDeleteNotification = async (notificationId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+    event.stopPropagation()
 
     try {
-      setDeletingId(notificationId);
-      await notificationsApi.deleteNotification(notificationId);
+      setDeletingId(notificationId)
+      await notificationsApi.deleteNotification(notificationId)
 
       // Update local state
-      const deletedNotification = notifications.find(n => n.id === notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      setTotal(prev => prev - 1);
+      const deletedNotification = notifications.find(n => n.id === notificationId)
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+      setTotal(prev => prev - 1)
 
       if (deletedNotification && !deletedNotification.is_read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(prev => Math.max(0, prev - 1))
       }
 
       toast({
         title: 'Success',
         description: 'Notification deleted.'
-      });
+      })
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('Error deleting notification:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete notification.',
         variant: 'destructive'
-      });
+      })
     } finally {
-      setDeletingId(null);
+      setDeletingId(null)
     }
-  };
+  }
 
   /**
    * Fetch on mount and when filters change
    */
   useEffect(() => {
-    fetchNotifications();
-  }, [currentPage, showUnreadOnly]);
+    fetchNotifications()
+  }, [currentPage, showUnreadOnly])
 
   /**
    * Reset to page 1 when filter changes
    */
   useEffect(() => {
     if (currentPage !== 1) {
-      setCurrentPage(1);
+      setCurrentPage(1)
     }
-  }, [showUnreadOnly]);
+  }, [showUnreadOnly])
 
-  const totalPages = Math.ceil(total / itemsPerPage);
+  const totalPages = Math.ceil(total / itemsPerPage)
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -361,5 +362,5 @@ export function NotificationList() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

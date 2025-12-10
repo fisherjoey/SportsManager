@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
+import { Edit2, Check, X, DollarSign } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Edit2, Check, X, DollarSign } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 
 interface EditableWageProps {

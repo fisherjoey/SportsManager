@@ -34,7 +34,7 @@ const DEFAULT_COOKIE_OPTIONS: Required<Omit<CookieOptions, 'domain' | 'httpOnly'
   path: '/',
   maxAge: 86400, // 24 hours
   secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
-  sameSite: 'lax',
+  sameSite: 'lax'
 }
 
 /**
@@ -156,7 +156,7 @@ export function deleteCookie(name: string, options: CookieOptions = {}): void {
 
   setCookie(name, '', {
     ...options,
-    maxAge: 0, // Expire immediately
+    maxAge: 0 // Expire immediately
   })
 }
 
@@ -218,7 +218,7 @@ export const COOKIE_NAMES = {
   /** User theme preference */
   THEME: 'theme',
   /** Sidebar state */
-  SIDEBAR_STATE: 'sidebar:state',
+  SIDEBAR_STATE: 'sidebar:state'
 } as const
 
 /**
@@ -235,7 +235,7 @@ export const COOKIE_NAMES = {
 export function setAuthToken(token: string, options?: CookieOptions): void {
   setCookie(COOKIE_NAMES.AUTH_TOKEN, token, {
     maxAge: 86400, // 24 hours
-    ...options,
+    ...options
   })
 }
 

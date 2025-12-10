@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Check, ChevronsUpDown, Users, UserCheck, Search } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -22,7 +24,6 @@ import {
   CommandSeparator
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronsUpDown, Users, UserCheck, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Mentee, getMenteeProgress, getMenteeStatusColor } from '@/types/mentorship'
 import { apiClient } from '@/lib/api'
@@ -159,8 +160,8 @@ export function MenteeSelector({
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        !selectedMenteeId ? "opacity-100" : "opacity-0"
+                        'mr-2 h-4 w-4',
+                        !selectedMenteeId ? 'opacity-100' : 'opacity-0'
                       )}
                     />
                     <Users className="mr-2 h-4 w-4" />
@@ -188,8 +189,8 @@ export function MenteeSelector({
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedMenteeId === mentee.id ? "opacity-100" : "opacity-0"
+                              'mr-2 h-4 w-4',
+                              selectedMenteeId === mentee.id ? 'opacity-100' : 'opacity-0'
                             )}
                           />
                           <div className="flex items-center gap-3 flex-1">
@@ -258,8 +259,8 @@ export function MenteeSelector({
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedMenteeId === mentee.id ? "opacity-100" : "opacity-0"
+                              'mr-2 h-4 w-4',
+                              selectedMenteeId === mentee.id ? 'opacity-100' : 'opacity-0'
                             )}
                           />
                           <div className="flex items-center gap-3 flex-1">

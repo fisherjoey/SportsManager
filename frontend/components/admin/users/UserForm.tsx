@@ -1,13 +1,15 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2, Mail, User, Shield, Key } from 'lucide-react'
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,11 +19,10 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Mail, User, Shield, Key } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface User {
@@ -250,7 +251,7 @@ export function UserForm({ user, open, onClose, onSuccess }: UserFormProps) {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={user ? "Leave blank to keep current" : "Enter password"}
+                  placeholder={user ? 'Leave blank to keep current' : 'Enter password'}
                 />
               </div>
 

@@ -1,14 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { 
   Users, 
   FileText, 
@@ -27,6 +19,15 @@ import {
   Clock,
   CheckCircle
 } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 interface CategoryManager {
@@ -82,7 +83,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
     activeManagers: 0,
     publicAccess: 0,
     restrictedAccess: 0,
-    recentActivity: 0,
+    recentActivity: 0
   })
   
   const [managers, setManagers] = useState<CategoryManager[]>([])
@@ -103,7 +104,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           activeManagers: 5,
           publicAccess: 28,
           restrictedAccess: 19,
-          recentActivity: 12,
+          recentActivity: 12
         })
 
         setManagers([
@@ -132,7 +133,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
             role: 'contributor',
             joinedAt: '2024-03-10',
             lastActive: '3 days ago'
-          },
+          }
         ])
 
         setResources([
@@ -165,7 +166,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
             viewCount: 412,
             uploadedAt: '2024-08-15',
             uploadedBy: 'Mike Wilson'
-          },
+          }
         ])
 
         setActivities([
@@ -189,7 +190,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
             description: 'Mike Wilson added as contributor',
             timestamp: '1 day ago',
             user: 'Sarah Johnson'
-          },
+          }
         ])
 
         setIsLoading(false)
@@ -201,37 +202,37 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'owner':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      case 'manager':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'contributor':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    case 'owner':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+    case 'manager':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+    case 'contributor':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'upload':
-        return <FileText className="h-4 w-4 text-green-600" />
-      case 'download':
-        return <Download className="h-4 w-4 text-blue-600" />
-      case 'permission_change':
-        return <Shield className="h-4 w-4 text-orange-600" />
-      case 'manager_added':
-        return <UserPlus className="h-4 w-4 text-purple-600" />
-      case 'manager_removed':
-        return <Users className="h-4 w-4 text-red-600" />
-      default:
-        return <Activity className="h-4 w-4 text-gray-600" />
+    case 'upload':
+      return <FileText className="h-4 w-4 text-green-600" />
+    case 'download':
+      return <Download className="h-4 w-4 text-blue-600" />
+    case 'permission_change':
+      return <Shield className="h-4 w-4 text-orange-600" />
+    case 'manager_added':
+      return <UserPlus className="h-4 w-4 text-purple-600" />
+    case 'manager_removed':
+      return <Users className="h-4 w-4 text-red-600" />
+    default:
+      return <Activity className="h-4 w-4 text-gray-600" />
     }
   }
 
   if (isLoading) {
     return (
-      <div className={cn("space-y-6", className)}>
+      <div className={cn('space-y-6', className)}>
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -245,7 +246,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
@@ -425,7 +426,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center space-x-2">
                         <p className="text-sm font-medium leading-none">{manager.name}</p>
-                        <Badge variant="secondary" className={cn("text-xs", getRoleColor(manager.role))}>
+                        <Badge variant="secondary" className={cn('text-xs', getRoleColor(manager.role))}>
                           {manager.role}
                         </Badge>
                       </div>

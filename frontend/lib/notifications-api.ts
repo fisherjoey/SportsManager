@@ -74,72 +74,72 @@ interface ApiResponse<T> {
 class NotificationsApiClient {
   private getBaseURL(): string {
     if (typeof window === 'undefined') {
-      return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
     }
 
-    const host = window.location.hostname;
+    const host = window.location.hostname
 
     if (host === 'localhost' || host === '127.0.0.1') {
-      return '/api';
+      return '/api'
     }
 
     if (process.env.NEXT_PUBLIC_API_URL) {
-      return process.env.NEXT_PUBLIC_API_URL;
+      return process.env.NEXT_PUBLIC_API_URL
     }
 
-    const protocol = window.location.protocol;
-    return `${protocol}//${host}:3001/api`;
+    const protocol = window.location.protocol
+    return `${protocol}//${host}:3001/api`
   }
 
   private getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return getAuthToken();
+    if (typeof window === 'undefined') return null
+    return getAuthToken()
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const baseURL = this.getBaseURL();
-    const url = `${baseURL}${endpoint}`;
-    const token = this.getToken();
+    const baseURL = this.getBaseURL()
+    const url = `${baseURL}${endpoint}`
+    const token = this.getToken()
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {})
-    };
+    }
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     const config: RequestInit = {
       ...options,
       headers
-    };
+    }
 
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(url, config)
 
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
 
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.message || errorMessage
         } catch (e) {
           // Ignore JSON parse errors
         }
 
-        throw new Error(errorMessage);
+        throw new Error(errorMessage)
       }
 
-      const contentType = response.headers.get('content-type');
+      const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        return await response.json()
       }
 
-      return { success: true } as T;
+      return { success: true } as T
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error);
-      throw error;
+      console.error(`API Error [${endpoint}]:`, error)
+      throw error
     }
   }
 
@@ -151,17 +151,17 @@ class NotificationsApiClient {
     limit?: number;
     offset?: number;
   }): Promise<NotificationListResult> {
-    const searchParams = new URLSearchParams();
-    if (params?.unread_only) searchParams.append('unread_only', 'true');
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.offset) searchParams.append('offset', params.offset.toString());
+    const searchParams = new URLSearchParams()
+    if (params?.unread_only) searchParams.append('unread_only', 'true')
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.offset) searchParams.append('offset', params.offset.toString())
 
-    const queryString = searchParams.toString();
+    const queryString = searchParams.toString()
     const response = await this.request<ApiResponse<NotificationListResult>>(
       `/notifications${queryString ? `?${queryString}` : ''}`
-    );
+    )
 
-    return response.data || { notifications: [], unreadCount: 0, total: 0 };
+    return response.data || { notifications: [], unreadCount: 0, total: 0 }
   }
 
   /**
@@ -170,8 +170,8 @@ class NotificationsApiClient {
   async getUnreadCount(): Promise<number> {
     const response = await this.request<ApiResponse<{ unreadCount: number }>>(
       '/notifications/unread-count'
-    );
-    return response.data?.unreadCount || 0;
+    )
+    return response.data?.unreadCount || 0
   }
 
   /**
@@ -181,8 +181,8 @@ class NotificationsApiClient {
     const response = await this.request<ApiResponse<{ success: boolean }>>(
       `/notifications/${notificationId}/read`,
       { method: 'PATCH' }
-    );
-    return response.data?.success || response.success || false;
+    )
+    return response.data?.success || response.success || false
   }
 
   /**
@@ -192,8 +192,8 @@ class NotificationsApiClient {
     const response = await this.request<ApiResponse<{ markedAsRead: number }>>(
       '/notifications/mark-all-read',
       { method: 'PATCH' }
-    );
-    return response.data?.markedAsRead || 0;
+    )
+    return response.data?.markedAsRead || 0
   }
 
   /**
@@ -203,8 +203,8 @@ class NotificationsApiClient {
     const response = await this.request<ApiResponse<{ success: boolean }>>(
       `/notifications/${notificationId}`,
       { method: 'DELETE' }
-    );
-    return response.data?.success || response.success || false;
+    )
+    return response.data?.success || response.success || false
   }
 
   /**
@@ -213,7 +213,7 @@ class NotificationsApiClient {
   async getPreferences(): Promise<NotificationPreferences> {
     const response = await this.request<ApiResponse<NotificationPreferences>>(
       '/notifications/preferences'
-    );
+    )
     return response.data || {
       email_assignments: true,
       email_reminders: true,
@@ -221,7 +221,7 @@ class NotificationsApiClient {
       sms_assignments: true,
       sms_reminders: true,
       in_app_enabled: true
-    };
+    }
   }
 
   /**
@@ -236,8 +236,8 @@ class NotificationsApiClient {
         method: 'PATCH',
         body: JSON.stringify(preferences)
       }
-    );
-    return response.data || preferences as NotificationPreferences;
+    )
+    return response.data || preferences as NotificationPreferences
   }
 
   /**
@@ -252,14 +252,14 @@ class NotificationsApiClient {
         method: 'POST',
         body: JSON.stringify(data)
       }
-    );
+    )
 
     if (!response.data) {
-      throw new Error('Invalid response from broadcast API');
+      throw new Error('Invalid response from broadcast API')
     }
 
-    return response.data;
+    return response.data
   }
 }
 
-export const notificationsApi = new NotificationsApiClient();
+export const notificationsApi = new NotificationsApiClient()

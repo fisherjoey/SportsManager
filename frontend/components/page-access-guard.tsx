@@ -8,8 +8,9 @@
 'use client'
 
 import type React from 'react'
-import { usePageAccess } from '@/hooks/usePageAccess'
 import { Loader2 } from 'lucide-react'
+
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 interface PageAccessGuardProps {
   /**
