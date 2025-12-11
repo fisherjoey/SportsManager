@@ -630,7 +630,7 @@ export class CommunicationService {
       let recipients: string[] = [];
 
       if (targetAudience.all_users) {
-        const query = 'SELECT id FROM users WHERE active = true';
+        const query = 'SELECT id FROM users WHERE is_active = true';
         const result = await this.pool.query(query);
         recipients = result.rows.map(row => row.id);
       } else {
@@ -747,17 +747,38 @@ export class CommunicationService {
    * Transform database communication to domain model
    */
   private transformDatabaseCommunication(dbComm: any): CommunicationWithRecipientInfo {
+    let targetAudience = dbComm.target_audience;
+    let attachments = dbComm.attachments;
+    let tags = dbComm.tags;
+
+    // Safely parse JSON fields
+    if (typeof targetAudience === 'string') {
+      try {
+        targetAudience = targetAudience ? JSON.parse(targetAudience) : {};
+      } catch {
+        targetAudience = {};
+      }
+    }
+    if (typeof attachments === 'string') {
+      try {
+        attachments = attachments ? JSON.parse(attachments) : [];
+      } catch {
+        attachments = [];
+      }
+    }
+    if (typeof tags === 'string') {
+      try {
+        tags = tags ? JSON.parse(tags) : [];
+      } catch {
+        tags = [];
+      }
+    }
+
     return {
       ...dbComm,
-      target_audience: typeof dbComm.target_audience === 'string'
-        ? JSON.parse(dbComm.target_audience)
-        : dbComm.target_audience,
-      attachments: dbComm.attachments
-        ? JSON.parse(dbComm.attachments)
-        : [],
-      tags: dbComm.tags
-        ? JSON.parse(dbComm.tags)
-        : []
+      target_audience: targetAudience || {},
+      attachments: attachments || [],
+      tags: tags || []
     };
   }
 
