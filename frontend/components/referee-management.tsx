@@ -39,6 +39,8 @@ import {
   isRefereeAvailable
 } from '@/utils/refereeHelpers'
 import { User } from '@/types/user'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 export function RefereeManagement() {
   const [referees, setReferees] = useState<Referee[]>([])
@@ -238,25 +240,25 @@ export function RefereeManagement() {
       title: 'Total Referees',
       value: Array.isArray(referees) ? referees.length : 0,
       icon: Users,
-      color: 'text-blue-600'
+      color: getStatusColorClass('info', 'text')
     },
     {
       title: 'Active This Week',
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
       icon: Calendar,
-      color: 'text-green-600'
+      color: getStatusColorClass('success', 'text')
     },
     {
       title: 'Available Now',
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.4) : 0,
       icon: Clock,
-      color: 'text-orange-600'
+      color: getStatusColorClass('warning', 'text')
     },
     {
       title: 'Senior Level',
       value: Array.isArray(referees) ? referees.filter((r) => r.new_referee_level === 'Senior' || r.level === 'Expert').length : 0,
       icon: UserPlus,
-      color: 'text-purple-600'
+      color: getStatusColorClass('info', 'text')
     }
   ]
 
@@ -311,12 +313,12 @@ export function RefereeManagement() {
         const level = getRefereeLevel(referee) || referee.new_referee_level || referee.level || 'Referee'
         const badgeClass = getRefereeLevelBadgeClass(level)
 
-        // Convert badge classes to Tailwind classes for compatibility
+        // Convert badge classes to theme-aware classes
         const tailwindClasses = {
-          'badge-referee-head': 'bg-red-100 text-red-800 border-red-200',
-          'badge-referee-senior': 'bg-purple-100 text-purple-800 border-purple-200',
-          'badge-referee-junior': 'bg-blue-100 text-blue-800 border-blue-200',
-          'badge-referee-rookie': 'bg-green-100 text-green-800 border-green-200',
+          'badge-referee-head': getStatusColorClass('error', 'bg'),
+          'badge-referee-senior': cn(getStatusColorClass('info', 'bg'), 'border-purple-200'),
+          'badge-referee-junior': cn(getStatusColorClass('info', 'bg'), 'border-blue-200'),
+          'badge-referee-rookie': cn(getStatusColorClass('success', 'bg'), 'border-green-200'),
           'badge-referee-coach': 'bg-indigo-100 text-indigo-800 border-indigo-200',
           'badge-referee-base': 'bg-gray-100 text-gray-800 border-gray-200',
           'badge-default': 'bg-secondary text-secondary-foreground'
@@ -405,13 +407,13 @@ export function RefereeManagement() {
         )
         
         const roleColors = {
-          'Senior Referee': 'bg-purple-100 text-purple-800',
-          'Junior Referee': 'bg-blue-100 text-blue-800', 
-          'Rookie Referee': 'bg-green-100 text-green-800',
-          'Evaluator': 'bg-emerald-100 text-emerald-800', 
+          'Senior Referee': cn(getStatusColorClass('info', 'bg'), 'text-purple-800'),
+          'Junior Referee': getStatusColorClass('info', 'bg'),
+          'Rookie Referee': getStatusColorClass('success', 'bg'),
+          'Evaluator': cn(getStatusColorClass('success', 'bg'), 'text-emerald-800'),
           'Mentor': 'bg-indigo-100 text-indigo-800',
-          'Regional Lead': 'bg-orange-100 text-orange-800',
-          'Assignor': 'bg-red-100 text-red-800',
+          'Regional Lead': getStatusColorClass('warning', 'bg'),
+          'Assignor': getStatusColorClass('error', 'bg'),
           'Inspector': 'bg-gray-100 text-gray-800'
         }
         
@@ -462,7 +464,7 @@ export function RefereeManagement() {
         return (
           <Badge
             variant={isAvailable ? 'default' : 'secondary'}
-            className={`text-xs ${isAvailable ? 'bg-success/10 text-success border-success/20 hover:bg-success/20' : 'bg-muted text-muted-foreground border-border'}`}
+            className={cn('text-xs', isAvailable ? 'bg-success/10 text-success border-success/20 hover:bg-success/20' : 'bg-muted text-muted-foreground border-border')}
           >
             {isAvailable ? 'Available' : 'Unavailable'}
           </Badge>

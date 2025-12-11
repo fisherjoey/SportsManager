@@ -16,6 +16,8 @@ import { apiClient, type Assignment, type Referee } from '@/lib/api'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 import { AnnouncementBoard } from '@/components/announcement-board'
 import { useAuth } from '@/components/auth-provider'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Enhanced interfaces with proper typing
 interface EnhancedGame {
@@ -334,28 +336,28 @@ export function DashboardOverview() {
       title: 'Total Games This Week',
       value: thisWeekGames.length,
       icon: Calendar,
-      color: 'text-blue-600',
+      color: getStatusColorClass('info', 'text'),
       description: 'Games scheduled this week'
     },
     {
       title: 'Unassigned Games',
       value: unassignedGames.length,
       icon: AlertCircle,
-      color: 'text-red-600',
+      color: getStatusColorClass('error', 'text'),
       description: 'Games needing referees'
     },
     {
       title: 'Up for Grabs',
       value: upForGrabsGames.length,
       icon: Clock,
-      color: 'text-orange-600',
+      color: getStatusColorClass('warning', 'text'),
       description: 'Available for pickup'
     },
     {
       title: 'Active Referees',
       value: referees.filter(r => r.isAvailable).length,
       icon: Users,
-      color: 'text-green-600',
+      color: getStatusColorClass('success', 'text'),
       description: 'Available for assignment'
     }
   ]
@@ -372,7 +374,7 @@ export function DashboardOverview() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Target className="h-5 w-5 mr-2 text-blue-600" />
+            <Target className={cn("h-5 w-5 mr-2", getStatusColorClass('info', 'text'))} />
             Your Performance
           </CardTitle>
           <CardDescription>Your assignment history and performance metrics</CardDescription>
@@ -382,15 +384,15 @@ export function DashboardOverview() {
             {/* Performance Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{refereePerformance.totalAssignments}</div>
+                <div className={cn("text-2xl font-bold", getStatusColorClass('info', 'text'))}>{refereePerformance.totalAssignments}</div>
                 <div className="text-xs text-muted-foreground">Total Assignments</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{refereePerformance.completionRate.toFixed(1)}%</div>
+                <div className={cn("text-2xl font-bold", getStatusColorClass('success', 'text'))}>{refereePerformance.completionRate.toFixed(1)}%</div>
                 <div className="text-xs text-muted-foreground">Completion Rate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{refereePerformance.upcomingGames}</div>
+                <div className={cn("text-2xl font-bold", getStatusColorClass('warning', 'text'))}>{refereePerformance.upcomingGames}</div>
                 <div className="text-xs text-muted-foreground">Upcoming Games</div>
               </div>
               <div className="text-center">
@@ -407,11 +409,11 @@ export function DashboardOverview() {
             {/* Performance Trend */}
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center">
-                <TrendingUp className={`h-4 w-4 mr-2 ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`} />
+                <TrendingUp className={cn("h-4 w-4 mr-2", isPositiveTrend ? getStatusColorClass('success', 'text') : getStatusColorClass('error', 'text'))} />
                 <span className="text-sm font-medium">Weekly Trend</span>
               </div>
               <div className="text-right">
-                <span className={`text-sm font-medium ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={cn("text-sm font-medium", isPositiveTrend ? getStatusColorClass('success', 'text') : getStatusColorClass('error', 'text'))}>
                   {isPositiveTrend ? '+' : ''}{trendChange} assignments
                 </span>
                 <div className="text-xs text-muted-foreground">vs last week</div>
@@ -445,7 +447,7 @@ export function DashboardOverview() {
         title="SyncedSport Dashboard"
         description="Overview of games, assignments, and referee activity"
       >
-        <Badge variant="outline" className="text-blue-600 border-blue-600">
+        <Badge variant="outline" className={cn(getStatusColorClass('info', 'text'), getStatusColorClass('info', 'border'))}>
           <Sparkles className="h-3 w-3 mr-1" />
           Live Data
         </Badge>
@@ -471,7 +473,7 @@ export function DashboardOverview() {
         <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-2'}>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-green-600" />
+              <Calendar className={cn("h-5 w-5 mr-2", getStatusColorClass('success', 'text'))} />
               Upcoming Games
             </CardTitle>
             <CardDescription>Next {upcomingGames.length} scheduled games with assigned referees</CardDescription>
@@ -557,7 +559,7 @@ export function DashboardOverview() {
         <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-1'}>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
+              <AlertCircle className={cn("h-5 w-5 mr-2", getStatusColorClass('error', 'text'))} />
               Needs Attention
             </CardTitle>
             <CardDescription>Games requiring immediate referee assignment</CardDescription>
@@ -601,7 +603,7 @@ export function DashboardOverview() {
                           label="refs" 
                           variant="destructive" 
                         />
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Button size="sm" className={cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'hover'))}>
                           <Plus className="h-3 w-3 mr-1" />
                           Assign
                         </Button>

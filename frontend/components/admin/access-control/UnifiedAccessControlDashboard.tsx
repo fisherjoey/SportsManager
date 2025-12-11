@@ -22,6 +22,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Import existing components
 import { UserManagementDashboard } from '../users/UserManagementDashboard'
@@ -170,13 +172,13 @@ export function UnifiedAccessControlDashboard() {
         </div>
 
         {/* Cerbos Migration Notice */}
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-900">Cerbos Authorization System</AlertTitle>
-          <AlertDescription className="text-blue-800">
+        <Alert className={cn(getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'border'))}>
+          <AlertCircle className={cn("h-4 w-4", getStatusColorClass('info', 'text'))} />
+          <AlertTitle className={getStatusColorClass('info', 'text')}>Cerbos Authorization System</AlertTitle>
+          <AlertDescription className={getStatusColorClass('info', 'text')}>
             This application uses Cerbos for role-based access control. Permissions are managed through YAML policy files
-            (<code className="text-xs bg-blue-100 px-1 py-0.5 rounded">cerbos-policies/*.yaml</code>) and cannot be edited through the UI.{' '}
-            <a href="https://docs.cerbos.dev/" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+            (<code className={cn("text-xs px-1 py-0.5 rounded", getStatusColorClass('info', 'bg'))}>cerbos-policies/*.yaml</code>) and cannot be edited through the UI.{' '}
+            <a href="https://docs.cerbos.dev/" target="_blank" rel="noopener noreferrer" className={cn("underline font-medium", getStatusColorClass('info', 'text'))}>
               Learn more about Cerbos
             </a>
           </AlertDescription>

@@ -12,6 +12,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { useAuth } from '@/components/auth-provider'
 import { useToast } from '@/components/ui/use-toast'
 import { useApi } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
 
@@ -105,7 +107,7 @@ export function MyAssignments() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Games</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
+            <Clock className={cn('h-4 w-4', getStatusColorClass('info', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{upcomingAssignments.length}</div>
@@ -114,7 +116,7 @@ export function MyAssignments() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className={cn('h-4 w-4', getStatusColorClass('success', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -136,7 +138,7 @@ export function MyAssignments() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Games Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-purple-600" />
+            <CheckCircle className={cn('h-4 w-4', getStatusColorClass('info', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pastAssignments.length}</div>
@@ -181,13 +183,13 @@ export function MyAssignments() {
                             {assignment.game?.location}
                           </div>
                         </div>
-                        <Badge 
+                        <Badge
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
-                          className={
-                            assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
-                              assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
-                                'text-red-600 border-red-600'
-                          }
+                          className={cn(
+                            assignment.status === 'accepted' ? cn(getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border')) :
+                              assignment.status === 'pending' ? cn(getStatusColorClass('info', 'text'), getStatusColorClass('info', 'border')) :
+                                cn(getStatusColorClass('error', 'text'), getStatusColorClass('error', 'border'))
+                          )}
                         >
                           {assignment.status === 'pending' ? 'Pending' : 
                             assignment.status === 'accepted' ? 'Accepted' : 
@@ -206,7 +208,7 @@ export function MyAssignments() {
                         <div className="text-right">
                           <Badge variant="secondary" className="mb-1">{assignment.game?.level}</Badge>
                           <div className="flex items-center justify-end">
-                            <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                            <DollarSign className={cn('h-4 w-4 mr-1', getStatusColorClass('success', 'text'))} />
                             <span className="font-medium">
                               {assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate}
                             </span>
@@ -216,7 +218,7 @@ export function MyAssignments() {
 
                       {/* Wage Multiplier Info */}
                       {assignment.game?.wageMultiplier && assignment.game?.wageMultiplier !== 1.0 && (
-                        <div className="text-xs text-muted-foreground bg-yellow-50 p-2 rounded">
+                        <div className={cn('text-xs text-muted-foreground p-2 rounded', getStatusColorClass('warning', 'bg'))}>
                           {assignment.game.wageMultiplier}x multiplier
                           {assignment.game.wageMultiplierReason && (
                             <span> - {assignment.game.wageMultiplierReason}</span>
@@ -231,7 +233,7 @@ export function MyAssignments() {
                             size="mobile"
                             variant="outline"
                             onClick={() => handleAcceptDecline(assignment.id, 'accept')}
-                            className="flex-1 text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100"
+                            className={cn('flex-1', getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border'), 'hover:opacity-80')}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Accept Assignment
@@ -240,7 +242,7 @@ export function MyAssignments() {
                             size="mobile"
                             variant="outline"
                             onClick={() => handleAcceptDecline(assignment.id, 'decline')}
-                            className="flex-1 text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100"
+                            className={cn('flex-1', getStatusColorClass('error', 'text'), getStatusColorClass('error', 'border'), 'hover:opacity-80')}
                           >
                             <XCircle className="h-4 w-4 mr-2" />
                             Decline
@@ -248,12 +250,12 @@ export function MyAssignments() {
                         </div>
                       )}
                       {assignment.status === 'accepted' && (
-                        <div className="text-center text-green-600 font-medium pt-2">
+                        <div className={cn('text-center font-medium pt-2', getStatusColorClass('success', 'text'))}>
                           ✓ Assignment Confirmed
                         </div>
                       )}
                       {assignment.status === 'declined' && (
-                        <div className="text-center text-red-600 font-medium pt-2">
+                        <div className={cn('text-center font-medium pt-2', getStatusColorClass('error', 'text'))}>
                           ✗ Assignment Declined
                         </div>
                       )}
@@ -308,7 +310,7 @@ export function MyAssignments() {
                       <TableCell>
                         <div className="flex flex-col">
                           <div className="flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                            <DollarSign className={cn('h-4 w-4 mr-1', getStatusColorClass('success', 'text'))} />
                             {assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate}
                           </div>
                           {assignment.game?.wageMultiplier && assignment.game?.wageMultiplier !== 1.0 && (
@@ -322,13 +324,13 @@ export function MyAssignments() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
-                          className={
-                            assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
-                              assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
-                                'text-red-600 border-red-600'
-                          }
+                          className={cn(
+                            assignment.status === 'accepted' ? cn(getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border')) :
+                              assignment.status === 'pending' ? cn(getStatusColorClass('info', 'text'), getStatusColorClass('info', 'border')) :
+                                cn(getStatusColorClass('error', 'text'), getStatusColorClass('error', 'border'))
+                          )}
                         >
                           {assignment.status === 'pending' ? 'Pending' : 
                             assignment.status === 'accepted' ? 'Accepted' : 
@@ -342,7 +344,7 @@ export function MyAssignments() {
                               size="mobileSm"
                               variant="outline"
                               onClick={() => handleAcceptDecline(assignment.id, 'accept')}
-                              className="text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100 min-w-[44px] touch-manipulation"
+                              className={cn(getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border'), 'hover:opacity-80 min-w-[44px] touch-manipulation')}
                             >
                               <CheckCircle className="h-4 w-4 md:mr-1" />
                               <span className="hidden md:inline">Accept</span>
@@ -351,7 +353,7 @@ export function MyAssignments() {
                               size="mobileSm"
                               variant="outline"
                               onClick={() => handleAcceptDecline(assignment.id, 'decline')}
-                              className="text-red-600 border-red-600 hover:bg-red-50 active:bg-red-100 min-w-[44px] touch-manipulation"
+                              className={cn(getStatusColorClass('error', 'text'), getStatusColorClass('error', 'border'), 'hover:opacity-80 min-w-[44px] touch-manipulation')}
                             >
                               <XCircle className="h-4 w-4 md:mr-1" />
                               <span className="hidden md:inline">Decline</span>
@@ -359,10 +361,10 @@ export function MyAssignments() {
                           </div>
                         )}
                         {assignment.status === 'accepted' && (
-                          <span className="text-sm text-green-600">Confirmed</span>
+                          <span className={cn('text-sm', getStatusColorClass('success', 'text'))}>Confirmed</span>
                         )}
                         {assignment.status === 'declined' && (
-                          <span className="text-sm text-red-600">Declined</span>
+                          <span className={cn('text-sm', getStatusColorClass('error', 'text'))}>Declined</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -407,7 +409,7 @@ export function MyAssignments() {
                         </p>
                       )}
                     </div>
-                    <Badge variant="outline" className="text-green-600 border-green-600 mt-1">
+                    <Badge variant="outline" className={cn(getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border'), 'mt-1')}>
                       Completed
                     </Badge>
                   </div>

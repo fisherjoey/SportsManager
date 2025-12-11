@@ -41,6 +41,8 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { PAGE_PERMISSIONS, API_PERMISSIONS, ROLE_CONFIGS } from '@/lib/rbac-config'
 import { PERMISSIONS } from '@/lib/permissions'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface PermissionConfig {
   id: string
@@ -194,12 +196,13 @@ export function PermissionConfigurationDashboard() {
   }
 
   const getRiskBadgeColor = (level: string) => {
-    switch (level) {
-    case 'low': return 'bg-green-100 text-green-800'
-    case 'medium': return 'bg-yellow-100 text-yellow-800'
-    case 'high': return 'bg-orange-100 text-orange-800'
-    case 'critical': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
+    const normalized = level.toLowerCase()
+    switch (normalized) {
+      case 'low': return cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'text'))
+      case 'medium': return cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'text'))
+      case 'high': return cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'text'))
+      case 'critical': return cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'text'))
+      default: return cn('bg-muted', 'text-muted-foreground')
     }
   }
 
@@ -275,7 +278,7 @@ export function PermissionConfigurationDashboard() {
               <TabsTrigger value="unconfigured" className="relative">
             Unconfigured
                 {unconfiguredItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full" />
+                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-destructive rounded-full" />
                 )}
               </TabsTrigger>
             </TabsList>
@@ -358,12 +361,12 @@ export function PermissionConfigurationDashboard() {
                           </Badge>
                           <div className="flex-1">
                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className={`h-full ${
-                                  level === 'low' ? 'bg-green-500' :
-                                    level === 'medium' ? 'bg-yellow-500' :
-                                      level === 'high' ? 'bg-orange-500' :
-                                        'bg-red-500'
+                                  level === 'low' ? 'bg-success' :
+                                    level === 'medium' ? 'bg-warning' :
+                                      level === 'high' ? 'bg-warning' :
+                                        'bg-destructive'
                                 }`}
                                 style={{ width: `${percentage}%` }}
                               />
@@ -469,9 +472,9 @@ export function PermissionConfigurationDashboard() {
                               )}
                             </div>
                             {page.configured ? (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <CheckCircle className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
                             ) : (
-                              <AlertCircle className="h-4 w-4 text-yellow-500" />
+                              <AlertCircle className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
                             )}
                           </div>
                         </Card>
@@ -518,9 +521,9 @@ export function PermissionConfigurationDashboard() {
                               )}
                             </div>
                             {api.configured ? (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <CheckCircle className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
                             ) : (
-                              <AlertCircle className="h-4 w-4 text-yellow-500" />
+                              <AlertCircle className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
                             )}
                           </div>
                         </Card>
@@ -535,7 +538,7 @@ export function PermissionConfigurationDashboard() {
               {unconfiguredItems.length === 0 ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                    <CheckCircle className={cn("h-12 w-12 mb-4", getStatusColorClass('success', 'text'))} />
                     <h3 className="text-lg font-medium">All items configured!</h3>
                     <p className="text-sm text-muted-foreground">
                   Every page and API endpoint has permissions configured.

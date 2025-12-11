@@ -12,7 +12,8 @@ const nextConfig = {
   },
   async rewrites() {
     // Use environment variable for API URL in Docker
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    // Use 127.0.0.1 instead of localhost for better network compatibility
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001'
     return [
       {
         source: '/api/:path*',

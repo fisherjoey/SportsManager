@@ -270,18 +270,21 @@ interface GameTypeBadgeProps {
 }
 
 export function GameTypeBadge({ type, className }: GameTypeBadgeProps) {
-  const typeConfig = {
-    'Community': {
-      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
-    },
-    'Club': {
-      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
-    },
+  const typeConfig: Record<string, { className: string }> = {
     'Tournament': {
-      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
+      className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800'
     },
     'Private Tournament': {
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
+      className: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800'
+    },
+    'Club': {
+      className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800'
+    },
+    'Community': {
+      className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-200 dark:border-green-800'
+    },
+    'Competitive': {
+      className: 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800'
     }
   }
 

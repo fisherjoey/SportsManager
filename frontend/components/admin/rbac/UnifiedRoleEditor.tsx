@@ -27,6 +27,9 @@ import {
 } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface UnifiedRoleEditorProps {
   role: {
@@ -410,12 +413,12 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
               </div>
 
               {role && role.userCount !== undefined && (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <Card className="flex items-center gap-2 p-3">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
                     Currently assigned to <strong>{role.userCount}</strong> user{role.userCount !== 1 ? 's' : ''}
                   </span>
-                </div>
+                </Card>
               )}
             </TabsContent>
 
@@ -513,18 +516,18 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                 </>
               )}
 
-              <div className="mt-4 p-3 bg-muted rounded-lg">
+              <Card className="mt-4 p-3">
                 <p className="text-sm text-muted-foreground">
                   <strong>{permissions.length}</strong> permission{permissions.length !== 1 ? 's' : ''} selected.
                   These permissions define what users with this role can do in the system.
                 </p>
-              </div>
+              </Card>
             </TabsContent>
 
             <TabsContent value="pages" className="mt-4">
               <div className="space-y-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                <div className={cn("p-3 rounded-lg", getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'border'))}>
+                  <p className={cn("text-sm", getStatusColorClass('info', 'text'))}>
                     <strong>Page access is derived from permissions.</strong> The pages shown below will be accessible based on the permissions selected in the Permissions tab. To change page access, add or remove the relevant permissions.
                   </p>
                 </div>
@@ -563,13 +566,13 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                                 return (
                                   <div
                                     key={page.id}
-                                    className={`flex items-center space-x-2 p-2 rounded-md ${hasAccess ? 'bg-green-50 dark:bg-green-950' : 'bg-gray-50 dark:bg-gray-900 opacity-60'}`}
+                                    className={cn("flex items-center space-x-2 p-2 rounded-md", hasAccess ? getStatusColorClass('success', 'bg') : cn(getStatusColorClass('inactive', 'bg'), 'opacity-60'))}
                                   >
                                     <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-green-500' : 'bg-gray-300'}`} />
                                     <div className="flex-1">
                                       <span className="text-sm">{page.label}</span>
                                       {hasAccess && grantingPerms.length > 0 && (
-                                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                                        <span className={cn("ml-2 text-xs", getStatusColorClass('success', 'text'))}>
                                           via {grantingPerms[0]}{grantingPerms.length > 1 ? ` +${grantingPerms.length - 1} more` : ''}
                                         </span>
                                       )}
@@ -590,12 +593,12 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                   </div>
                 </ScrollArea>
 
-                <div className="mt-4 p-3 bg-muted rounded-lg">
+                <Card className="mt-4 p-3">
                   <p className="text-sm text-muted-foreground">
                     <strong>{derivedPages.length}</strong> page{derivedPages.length !== 1 ? 's' : ''} accessible.
                     Users with this role will be able to access these pages based on their permissions.
                   </p>
-                </div>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>

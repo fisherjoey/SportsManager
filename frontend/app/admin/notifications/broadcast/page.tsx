@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/components/ui/use-toast'
 import { notificationsApi, BroadcastNotificationData } from '@/lib/notifications-api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface Role {
   name: string;
@@ -283,9 +285,9 @@ function BroadcastNotificationPageContent() {
 
       {/* Success Message */}
       {lastSentResult && (
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
+        <Alert className={cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'border'))}>
+          <CheckCircle2 className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
+          <AlertDescription className={getStatusColorClass('success', 'text')}>
             Last broadcast successfully sent to {lastSentResult.createdCount} of {lastSentResult.recipientCount} users
           </AlertDescription>
         </Alert>
@@ -329,7 +331,10 @@ function BroadcastNotificationPageContent() {
                         {formErrors.title}
                       </p>
                     )}
-                    <p className={`text-xs ${getRemainingChars() < 20 ? 'text-amber-600 font-medium' : 'text-muted-foreground'} ml-auto`}>
+                    <p className={cn(
+                      "text-xs ml-auto",
+                      getRemainingChars() < 20 ? cn(getStatusColorClass('warning', 'text'), "font-medium") : "text-muted-foreground"
+                    )}>
                       {getRemainingChars()} characters remaining
                     </p>
                   </div>
@@ -577,7 +582,7 @@ function BroadcastNotificationPageContent() {
             <AlertDialogTitle>
               {formData.sendToAll ? (
                 <span className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <AlertCircle className={cn("h-5 w-5", getStatusColorClass('warning', 'text'))} />
                   Send to All Users?
                 </span>
               ) : (
@@ -587,7 +592,7 @@ function BroadcastNotificationPageContent() {
             <AlertDialogDescription>
               {formData.sendToAll ? (
                 <div className="space-y-3">
-                  <p className="text-base font-medium text-amber-600 dark:text-amber-500">
+                  <p className={cn("text-base font-medium", getStatusColorClass('warning', 'text'))}>
                     This will send the notification to EVERY user in the system.
                   </p>
                   <div className="p-3 bg-accent rounded-md space-y-2">
@@ -595,7 +600,7 @@ function BroadcastNotificationPageContent() {
                       Title: {formData.title}
                     </p>
                     <p className="text-sm">
-                      Target: <span className="font-semibold text-amber-600 dark:text-amber-500">All Users</span>
+                      Target: <span className={cn("font-semibold", getStatusColorClass('warning', 'text'))}>All Users</span>
                     </p>
                   </div>
                   <p className="text-sm font-medium">
@@ -624,7 +629,7 @@ function BroadcastNotificationPageContent() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmAndSend}
-              className={formData.sendToAll ? 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-600' : ''}
+              className={cn(formData.sendToAll && getStatusColorClass('warning', 'bg'))}
             >
               {formData.sendToAll ? 'Send to All Users' : 'Send Notification'}
             </AlertDialogAction>

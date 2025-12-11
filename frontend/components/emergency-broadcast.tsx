@@ -24,6 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface EmergencyBroadcastProps {
   trigger?: React.ReactNode
@@ -169,16 +171,16 @@ export function EmergencyBroadcast({ trigger, onSuccess }: EmergencyBroadcastPro
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className={cn("flex items-center gap-2", getStatusColorClass('error', 'text'))}>
             <AlertTriangle className="h-5 w-5" />
             Emergency Broadcast
           </DialogTitle>
         </DialogHeader>
 
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            This will send an urgent notification to all selected recipients immediately. 
+        <Alert className={cn(getStatusColorClass('error', 'border'), getStatusColorClass('error', 'bg'))}>
+          <AlertTriangle className={cn("h-4 w-4", getStatusColorClass('error', 'text'))} />
+          <AlertDescription className={getStatusColorClass('error', 'text')}>
+            This will send an urgent notification to all selected recipients immediately.
             Use only for genuine emergencies that require immediate attention.
           </AlertDescription>
         </Alert>
@@ -234,8 +236,8 @@ export function EmergencyBroadcast({ trigger, onSuccess }: EmergencyBroadcastPro
             </div>
             
             {formData.targets.length > 0 && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-md">
-                <div className="flex items-center gap-2 text-sm text-blue-800">
+              <div className={cn("mt-3 p-3 rounded-md", getStatusColorClass('info', 'bg'))}>
+                <div className={cn("flex items-center gap-2 text-sm", getStatusColorClass('info', 'text'))}>
                   <Users className="h-4 w-4" />
                   Approximately {getTargetCount()} recipients will be notified
                 </div>
@@ -263,10 +265,10 @@ export function EmergencyBroadcast({ trigger, onSuccess }: EmergencyBroadcastPro
             <Button variant="outline" onClick={() => setIsOpen(false)} disabled={sending}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleSend} 
+            <Button
+              onClick={handleSend}
               disabled={sending || !formData.title.trim() || !formData.message.trim()}
-              className="bg-red-600 hover:bg-red-700"
+              variant="destructive"
             >
               {sending ? (
                 <>
@@ -290,9 +292,17 @@ export function EmergencyBroadcast({ trigger, onSuccess }: EmergencyBroadcastPro
 // Quick emergency broadcast button for dashboard or toolbar
 export function QuickEmergencyBroadcast() {
   return (
-    <EmergencyBroadcast 
+    <EmergencyBroadcast
       trigger={
-        <Button variant="outline" size="sm" className="gap-2 text-red-600 border-red-200 hover:bg-red-50">
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "gap-2",
+            getStatusColorClass('error', 'text'),
+            getStatusColorClass('error', 'border')
+          )}
+        >
           <AlertTriangle className="h-4 w-4" />
           Emergency
         </Button>

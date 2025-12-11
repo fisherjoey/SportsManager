@@ -53,6 +53,8 @@ import { DataTable } from '@/components/data-table/DataTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient, Employee, Department, JobPosition } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Employee interface now imported from api.ts - using backend schema
 
@@ -284,17 +286,17 @@ export function EmployeeManagement() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: { variant: 'default', text: 'Active', color: 'bg-green-100 text-green-800' },
+      active: { variant: 'default', text: 'Active', color: getStatusColorClass('success', 'bg') },
       inactive: { variant: 'secondary', text: 'Inactive', color: 'bg-gray-100 text-gray-800' },
-      terminated: { variant: 'destructive', text: 'Terminated', color: 'bg-red-100 text-red-800' },
-      on_leave: { variant: 'secondary', text: 'On Leave', color: 'bg-yellow-100 text-yellow-800' },
-      probation: { variant: 'secondary', text: 'Probation', color: 'bg-orange-100 text-orange-800' },
-      suspended: { variant: 'destructive', text: 'Suspended', color: 'bg-red-100 text-red-800' }
+      terminated: { variant: 'destructive', text: 'Terminated', color: getStatusColorClass('error', 'bg') },
+      on_leave: { variant: 'secondary', text: 'On Leave', color: getStatusColorClass('warning', 'bg') },
+      probation: { variant: 'secondary', text: 'Probation', color: getStatusColorClass('warning', 'bg') },
+      suspended: { variant: 'destructive', text: 'Suspended', color: getStatusColorClass('error', 'bg') }
     }
 
     const config = variants[status as keyof typeof variants] || variants.active
     return (
-      <Badge variant={config.variant as any} className={config.color}>
+      <Badge variant={config.variant as any} className={cn(config.color)}>
         {config.text}
       </Badge>
     )
@@ -308,21 +310,21 @@ export function EmployeeManagement() {
         </Badge>
       )
     }
-    
+
     const percentage = (completed / total) * 100
     let variant: 'default' | 'secondary' | 'destructive' = 'default'
-    let color = 'bg-green-100 text-green-800'
-    
+    let color = getStatusColorClass('success', 'bg')
+
     if (percentage < 50) {
       variant = 'destructive'
-      color = 'bg-red-100 text-red-800'
+      color = getStatusColorClass('error', 'bg')
     } else if (percentage < 80) {
       variant = 'secondary'
-      color = 'bg-yellow-100 text-yellow-800'
+      color = getStatusColorClass('warning', 'bg')
     }
-    
+
     return (
-      <Badge variant={variant} className={color}>
+      <Badge variant={variant} className={cn(color)}>
         {completed}/{total} ({Math.round(percentage)}%)
       </Badge>
     )
@@ -470,7 +472,7 @@ export function EmployeeManagement() {
                 Send Message
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className={cn(getStatusColorClass('error', 'text'))}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Deactivate
               </DropdownMenuItem>
@@ -544,7 +546,7 @@ export function EmployeeManagement() {
                     <p className="text-sm font-medium text-muted-foreground">Active Employees</p>
                     <p className="text-2xl font-bold">{stats.activeEmployees}</p>
                   </div>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
                 </div>
               </CardContent>
             </Card>
@@ -555,7 +557,7 @@ export function EmployeeManagement() {
                     <p className="text-sm font-medium text-muted-foreground">New Hires This Month</p>
                     <p className="text-2xl font-bold">{stats.newHiresThisMonth}</p>
                   </div>
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                  <TrendingUp className={cn("h-4 w-4", getStatusColorClass('info', 'text'))} />
                 </div>
               </CardContent>
             </Card>
@@ -566,7 +568,7 @@ export function EmployeeManagement() {
                     <p className="text-sm font-medium text-muted-foreground">Upcoming Evaluations</p>
                     <p className="text-2xl font-bold">{stats.upcomingEvaluations}</p>
                   </div>
-                  <Calendar className="h-4 w-4 text-orange-600" />
+                  <Calendar className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
                 </div>
               </CardContent>
             </Card>
@@ -873,7 +875,7 @@ export function EmployeeManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <div className="text-center mb-4">
-                          <div className="text-3xl font-bold text-green-600">
+                          <div className={cn("text-3xl font-bold", getStatusColorClass('success', 'text'))}>
                             {selectedEmployee.completed_trainings || 0}
                           </div>
                           <p className="text-sm text-muted-foreground">Completed Trainings</p>
@@ -881,7 +883,7 @@ export function EmployeeManagement() {
                       </div>
                       <div>
                         <div className="text-center mb-4">
-                          <div className="text-3xl font-bold text-blue-600">
+                          <div className={cn("text-3xl font-bold", getStatusColorClass('info', 'text'))}>
                             {selectedEmployee.active_trainings || 0}
                           </div>
                           <p className="text-sm text-muted-foreground">Active Trainings</p>

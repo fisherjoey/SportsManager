@@ -34,6 +34,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { StatsGrid } from '@/components/ui/stats-grid'
 import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
 import { LocationSelector } from '@/components/ui/location-selector'
+import { GameTypeBadge } from '@/components/ui/specialized-badges'
 
 interface GameManagementProps {
   initialDateFilter?: string
@@ -52,30 +53,6 @@ const displayGameType = (gameType: string | undefined) => {
 const displayWageInfo = (payRate: number, multiplier: number = 1.0) => {
   const calculatedWage = payRate * multiplier
   return `$${calculatedWage.toFixed(2)}${multiplier !== 1.0 ? ` (${multiplier}x)` : ''}`
-}
-
-// GameTypeBadge component for consistent display
-function GameTypeBadge({ gameType }: { gameType: string }) {
-  const getGameTypeColor = (type: string) => {
-    switch (type?.toLowerCase()) {
-    case 'tournament':
-      return 'bg-purple-100 text-purple-800 border-purple-200'
-    case 'private tournament':
-      return 'bg-indigo-100 text-indigo-800 border-indigo-200'
-    case 'club':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'community':
-      return 'bg-green-100 text-green-800 border-green-200'
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-  
-  return (
-    <Badge className={getGameTypeColor(gameType)}>
-      {displayGameType(gameType)}
-    </Badge>
-  )
 }
 
 export function GameManagement({ initialDateFilter }: GameManagementProps = {}) {
@@ -296,7 +273,7 @@ export function GameManagement({ initialDateFilter }: GameManagementProps = {}) 
         { value: 'Private Tournament', label: 'Private Tournament' }
       ],
       accessor: (game) => (
-        <GameTypeBadge gameType={game.gameType} />
+        <GameTypeBadge type={game.gameType} />
       )
     },
     {

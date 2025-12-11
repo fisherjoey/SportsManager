@@ -24,6 +24,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface AuditLogEntry {
   id: string
@@ -157,29 +159,18 @@ export function SecurityAudit() {
   const getStatusIcon = (status: string) => {
     switch (status) {
     case 'success':
-      return <CheckCircle className="w-4 h-4 text-green-500" />
+      return <CheckCircle className={cn('w-4 h-4', getStatusColorClass('success', 'text'))} />
     case 'failure':
-      return <XCircle className="w-4 h-4 text-red-500" />
+      return <XCircle className={cn('w-4 h-4', getStatusColorClass('error', 'text'))} />
     case 'warning':
-      return <AlertTriangle className="w-4 h-4 text-yellow-500" />
+      return <AlertTriangle className={cn('w-4 h-4', getStatusColorClass('warning', 'text'))} />
     default:
-      return <Clock className="w-4 h-4 text-gray-500" />
+      return <Clock className="w-4 h-4 text-muted-foreground" />
     }
   }
 
-  const getRiskColor = (riskLevel: string) => {
-    switch (riskLevel) {
-    case 'critical':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-    case 'high':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
-    case 'medium':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-    case 'low':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-    }
+  const getRiskBadgeClass = (riskLevel: string) => {
+    return cn(getStatusColorClass(riskLevel, 'bg'), getStatusColorClass(riskLevel, 'text'))
   }
 
   const filteredLogs = auditLogs.filter(log => {
@@ -226,7 +217,7 @@ export function SecurityAudit() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <Shield className="w-8 h-8 text-blue-500" />
+                <Shield className="w-8 h-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{securityMetrics.totalLogins}</p>
                   <p className="text-sm text-muted-foreground">Total Logins</p>
@@ -237,7 +228,7 @@ export function SecurityAudit() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <XCircle className="w-8 h-8 text-red-500" />
+                <XCircle className={cn('w-8 h-8', getStatusColorClass('error', 'text'))} />
                 <div>
                   <p className="text-2xl font-bold">{securityMetrics.failedLogins}</p>
                   <p className="text-sm text-muted-foreground">Failed Logins</p>
@@ -248,7 +239,7 @@ export function SecurityAudit() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <User className="w-8 h-8 text-green-500" />
+                <User className={cn('w-8 h-8', getStatusColorClass('success', 'text'))} />
                 <div>
                   <p className="text-2xl font-bold">{securityMetrics.activeUsers}</p>
                   <p className="text-sm text-muted-foreground">Active Users</p>
@@ -259,7 +250,7 @@ export function SecurityAudit() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-8 h-8 text-orange-500" />
+                <AlertTriangle className={cn('w-8 h-8', getStatusColorClass('warning', 'text'))} />
                 <div>
                   <p className="text-2xl font-bold">{securityMetrics.securityAlerts}</p>
                   <p className="text-sm text-muted-foreground">Security Alerts</p>
@@ -328,7 +319,7 @@ export function SecurityAudit() {
                       <div className="flex items-center gap-3 mb-2">
                         {getStatusIcon(log.status)}
                         <span className="font-semibold">{log.action}</span>
-                        <Badge className={getRiskColor(log.riskLevel)}>
+                        <Badge className={getRiskBadgeClass(log.riskLevel)}>
                           {log.riskLevel}
                         </Badge>
                       </div>
@@ -357,15 +348,15 @@ export function SecurityAudit() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className={cn('flex justify-between items-center p-4 rounded-lg', getStatusColorClass('success', 'bg'))}>
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-500" />
+                    <CheckCircle className={cn('w-6 h-6', getStatusColorClass('success', 'text'))} />
                     <div>
                       <p className="font-semibold">System Security Status</p>
                       <p className="text-sm text-muted-foreground">All systems operational</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                  <Badge className={cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'text'))}>
                     Secure
                   </Badge>
                 </div>
@@ -392,19 +383,19 @@ export function SecurityAudit() {
               {securityMetrics && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-red-500">{securityMetrics.vulnerabilities.critical}</div>
+                    <div className={cn('text-2xl font-bold', getStatusColorClass('error', 'text'))}>{securityMetrics.vulnerabilities.critical}</div>
                     <div className="text-sm text-muted-foreground">Critical</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-orange-500">{securityMetrics.vulnerabilities.high}</div>
+                    <div className={cn('text-2xl font-bold', getStatusColorClass('warning', 'text'))}>{securityMetrics.vulnerabilities.high}</div>
                     <div className="text-sm text-muted-foreground">High</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-500">{securityMetrics.vulnerabilities.medium}</div>
+                    <div className={cn('text-2xl font-bold', getStatusColorClass('warning', 'text'))}>{securityMetrics.vulnerabilities.medium}</div>
                     <div className="text-sm text-muted-foreground">Medium</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-green-500">{securityMetrics.vulnerabilities.low}</div>
+                    <div className={cn('text-2xl font-bold', getStatusColorClass('success', 'text'))}>{securityMetrics.vulnerabilities.low}</div>
                     <div className="text-sm text-muted-foreground">Low</div>
                   </div>
                 </div>

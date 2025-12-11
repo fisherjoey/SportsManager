@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface CategoryManager {
   id: string
@@ -203,30 +204,30 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
   const getRoleColor = (role: string) => {
     switch (role) {
     case 'owner':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      return cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'text'))
     case 'manager':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      return cn(getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'text'))
     case 'contributor':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      return cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'text'))
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      return 'bg-muted text-muted-foreground'
     }
   }
 
   const getActivityIcon = (type: string) => {
     switch (type) {
     case 'upload':
-      return <FileText className="h-4 w-4 text-green-600" />
+      return <FileText className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
     case 'download':
-      return <Download className="h-4 w-4 text-blue-600" />
+      return <Download className={cn("h-4 w-4", getStatusColorClass('info', 'text'))} />
     case 'permission_change':
-      return <Shield className="h-4 w-4 text-orange-600" />
+      return <Shield className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
     case 'manager_added':
-      return <UserPlus className="h-4 w-4 text-purple-600" />
+      return <UserPlus className={cn("h-4 w-4", getStatusColorClass('info', 'text'))} />
     case 'manager_removed':
-      return <Users className="h-4 w-4 text-red-600" />
+      return <Users className={cn("h-4 w-4", getStatusColorClass('error', 'text'))} />
     default:
-      return <Activity className="h-4 w-4 text-gray-600" />
+      return <Activity className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -275,7 +276,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalResources}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className={cn("mr-1 h-3 w-3", getStatusColorClass('success', 'text'))} />
               +12% from last month
             </div>
           </CardContent>
@@ -289,7 +290,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDownloads.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className={cn("mr-1 h-3 w-3", getStatusColorClass('success', 'text'))} />
               +8% from last month
             </div>
           </CardContent>
@@ -303,7 +304,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className={cn("mr-1 h-3 w-3", getStatusColorClass('success', 'text'))} />
               +15% from last month
             </div>
           </CardContent>
@@ -317,7 +318,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeManagers}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <CheckCircle className="mr-1 h-3 w-3 text-green-600" />
+              <CheckCircle className={cn("mr-1 h-3 w-3", getStatusColorClass('success', 'text'))} />
               All active
             </div>
           </CardContent>

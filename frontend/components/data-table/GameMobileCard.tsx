@@ -12,15 +12,16 @@ import {
   Clock
 } from 'lucide-react'
 
-import { 
+import {
   BaseEntityCard,
   InfoRow,
   BadgeRow,
   CollapsibleSection
 } from '@/components/ui/base-entity-card'
-import { 
+import {
   AssignmentStatusBadge,
-  LevelBadge
+  LevelBadge,
+  GameTypeBadge
 } from '@/components/ui/specialized-badges'
 import { Badge } from '@/components/ui/badge'
 import { LocationWithDistance } from '@/components/ui/location-with-distance'
@@ -41,30 +42,6 @@ const displayGameType = (gameType: string | undefined) => {
 const displayWageInfo = (payRate: number, multiplier: number = 1.0) => {
   const calculatedWage = payRate * multiplier
   return `$${calculatedWage.toFixed(2)}${multiplier !== 1.0 ? ` (${multiplier}x)` : ''}`
-}
-
-// GameTypeBadge component for mobile card
-function GameTypeBadge({ gameType }: { gameType: string }) {
-  const getGameTypeColor = (type: string) => {
-    switch (type?.toLowerCase()) {
-    case 'tournament':
-      return 'bg-purple-100 text-purple-800 border-purple-200'
-    case 'private tournament':
-      return 'bg-indigo-100 text-indigo-800 border-indigo-200'
-    case 'club':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'community':
-      return 'bg-green-100 text-green-800 border-green-200'
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-  
-  return (
-    <Badge className={getGameTypeColor(gameType)} variant="outline">
-      {displayGameType(gameType)}
-    </Badge>
-  )
 }
 
 interface GameMobileCardProps {
@@ -154,7 +131,7 @@ export function GameMobileCard({ game, isSelected, onSelect, onAssignReferee }: 
       {/* Game Type */}
       {gameType && (
         <BadgeRow icon={Trophy}>
-          <GameTypeBadge gameType={gameType} />
+          <GameTypeBadge type={gameType} />
         </BadgeRow>
       )}
 

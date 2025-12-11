@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface Game {
   id: string
@@ -564,8 +565,8 @@ export default function AIAssignmentsSimple() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading games and referees...</p>
+            <div className={cn('animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4', getStatusColorClass('info', 'border'))}></div>
+            <p className="text-muted-foreground">Loading games and referees...</p>
           </div>
         </div>
       </div>
@@ -576,8 +577,8 @@ export default function AIAssignmentsSimple() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI-Powered Assignments</h1>
-          <p className="text-gray-600">Smart referee assignments with game chunking and AI suggestions</p>
+          <h1 className="text-2xl font-bold">AI-Powered Assignments</h1>
+          <p className="text-muted-foreground">Smart referee assignments with game chunking and AI suggestions</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline">
@@ -708,7 +709,9 @@ export default function AIAssignmentsSimple() {
               return (
                 <div key={referee.id} className={cn(
                   'p-3 border rounded-lg',
-                  referee.available ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  referee.available
+                    ? cn(getStatusColorClass('success', 'border'), getStatusColorClass('success', 'bg'))
+                    : cn(getStatusColorClass('error', 'border'), getStatusColorClass('error', 'bg'))
                 )}>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-sm">{referee.name}</h4>
@@ -716,17 +719,17 @@ export default function AIAssignmentsSimple() {
                       {referee.level}
                     </Badge>
                   </div>
-                  <div className="space-y-1 text-xs text-gray-600">
+                  <div className="space-y-1 text-xs text-muted-foreground">
                     <p>📍 {referee.location}</p>
                     <p>🎯 Max {referee.maxGamesPerDay || 'unlimited'} games/day</p>
                     {referee.preferredLocations && (
                       <p>❤️ Prefers: {referee.preferredLocations.join(', ')}</p>
                     )}
                     {referee.unavailableDates && referee.unavailableDates.length > 0 && (
-                      <p className="text-red-600">❌ Unavailable: {referee.unavailableDates.length} dates</p>
+                      <p className={getStatusColorClass('error', 'text')}>❌ Unavailable: {referee.unavailableDates.length} dates</p>
                     )}
                     {errorConflicts > 0 && (
-                      <p className="text-red-600">⚠️ {errorConflicts} conflicts</p>
+                      <p className={getStatusColorClass('error', 'text')}>⚠️ {errorConflicts} conflicts</p>
                     )}
                   </div>
                 </div>
@@ -745,7 +748,7 @@ export default function AIAssignmentsSimple() {
               key={game.id}
               className={cn(
                 'cursor-pointer transition-colors',
-                selectedGames.includes(game.id) && 'ring-2 ring-blue-500 bg-blue-50'
+                selectedGames.includes(game.id) && cn('ring-2 ring-primary', getStatusColorClass('info', 'bg'))
               )}
               onClick={() => handleGameSelect(game.id)}
             >
@@ -765,25 +768,25 @@ export default function AIAssignmentsSimple() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <p className="font-medium">{game.homeTeam} vs {game.awayTeam}</p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3 inline mr-1" />
                           {new Date(game.date).toLocaleDateString()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           <Clock className="h-3 w-3 inline mr-1" />
                           {game.time} - {game.endTime}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3 inline mr-1" />
                           {game.location}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           <Users className="h-3 w-3 inline mr-1" />
                           {game.requiredReferees} referees needed
                         </p>
@@ -814,15 +817,15 @@ export default function AIAssignmentsSimple() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {chunk.suggestions ? (
-                        <Badge className="bg-green-600">
+                        <Badge className={getStatusColorClass('success', 'bg')}>
                           <Brain className="h-3 w-3 mr-1" />
                           AI Suggestions Ready
                         </Badge>
                       ) : (
-                        <Button 
+                        <Button
                           onClick={() => generateAISuggestions(chunk)}
                           disabled={loading}
-                          className="bg-purple-600 hover:bg-purple-700"
+                          className={cn(getStatusColorClass('info', 'bg'), 'hover:opacity-90')}
                         >
                           <Brain className="h-4 w-4 mr-2" />
                           Generate AI Suggestions
@@ -832,7 +835,7 @@ export default function AIAssignmentsSimple() {
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteChunk(chunk.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className={cn(getStatusColorClass('error', 'text'), 'hover:opacity-80')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -842,7 +845,7 @@ export default function AIAssignmentsSimple() {
                 <CardContent>
                   <div className="space-y-2">
                     {chunk.games.map(game => (
-                      <div key={game.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div key={game.id} className="flex items-center justify-between p-2 bg-muted rounded">
                         <span className="text-sm">
                           {game.time} - {game.homeTeam} vs {game.awayTeam}
                         </span>
@@ -862,7 +865,7 @@ export default function AIAssignmentsSimple() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
-              <Brain className="h-5 w-5 mr-2 text-purple-600" />
+              <Brain className={cn('h-5 w-5 mr-2', getStatusColorClass('info', 'text'))} />
               AI Assignment Suggestions
             </DialogTitle>
             <DialogDescription>
@@ -890,17 +893,17 @@ export default function AIAssignmentsSimple() {
                           <div key={index} className={cn(
                             'p-3 border rounded',
                             suggestion.conflicts && suggestion.conflicts.length > 0
-                              ? 'bg-yellow-50 border-yellow-200'
-                              : 'bg-green-50 border-green-200'
+                              ? cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border'))
+                              : cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'border'))
                           )}>
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <p className="font-medium">{suggestion.refereeName}</p>
-                                <p className="text-sm text-gray-600">{suggestion.reasoning}</p>
+                                <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
                                 {suggestion.conflicts && suggestion.conflicts.length > 0 && (
                                   <div className="mt-2 space-y-1">
                                     {suggestion.conflicts.map((conflict, cIndex) => (
-                                      <div key={cIndex} className="flex items-center text-sm text-yellow-700">
+                                      <div key={cIndex} className={cn('flex items-center text-sm', getStatusColorClass('warning', 'text'))}>
                                         <AlertTriangle className="h-3 w-3 mr-1" />
                                         {conflict}
                                       </div>
@@ -911,23 +914,23 @@ export default function AIAssignmentsSimple() {
                               <div className="ml-3 text-right">
                                 <Badge className={
                                   suggestion.conflicts && suggestion.conflicts.length > 0
-                                    ? 'bg-yellow-600'
-                                    : 'bg-green-600'
+                                    ? getStatusColorClass('warning', 'bg')
+                                    : getStatusColorClass('success', 'bg')
                                 }>
                                   {Math.round(suggestion.confidence * 100)}% confidence
                                 </Badge>
                                 {suggestion.conflicts && suggestion.conflicts.length > 0 && (
-                                  <p className="text-xs text-yellow-600 mt-1">Has warnings</p>
+                                  <p className={cn('text-xs mt-1', getStatusColorClass('warning', 'text'))}>Has warnings</p>
                                 )}
                               </div>
                             </div>
                           </div>
                         ))}
                         {gameSuggestions.length < game.requiredReferees && (
-                          <div className="p-3 bg-red-50 border border-red-200 rounded">
+                          <div className={cn('p-3 border rounded', getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'border'))}>
                             <div className="flex items-center">
-                              <AlertTriangle className="h-4 w-4 text-red-600 mr-2" />
-                              <p className="text-sm text-red-800">
+                              <AlertTriangle className={cn('h-4 w-4 mr-2', getStatusColorClass('error', 'text'))} />
+                              <p className={cn('text-sm', getStatusColorClass('error', 'text'))}>
                                 <strong>Insufficient referees:</strong> Need {game.requiredReferees - gameSuggestions.length} more referee(s) for this game
                               </p>
                             </div>
@@ -943,9 +946,9 @@ export default function AIAssignmentsSimple() {
                 <Button variant="outline" onClick={() => setShowSuggestions(false)}>
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={() => applyAISuggestions(selectedChunk)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className={cn(getStatusColorClass('success', 'bg'), 'hover:opacity-90')}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Apply All Suggestions

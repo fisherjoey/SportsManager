@@ -24,6 +24,8 @@ import { MenteeGamesView } from '@/components/MenteeGamesView'
 import CalendarUpload from '@/components/calendar-upload'
 import { getAssignmentStatus, getRefCountDisplay } from '@/lib/utils/assignment-status'
 import { ActionMenu, type Action } from '@/components/ui/action-menu'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 import {
   Dialog,
   DialogContent,
@@ -582,23 +584,23 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       title: selectedDate !== 'all' ? 'Games This Day' : 'Total Games',
       value: selectedDate !== 'all' ? filteredGames.length : totalGames,
       icon: Calendar,
-      color: 'text-blue-600'
+      color: getStatusColorClass('info', 'text')
     },
     {
       title: 'Unassigned',
       value: filteredGames.filter((g) => g.status === 'unassigned').length,
       icon: Clock,
-      color: 'text-red-600'
+      color: getStatusColorClass('error', 'text')
     },
     {
       title: 'Assigned',
       value: filteredGames.filter((g) => g.status === 'assigned').length,
       icon: Users,
-      color: 'text-green-600'
+      color: getStatusColorClass('success', 'text')
     },
     {
       title: selectedDate !== 'all' ? 'Up for Grabs' : 'This Week',
-      value: selectedDate !== 'all' 
+      value: selectedDate !== 'all'
         ? filteredGames.filter((g) => g.status === 'up-for-grabs').length
         : games.filter((g) => {
           const gameDate = new Date(g.date)
@@ -607,7 +609,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
           return gameDate >= now && gameDate <= weekFromNow
         }).length,
       icon: Calendar,
-      color: selectedDate !== 'all' ? 'text-orange-600' : 'text-purple-600'
+      color: getStatusColorClass('warning', 'text')
     }
   ]
 
@@ -816,7 +818,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       >
         {selectedDate !== 'all' && (
           <>
-            <Badge variant="outline" className="text-blue-600 border-blue-600">
+            <Badge variant="outline" className={cn(getStatusColorClass('info', 'text'), getStatusColorClass('info', 'border'))}>
               <Calendar className="h-3 w-3 mr-1" />
               Filtered by Date
             </Badge>
@@ -824,7 +826,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
               variant="outline" 
               size="sm"
               onClick={() => setSelectedDate('all')}
-              className="text-gray-600"
+              className="text-muted-foreground"
             >
               Clear Date Filter
             </Button>

@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import {
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   DollarSign,
   Target,
   Calendar,
@@ -17,20 +17,20 @@ import {
   Trash2,
   MoreHorizontal
 } from 'lucide-react'
-import { 
-  BarChart, 
-  Bar, 
+import {
+  BarChart,
+  Bar,
   LineChart,
   Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,6 +56,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { useAuth } from '@/components/auth-provider'
 import { apiClient, Budget, BudgetPeriod, BudgetCategory, BudgetAllocation } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Simple Error Boundary for the budget tracker
 interface BudgetErrorBoundaryState {
@@ -522,21 +524,21 @@ function BudgetTrackerInner() {
 
   const getBudgetStatus = (utilization: number, status?: string) => {
     if (status === 'exceeded' || utilization >= 100) {
-      return { color: 'destructive', icon: AlertTriangle, text: 'Over Budget', bgColor: 'bg-red-50 border-red-200' }
+      return { color: 'destructive', icon: AlertTriangle, text: 'Over Budget', bgColor: cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'border')) }
     }
     if (utilization >= 90) {
-      return { color: 'warning', icon: Clock, text: 'Near Limit', bgColor: 'bg-yellow-50 border-yellow-200' }
+      return { color: 'warning', icon: Clock, text: 'Near Limit', bgColor: cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border')) }
     }
     if (utilization >= 75) {
       return { color: 'secondary', icon: Clock, text: 'On Track', bgColor: 'bg-blue-50 border-blue-200' }
     }
-    return { color: 'default', icon: CheckCircle, text: 'Under Budget', bgColor: 'bg-green-50 border-green-200' }
+    return { color: 'default', icon: CheckCircle, text: 'Under Budget', bgColor: cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'border')) }
   }
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-    case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />
-    case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />
+    case 'up': return <TrendingUp className={cn('h-4 w-4', getStatusColorClass('error', 'text'))} />
+    case 'down': return <TrendingDown className={cn('h-4 w-4', getStatusColorClass('success', 'text'))} />
     default: return <div className="h-4 w-4" />
     }
   }
@@ -786,7 +788,13 @@ function BudgetTrackerInner() {
     }
   }
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+  const COLORS = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))'
+  ]
 
   if (loading) {
     return (
@@ -902,7 +910,7 @@ function BudgetTrackerInner() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{summary.budgetsOverLimit}</div>
+            <div className={cn('text-2xl font-bold', getStatusColorClass('error', 'text'))}>{summary.budgetsOverLimit}</div>
             <p className="text-xs text-muted-foreground">
               {summary.budgetsNearLimit} near limit
             </p>
@@ -1094,7 +1102,7 @@ function BudgetTrackerInner() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Remaining</p>
-                        <p className="text-xl font-bold text-green-600">
+                        <p className={cn('text-xl font-bold', getStatusColorClass('success', 'text'))}>
                           {formatCurrency(budget.remaining_amount || (budget.allocated_amount - (budget.spent_amount || 0)))}
                         </p>
                       </div>
@@ -1234,19 +1242,19 @@ function BudgetTrackerInner() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className={cn('text-2xl font-bold', getStatusColorClass('success', 'text'))}>
                     {budgets.filter(b => (b.utilization_rate || 0) < 75).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets Under 75%</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
+                  <div className={cn('text-2xl font-bold', getStatusColorClass('warning', 'text'))}>
                     {budgets.filter(b => (b.utilization_rate || 0) >= 75 && (b.utilization_rate || 0) < 90).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets 75-90%</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className={cn('text-2xl font-bold', getStatusColorClass('error', 'text'))}>
                     {budgets.filter(b => (b.utilization_rate || 0) >= 90).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets Over 90%</p>

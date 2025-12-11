@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GroupedLocationView } from '@/components/ui/grouped-location-view'
 import { ChunkConfirmationDialog } from '@/components/ui/chunk-confirmation-dialog'
 import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 import { mockGames, mockReferees, type Game, type Referee } from '@/lib/mock-data'
 import { useToast } from '@/components/ui/use-toast'
 import { AssignChunkDialog } from '@/components/assign-chunk-dialog'
@@ -954,7 +955,7 @@ export function GameAssignmentBoard() {
             className={cn(
               'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'games'
-                ? 'border-blue-500 text-blue-600'
+                ? cn('border-primary', getStatusColorClass('info', 'text'))
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
@@ -966,7 +967,7 @@ export function GameAssignmentBoard() {
             className={cn(
               'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'chunks'
-                ? 'border-blue-500 text-blue-600'
+                ? cn('border-primary', getStatusColorClass('info', 'text'))
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
@@ -978,7 +979,7 @@ export function GameAssignmentBoard() {
             className={cn(
               'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'ai'
-                ? 'border-blue-500 text-blue-600'
+                ? cn('border-primary', getStatusColorClass('info', 'text'))
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
@@ -990,7 +991,7 @@ export function GameAssignmentBoard() {
             className={cn(
               'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
               activeTab === 'historic'
-                ? 'border-blue-500 text-blue-600'
+                ? cn('border-primary', getStatusColorClass('info', 'text'))
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             )}
           >
@@ -1317,7 +1318,7 @@ export function GameAssignmentBoard() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => deleteChunk(chunk.id)}
-                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                    className={cn(getStatusColorClass('error', 'text'), 'hover:opacity-80')}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1435,7 +1436,7 @@ export function GameAssignmentBoard() {
                           <Button
                             size="sm"
                             onClick={() => acceptAISuggestion(suggestion)}
-                            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                            className={cn(getStatusColorClass('success', 'bg'), 'hover:opacity-90')}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Accept
@@ -1444,7 +1445,7 @@ export function GameAssignmentBoard() {
                             variant="outline"
                             size="sm"
                             onClick={() => rejectAISuggestion(suggestion)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            className={cn(getStatusColorClass('error', 'text'), 'hover:opacity-80')}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             Reject
@@ -1458,25 +1459,25 @@ export function GameAssignmentBoard() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            <div className={cn('text-2xl font-bold', getStatusColorClass('info', 'text'))}>
                               {Math.round(suggestion.factors.proximity * 100)}%
                             </div>
                             <div className="text-xs text-muted-foreground">Proximity</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            <div className={cn('text-2xl font-bold', getStatusColorClass('success', 'text'))}>
                               {Math.round(suggestion.factors.availability * 100)}%
                             </div>
                             <div className="text-xs text-muted-foreground">Availability</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            <div className={cn('text-2xl font-bold', getStatusColorClass('info', 'text'))}>
                               {Math.round(suggestion.factors.experience * 100)}%
                             </div>
                             <div className="text-xs text-muted-foreground">Experience</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            <div className={cn('text-2xl font-bold', getStatusColorClass('warning', 'text'))}>
                               {Math.round(suggestion.factors.pastPerformance * 100)}%
                             </div>
                             <div className="text-xs text-muted-foreground">Past Performance</div>
@@ -1538,7 +1539,7 @@ export function GameAssignmentBoard() {
                         <Button
                           size="sm"
                           onClick={() => repeatHistoricPattern(pattern)}
-                          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                          className={cn(getStatusColorClass('success', 'bg'), 'hover:opacity-90')}
                         >
                           <Repeat className="h-4 w-4 mr-1" />
                           Apply Pattern

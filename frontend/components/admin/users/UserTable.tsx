@@ -1,30 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { 
-  MoreVertical, 
-  Edit, 
-  Eye, 
-  Trash2, 
-  Mail, 
-  Shield, 
+import {
+  MoreVertical,
+  Edit,
+  Eye,
+  Trash2,
+  Mail,
+  Shield,
   UserCheck,
-  ChevronLeft,
-  ChevronRight,
-  DollarSign,
-  Whistle,
   Star,
   Award
 } from 'lucide-react'
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
+import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -38,7 +26,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getYearsOfExperience } from '@/types/user'
 import { EditableWage } from '@/components/admin/referees/EditableWage'
-import { RefereeTypeManager } from '@/components/admin/referees/RefereeTypeManager'
 import { ScrollableRoleTabs } from '@/components/ui/scrollable-role-tabs'
 
 interface Role {
@@ -96,10 +83,10 @@ interface UserTableProps {
   showRefereeColumns?: boolean
 }
 
-export function UserTable({ 
-  users, 
-  onEdit, 
-  onView, 
+export function UserTable({
+  users,
+  onEdit,
+  onView,
   onDelete,
   onWageUpdate,
   onTypeChange,
@@ -108,6 +95,7 @@ export function UserTable({
   onPageChange,
   showRefereeColumns = false
 }: UserTableProps) {
+  // Helper functions
   const getRoleBadgeVariant = (role: Role) => {
     // Handle referee type roles with special styling
     if (role.category === 'referee_type') {
@@ -115,7 +103,7 @@ export function UserTable({
       case 'Senior Referee':
         return 'default'
       case 'Junior Referee':
-        return 'secondary'  
+        return 'secondary'
       case 'Rookie Referee':
         return 'outline'
       default:
@@ -159,7 +147,7 @@ export function UserTable({
       }
     }
 
-    // Handle referee capability roles  
+    // Handle referee capability roles
     if (role.category === 'referee_capability') {
       return <Award className="h-3 w-3 mr-1" />
     }
@@ -198,176 +186,171 @@ export function UserTable({
     return user.email.slice(0, 2).toUpperCase()
   }
 
-  if (users.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <p className="text-muted-foreground">No users found</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Try adjusting your filters or create a new user
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Roles</TableHead>
-            {showRefereeColumns && <TableHead>Wage</TableHead>}
-            {showRefereeColumns && <TableHead>Experience</TableHead>}
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Last Updated</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={'/placeholder-user.jpg'} />
-                    <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{user.name || 'No name'}</div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                {user.roles && user.roles.length > 0 ? (
-                  <ScrollableRoleTabs 
-                    roles={user.roles} 
-                    className="max-w-xs"
-                  />
-                ) : (
-                  <Badge variant="secondary">
-                    <span className="flex items-center">
-                      No Roles
-                    </span>
-                  </Badge>
-                )}
-              </TableCell>
-              
-              {/* Referee-specific columns */}
-              {showRefereeColumns && (
-                <TableCell>
-                  {user.is_referee && user.referee_profile ? (
-                    <EditableWage
-                      userId={user.id}
-                      currentWage={user.referee_profile.wage_amount}
-                      onWageUpdate={onWageUpdate || (() => {})}
-                      disabled={!onWageUpdate}
-                    />
-                  ) : (
-                    <span className="text-muted-foreground text-sm">N/A</span>
-                  )}
-                </TableCell>
-              )}
-
-              {showRefereeColumns && (
-                <TableCell>
-                  {user.is_referee ? (
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm">
-                        <div className="font-medium">
-                          {getYearsOfExperience(user)} {getYearsOfExperience(user) === 1 ? 'year' : 'years'}
-                        </div>
-                        {user.year_started_refereeing && (
-                          <div className="text-xs text-muted-foreground">
-                            Since {user.year_started_refereeing}
-                          </div>
-                        )}
-                      </div>
-                      {user.referee_profile?.evaluation_score && (
-                        <Badge variant="outline" className="text-xs">
-                          {user.referee_profile.evaluation_score}%
-                        </Badge>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">N/A</span>
-                  )}
-                </TableCell>
-              )}
-              <TableCell>
-                <Badge variant={user.is_active !== false ? 'outline' : 'secondary'}>
-                  {user.is_active !== false ? 'Active' : 'Inactive'}
-                </Badge>
-              </TableCell>
-              <TableCell>{formatDate(user.created_at)}</TableCell>
-              <TableCell>{formatDate(user.updated_at || '')}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => onView(user)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEdit(user)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit User
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Send Email
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(user.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete User
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      
-      {/* Pagination */}
-      {totalPages > 1 && onPageChange && (
-        <div className="flex items-center justify-between px-4 py-4 border-t">
-          <div className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page === totalPages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+  // Define columns
+  const columns: ColumnDef<User>[] = [
+    {
+      id: 'user',
+      title: 'User',
+      accessor: (user) => (
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={'/placeholder-user.jpg'} />
+            <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{user.name || 'No name'}</div>
+            <div className="text-sm text-muted-foreground">{user.email}</div>
           </div>
         </div>
-      )}
-    </div>
+      ),
+      filterType: 'search'
+    },
+    {
+      id: 'roles',
+      title: 'Roles',
+      accessor: (user) => (
+        user.roles && user.roles.length > 0 ? (
+          <ScrollableRoleTabs
+            roles={user.roles}
+            className="max-w-xs"
+          />
+        ) : (
+          <Badge variant="secondary">
+            <span className="flex items-center">
+              No Roles
+            </span>
+          </Badge>
+        )
+      ),
+      filterType: 'multiselect',
+      enableDynamicFilter: true,
+      getFilterValue: (user) => user.roles?.map(r => r.name) || ['No Roles']
+    },
+    ...(showRefereeColumns ? [
+      {
+        id: 'wage',
+        title: 'Wage',
+        accessor: (user: User) => (
+          user.is_referee && user.referee_profile ? (
+            <EditableWage
+              userId={user.id}
+              currentWage={user.referee_profile.wage_amount}
+              onWageUpdate={onWageUpdate || (() => {})}
+              disabled={!onWageUpdate}
+            />
+          ) : (
+            <span className="text-muted-foreground text-sm">N/A</span>
+          )
+        ),
+        filterType: 'none' as const
+      },
+      {
+        id: 'experience',
+        title: 'Experience',
+        accessor: (user: User) => (
+          user.is_referee ? (
+            <div className="flex items-center gap-2">
+              <div className="text-sm">
+                <div className="font-medium">
+                  {getYearsOfExperience(user)} {getYearsOfExperience(user) === 1 ? 'year' : 'years'}
+                </div>
+                {user.year_started_refereeing && (
+                  <div className="text-xs text-muted-foreground">
+                    Since {user.year_started_refereeing}
+                  </div>
+                )}
+              </div>
+              {user.referee_profile?.evaluation_score && (
+                <Badge variant="outline" className="text-xs">
+                  {user.referee_profile.evaluation_score}%
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground text-sm">N/A</span>
+          )
+        ),
+        filterType: 'none' as const
+      }
+    ] : []),
+    {
+      id: 'status',
+      title: 'Status',
+      accessor: (user) => (
+        <Badge variant={user.is_active !== false ? 'outline' : 'secondary'}>
+          {user.is_active !== false ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+      filterType: 'multiselect',
+      filterOptions: [
+        { value: 'Active', label: 'Active' },
+        { value: 'Inactive', label: 'Inactive' }
+      ],
+      getFilterValue: (user) => user.is_active !== false ? 'Active' : 'Inactive'
+    },
+    {
+      id: 'created_at',
+      title: 'Created',
+      accessor: (user) => formatDate(user.created_at),
+      filterType: 'none'
+    },
+    {
+      id: 'updated_at',
+      title: 'Last Updated',
+      accessor: (user) => formatDate(user.updated_at || ''),
+      filterType: 'none'
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      accessor: (user) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => onView(user)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(user)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit User
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Mail className="mr-2 h-4 w-4" />
+              Send Email
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onDelete(user.id)}
+              className="text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete User
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+      filterType: 'none'
+    }
+  ]
+
+  return (
+    <FilterableTable
+      data={users}
+      columns={columns}
+      emptyMessage="No users found."
+      mobileCardType="user"
+      enableViewToggle={true}
+      enableCSV={true}
+      maxVisibleColumns="auto"
+      onEditReferee={onEdit}
+      onViewProfile={onView}
+    />
   )
 }

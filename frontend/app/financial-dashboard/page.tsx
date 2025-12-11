@@ -35,6 +35,8 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 
 interface DashboardData {
@@ -101,7 +103,13 @@ interface DashboardData {
   }
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))'
+]
 
 function FinancialDashboardPageContent() {
   const { isAuthenticated, token } = useAuth()
@@ -157,10 +165,10 @@ function FinancialDashboardPageContent() {
   if (error) {
     return (
       <div className="container mx-auto p-6">
-        <Card className="border-red-200 bg-red-50">
+        <Card className={cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'border'))}>
           <CardHeader>
-            <CardTitle className="text-red-900">Error Loading Dashboard</CardTitle>
-            <CardDescription className="text-red-700">{error}</CardDescription>
+            <CardTitle className={getStatusColorClass('error', 'text')}>Error Loading Dashboard</CardTitle>
+            <CardDescription className={getStatusColorClass('error', 'text')}>{error}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={fetchDashboardData} variant="outline">
@@ -220,11 +228,11 @@ function FinancialDashboardPageContent() {
 
       {/* Pending Approvals Alert */}
       {dashboardData.pendingApprovals.total > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50">
+        <Card className={cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border'))}>
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">Pending Approvals</CardTitle>
-              <Badge variant="outline" className="bg-yellow-100">
+              <Badge variant="outline" className={getStatusColorClass('warning', 'bg')}>
                 {dashboardData.pendingApprovals.total} Total
               </Badge>
             </div>
@@ -283,7 +291,7 @@ function FinancialDashboardPageContent() {
             <CardTitle className="text-sm font-medium text-gray-600">Net Income</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${dashboardData.summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${dashboardData.summary.netIncome >= 0 ? getStatusColorClass('success', 'text') : getStatusColorClass('error', 'text')}`}>
               {formatCurrency(dashboardData.summary.netIncome)}
             </div>
             <p className="text-xs text-gray-600 mt-1">
@@ -525,7 +533,7 @@ function FinancialDashboardPageContent() {
                         <Badge variant="destructive" className="text-xs">Over budget</Badge>
                       )}
                       {budget.percentage > 80 && budget.percentage <= 100 && (
-                        <Badge variant="outline" className="text-xs bg-yellow-50">Warning</Badge>
+                        <Badge variant="outline" className={cn('text-xs', getStatusColorClass('warning', 'bg'))}>Warning</Badge>
                       )}
                     </div>
                   </div>
@@ -578,7 +586,7 @@ function FinancialDashboardPageContent() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        <span className={transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}>
+                        <span className={transaction.type === 'expense' ? getStatusColorClass('error', 'text') : getStatusColorClass('success', 'text')}>
                           {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
                         </span>
                       </TableCell>
