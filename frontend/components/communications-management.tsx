@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
   Send,
   Calendar,
   User,
@@ -22,7 +22,8 @@ import {
   Target,
   Zap,
   Archive,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -59,14 +60,15 @@ interface CommunicationFormData {
 
 const COMMUNICATION_TYPES = [
   { value: 'announcement', label: 'Announcement', icon: Megaphone, description: 'General announcements' },
-  { value: 'assignment', label: 'Assignment', icon: Bell, description: 'Game assignment notifications' },
+  { value: 'memo', label: 'Memo', icon: MessageCircle, description: 'Internal memos and notes' },
+  { value: 'policy_update', label: 'Policy Update', icon: FileText, description: 'Policy changes and updates' },
   { value: 'emergency', label: 'Emergency', icon: AlertTriangle, description: 'Urgent communications' },
-  { value: 'update', label: 'Update', icon: MessageCircle, description: 'System or game updates' }
+  { value: 'newsletter', label: 'Newsletter', icon: Bell, description: 'Regular newsletters and updates' }
 ]
 
 const PRIORITY_LEVELS = [
   { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-800', icon: MessageSquare },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800', icon: Bell },
+  { value: 'normal', label: 'Normal', color: 'bg-yellow-100 text-yellow-800', icon: Bell },
   { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
   { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800', icon: AlertTriangle }
 ]
@@ -98,18 +100,35 @@ export function CommunicationsManagement() {
 
   useEffect(() => {
     fetchCommunications()
-  }, [])
+  }, [statusFilter, typeFilter, priorityFilter, activeTab])
 
   const fetchCommunications = async () => {
     try {
       setLoading(true)
-      // TODO: Implement a proper communications history endpoint
-      // For now, communications are sent via notifications/broadcast and not stored separately
-      setCommunications([])
+      setError(null)
+
+      const filters: Record<string, string> = {}
+      if (statusFilter !== 'all') filters.status = statusFilter
+      if (typeFilter !== 'all') filters.type = typeFilter
+      if (priorityFilter !== 'all') filters.priority = priorityFilter
+
+      const response = await apiClient.getCommunications(filters)
+
+      // Handle different response formats
+      if (response.communications) {
+        setCommunications(response.communications)
+      } else if (Array.isArray(response)) {
+        setCommunications(response as Communication[])
+      } else if ((response as any).items) {
+        setCommunications((response as any).items)
+      } else {
+        setCommunications([])
+      }
     } catch (error) {
       console.error('Error fetching communications:', error)
       setError('Failed to load communications')
       toast.error('Failed to load communications')
+      setCommunications([])
     } finally {
       setLoading(false)
     }
@@ -117,23 +136,21 @@ export function CommunicationsManagement() {
 
   const handleCreateCommunication = async () => {
     try {
-      // Use the notifications broadcast endpoint
-      const response = await apiClient.broadcastNotification({
+      const response = await apiClient.createCommunication({
         title: formData.title,
-        message: formData.content,
-        type: formData.type as 'assignment' | 'status_change' | 'reminder' | 'system',
-        link: undefined,
+        content: formData.content,
+        type: formData.type,
+        priority: formData.priority,
         target_audience: formData.target_audience,
-        metadata: {
-          priority: formData.priority,
-          requires_acknowledgment: formData.requires_acknowledgment
-        }
+        requires_acknowledgment: formData.requires_acknowledgment,
+        scheduled_send_date: formData.scheduled_send_date
       })
 
-      if (response.success) {
+      if (response.success && response.data) {
+        setCommunications(prev => [response.data, ...prev])
         setIsCreateDialogOpen(false)
         resetForm()
-        toast.success(`Communication broadcast to ${response.recipientCount} users`)
+        toast.success('Communication created successfully')
       }
     } catch (error) {
       console.error('Error creating communication:', error)
@@ -165,7 +182,7 @@ export function CommunicationsManagement() {
     try {
       const response = await apiClient.publishCommunication(id)
       if (response.success) {
-        setCommunications(communications.map(comm => 
+        setCommunications(communications.map(comm =>
           comm.id === id ? { ...comm, status: 'published', sent_at: new Date().toISOString() } : comm
         ))
         toast.success('Communication published successfully')
@@ -173,6 +190,21 @@ export function CommunicationsManagement() {
     } catch (error) {
       console.error('Error publishing communication:', error)
       toast.error('Failed to publish communication')
+    }
+  }
+
+  const handleArchiveCommunication = async (id: string) => {
+    try {
+      const response = await apiClient.archiveCommunication(id)
+      if (response.success) {
+        setCommunications(communications.map(comm =>
+          comm.id === id ? { ...comm, status: 'archived' } : comm
+        ))
+        toast.success('Communication archived')
+      }
+    } catch (error) {
+      console.error('Error archiving communication:', error)
+      toast.error('Failed to archive communication')
     }
   }
 
@@ -476,17 +508,32 @@ export function CommunicationsManagement() {
                             size="sm"
                             onClick={() => handlePublishCommunication(communication.id)}
                             className="text-green-600 hover:text-green-700"
+                            title="Publish communication"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(communication)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {communication.status === 'published' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleArchiveCommunication(communication.id)}
+                            className="text-gray-600 hover:text-gray-700"
+                            title="Archive communication"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {communication.status === 'draft' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(communication)}
+                            title="Edit communication"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>

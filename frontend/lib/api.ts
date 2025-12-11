@@ -2710,14 +2710,82 @@ class ApiClient {
   }
 
   async getUnreadCommunicationsCount() {
-    return Promise.resolve({
-      success: true,
+    return this.request<{
+      success: boolean;
       data: {
-        unreadCount: 0,
-        byPriority: {},
-        byType: {}
-      }
+        unread_count: number;
+      };
+    }>('/communications/unread/count')
+  }
+
+  async archiveCommunication(id: string) {
+    return this.request<{ success: boolean; data: Communication }>(`/communications/${id}/archive`, {
+      method: 'POST'
     })
+  }
+
+  async getCommunicationRecipients(id: string) {
+    return this.request<{
+      recipients: Array<{
+        id: string;
+        recipient_id: string;
+        recipient_name: string;
+        recipient_email: string;
+        employee_id?: string;
+        department_name?: string;
+        delivery_method: string;
+        delivery_status: string;
+        sent_at: string | null;
+        read_at: string | null;
+        acknowledged_at: string | null;
+      }>;
+      statistics: {
+        total_recipients: number;
+        delivered: number;
+        read: number;
+        acknowledged: number;
+        failed: number;
+      };
+    }>(`/communications/${id}/recipients`)
+  }
+
+  async getCommunicationStats() {
+    return this.request<{
+      overview: {
+        total_communications: number;
+        draft_communications: number;
+        published_communications: number;
+        archived_communications: number;
+        emergency_communications: number;
+        urgent_communications: number;
+        acknowledgment_required: number;
+      };
+      engagement: {
+        total_recipients: number;
+        total_read: number;
+        total_acknowledged: number;
+        delivery_failures: number;
+        avg_hours_to_read: number | null;
+      };
+      typeBreakdown: Array<{
+        type: string;
+        count: number;
+        published_count: number;
+      }>;
+    }>('/communications/stats/overview')
+  }
+
+  async getPendingCommunicationAcknowledgments() {
+    return this.request<Array<{
+      id: string;
+      title: string;
+      type: string;
+      priority: string;
+      publish_date: string;
+      requires_acknowledgment: boolean;
+      sent_at: string;
+      read_at: string | null;
+    }>>('/communications/acknowledgments/pending')
   }
 
   // Notification broadcast endpoint
@@ -4991,23 +5059,53 @@ export interface ExpenseCategory {
   updated_at?: string;
 }
 
+export type CommunicationType = 'announcement' | 'memo' | 'policy_update' | 'emergency' | 'newsletter';
+export type CommunicationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type CommunicationStatus = 'draft' | 'published' | 'archived';
+
+export interface TargetAudience {
+  departments?: string[] | null;
+  roles?: string[] | null;
+  specific_users?: string[] | null;
+  all_users?: boolean;
+}
+
+export interface CommunicationAttachment {
+  filename: string;
+  path: string;
+  size: number;
+  mimetype: string;
+}
+
 export interface Communication {
   id: string;
   title: string;
   content: string;
-  type: string;
-  priority: string;
-  status: string;
-  target_audience: any;
+  type: CommunicationType | string;
+  priority: CommunicationPriority | string;
+  status: CommunicationStatus | string;
+  author_id?: string;
+  target_audience: TargetAudience;
+  publish_date?: string;
+  expiration_date?: string | null;
   requires_acknowledgment: boolean;
+  attachments?: CommunicationAttachment[];
+  tags?: string[];
   scheduled_send_date?: string;
   sent_at?: string;
-  created_by: string;
+  created_by?: string;
   created_by_name?: string;
+  author_name?: string;
   acknowledgment_count?: number;
   total_recipients?: number;
   created_at?: string;
   updated_at?: string;
+  // Recipient-specific fields (when viewing as a recipient)
+  read_at?: string;
+  acknowledged_at?: string;
+  delivery_status?: string;
+  is_unread?: boolean;
+  requires_ack?: boolean;
 }
 
 export interface WorkflowDefinition {
