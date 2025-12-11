@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { User, Role, getUserDisplayName, getYearsOfExperience, getExperienceLevel, getUserFullAddress } from '@/types/user'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 import { UserDetailsModal } from './UserDetailsModal'
 import { UserForm } from './UserFormNew'
@@ -274,7 +276,7 @@ export function UserManagementDashboard() {
                 </div>
               )}
               {user.communication_preferences?.preferred_language && user.communication_preferences.preferred_language !== 'en' && (
-                <div className="text-xs text-blue-600">
+                <div className={cn("text-xs", getStatusColorClass('info', 'text'))}>
                   Language: {user.communication_preferences.preferred_language.toUpperCase()}
                 </div>
               )}
@@ -305,7 +307,7 @@ export function UserManagementDashboard() {
                 </div>
               )}
               {user.emergency_contact_name && (
-                <div className="text-xs text-blue-600">
+                <div className={cn("text-xs", getStatusColorClass('info', 'text'))}>
                   Emergency: {user.emergency_contact_name}
                 </div>
               )}
@@ -338,13 +340,13 @@ export function UserManagementDashboard() {
                 </div>
               )}
               {user.certifications && user.certifications.length > 0 && (
-                <div className="text-xs text-green-600">
+                <div className={cn("text-xs", getStatusColorClass('success', 'text'))}>
                   {user.certifications.slice(0, 2).join(', ')}
                   {user.certifications.length > 2 && ` +${user.certifications.length - 2}`}
                 </div>
               )}
               {user.specializations && user.specializations.length > 0 && (
-                <div className="text-xs text-purple-600">
+                <div className={cn("text-xs", getStatusColorClass('info', 'text'))}>
                   {user.specializations.slice(0, 1).join(', ')}
                   {user.specializations.length > 1 && ` +${user.specializations.length - 1}`}
                 </div>
@@ -392,15 +394,15 @@ export function UserManagementDashboard() {
           const availabilityStatus = user.availability_status || 'active'
           const accountStatus = user.is_active !== false ? 'active' : 'inactive'
           const statusColors = {
-            'active': 'bg-green-100 text-green-800 border-green-200',
-            'inactive': 'bg-red-100 text-red-800 border-red-200',
-            'on_break': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+            'active': getStatusColorClass('success', 'bg'),
+            'inactive': getStatusColorClass('error', 'bg'),
+            'on_break': getStatusColorClass('warning', 'bg')
           }
-          
+
           return (
             <div className="space-y-1">
               <div className="flex gap-1">
-                <Badge variant="outline" className={`text-xs ${statusColors[availabilityStatus as keyof typeof statusColors] || ''}`}>
+                <Badge variant="outline" className={cn('text-xs', statusColors[availabilityStatus as keyof typeof statusColors] || '')}>
                   {availabilityStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Badge>
                 {accountStatus === 'inactive' && (
@@ -415,7 +417,7 @@ export function UserManagementDashboard() {
                 </div>
               )}
               {user.profile_completion_percentage !== undefined && user.profile_completion_percentage < 100 && (
-                <div className="text-xs text-orange-600">
+                <div className={cn("text-xs", getStatusColorClass('warning', 'text'))}>
                   Profile {user.profile_completion_percentage}% complete
                 </div>
               )}

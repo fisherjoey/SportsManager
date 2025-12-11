@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Separator } from '@/components/ui/separator'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 
 export default function AIAssignmentsPage() {
@@ -220,10 +222,10 @@ export default function AIAssignmentsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-    case 'success': return <CheckCircle2 className="h-4 w-4 text-green-500" />
-    case 'error': return <XCircle className="h-4 w-4 text-red-500" />
-    case 'partial': return <AlertCircle className="h-4 w-4 text-yellow-500" />
-    default: return <Clock className="h-4 w-4 text-gray-400" />
+    case 'success': return <CheckCircle2 className={cn('h-4 w-4', getStatusColorClass('success', 'text'))} />
+    case 'error': return <XCircle className={cn('h-4 w-4', getStatusColorClass('error', 'text'))} />
+    case 'partial': return <AlertCircle className={cn('h-4 w-4', getStatusColorClass('warning', 'text'))} />
+    default: return <Clock className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -321,7 +323,7 @@ export default function AIAssignmentsPage() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Conflicts</Label>
-                      <div className="font-medium text-yellow-600">{rule.conflicts_found}</div>
+                      <div className={cn('font-medium', getStatusColorClass('warning', 'text'))}>{rule.conflicts_found}</div>
                     </div>
                   </div>
                   
@@ -365,11 +367,11 @@ export default function AIAssignmentsPage() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Assigned</Label>
-                      <div className="font-medium text-green-600">{result.assignmentsCreated}</div>
+                      <div className={cn('font-medium', getStatusColorClass('success', 'text'))}>{result.assignmentsCreated}</div>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Conflicts</Label>
-                      <div className="font-medium text-yellow-600">{result.conflictsFound}</div>
+                      <div className={cn('font-medium', getStatusColorClass('warning', 'text'))}>{result.conflictsFound}</div>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Duration</Label>
@@ -476,11 +478,11 @@ export default function AIAssignmentsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs text-muted-foreground">Total Conflicts</Label>
-                        <div className="text-lg font-bold text-yellow-600">{analytics.conflicts.totalConflicts}</div>
+                        <div className={cn('text-lg font-bold', getStatusColorClass('warning', 'text'))}>{analytics.conflicts.totalConflicts}</div>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">Conflict Rate</Label>
-                        <div className="text-lg font-bold text-yellow-600">{analytics.conflicts.conflictRate}%</div>
+                        <div className={cn('text-lg font-bold', getStatusColorClass('warning', 'text'))}>{analytics.conflicts.conflictRate}%</div>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">Avg per Run</Label>
@@ -1153,9 +1155,9 @@ function ResultDetails({ result }: { result: AIAssignmentResult }) {
         <div>
           <Label className="text-xs text-muted-foreground">Status</Label>
           <div className="flex items-center space-x-2">
-            {result.status === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-            {result.status === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
-            {result.status === 'partial' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+            {result.status === 'success' && <CheckCircle2 className={cn('h-4 w-4', getStatusColorClass('success', 'text'))} />}
+            {result.status === 'error' && <XCircle className={cn('h-4 w-4', getStatusColorClass('error', 'text'))} />}
+            {result.status === 'partial' && <AlertCircle className={cn('h-4 w-4', getStatusColorClass('warning', 'text'))} />}
             <span className="capitalize">{result.status}</span>
           </div>
         </div>
@@ -1187,7 +1189,7 @@ function ResultDetails({ result }: { result: AIAssignmentResult }) {
             <Label className="text-sm font-medium">Context & Comments</Label>
             <div className="space-y-1">
               {result.comments.map((comment, index) => (
-                <div key={index} className="p-2 bg-blue-50 text-blue-800 rounded text-sm">
+                <div key={index} className={cn('p-2 rounded text-sm', getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'text'))}>
                   {comment}
                 </div>
               ))}
@@ -1233,7 +1235,7 @@ function ResultDetails({ result }: { result: AIAssignmentResult }) {
               {detail.notes && (
                 <div className="space-y-2 mt-4">
                   <Label className="text-sm">Assignment Notes</Label>
-                  <div className="p-2 bg-green-50 text-green-700 rounded text-sm">
+                  <div className={cn('p-2 rounded text-sm', getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'text'))}>
                     {detail.notes}
                   </div>
                 </div>
@@ -1241,9 +1243,9 @@ function ResultDetails({ result }: { result: AIAssignmentResult }) {
               
               {detail.conflicts && detail.conflicts.length > 0 && (
                 <div className="space-y-2 mt-4">
-                  <Label className="text-sm text-red-600">Conflicts</Label>
+                  <Label className={cn('text-sm', getStatusColorClass('error', 'text'))}>Conflicts</Label>
                   {detail.conflicts.map((conflict, i) => (
-                    <div key={i} className="p-2 bg-red-50 text-red-700 rounded text-sm">
+                    <div key={i} className={cn('p-2 rounded text-sm', getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'text'))}>
                       {conflict}
                     </div>
                   ))}

@@ -20,6 +20,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 import { ResourceEditor } from '@/components/resource-centre/ResourceEditor'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface Resource {
   id: string
@@ -657,7 +659,7 @@ export function ResourceCentreNew() {
                   
                   {/* Show external link indicator */}
                   {resource.external_url && (
-                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <div className={cn("flex items-center gap-1 text-xs", "text-info")}>
                       <ExternalLink className="h-3 w-3" />
                       <span className="truncate">
                         {(() => {

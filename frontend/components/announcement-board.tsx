@@ -27,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { apiClient, Communication } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 import { EmergencyBroadcast, QuickEmergencyBroadcast } from '@/components/emergency-broadcast'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface Post {
   id: string
@@ -102,31 +104,30 @@ export function AnnouncementBoard() {
   }
 
   const getPriorityIcon = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-    case 'urgent':
-      return <AlertTriangle className="h-4 w-4 text-red-500" />
-    case 'high':
-      return <AlertTriangle className="h-4 w-4 text-orange-500" />
-    case 'medium':
-      return <Bell className="h-4 w-4 text-yellow-500" />
-    case 'low':
-      return <MessageCircle className="h-4 w-4 text-blue-500" />
-    default:
-      return <MessageCircle className="h-4 w-4 text-gray-500" />
+    const priorityMap: Record<string, string> = {
+      'urgent': 'error',
+      'high': 'warning',
+      'medium': 'warning',
+      'low': 'info'
     }
+    const status = priorityMap[priority?.toLowerCase()] || 'default'
+    const IconComponent = priority?.toLowerCase() === 'urgent' || priority?.toLowerCase() === 'high'
+      ? AlertTriangle
+      : priority?.toLowerCase() === 'medium'
+      ? Bell
+      : MessageCircle
+    return <IconComponent className={cn("h-4 w-4", getStatusColorClass(status, 'text'))} />
   }
 
   const getTypeIcon = (type: string) => {
-    switch (type?.toLowerCase()) {
-    case 'emergency':
-      return <AlertTriangle className="h-4 w-4 text-red-500" />
-    case 'announcement':
-      return <Megaphone className="h-4 w-4 text-blue-500" />
-    case 'assignment':
-      return <Bell className="h-4 w-4 text-green-500" />
-    default:
-      return <MessageCircle className="h-4 w-4 text-gray-500" />
+    const typeMap: Record<string, { status: string; icon: typeof AlertTriangle }> = {
+      'emergency': { status: 'error', icon: AlertTriangle },
+      'announcement': { status: 'info', icon: Megaphone },
+      'assignment': { status: 'success', icon: Bell }
     }
+    const config = typeMap[type?.toLowerCase()] || { status: 'default', icon: MessageCircle }
+    const IconComponent = config.icon
+    return <IconComponent className={cn("h-4 w-4", getStatusColorClass(config.status, 'text'))} />
   }
 
   const getCategoryIcon = (iconName?: string) => {
@@ -165,9 +166,9 @@ export function AnnouncementBoard() {
 
       {/* Urgent Communications Banner */}
       {urgentCommunications.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className={cn(getStatusColorClass('error', 'border'), getStatusColorClass('error', 'bg'))}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-red-800 flex items-center gap-2">
+            <CardTitle className={cn("flex items-center gap-2", getStatusColorClass('error', 'text'))}>
               <AlertTriangle className="h-5 w-5" />
               Urgent Communications
             </CardTitle>
@@ -175,14 +176,14 @@ export function AnnouncementBoard() {
           <CardContent>
             <div className="space-y-3">
               {urgentCommunications.map((comm) => (
-                <div key={comm.id} className="flex items-start justify-between gap-4 p-3 bg-white rounded-md border border-red-200">
+                <div key={comm.id} className={cn("flex items-start justify-between gap-4 p-3 bg-white rounded-md border", getStatusColorClass('error', 'border'))}>
                   <div className="flex-1">
-                    <h4 className="font-medium text-red-900">{comm.title}</h4>
-                    <p className="text-sm text-red-700 mt-1">
+                    <h4 className={cn("font-medium", getStatusColorClass('error', 'text'))}>{comm.title}</h4>
+                    <p className={cn("text-sm mt-1", getStatusColorClass('error', 'text'))}>
                       {comm.content.replace(/<[^>]*>/g, '').substring(0, 100)}
                       {comm.content.length > 100 && '...'}
                     </p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-red-600">
+                    <div className={cn("flex items-center gap-2 mt-2 text-xs", getStatusColorClass('error', 'text'))}>
                       <Calendar className="h-3 w-3" />
                       {format(new Date(comm.sent_at || comm.created_at || ''), 'MMM d, h:mm a')}
                     </div>
@@ -192,7 +193,7 @@ export function AnnouncementBoard() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleAcknowledge(comm.id)}
-                      className="border-red-200 text-red-700 hover:bg-red-100"
+                      className={cn(getStatusColorClass('error', 'border'), getStatusColorClass('error', 'text'))}
                     >
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Acknowledge
@@ -295,31 +296,30 @@ interface AnnouncementCardProps {
 
 function AnnouncementCard({ item, type, onAcknowledge }: AnnouncementCardProps) {
   const getPriorityIcon = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-    case 'urgent':
-      return <AlertTriangle className="h-4 w-4 text-red-500" />
-    case 'high':
-      return <AlertTriangle className="h-4 w-4 text-orange-500" />
-    case 'medium':
-      return <Bell className="h-4 w-4 text-yellow-500" />
-    case 'low':
-      return <MessageCircle className="h-4 w-4 text-blue-500" />
-    default:
-      return <MessageCircle className="h-4 w-4 text-gray-500" />
+    const priorityMap: Record<string, string> = {
+      'urgent': 'error',
+      'high': 'warning',
+      'medium': 'warning',
+      'low': 'info'
     }
+    const status = priorityMap[priority?.toLowerCase()] || 'default'
+    const IconComponent = priority?.toLowerCase() === 'urgent' || priority?.toLowerCase() === 'high'
+      ? AlertTriangle
+      : priority?.toLowerCase() === 'medium'
+      ? Bell
+      : MessageCircle
+    return <IconComponent className={cn("h-4 w-4", getStatusColorClass(status, 'text'))} />
   }
 
   const getTypeIcon = (itemType: string) => {
-    switch (itemType?.toLowerCase()) {
-    case 'emergency':
-      return <AlertTriangle className="h-4 w-4 text-red-500" />
-    case 'announcement':
-      return <Megaphone className="h-4 w-4 text-blue-500" />
-    case 'assignment':
-      return <Bell className="h-4 w-4 text-green-500" />
-    default:
-      return <MessageCircle className="h-4 w-4 text-gray-500" />
+    const typeMap: Record<string, { status: string; icon: typeof AlertTriangle }> = {
+      'emergency': { status: 'error', icon: AlertTriangle },
+      'announcement': { status: 'info', icon: Megaphone },
+      'assignment': { status: 'success', icon: Bell }
     }
+    const config = typeMap[itemType?.toLowerCase()] || { status: 'default', icon: MessageCircle }
+    const IconComponent = config.icon
+    return <IconComponent className={cn("h-4 w-4", getStatusColorClass(config.status, 'text'))} />
   }
 
   const getCategoryIcon = (iconName?: string) => {

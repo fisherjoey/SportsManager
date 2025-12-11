@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { mockGames, Team } from '@/lib/mock-data'
 import { useAuth } from '@/components/auth-provider'
 import { formatTeamName } from '@/lib/team-utils'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
@@ -40,19 +42,19 @@ export function RefereeDashboardOverview() {
       title: 'Upcoming Games',
       value: upcomingAssignments.length,
       icon: Calendar,
-      color: 'text-blue-600'
+      color: getStatusColorClass('info', 'text')
     },
     {
       title: 'This Week Earnings',
       value: `$${thisWeekEarnings}`,
       icon: DollarSign,
-      color: 'text-green-600'
+      color: getStatusColorClass('success', 'text')
     },
     {
       title: 'Available Games',
       value: availableGames.length,
       icon: Clock,
-      color: 'text-orange-600'
+      color: getStatusColorClass('warning', 'text')
     },
     {
       title: 'Games This Month',
@@ -62,7 +64,7 @@ export function RefereeDashboardOverview() {
         return gameDate.getMonth() === now.getMonth() && gameDate.getFullYear() === now.getFullYear()
       }).length,
       icon: MapPin,
-      color: 'text-purple-600'
+      color: getStatusColorClass('info', 'text')
     }
   ]
 
@@ -139,7 +141,7 @@ export function RefereeDashboardOverview() {
                     <p className="text-sm text-muted-foreground">{game.location}</p>
                   </div>
                   <div className="text-right">
-                    <Badge variant="outline" className="text-green-600 border-green-600">
+                    <Badge variant="outline" className={cn(getStatusColorClass('success', 'text'), getStatusColorClass('success', 'border'))}>
                       Available
                     </Badge>
                     <p className="text-sm font-medium mt-1">${game.payRate}</p>

@@ -59,6 +59,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient, Document, DocumentAcknowledgment } from '@/lib/api'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Using Document interface from API client - removing local duplicate interface
 
@@ -256,10 +258,10 @@ export function DocumentRepository() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      draft: { variant: 'outline', icon: Edit3, text: 'Draft', color: 'text-gray-600' },
-      review: { variant: 'secondary', icon: Clock, text: 'Under Review', color: 'text-yellow-600' },
-      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: 'text-green-600' },
-      archived: { variant: 'secondary', icon: Archive, text: 'Archived', color: 'text-gray-600' }
+      draft: { variant: 'outline', icon: Edit3, text: 'Draft', color: 'text-muted-foreground' },
+      review: { variant: 'secondary', icon: Clock, text: 'Under Review', color: cn(getStatusColorClass('warning', 'text')) },
+      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: cn(getStatusColorClass('success', 'text')) },
+      archived: { variant: 'secondary', icon: Archive, text: 'Archived', color: 'text-muted-foreground' }
     }
 
     const config = variants[status as keyof typeof variants] || variants.draft
@@ -275,10 +277,10 @@ export function DocumentRepository() {
 
   const getConfidentialityBadge = (confidentiality: string) => {
     const variants = {
-      public: { variant: 'outline', text: 'Public', color: 'text-blue-600' },
-      internal: { variant: 'secondary', text: 'Internal', color: 'text-green-600' },
-      confidential: { variant: 'secondary', text: 'Confidential', color: 'text-orange-600' },
-      restricted: { variant: 'destructive', text: 'Restricted', color: 'text-red-600' }
+      public: { variant: 'outline', text: 'Public', color: cn(getStatusColorClass('info', 'text')) },
+      internal: { variant: 'secondary', text: 'Internal', color: cn(getStatusColorClass('success', 'text')) },
+      confidential: { variant: 'secondary', text: 'Confidential', color: cn(getStatusColorClass('warning', 'text')) },
+      restricted: { variant: 'destructive', text: 'Restricted', color: cn(getStatusColorClass('error', 'text')) }
     }
 
     const config = variants[confidentiality as keyof typeof variants] || variants.internal
@@ -577,7 +579,7 @@ export function DocumentRepository() {
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className={cn(getStatusColorClass('error', 'text'))}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -655,7 +657,7 @@ export function DocumentRepository() {
                 </p>
                 <p className="text-sm text-muted-foreground">Pending Approval</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className={cn("h-8 w-8", getStatusColorClass('warning', 'text'))} />
             </div>
           </CardContent>
         </Card>
@@ -669,7 +671,7 @@ export function DocumentRepository() {
                 </p>
                 <p className="text-sm text-muted-foreground">Approved</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className={cn("h-8 w-8", getStatusColorClass('success', 'text'))} />
             </div>
           </CardContent>
         </Card>
@@ -683,7 +685,7 @@ export function DocumentRepository() {
                 </p>
                 <p className="text-sm text-muted-foreground">Pending Acknowledgments</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-500" />
+              <AlertTriangle className={cn("h-8 w-8", getStatusColorClass('warning', 'text'))} />
             </div>
           </CardContent>
         </Card>
@@ -860,7 +862,7 @@ export function DocumentRepository() {
                   {selectedDocument.expiry_date && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Expires</span>
-                      <span className={new Date(selectedDocument.expiry_date) < new Date() ? 'text-red-600 font-semibold' : ''}>
+                      <span className={new Date(selectedDocument.expiry_date) < new Date() ? cn(getStatusColorClass('error', 'text'), 'font-semibold') : ''}>
                         {new Date(selectedDocument.expiry_date).toLocaleDateString()}
                       </span>
                     </div>

@@ -26,6 +26,8 @@ import { Slider } from '@/components/ui/slider'
 import { Progress } from '@/components/ui/progress'
 import { apiClient } from '@/lib/api'
 import { formatGameMatchup, type Team } from '@/lib/team-utils'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface OptimizationSettings {
   maxGamesPerRefereePerDay: number
@@ -550,16 +552,18 @@ export function AIAssignmentsEnterprise() {
                 </div>
 
                 {selectedGames.length === 0 && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Zap className="h-5 w-5 text-primary" />
-                      <span className="font-medium text-primary">Bulk Assignment Mode</span>
-                    </div>
-                    <p className="text-sm text-primary/80 mt-1">
-                      Will process all {unassignedGames.length} unassigned games using advanced optimization algorithms.
-                      Estimated processing time: {Math.ceil(unassignedGames.length / 10)} seconds.
-                    </p>
-                  </div>
+                  <Card className={cn(getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'border'), "border")}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center space-x-2">
+                        <Zap className="h-5 w-5 text-primary" />
+                        <span className="font-medium text-primary">Bulk Assignment Mode</span>
+                      </div>
+                      <p className="text-sm text-primary/80 mt-1">
+                        Will process all {unassignedGames.length} unassigned games using advanced optimization algorithms.
+                        Estimated processing time: {Math.ceil(unassignedGames.length / 10)} seconds.
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 <div className="flex items-center space-x-4">
@@ -808,16 +812,18 @@ export function AIAssignmentsEnterprise() {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">Optimization Tip</span>
-                    </div>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Higher weights prioritize that factor more heavily. Balance all weights to achieve optimal
-                      results.
-                    </p>
-                  </div>
+                  <Card className={cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border'), "border")}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
+                        <span className={cn("text-sm font-medium", getStatusColorClass('warning', 'text'))}>Optimization Tip</span>
+                      </div>
+                      <p className={cn("text-xs mt-1", getStatusColorClass('warning', 'text'))}>
+                        Higher weights prioritize that factor more heavily. Balance all weights to achieve optimal
+                        results.
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </CardContent>
@@ -837,30 +843,38 @@ export function AIAssignmentsEnterprise() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-success">
-                        {bulkResult.optimizationMetrics.workloadBalance}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Workload Balance</div>
-                    </div>
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {bulkResult.optimizationMetrics.preferenceMatch}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Preference Match</div>
-                    </div>
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-muted-foreground">
-                        {Math.round(bulkResult.optimizationMetrics.totalTravelDistance)}km
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Travel</div>
-                    </div>
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {bulkResult.optimizationMetrics.conflictCount}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Conflicts</div>
-                    </div>
+                    <Card>
+                      <CardContent className="text-center pt-4">
+                        <div className="text-2xl font-bold text-success">
+                          {bulkResult.optimizationMetrics.workloadBalance}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">Workload Balance</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="text-center pt-4">
+                        <div className="text-2xl font-bold text-primary">
+                          {bulkResult.optimizationMetrics.preferenceMatch}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">Preference Match</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="text-center pt-4">
+                        <div className="text-2xl font-bold text-muted-foreground">
+                          {Math.round(bulkResult.optimizationMetrics.totalTravelDistance)}km
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Travel</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="text-center pt-4">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {bulkResult.optimizationMetrics.conflictCount}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Conflicts</div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </CardContent>
               </Card>

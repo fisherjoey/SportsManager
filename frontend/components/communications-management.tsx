@@ -43,6 +43,8 @@ import { RichTextEditor } from '@/components/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { apiClient, Communication } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface CommunicationFormData {
   title: string
@@ -67,10 +69,10 @@ const COMMUNICATION_TYPES = [
 ]
 
 const PRIORITY_LEVELS = [
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-800', icon: MessageSquare },
-  { value: 'normal', label: 'Normal', color: 'bg-yellow-100 text-yellow-800', icon: Bell },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
-  { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800', icon: AlertTriangle }
+  { value: 'low', label: 'Low', icon: MessageSquare },
+  { value: 'normal', label: 'Normal', icon: Bell },
+  { value: 'high', label: 'High', icon: AlertCircle },
+  { value: 'urgent', label: 'Urgent', icon: AlertTriangle }
 ]
 
 export function CommunicationsManagement() {
@@ -248,19 +250,26 @@ export function CommunicationsManagement() {
     return matchesSearch && matchesStatus && matchesType && matchesPriority && matchesTab
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-    case 'published': return 'bg-green-100 text-green-800'
-    case 'draft': return 'bg-yellow-100 text-yellow-800'
-    case 'scheduled': return 'bg-blue-100 text-blue-800'
-    case 'archived': return 'bg-gray-100 text-gray-800'
-    default: return 'bg-gray-100 text-gray-800'
+  const getStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'published': 'success',
+      'draft': 'warning',
+      'scheduled': 'info',
+      'archived': 'default'
     }
+    const mappedStatus = statusMap[status] || 'default'
+    return cn(getStatusColorClass(mappedStatus, 'text'), getStatusColorClass(mappedStatus, 'bg'))
   }
 
-  const getPriorityColor = (priority: string) => {
-    const priorityConfig = PRIORITY_LEVELS.find(p => p.value === priority)
-    return priorityConfig?.color || 'bg-gray-100 text-gray-800'
+  const getPriorityBadgeClass = (priority: string) => {
+    const priorityMap: Record<string, string> = {
+      'low': 'info',
+      'normal': 'warning',
+      'high': 'warning',
+      'urgent': 'error'
+    }
+    const mappedPriority = priorityMap[priority] || 'default'
+    return cn(getStatusColorClass(mappedPriority, 'text'), getStatusColorClass(mappedPriority, 'bg'))
   }
 
   const getTypeIcon = (type: string) => {
@@ -274,25 +283,25 @@ export function CommunicationsManagement() {
       title: 'Total Communications',
       value: communications.length,
       icon: MessageSquare,
-      color: 'text-blue-600'
+      color: getStatusColorClass('info', 'text')
     },
     {
       title: 'Published',
       value: communications.filter(c => c.status === 'published').length,
       icon: Send,
-      color: 'text-green-600'
+      color: getStatusColorClass('success', 'text')
     },
     {
       title: 'Drafts',
       value: communications.filter(c => c.status === 'draft').length,
       icon: Edit,
-      color: 'text-orange-600'
+      color: getStatusColorClass('warning', 'text')
     },
     {
       title: 'Urgent',
       value: communications.filter(c => c.priority === 'urgent').length,
       icon: AlertTriangle,
-      color: 'text-red-600'
+      color: getStatusColorClass('error', 'text')
     }
   ]
 
@@ -322,8 +331,8 @@ export function CommunicationsManagement() {
         />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="text-red-600">{error}</p>
+            <AlertCircle className={cn("h-8 w-8 mx-auto mb-2", getStatusColorClass('error', 'text'))} />
+            <p className={getStatusColorClass('error', 'text')}>{error}</p>
             <Button onClick={fetchCommunications} variant="outline" className="mt-2">
               Try Again
             </Button>
@@ -340,7 +349,7 @@ export function CommunicationsManagement() {
         title="Communications"
         description="Manage announcements, notifications, and team communications"
       >
-        <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}>
+        <Button size="lg" onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}>
           <Plus className="h-5 w-5 mr-2" />
           New Communication
         </Button>
@@ -352,7 +361,7 @@ export function CommunicationsManagement() {
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <stat.icon className={cn("h-4 w-4", stat.color)} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
@@ -458,10 +467,10 @@ export function CommunicationsManagement() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <CardTitle className="text-xl">{communication.title}</CardTitle>
-                          <Badge className={getStatusColor(communication.status)}>
+                          <Badge className={getStatusBadgeClass(communication.status)}>
                             {communication.status}
                           </Badge>
-                          <Badge className={getPriorityColor(communication.priority)}>
+                          <Badge className={getPriorityBadgeClass(communication.priority)}>
                             {communication.priority}
                           </Badge>
                           <Badge variant="outline">
@@ -507,7 +516,7 @@ export function CommunicationsManagement() {
                             variant="outline"
                             size="sm"
                             onClick={() => handlePublishCommunication(communication.id)}
-                            className="text-green-600 hover:text-green-700"
+                            className={getStatusColorClass('success', 'text')}
                             title="Publish communication"
                           >
                             <Send className="w-4 h-4" />
@@ -518,7 +527,7 @@ export function CommunicationsManagement() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleArchiveCommunication(communication.id)}
-                            className="text-gray-600 hover:text-gray-700"
+                            className="text-muted-foreground"
                             title="Archive communication"
                           >
                             <Archive className="w-4 h-4" />

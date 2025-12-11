@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface WorkflowData {
   id: string
@@ -108,27 +110,24 @@ export function WorkflowManagement() {
   const getStatusIcon = (status: string) => {
     switch (status) {
     case 'active':
-      return <CheckCircle className="w-4 h-4 text-green-500" />
+      return <CheckCircle className={cn('w-4 h-4', getStatusColorClass('success', 'text'))} />
     case 'paused':
-      return <Pause className="w-4 h-4 text-yellow-500" />
+      return <Pause className={cn('w-4 h-4', getStatusColorClass('warning', 'text'))} />
     case 'draft':
-      return <Clock className="w-4 h-4 text-gray-500" />
+      return <Clock className="w-4 h-4 text-muted-foreground" />
     default:
-      return <AlertTriangle className="w-4 h-4 text-red-500" />
+      return <AlertTriangle className={cn('w-4 h-4', getStatusColorClass('error', 'text'))} />
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-    case 'active':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-    case 'paused':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-    case 'draft':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-    default:
-      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+  const getStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'active': 'success',
+      'paused': 'warning',
+      'draft': 'default'
     }
+    const mappedStatus = statusMap[status] || 'error'
+    return cn(getStatusColorClass(mappedStatus, 'bg'), getStatusColorClass(mappedStatus, 'text'))
   }
 
   const filteredWorkflows = workflows.filter(workflow => {
@@ -163,7 +162,7 @@ export function WorkflowManagement() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Workflow className="w-8 h-8 text-blue-500" />
+              <Workflow className="w-8 h-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{workflows.length}</p>
                 <p className="text-sm text-muted-foreground">Total Workflows</p>
@@ -174,7 +173,7 @@ export function WorkflowManagement() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className={cn('w-8 h-8', getStatusColorClass('success', 'text'))} />
               <div>
                 <p className="text-2xl font-bold">{workflows.filter(w => w.status === 'active').length}</p>
                 <p className="text-sm text-muted-foreground">Active</p>
@@ -185,7 +184,7 @@ export function WorkflowManagement() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Play className="w-8 h-8 text-purple-500" />
+              <Play className={cn('w-8 h-8', getStatusColorClass('info', 'text'))} />
               <div>
                 <p className="text-2xl font-bold">{workflows.reduce((sum, w) => sum + w.runCount, 0)}</p>
                 <p className="text-sm text-muted-foreground">Total Runs</p>
@@ -196,7 +195,7 @@ export function WorkflowManagement() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-8 h-8 text-orange-500" />
+              <AlertTriangle className={cn('w-8 h-8', getStatusColorClass('warning', 'text'))} />
               <div>
                 <p className="text-2xl font-bold">
                   {Math.round(workflows.reduce((sum, w) => sum + w.successRate, 0) / workflows.length)}%
@@ -244,7 +243,7 @@ export function WorkflowManagement() {
                         <div className="flex items-center gap-3 mb-2">
                           {getStatusIcon(workflow.status)}
                           <h3 className="text-lg font-semibold">{workflow.name}</h3>
-                          <Badge className={getStatusColor(workflow.status)}>
+                          <Badge className={getStatusBadgeClass(workflow.status)}>
                             {workflow.status}
                           </Badge>
                         </div>

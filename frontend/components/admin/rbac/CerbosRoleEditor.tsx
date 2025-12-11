@@ -33,6 +33,9 @@ import {
   TabsList,
   TabsTrigger
 } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface CerbosRoleEditorProps {
   role: {
@@ -283,10 +286,10 @@ export function CerbosRoleEditor({ role, open, onClose, onSuccess }: CerbosRoleE
                 />
               </div>
 
-              <Alert className="border-orange-500 bg-orange-50">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <AlertTitle className="text-orange-800">Database roles are just labels</AlertTitle>
-                <AlertDescription className="text-orange-700">
+              <Alert className={cn(getStatusColorClass('warning', 'border'), getStatusColorClass('warning', 'bg'))}>
+                <AlertCircle className={cn("h-4 w-4", getStatusColorClass('warning', 'text'))} />
+                <AlertTitle className={getStatusColorClass('warning', 'text')}>Database roles are just labels</AlertTitle>
+                <AlertDescription className={getStatusColorClass('warning', 'text')}>
                   This creates a role in the database that can be assigned to users,
                   but it doesn't grant any permissions. To define what this role can do,
                   you need to create or update the corresponding Cerbos policy.
@@ -353,34 +356,34 @@ export function CerbosRoleEditor({ role, open, onClose, onSuccess }: CerbosRoleE
 
               <div className="space-y-2">
                 <Label>Permissions</Label>
-                <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
+                <Card className="p-4 max-h-64 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-2">
                     {availablePermissions.map((permission) => (
                       <label
                         key={permission}
-                        className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                        className="flex items-center space-x-2 cursor-pointer hover:bg-muted p-1 rounded"
                       >
                         <input
                           type="checkbox"
                           checked={permissions.includes(permission)}
                           onChange={() => togglePermission(permission)}
                           disabled={loading}
-                          className="rounded border-gray-300"
+                          className="rounded border-input"
                         />
                         <span className="text-sm">{permission}</span>
                       </label>
                     ))}
                   </div>
-                </div>
+                </Card>
                 <p className="text-xs text-muted-foreground">
                   Selected: {permissions.length} permissions
                 </p>
               </div>
 
-              <Alert className="border-green-500 bg-green-50">
-                <Shield className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">Cerbos Policy Configuration</AlertTitle>
-                <AlertDescription className="text-green-700">
+              <Alert className={cn(getStatusColorClass('success', 'border'), getStatusColorClass('success', 'bg'))}>
+                <Shield className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
+                <AlertTitle className={getStatusColorClass('success', 'text')}>Cerbos Policy Configuration</AlertTitle>
+                <AlertDescription className={getStatusColorClass('success', 'text')}>
                   This will create or update the actual permission policy in Cerbos.
                   These permissions determine what actions users with this role can perform.
                 </AlertDescription>

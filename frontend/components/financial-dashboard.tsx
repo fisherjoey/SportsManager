@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Upload, 
-  Receipt, 
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Upload,
+  Receipt,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -17,20 +17,20 @@ import {
   Calendar,
   Filter
 } from 'lucide-react'
-import { 
-  BarChart, 
-  Bar, 
+import {
+  BarChart,
+  Bar,
   LineChart,
   Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +42,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 import { ReceiptUpload } from './receipt-upload'
 import { ExpenseList } from './expense-list'
@@ -159,7 +161,13 @@ export function FinancialDashboard({ className }: FinancialDashboardProps) {
     }).format(amount)
   }
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+  const COLORS = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))'
+  ]
 
   if (loading) {
     return (

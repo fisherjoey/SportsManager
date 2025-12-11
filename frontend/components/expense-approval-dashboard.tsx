@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Clock, 
-  DollarSign, 
-  AlertTriangle, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Clock,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
   Search,
   Filter,
   Download,
@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 import { ExpenseApprovalDetails } from './expense-approval-details'
 
@@ -251,14 +253,14 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
         <div className="flex gap-2">
           {selectedExpenses.length > 0 && (
             <>
-              <Button 
+              <Button
                 onClick={handleBulkApprove}
-                className="bg-green-600 hover:bg-green-700"
+                className={cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'hover'))}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Approve {selectedExpenses.length}
               </Button>
-              <Button 
+              <Button
                 onClick={handleBulkReject}
                 variant="destructive"
               >
@@ -348,7 +350,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
           </Card>
         ) : (
           filteredExpenses.map((expense) => (
-            <Card key={expense.id} className={expense.is_overdue ? 'border-red-200 bg-red-50' : ''}>
+            <Card key={expense.id} className={expense.is_overdue ? cn(getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'border')) : ''}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
@@ -403,10 +405,10 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                       <Eye className="h-4 w-4 mr-1" />
                       Details
                     </Button>
-                    
+
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className={cn(getStatusColorClass('success', 'bg'), getStatusColorClass('success', 'hover'))}
                       onClick={async () => {
                         try {
                           await apiClient.approveExpense(expense.id, {

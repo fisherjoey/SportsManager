@@ -19,6 +19,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface User {
   id: string
@@ -325,13 +327,14 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                   filteredUsers.map(user => (
                     <div
                       key={user.id}
-                      className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-md border transition-colors",
                         currentRoleUsers.has(user.id)
-                          ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                          ? cn(getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'border'))
                           : selectedUsers.has(user.id)
                             ? 'bg-accent border-accent-foreground/20'
                             : 'hover:bg-muted/50'
-                      }`}
+                      )}
                     >
                       <Checkbox
                         checked={selectedUsers.has(user.id)}
@@ -370,7 +373,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                           </Badge>
                         )}
                         {selectedUsers.has(user.id) && currentRoleUsers.has(user.id) && (
-                          <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400">
+                          <Badge variant="outline" className={cn("text-xs", getStatusColorClass('success', 'text'))}>
                             ✓ Has role
                           </Badge>
                         )}

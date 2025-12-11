@@ -31,6 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 interface PageAccess {
   path: string
@@ -344,22 +346,24 @@ export function RolePageAccessManager() {
           {role && (
             <>
               {/* Role Info */}
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{role.name}</h3>
-                    <p className="text-sm text-muted-foreground">{role.description}</p>
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">{role.name}</h3>
+                      <p className="text-sm text-muted-foreground">{role.description}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {role.is_system && (
+                        <Badge variant="secondary">System Role</Badge>
+                      )}
+                      <Badge variant="outline">
+                        {role.user_count || 0} Users
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {role.is_system && (
-                      <Badge variant="secondary">System Role</Badge>
-                    )}
-                    <Badge variant="outline">
-                      {role.user_count || 0} Users
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Page Access Configuration */}
               <Tabs defaultValue="Sports Management" className="w-full">
@@ -389,37 +393,39 @@ export function RolePageAccessManager() {
                   return (
                     <TabsContent key={category} value={category} className="space-y-4">
                       {/* Category Header */}
-                      <div className="flex items-center justify-between p-4 rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          <Icon className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <h3 className="font-semibold">{category}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {config.pages.filter(p => pageAccess[p.path]).length} of {config.pages.length} pages accessible
-                            </p>
+                      <Card>
+                        <CardContent className="flex items-center justify-between p-4">
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <h3 className="font-semibold">{category}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {config.pages.filter(p => pageAccess[p.path]).length} of {config.pages.length} pages accessible
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleAll(category, true)}
-                            disabled={categoryStatus === 'all'}
-                          >
-                            <Unlock className="h-4 w-4 mr-1" />
-                            Allow All
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleAll(category, false)}
-                            disabled={categoryStatus === 'none'}
-                          >
-                            <Lock className="h-4 w-4 mr-1" />
-                            Deny All
-                          </Button>
-                        </div>
-                      </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleAll(category, true)}
+                              disabled={categoryStatus === 'all'}
+                            >
+                              <Unlock className="h-4 w-4 mr-1" />
+                              Allow All
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleAll(category, false)}
+                              disabled={categoryStatus === 'none'}
+                            >
+                              <Lock className="h-4 w-4 mr-1" />
+                              Deny All
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
 
                       {/* Pages Grid/List */}
                       <div className={viewMode === 'grid' ? 
@@ -427,43 +433,46 @@ export function RolePageAccessManager() {
                         'space-y-2'
                       }>
                         {config.pages.map(page => (
-                          <div 
+                          <Card
                             key={page.path}
-                            className={`rounded-lg border p-4 ${
-                              pageAccess[page.path] ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''
-                            }`}
+                            className={cn(
+                              pageAccess[page.path] && getStatusColorClass('success', 'bg'),
+                              pageAccess[page.path] && getStatusColorClass('success', 'border')
+                            )}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`${category}-${page.path}`}
-                                    checked={pageAccess[page.path] || false}
-                                    onCheckedChange={(checked) => 
-                                      handlePageAccessChange(page.path, checked as boolean)
-                                    }
-                                    disabled={role.is_system && (role.name === 'Super Administrator' || role.name === 'Administrator')}
-                                  />
-                                  <Label 
-                                    htmlFor={`${category}-${page.path}`}
-                                    className="font-medium cursor-pointer"
-                                  >
-                                    {page.name}
-                                  </Label>
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={`${category}-${page.path}`}
+                                      checked={pageAccess[page.path] || false}
+                                      onCheckedChange={(checked) =>
+                                        handlePageAccessChange(page.path, checked as boolean)
+                                      }
+                                      disabled={role.is_system && (role.name === 'Super Administrator' || role.name === 'Administrator')}
+                                    />
+                                    <Label
+                                      htmlFor={`${category}-${page.path}`}
+                                      className="font-medium cursor-pointer"
+                                    >
+                                      {page.name}
+                                    </Label>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1 ml-6">
+                                    {page.description}
+                                  </p>
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-1 ml-6">
-                                  {page.description}
-                                </p>
+                                <div className="ml-2">
+                                  {pageAccess[page.path] ? (
+                                    <Eye className={cn("h-4 w-4", getStatusColorClass('success', 'text'))} />
+                                  ) : (
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </div>
                               </div>
-                              <div className="ml-2">
-                                {pageAccess[page.path] ? (
-                                  <Eye className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                            </CardContent>
+                          </Card>
                         ))}
                       </div>
                     </TabsContent>
@@ -483,34 +492,36 @@ export function RolePageAccessManager() {
 
               {/* Action Buttons */}
               {hasChanges && (
-                <div className="flex items-center justify-between p-4 rounded-lg border border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
-                  <p className="text-sm font-medium">You have unsaved changes</p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleReset}
-                      disabled={saving}
-                    >
-                      Reset Changes
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                <Card className={cn(getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border'))}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <p className="text-sm font-medium">You have unsaved changes</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleReset}
+                        disabled={saving}
+                      >
+                        Reset Changes
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </>
           )}

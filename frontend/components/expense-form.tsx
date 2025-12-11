@@ -1,13 +1,13 @@
 'use client'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { 
-  Upload, 
-  Camera, 
-  FileText, 
-  CheckCircle, 
-  AlertTriangle, 
-  Clock, 
+import {
+  Upload,
+  Camera,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
   X,
   DollarSign,
   Building,
@@ -43,6 +43,8 @@ import { PaymentMethodSelector } from '@/components/payment-method-selector'
 import { ReceiptUpload } from '@/components/receipt-upload'
 import { PurchaseOrderSelector } from '@/components/purchase-order-selector'
 import { CreditCardSelector } from '@/components/credit-card-selector'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 // Form validation schema
 const expenseFormSchema = z.object({
@@ -334,8 +336,8 @@ export function ExpenseForm({
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-    case 'urgent': return 'text-red-600 bg-red-50 border-red-200'
-    case 'high': return 'text-orange-600 bg-orange-50 border-orange-200'
+    case 'urgent': return cn(getStatusColorClass('error', 'text'), getStatusColorClass('error', 'bg'), getStatusColorClass('error', 'border'))
+    case 'high': return cn(getStatusColorClass('warning', 'text'), getStatusColorClass('warning', 'bg'), getStatusColorClass('warning', 'border'))
     case 'normal': return 'text-blue-600 bg-blue-50 border-blue-200'
     case 'low': return 'text-gray-600 bg-gray-50 border-gray-200'
     default: return 'text-gray-600 bg-gray-50 border-gray-200'

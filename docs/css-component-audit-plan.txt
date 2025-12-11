@@ -1,0 +1,436 @@
+================================================================================
+SPORTSMANAGER FRONTEND CSS & COMPONENT STANDARDIZATION AUDIT PLAN
+================================================================================
+
+OVERVIEW
+--------
+This audit ensures all pages use standard CSS classes (from Tailwind/globals.css)
+and standard components (Card, FilterableTable) instead of hardcoded styles or
+custom implementations.
+
+================================================================================
+STANDARD COMPONENTS REFERENCE
+================================================================================
+
+CARD COMPONENT (/frontend/components/ui/card.tsx)
+-------------------------------------------------
+Exports: Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
+Standard Classes: rounded-lg border bg-card text-card-foreground shadow-sm
+
+Usage Pattern:
+  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+  <Card>
+    <CardHeader><CardTitle>Title</CardTitle></CardHeader>
+    <CardContent>{content}</CardContent>
+  </Card>
+
+================================================================================
+TABLE COMPONENTS - PREFERRED STANDARD
+================================================================================
+
+*** PREFERRED: FilterableTable (/frontend/components/ui/filterable-table.tsx) ***
+---------------------------------------------------------------------------------
+This is the STANDARD table component for all interactive data displays.
+
+KEY FEATURES:
+- Global search across all columns
+- Column-level search and multi-select filters
+- Auto-generated filter options from data
+- Drag-and-drop column reordering
+- Column visibility toggle with max column enforcement
+- Responsive column limiting (auto-calculates based on screen width)
+- CSV export/import functionality
+- Table/Card view toggle
+- Filter state persistence in localStorage
+- Mobile-responsive design
+
+USAGE PATTERN:
+  import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
+
+  const columns: ColumnDef<MyDataType>[] = [
+    {
+      id: 'name',
+      title: 'Name',
+      accessor: (row) => row.name,
+      filterType: 'search'
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      accessor: (row) => row.status,
+      filterType: 'multiselect'
+    },
+    {
+      id: 'date',
+      title: 'Date',
+      accessor: (row) => row.date,
+      filterType: 'date'
+    }
+  ]
+
+  <FilterableTable
+    data={data}
+    columns={columns}
+    enableViewToggle={true}
+    enableCSV={true}
+    maxVisibleColumns={8}
+  />
+
+WHEN TO USE FilterableTable:
+- Any table that displays data needing sorting/filtering
+- Tables where users need to show/hide columns
+- Tables that benefit from CSV export
+- User management, game management, expense lists, etc.
+
+ALTERNATIVE: DataTable (/frontend/components/data-table/DataTable.tsx)
+----------------------------------------------------------------------
+ONLY use DataTable for:
+- Game-specific tables with specialized GameMobileCard views
+- Referee-specific tables with RefereeMobileCard views
+
+DO NOT USE: Manual <Table> implementations with custom pagination
+
+================================================================================
+CSS UTILITIES
+================================================================================
+
+THEME COLORS: /frontend/lib/theme-colors.ts
+-------------------------------------------
+Use getStatusColorClass() for status-based colors:
+  getStatusColorClass('pending', 'bg')  // Returns 'bg-warning/10 dark:bg-warning/20'
+  getStatusColorClass('success', 'text') // Returns 'text-success'
+
+Available statuses: success, completed, available, assigned, active, approved,
+                    warning, pending, partial, review,
+                    error, failed, unavailable, unassigned, cancelled, rejected,
+                    info, inProgress, scheduled,
+                    draft, inactive, disabled
+
+CLASS MERGING: /frontend/lib/utils.ts
+-------------------------------------
+Use cn() for conditional class merging:
+  import { cn } from '@/lib/utils'
+  <div className={cn('base-class', isActive && 'active-class', className)}>
+
+GLOBAL UTILITIES: /frontend/app/globals.css
+-------------------------------------------
+Available classes:
+- Badge classes: .badge, .badge-referee-head, .badge-referee-senior, etc.
+- Status classes: .error-container, .error-message, .empty-state
+- Loading classes: .loading-spinner, .loading
+- Role badges: .role-badges, .role-badge, .capability-badge
+
+================================================================================
+HIGH PRIORITY FILES - KNOWN ISSUES
+================================================================================
+
+1. /frontend/components/admin/rbac/DynamicRolePageAccessManager.tsx
+   ISSUES:
+   - Line ~494: <div className="rounded-lg border p-4 space-y-2">
+     -> Should use <Card><CardContent>
+   - Line ~562: <div className="flex items-center justify-between p-4 rounded-lg border">
+     -> Should use Card
+   - Line ~671: <div className="...border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+     -> Should use <Card className="border-yellow-200 bg-yellow-50">
+
+2. /frontend/components/admin/rbac/RolePageAccessManager.tsx
+   ISSUES: Same patterns as DynamicRolePageAccessManager - custom divs instead of Card
+
+3. /frontend/components/admin/rbac/CerbosRoleEditor.tsx
+   ISSUES:
+   - Line ~494: <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
+     -> Should use Card
+
+4. /frontend/components/admin/rbac/UnifiedRoleEditor.tsx
+   ISSUES:
+   - Custom colored divs: <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200...">
+     -> Should use Card with className
+
+5. /frontend/components/ai-assignments-enterprise.tsx
+   ISSUES:
+   - <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"> -> Should use Card
+   - <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg"> -> Should use Card
+   - <div className="text-center p-4 border rounded-lg"> -> Should use Card
+
+6. /frontend/components/admin/users/UserTable.tsx
+   ISSUES:
+   - Lines 214-371: Manual <Table> construction instead of FilterableTable
+   - Manual pagination (lines 344-370)
+   - No built-in filtering/sorting
+   ACTION: Refactor to use FilterableTable with proper column definitions
+
+7. /frontend/components/data-table/GameMobileCard.tsx & game-management.tsx
+   ISSUES:
+   - Hardcoded game type badge colors:
+     'bg-purple-100 text-purple-800 border-purple-200'
+     'bg-indigo-100 text-indigo-800 border-indigo-200'
+     'bg-blue-100 text-blue-800 border-blue-200'
+   ACTION: Create GameTypeBadge component or use Badge variants with semantic colors
+
+================================================================================
+MEDIUM PRIORITY - PAGE AUDITS
+================================================================================
+
+For each file below, check:
+1. Card-like divs should use <Card> component
+2. Tables should use FilterableTable (or DataTable for game/referee specific)
+3. No hardcoded color classes - use theme utilities
+4. Use cn() for class merging
+
+ADMIN PAGES
+-----------
+- /frontend/app/admin/audit-logs/page.tsx
+- /frontend/app/admin/notifications/broadcast/page.tsx
+- /frontend/app/admin/page-access/page.tsx
+- /frontend/app/admin/permissions/page.tsx
+- /frontend/app/admin-access-control/page.tsx
+- /frontend/app/admin-permissions/page.tsx
+- /frontend/app/admin-roles/page.tsx
+- /frontend/app/admin-security/page.tsx
+- /frontend/app/admin-settings/page.tsx
+- /frontend/app/admin-users/page.tsx
+- /frontend/app/admin-workflows/page.tsx
+
+DASHBOARD COMPONENTS
+--------------------
+- /frontend/components/unified-dashboard.tsx
+- /frontend/components/dashboard-overview.tsx
+- /frontend/components/admin-dashboard.tsx
+- /frontend/components/assignor-dashboard.tsx
+- /frontend/components/assignor-dashboard-overview.tsx
+- /frontend/components/referee-dashboard.tsx
+- /frontend/components/referee-dashboard-overview.tsx
+- /frontend/components/viewer-dashboard.tsx
+- /frontend/components/viewer-dashboard-overview.tsx
+- /frontend/components/content-manager-dashboard.tsx
+- /frontend/components/finance-manager-dashboard.tsx
+- /frontend/components/league-manager-dashboard.tsx
+
+FINANCIAL PAGES
+---------------
+- /frontend/app/financial-dashboard/page.tsx
+- /frontend/app/financial-budgets/page.tsx
+- /frontend/app/expense-approvals/page.tsx
+- /frontend/components/financial-dashboard.tsx
+- /frontend/components/budget-tracker.tsx
+- /frontend/components/expense-list.tsx
+- /frontend/components/expense-list-enhanced.tsx
+- /frontend/components/expense-form.tsx
+- /frontend/components/expense-approval-dashboard.tsx
+
+GAMES & ASSIGNMENTS
+-------------------
+- /frontend/app/games/page.tsx
+- /frontend/components/games-management-page.tsx
+- /frontend/components/game-management.tsx
+- /frontend/components/game-assignment-board.tsx
+- /frontend/components/ai-assignments-page.tsx
+- /frontend/components/ai-assignments-simple.tsx
+- /frontend/components/my-assignments.tsx
+- /frontend/components/available-games.tsx
+
+USER MANAGEMENT
+---------------
+- /frontend/components/employee-management.tsx
+- /frontend/components/referee-management.tsx
+- /frontend/components/admin/users/UserManagementDashboard.tsx
+
+RESOURCES & CONTENT
+-------------------
+- /frontend/app/resources/page.tsx
+- /frontend/app/resources/[...slug]/page.tsx
+- /frontend/components/resource-centre.tsx
+- /frontend/components/resource-centre-new.tsx
+- /frontend/components/document-repository.tsx
+- /frontend/components/resource-centre/ResourceManager.tsx
+- /frontend/components/resources/CategoryManagerDashboard.tsx
+
+MENTORSHIP
+----------
+- /frontend/app/mentorship/page.tsx
+- /frontend/app/mentorship/mentees/[menteeId]/page.tsx
+- /frontend/components/admin/mentorship/MentorshipManagement.tsx
+- /frontend/components/mentorship/MentorDashboard.tsx
+- /frontend/components/mentorship/MenteeDetailsView.tsx
+
+RBAC COMPONENTS
+---------------
+- /frontend/components/admin/rbac/RoleManagementDashboard.tsx
+- /frontend/components/admin/rbac/PermissionManagementDashboard.tsx
+- /frontend/components/admin/rbac/PermissionConfigurationDashboard.tsx
+- /frontend/components/admin/rbac/UserRoleManager.tsx
+- /frontend/components/admin/rbac/RoleCard.tsx
+- /frontend/components/admin/access-control/UnifiedAccessControlDashboard.tsx
+
+COMMUNICATION
+-------------
+- /frontend/components/communications-management.tsx
+- /frontend/components/emergency-broadcast.tsx
+- /frontend/components/announcement-board.tsx
+
+SETTINGS
+--------
+- /frontend/components/system-settings.tsx
+- /frontend/components/organization-settings.tsx
+- /frontend/components/profile-settings.tsx
+- /frontend/components/security-audit.tsx
+- /frontend/components/workflow-management.tsx
+
+================================================================================
+LOW PRIORITY - SUPPORTING COMPONENTS
+================================================================================
+
+DATA TABLE COMPONENTS (verify consistency)
+------------------------------------------
+- /frontend/components/data-table/DataTableToolbar.tsx
+- /frontend/components/data-table/DataTablePagination.tsx
+- /frontend/components/data-table/RefereeMobileCard.tsx
+- /frontend/components/data-table/UserMobileCard.tsx
+
+AUTH PAGES (usually minimal styling)
+------------------------------------
+- /frontend/app/login/[[...sign-in]]/page.tsx
+- /frontend/app/signup/[[...sign-up]]/page.tsx
+- /frontend/app/complete-signup/page.tsx
+
+ERROR PAGES
+-----------
+- /frontend/app/not-found.tsx
+- /frontend/app/unauthorized/page.tsx
+
+================================================================================
+AUDIT CHECKLIST (PER FILE)
+================================================================================
+
+CARD USAGE
+[ ] Are card-like containers using <Card> component?
+[ ] Are colored/alert cards using <Card className="border-{color} bg-{color}">
+    instead of custom divs?
+[ ] Is CardHeader, CardTitle, CardContent, CardFooter used correctly?
+
+TABLE USAGE
+[ ] Interactive tables using FilterableTable?
+[ ] Game/Referee tables using DataTable (with mobile card views)?
+[ ] NO manual <Table> + custom pagination implementations?
+[ ] Column definitions use proper filterType (search, multiselect, date)?
+
+CSS CLASSES
+[ ] No hardcoded color values like bg-purple-100 text-purple-800?
+[ ] Using getStatusColorClass() for status-based colors?
+[ ] Using cn() for conditional class merging?
+[ ] Using design tokens from theme (--primary, --success, etc.)?
+
+================================================================================
+COMMON ANTI-PATTERNS TO FIND AND FIX
+================================================================================
+
+CARD ANTI-PATTERNS:
+-------------------
+
+BAD - Hardcoded card-like div:
+  <div className="rounded-lg border p-4">
+
+GOOD - Use Card component:
+  <Card><CardContent className="p-4">
+
+---
+
+BAD - Hardcoded colored containers:
+  <div className="bg-blue-50 border-blue-200 rounded-lg">
+
+GOOD - Use Card with semantic classes:
+  <Card className="bg-info/10 border-info">
+
+TABLE ANTI-PATTERNS:
+--------------------
+
+BAD - Manual table with custom pagination:
+  <Table>
+    <TableHeader>...</TableHeader>
+    <TableBody>{items.map(...)}</TableBody>
+  </Table>
+  <div className="flex justify-between">
+    <Button onClick={prevPage}>Previous</Button>
+    <Button onClick={nextPage}>Next</Button>
+  </div>
+
+GOOD - Use FilterableTable:
+  const columns: ColumnDef<Item>[] = [
+    { id: 'name', title: 'Name', accessor: (r) => r.name, filterType: 'search' },
+    { id: 'status', title: 'Status', accessor: (r) => r.status, filterType: 'multiselect' }
+  ]
+  <FilterableTable
+    data={items}
+    columns={columns}
+    enableViewToggle
+    enableCSV
+  />
+
+COLOR ANTI-PATTERNS:
+--------------------
+
+BAD - Hardcoded status colors:
+  <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+
+GOOD - Use theme color utilities:
+  <Badge className={getStatusColorClass('pending', 'bg')}>Pending</Badge>
+
+================================================================================
+EXECUTION INSTRUCTIONS
+================================================================================
+
+1. START WITH HIGH PRIORITY FILES - These have known issues identified
+   - Work through files 1-7 in order
+   - Each fix should follow the patterns shown above
+
+2. FOR EACH FILE:
+   a. Read the entire file
+   b. Apply the checklist above
+   c. Document all issues found
+   d. Make corrections following the standard patterns
+   e. Ensure imports are updated (Card, FilterableTable, cn, getStatusColorClass)
+
+3. TEST CHANGES - After each file:
+   - Ensure no visual regressions
+   - Test filtering/sorting if tables were modified
+   - Test dark mode appearance for color changes
+
+4. MOVE TO MEDIUM PRIORITY after completing high priority
+
+5. CREATE NEW COMPONENTS if patterns repeat:
+   - GameTypeBadge - for game type indicators with semantic colors
+   - StatusBadge - wrapper around Badge using getStatusColorClass
+
+================================================================================
+EXPECTED OUTCOMES
+================================================================================
+
+1. All card-like UI uses the standard Card component
+2. All interactive tables use FilterableTable (with filtering, column show/hide)
+3. Game/Referee specific tables use DataTable with mobile card views
+4. No manual table pagination implementations
+5. No hardcoded color classes - all use theme utilities or semantic classes
+6. Consistent use of cn() for class merging
+7. New reusable components created where patterns repeat
+
+================================================================================
+FILE COUNT SUMMARY
+================================================================================
+
+- HIGH PRIORITY: 7 files with known issues
+- MEDIUM PRIORITY: ~50 files (pages and major components)
+- LOW PRIORITY: ~10 files (supporting components)
+- TOTAL: ~67 files to audit
+
+================================================================================
+REFERENCE FILES (DO NOT MODIFY - USE AS EXAMPLES)
+================================================================================
+
+Standard Card: /frontend/components/ui/card.tsx
+FilterableTable: /frontend/components/ui/filterable-table.tsx
+DataTable: /frontend/components/data-table/DataTable.tsx
+Theme Colors: /frontend/lib/theme-colors.ts
+Utils (cn): /frontend/lib/utils.ts
+Global CSS: /frontend/app/globals.css
+
+================================================================================

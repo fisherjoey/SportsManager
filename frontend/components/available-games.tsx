@@ -16,6 +16,8 @@ import { useToast } from '@/components/ui/use-toast'
 import { useApi, type Game } from '@/lib/api'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 import { GameFilters, applyGameFilters, type ActiveFilters } from '@/components/ui/game-filters'
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
 
 export function AvailableGames() {
   const { user } = useAuth()
@@ -138,7 +140,7 @@ export function AvailableGames() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Available Now</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className={cn('h-4 w-4', getStatusColorClass('warning', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{games.length}</div>
@@ -147,7 +149,7 @@ export function AvailableGames() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Potential Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className={cn('h-4 w-4', getStatusColorClass('success', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -158,7 +160,7 @@ export function AvailableGames() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Within Range</CardTitle>
-            <MapPin className="h-4 w-4 text-blue-600" />
+            <MapPin className={cn('h-4 w-4', getStatusColorClass('info', 'text'))} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -259,7 +261,7 @@ export function AvailableGames() {
                     <TableCell>
                       <div className="flex flex-col">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                          <DollarSign className={cn('h-4 w-4 mr-1', getStatusColorClass('success', 'text'))} />
                           {game.finalWage || game.payRate}
                         </div>
                         {game.wageMultiplier && game.wageMultiplier !== 1.0 && (
@@ -279,7 +281,7 @@ export function AvailableGames() {
                       <Button
                         size="sm"
                         onClick={() => handleAcceptGame(game.id)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className={cn(getStatusColorClass('success', 'bg'), 'hover:opacity-90')}
                       >
                         <CheckCircle className="h-4 w-4 mr-1" />
                         Accept
