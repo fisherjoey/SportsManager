@@ -66,7 +66,7 @@ export function requireCerbosPermission(
 
       const cerbosService = CerbosAuthService.getInstance();
 
-      const organizationId = (user as any).organizationId || DEFAULT_ORG_ID;
+      const organizationId = req.headers['x-organization-id'] as string || (user as any).organizationId || DEFAULT_ORG_ID;
       const primaryRegionId = (user as any).primaryRegionId;
       const regionIds = (user as any).regionIds || [];
 

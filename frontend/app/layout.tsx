@@ -2,6 +2,8 @@ import type React from 'react'
 import type { Metadata } from 'next'
 
 import './globals.css'
+import { ClerkProvider } from '@clerk/nextjs'
+import { PermissionsProvider } from '@/components/permissions-provider'
 import { AuthProvider } from '@/components/auth-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
@@ -26,19 +28,23 @@ export default function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <body className='font-roboto' suppressHydrationWarning={true}>
-        <ThemeProvider
-          attribute='class'
-          defaultTheme='system'
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ErrorBoundary>
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+        <ClerkProvider>
+          <ThemeProvider
+            attribute='class'
+            defaultTheme='system'
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ErrorBoundary>
+              <PermissionsProvider>
+                <AuthProvider>
+                  {children}
+                  <Toaster />
+                </AuthProvider>
+              </PermissionsProvider>
+            </ErrorBoundary>
+          </ThemeProvider>
+        </ClerkProvider>
       </body>
     </html>
   )

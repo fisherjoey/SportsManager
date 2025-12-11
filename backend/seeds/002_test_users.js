@@ -13,16 +13,22 @@
  *
  * This seed is IDEMPOTENT - checks if users exist before creating.
  *
- * IMPORTANT: All test users use password "admin123" or "referee123"
+ * IMPORTANT: Uses Clerk authentication - users authenticated via clerk_id
  */
-
-const bcrypt = require('bcryptjs');
 
 exports.seed = async function(knex) {
   console.log('👥 Seeding test users...\n');
 
-  // Use lower salt rounds for development (faster)
-  const saltRounds = 10;
+  // Get default organization ID
+  const defaultOrg = await knex('organizations')
+    .where('slug', 'default')
+    .first();
+
+  if (!defaultOrg) {
+    throw new Error('Default organization not found. Please run migrations first.');
+  }
+
+  const DEFAULT_ORG_ID = defaultOrg.id;
 
   // Get role IDs from database
   const roles = await knex('roles').select('id', 'code', 'name');
@@ -43,8 +49,8 @@ exports.seed = async function(knex) {
   // ============================================================================
   const testUsers = [
     {
+      clerk_id: 'clerk_test_super_admin',
       email: 'admin@sportsmanager.com',
-      password: 'admin123',
       name: 'Super Admin User',
       phone: '+1 (403) 555-0001',
       postal_code: 'T2P 1A1',
@@ -56,8 +62,8 @@ exports.seed = async function(knex) {
       is_referee: false
     },
     {
+      clerk_id: 'clerk_test_admin',
       email: 'admin@cmba.ca',
-      password: 'admin123',
       name: 'Admin User',
       phone: '+1 (403) 555-0002',
       postal_code: 'T2N 2B2',
@@ -69,8 +75,8 @@ exports.seed = async function(knex) {
       is_referee: false
     },
     {
+      clerk_id: 'clerk_test_assignor',
       email: 'assignor@cmba.ca',
-      password: 'admin123',
       name: 'Assignment Manager',
       phone: '+1 (403) 555-0003',
       postal_code: 'T2E 3C3',
@@ -82,8 +88,8 @@ exports.seed = async function(knex) {
       is_referee: false
     },
     {
+      clerk_id: 'clerk_test_coordinator',
       email: 'coordinator@cmba.ca',
-      password: 'admin123',
       name: 'Referee Coordinator',
       phone: '+1 (403) 555-0004',
       postal_code: 'T2W 4D4',
@@ -95,8 +101,8 @@ exports.seed = async function(knex) {
       is_referee: false
     },
     {
+      clerk_id: 'clerk_test_senior_ref',
       email: 'senior.ref@cmba.ca',
-      password: 'referee123',
       name: 'Senior Referee',
       phone: '+1 (403) 555-0005',
       postal_code: 'T2A 5E5',
@@ -113,8 +119,8 @@ exports.seed = async function(knex) {
       wage_per_game: 45.00
     },
     {
+      clerk_id: 'clerk_test_junior_ref',
       email: 'referee@test.com',
-      password: 'referee123',
       name: 'Junior Referee',
       phone: '+1 (403) 555-0006',
       postal_code: 'T2J 6F6',
@@ -146,6 +152,14 @@ exports.seed = async function(knex) {
       console.log(`  ⏭️  User already exists: ${userData.email}`);
       skipped++;
 
+      // Ensure user has clerk_id if missing
+      if (!existingUser.clerk_id && userData.clerk_id) {
+        await knex('users')
+          .where('id', existingUser.id)
+          .update({ clerk_id: userData.clerk_id });
+        console.log(`    ✓ Updated clerk_id`);
+      }
+
       // Ensure user has the correct role assigned
       const role = roleMap[userData.role_code];
       if (role) {
@@ -163,6 +177,24 @@ exports.seed = async function(knex) {
           });
           console.log(`    ✓ Assigned ${role.name} role`);
         }
+      }
+
+      // Ensure user is linked to default organization
+      const existingOrgLink = await knex('user_organizations')
+        .where('user_id', existingUser.id)
+        .where('organization_id', DEFAULT_ORG_ID)
+        .first();
+
+      if (!existingOrgLink) {
+        await knex('user_organizations').insert({
+          user_id: existingUser.id,
+          organization_id: DEFAULT_ORG_ID,
+          is_primary: true,
+          role: userData.role_code === 'SUPER_ADMIN' ? 'owner' : 'member',
+          status: 'active',
+          joined_at: new Date()
+        });
+        console.log(`    ✓ Linked to default organization`);
       }
 
       // Create referee profile if needed
@@ -194,8 +226,7 @@ exports.seed = async function(knex) {
     }
 
     // Create new user
-    const { password, role_code, referee_level, ...userRecord } = userData;
-    userRecord.password_hash = await bcrypt.hash(password, saltRounds);
+    const { role_code, referee_level, ...userRecord } = userData;
 
     // Add referee level FK if applicable
     if (userData.is_referee && userData.referee_level) {
@@ -222,6 +253,17 @@ exports.seed = async function(knex) {
     } else {
       console.log(`    ⚠️  Warning: Role ${userData.role_code} not found`);
     }
+
+    // Link user to default organization
+    await knex('user_organizations').insert({
+      user_id: user.id,
+      organization_id: DEFAULT_ORG_ID,
+      is_primary: true,
+      role: userData.role_code === 'SUPER_ADMIN' ? 'owner' : 'member',
+      status: 'active',
+      joined_at: new Date()
+    });
+    console.log(`    ✓ Linked to default organization`);
 
     // Create referee profile for referee users
     if (userData.is_referee) {
@@ -250,17 +292,20 @@ exports.seed = async function(knex) {
   console.log('Summary:');
   console.log(`  - ${created} users created`);
   console.log(`  - ${skipped} users already existed`);
+  console.log(`  - All users linked to organization: ${defaultOrg.name} (${DEFAULT_ORG_ID})`);
   console.log();
-  console.log('Test User Credentials:');
-  console.log('  ┌─────────────────────────────────────────────────────────────┐');
-  console.log('  │ Email                       │ Password    │ Role            │');
-  console.log('  ├─────────────────────────────────────────────────────────────┤');
-  console.log('  │ admin@sportsmanager.com     │ admin123    │ Super Admin     │');
-  console.log('  │ admin@cmba.ca               │ admin123    │ Admin           │');
-  console.log('  │ assignor@cmba.ca            │ admin123    │ Assign Manager  │');
-  console.log('  │ coordinator@cmba.ca         │ admin123    │ Ref Coordinator │');
-  console.log('  │ senior.ref@cmba.ca          │ referee123  │ Senior Referee  │');
-  console.log('  │ referee@test.com            │ referee123  │ Junior Referee  │');
-  console.log('  └─────────────────────────────────────────────────────────────┘');
+  console.log('Test User Accounts (Clerk Auth):');
+  console.log('  ┌──────────────────────────────────────────────────────────────────────┐');
+  console.log('  │ Email                       │ Clerk ID                     │ Role    │');
+  console.log('  ├──────────────────────────────────────────────────────────────────────┤');
+  console.log('  │ admin@sportsmanager.com     │ clerk_test_super_admin       │ S.Admin │');
+  console.log('  │ admin@cmba.ca               │ clerk_test_admin             │ Admin   │');
+  console.log('  │ assignor@cmba.ca            │ clerk_test_assignor          │ Assignr │');
+  console.log('  │ coordinator@cmba.ca         │ clerk_test_coordinator       │ Coord   │');
+  console.log('  │ senior.ref@cmba.ca          │ clerk_test_senior_ref        │ Sr.Ref  │');
+  console.log('  │ referee@test.com            │ clerk_test_junior_ref        │ Jr.Ref  │');
+  console.log('  └──────────────────────────────────────────────────────────────────────┘');
+  console.log();
+  console.log('NOTE: Users authenticate via Clerk. Use Clerk Dashboard to manage auth.');
   console.log();
 };

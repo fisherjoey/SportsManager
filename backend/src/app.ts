@@ -93,6 +93,9 @@ import cerbosRoutes from './routes/cerbos';
 import notificationRoutes from './routes/notifications';
 import pagesRoutes from './routes/pages';
 
+// Import webhook routes
+import clerkWebhookRoutes from './routes/webhooks/clerk';
+
 const app = express();
 
 // Validate environment variables before starting
@@ -175,6 +178,9 @@ app.use('/uploads', express.static('uploads'));
 // Serve JSDoc API documentation
 app.use('/api-docs', express.static('docs'));
 console.log('📚 API Documentation available at: http://localhost:3001/api-docs');
+
+// Webhook routes (registered early, no auth required)
+app.use('/api/webhooks/clerk', clerkWebhookRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);

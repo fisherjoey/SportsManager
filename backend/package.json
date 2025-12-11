@@ -64,6 +64,7 @@
   "dependencies": {
     "@cerbos/grpc": "^0.23.1",
     "@cerbos/http": "^0.23.1",
+    "@clerk/express": "^1.7.57",
     "@google-cloud/vision": "^5.3.2",
     "@sentry/node": "^10.7.0",
     "@types/js-yaml": "^4.0.9",
@@ -99,6 +100,7 @@
     "resend": "^4.7.0",
     "sharp": "^0.34.3",
     "speakeasy": "^2.0.0",
+    "svix": "^1.82.0",
     "twilio": "^5.10.2",
     "uuid": "^11.1.0"
   },

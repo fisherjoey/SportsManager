@@ -1,10 +1,10 @@
 /**
  * @fileoverview ProtectedRoute Component
- * 
+ *
  * A wrapper component that protects routes and pages based on user permissions.
  * It checks if the user has the required permissions to access a route and
  * handles unauthorized access appropriately.
- * 
+ *
  * @module components/auth/ProtectedRoute
  */
 
@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Loader2, ShieldOff, Home, LogIn, AlertCircle } from 'lucide-react'
+import { useAuth as useClerkAuth } from '@clerk/nextjs'
 
 import { useAuth } from '@/components/auth-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -49,26 +50,41 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { isSignedIn, isLoaded: clerkLoaded, getToken } = useClerkAuth()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (authLoading) return
+    // Wait for both Clerk and auth context to load
+    if (!clerkLoaded || authLoading) return
 
-    // If not authenticated, redirect to login
-    if (!isAuthenticated) {
+    // If not signed in with Clerk, redirect to login
+    if (!isSignedIn) {
       router.push('/login')
+      return
+    }
+
+    // If signed in with Clerk but not yet synced with backend, wait
+    if (!isAuthenticated || !user) {
       return
     }
 
     // Check page access via backend API
     const checkAccess = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-page-access`, {
+        // Get the Clerk token for authentication
+        const token = await getToken()
+
+        // Determine the API URL based on environment
+        const apiUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? '/api/auth/check-page-access'
+          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/check-page-access`
+
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ page: pathname })
         })
@@ -96,17 +112,21 @@ export function ProtectedRoute({
 
     checkAccess()
   }, [
+    clerkLoaded,
+    isSignedIn,
     authLoading,
     isAuthenticated,
+    user,
     pathname,
     router,
+    getToken,
     onAccessDenied
   ])
 
   // Show loading state
-  if (authLoading || isAuthorized === null) {
+  if (!clerkLoaded || authLoading || (isSignedIn && !isAuthenticated) || isAuthorized === null) {
     if (!showLoading) return null
-    
+
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -117,8 +137,8 @@ export function ProtectedRoute({
     )
   }
 
-  // Not authenticated
-  if (!isAuthenticated) {
+  // Not authenticated with Clerk
+  if (!isSignedIn) {
     return (
       <div className="flex items-center justify-center min-h-[400px] p-4">
         <Card className="max-w-md w-full">

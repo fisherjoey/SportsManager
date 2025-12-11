@@ -9,6 +9,7 @@
  */
 
 import { AvailabilityWindow, AvailabilityResponse, PagePermissionsResponse, PageAccessCheckResponse } from './types'
+import { setAuthToken, getAuthToken, deleteAuthToken } from './cookies'
 
 interface ApiResponse<T> {
   data?: T;
@@ -29,29 +30,13 @@ interface ApiResponse<T> {
  * @class ApiClient
  */
 class ApiClient {
-  private getToken: (() => Promise<string | null>) | null = null
+  private token: string | null = null
 
   /**
    * Create an API client instance
    */
-  constructor(getToken?: () => Promise<string | null>) {
-    this.getToken = getToken || null
-  }
-
-  /**
-   * Set the token provider function (e.g., Clerk's getToken)
-   * This allows configuring the API client after initialization
-   */
-  setTokenProvider(getToken: () => Promise<string | null>) {
-    this.getToken = getToken
-  }
-
-  /**
-   * @deprecated No longer needed - token provider is set via setTokenProvider in PermissionsProvider
-   * Kept for backward compatibility with existing components
-   */
-  initializeToken() {
-    // No-op - token is now managed via setTokenProvider
+  constructor() {
+    this.token = typeof window !== 'undefined' ? getAuthToken() : null
   }
 
   /**
@@ -90,22 +75,55 @@ class ApiClient {
     return `${protocol}//${currentHost}:3001/api`
   }
 
+  setToken(token: string) {
+    this.token = token
+    if (typeof window !== 'undefined') {
+      // Use cookie utility for consistent cookie management
+      setAuthToken(token, {
+        maxAge: 604800, // 7 days (matches JWT expiry)
+        sameSite: 'lax'
+      })
+    }
+  }
+
+  initializeToken() {
+    if (typeof window !== 'undefined') {
+      const storedToken = getAuthToken()
+      if (storedToken) {
+        this.token = storedToken
+      }
+    }
+  }
+
+  removeToken() {
+    this.token = null
+    if (typeof window !== 'undefined') {
+      deleteAuthToken()
+    }
+  }
+
+  getToken() {
+    return this.token
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Get token from Clerk
-    const token = this.getToken ? await this.getToken() : null
-
-    // Get active organization from localStorage
-    const orgId = typeof window !== 'undefined' ? localStorage.getItem('activeOrganizationId') : null
+    // Always check for the latest token from cookies
+    if (typeof window !== 'undefined') {
+      const currentToken = getAuthToken()
+      if (currentToken !== this.token) {
+        this.token = currentToken
+      }
+    }
 
     const baseURL = this.getBaseURL()
     const url = `${baseURL}${endpoint}`
     const method = options.method || 'GET'
-
+    
     console.log(`[API Client] ${method} request to:`, url)
-
+    
     const headers: HeadersInit = {
       ...options.headers
     }
@@ -116,12 +134,8 @@ class ApiClient {
       headers['Content-Type'] = 'application/json'
     }
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    if (orgId) {
-      headers['X-Organization-ID'] = orgId
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
     }
 
     const config: RequestInit = {
@@ -1998,12 +2012,11 @@ class ApiClient {
   }
 
   async downloadReceipt(id: string) {
-    const token = this.getToken ? await this.getToken() : null
-    const baseURL = this.getBaseURL()
-    const response = await fetch(`${baseURL}/expenses/receipts/${id}/download`, {
+    const token = this.getToken()
+    const response = await fetch(`${this.baseURL}/expenses/receipts/${id}/download`, {
       method: 'GET',
       headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        'Authorization': `Bearer ${token}`
       }
     })
 

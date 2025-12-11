@@ -1,11 +1,10 @@
 /**
- * @fileoverview Authentication routes with comprehensive TypeScript typing
- * @description Secure authentication endpoints with JWT, RBAC, rate limiting, and audit logging
+ * @fileoverview Authentication routes for Clerk integration
+ * @description Authentication endpoints for Clerk-based auth with user sync, organization management, and RBAC
+ * NOTE: Login and registration are handled by Clerk. This file manages user sync, profile, and organization switching.
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import Joi from 'joi';
 import { Knex } from 'knex';
 
@@ -25,360 +24,20 @@ import { UUID, Timestamp } from '../types';
 import db from '../config/database';
 
 // Middleware imports
-import { authenticateToken, getUserPermissions } from '../middleware/auth';
-import { authLimiter, registrationLimiter, passwordResetLimiter } from '../middleware/rateLimiting';
+import { authenticateToken, authenticateClerkTokenOnly, getUserPermissions } from '../middleware/auth';
 import { sanitizeAll } from '../middleware/sanitization';
 import { asyncHandler, AuthenticationError, ValidationError } from '../middleware/errorHandling';
 import { createAuditLog, AUDIT_EVENTS } from '../middleware/auditTrail';
 
-// Services
-const LocationDataService = require('../services/LocationDataService');
-const { ProductionMonitor } = require('../utils/monitor');
-
-// Validation schemas with enhanced security
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
-});
-
-const registerSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  role: Joi.string().valid('admin', 'referee').required(),
-  // For referee registration, include user data directly
-  name: Joi.when('role', {
-    is: 'referee',
-    then: Joi.string().required(),
-    otherwise: Joi.string().optional()
-  }),
-  phone: Joi.string().max(20).optional(),
-  location: Joi.string().optional(),
-  postal_code: Joi.when('role', {
-    is: 'referee',
-    then: Joi.string().max(10).required(),
-    otherwise: Joi.string().optional()
-  }),
-  max_distance: Joi.number().integer().min(1).max(200).default(25),
-  referee_level_id: Joi.string().uuid().optional(),
-  year_started_refereeing: Joi.number().integer().min(1970).max(new Date().getFullYear()).optional(),
-  notes: Joi.string().optional()
-});
-
 const router = Router();
 
-/**
- * POST /api/auth/login
- * Authenticate user with email and password
- */
-const login = async (
-  req: Request<{}, LoginResponse, LoginRequest>, 
-  res: Response<LoginResponse | ApiResponse>
-): Promise<void> => {
-  const { error, value } = loginSchema.validate(req.body);
-  if (error) {
-    throw new ValidationError(error.details[0].message);
-  }
+// REMOVED: POST /api/auth/login - Clerk handles authentication now
 
-  const { email, password }: LoginRequest = value;
-
-  // Find user with comprehensive error handling
-  const user = await db('users').where('email', email).first();
-  if (!user) {
-    await createAuditLog({
-      event_type: AUDIT_EVENTS.AUTH_LOGIN_FAILURE,
-      user_email: email,
-      ip_address: req.headers['x-forwarded-for'] as string || req.ip,
-      user_agent: req.headers['user-agent'],
-      success: false,
-      error_message: 'Invalid credentials - user not found'
-    });
-    
-    // Track critical path for security monitoring
-    ProductionMonitor.logCriticalPath('auth.failure', {
-      reason: 'user_not_found',
-      email: email,
-      ip: req.headers['x-forwarded-for'] || req.ip
-    });
-    
-    throw new AuthenticationError('Invalid credentials');
-  }
-
-  // Secure password comparison
-  const isValidPassword = await bcrypt.compare(password, (user as any).password_hash);
-  if (!isValidPassword) {
-    await createAuditLog({
-      event_type: AUDIT_EVENTS.AUTH_LOGIN_FAILURE,
-      user_id: (user as any).id,
-      user_email: email,
-      ip_address: req.headers['x-forwarded-for'] as string || req.ip,
-      user_agent: req.headers['user-agent'],
-      success: false,
-      error_message: 'Invalid credentials - wrong password'
-    });
-    
-    ProductionMonitor.logCriticalPath('auth.failure', {
-      reason: 'invalid_password',
-      userId: (user as any).id,
-      ip: req.headers['x-forwarded-for'] || req.ip
-    });
-    
-    throw new AuthenticationError('Invalid credentials');
-  }
-
-  // Get user permissions with error handling
-  let permissions: string[] = [];
-  
-  try {
-    permissions = await getUserPermissions((user as any).id);
-  } catch (error) {
-    console.warn('Failed to get user permissions during login:', (error as Error).message);
-    // Don't fail login if permission retrieval fails
-  }
-
-  // Get user roles from RBAC system
-  let userRoles: string[] = [];
-  try {
-    const roleRecords = await db('user_roles')
-      .join('roles', 'user_roles.role_id', 'roles.id')
-      .where('user_roles.user_id', (user as any).id)
-      .where('roles.is_active', true)
-      .select('roles.name', 'roles.code', 'roles.id');
-
-    // Use role.code for Cerbos (e.g., 'super_admin') instead of role.name (e.g., 'Super Admin')
-    userRoles = roleRecords.map((r: any) => r.code || r.name);
-  } catch (error) {
-    console.warn('Failed to get user roles during login:', (error as Error).message);
-    userRoles = [];
-  }
-
-  if (userRoles.length === 0) {
-    console.warn(`User ${(user as any).email} has no roles assigned`);
-  }
-
-  // Generate JWT token with minimal payload to prevent 431 errors
-  // Permissions should be fetched separately, not stored in token
-  const jwtPayload: Omit<JWTPayload, 'iat' | 'exp' | 'permissions'> = {
-    userId: (user as any).id,
-    email: (user as any).email,
-    role: (user as any).role // Keep legacy role for backwards compatibility
-  };
-
-  const token = jwt.sign(
-    {
-      ...jwtPayload,
-      roles: userRoles.slice(0, 5) // Limit roles in token to prevent size issues
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
-
-  // Prepare comprehensive user response data
-  const userData: LoginResponse['user'] = {
-    id: (user as any).id,
-    email: (user as any).email,
-    roles: userRoles,
-    permissions: permissions,
-    name: user.name,
-    phone: (user as any).phone,
-    location: (user as any).location,
-    postal_code: (user as any).postal_code,
-    max_distance: (user as any).max_distance,
-    is_available: (user as any).is_available,
-    wage_per_game: (user as any).wage_per_game,
-    referee_level_id: (user as any).referee_level_id,
-    year_started_refereeing: (user as any).year_started_refereeing,
-    games_refereed_season: (user as any).games_refereed_season,
-    evaluation_score: (user as any).evaluation_score,
-    notes: (user as any).notes,
-    created_at: (user as any).created_at as Timestamp,
-    updated_at: (user as any).updated_at as Timestamp
-  };
-
-  // Log successful authentication
-  await createAuditLog({
-    event_type: AUDIT_EVENTS.AUTH_LOGIN_SUCCESS,
-    user_id: (user as any).id,
-    user_email: email,
-    ip_address: req.headers['x-forwarded-for'] as string || req.ip,
-    user_agent: req.headers['user-agent'],
-    success: true
-  });
-  
-  ProductionMonitor.logCriticalPath('auth.login', {
-    userId: (user as any).id,
-    roles: userRoles,
-    ip: req.headers['x-forwarded-for'] || req.ip
-  });
-
-  res.json({
-    token,
-    user: userData
-  });
-};
-
-/**
- * POST /api/auth/register
- * Register new user with role-based validation
- */
-const register = async (
-  req: Request<{}, ApiResponse<LoginResponse['user']>, RegisterRequest>, 
-  res: Response<ApiResponse<LoginResponse['user']>>
-): Promise<void> => {
-  const { error, value } = registerSchema.validate(req.body);
-  if (error) {
-    throw new ValidationError(error.details[0].message);
-  }
-
-  const { 
-    email, 
-    password, 
-    role, 
-    name, 
-    phone, 
-    location, 
-    postal_code, 
-    max_distance,
-    referee_level_id,
-    year_started_refereeing,
-    notes
-  }: RegisterRequest = value;
-
-  // Check for existing user
-  const existingUser = await db('users').where('email', email).first();
-  if (existingUser) {
-    throw new ValidationError('Email already registered');
-  }
-
-  // Secure password hashing
-  const saltRounds = 12;
-  const password_hash = await bcrypt.hash(password, saltRounds);
-
-  const trx = await db.transaction();
-  
-  try {
-    // Prepare user data with type safety
-    const userData: any = {
-      email,
-      password_hash,
-      role
-    };
-
-    // Add referee-specific fields with validation
-    if (role === 'referee') {
-      userData.name = name;
-      userData.phone = phone;
-      userData.location = location;
-      userData.postal_code = postal_code;
-      userData.max_distance = max_distance || 25;
-      userData.referee_level_id = referee_level_id;
-      userData.year_started_refereeing = year_started_refereeing;
-      userData.notes = notes;
-      userData.is_available = true;
-      userData.games_refereed_season = 0;
-    }
-
-    // Create user with transaction safety
-    const [user] = await trx('users').insert(userData).returning('*');
-    await trx.commit();
-
-    // Background location data creation for referees
-    if (role === 'referee' && postal_code) {
-      setImmediate(async () => {
-        try {
-          const locationService = new LocationDataService();
-          await locationService.createOrUpdateUserLocation(
-            (user as any).id, 
-            location || postal_code
-          );
-          console.log(`Location data created for new user ${(user as any).id}`);
-        } catch (error) {
-          console.error(`Failed to create location data for user ${(user as any).id}:`, (error as Error).message);
-        }
-      });
-    }
-
-    // Get user permissions for new user
-    let permissions: string[] = [];
-    
-    try {
-      permissions = await getUserPermissions((user as any).id);
-    } catch (error) {
-      console.warn('Failed to get user permissions during registration:', (error as Error).message);
-    }
-
-    // Generate JWT for new user
-    const token = jwt.sign(
-      { 
-        userId: (user as any).id, 
-        email: (user as any).email, 
-        role: (user as any).role,
-        roles: [], // New users start with empty roles array
-        permissions: permissions
-      },
-      process.env.JWT_SECRET as string,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-
-    // Prepare response data
-    const responseUserData: LoginResponse['user'] = {
-      id: (user as any).id,
-      email: (user as any).email,
-      roles: [],
-      permissions: permissions,
-      name: user.name,
-      phone: (user as any).phone,
-      location: (user as any).location,
-      postal_code: (user as any).postal_code,
-      max_distance: (user as any).max_distance,
-      is_available: (user as any).is_available,
-      wage_per_game: (user as any).wage_per_game,
-      referee_level_id: (user as any).referee_level_id,
-      year_started_refereeing: (user as any).year_started_refereeing,
-      games_refereed_season: (user as any).games_refereed_season,
-      evaluation_score: (user as any).evaluation_score,
-      notes: (user as any).notes,
-      created_at: (user as any).created_at as Timestamp,
-      updated_at: (user as any).updated_at as Timestamp
-    };
-
-    // Audit successful registration
-    await createAuditLog({
-      event_type: AUDIT_EVENTS.AUTH_REGISTER,
-      user_id: (user as any).id,
-      user_email: email,
-      ip_address: req.headers['x-forwarded-for'] as string || req.ip,
-      user_agent: req.headers['user-agent'],
-      success: true,
-      additional_data: { role: role }
-    });
-    
-    ProductionMonitor.logCriticalPath('auth.register', {
-      userId: (user as any).id,
-      role: role,
-      ip: req.headers['x-forwarded-for'] || req.ip
-    });
-    
-    if (role === 'referee') {
-      ProductionMonitor.logCriticalPath('referee.registered', {
-        userId: (user as any).id,
-        postalCode: postal_code,
-        maxDistance: max_distance
-      });
-    }
-
-    res.status(201).json({
-      success: true,
-      data: responseUserData
-    });
-  } catch (error) {
-    await trx.rollback();
-    throw error;
-  }
-};
+// REMOVED: POST /api/auth/register - Clerk handles registration now
 
 /**
  * GET /api/auth/me
- * Get current user profile with comprehensive data
+ * Get current user profile with comprehensive data including organizations
  */
 const getProfile = async (
   req: AuthenticatedRequest,
@@ -431,11 +90,33 @@ const getProfile = async (
       userRoles = [];
     }
 
+    // Get user's organizations
+    let organizations: any[] = [];
+    try {
+      organizations = await db('user_organizations')
+        .join('organizations', 'user_organizations.organization_id', 'organizations.id')
+        .where('user_organizations.user_id', (user as any).id)
+        .where('user_organizations.status', 'active')
+        .select(
+          'organizations.id',
+          'organizations.name',
+          'organizations.slug',
+          'organizations.logo_url',
+          'user_organizations.role as org_role',
+          'user_organizations.is_primary'
+        )
+        .orderBy('user_organizations.is_primary', 'desc');
+    } catch (error) {
+      console.warn('Failed to get user organizations for profile:', (error as Error).message);
+      organizations = [];
+    }
+
     const userData: ProfileResponse['user'] = {
       id: (user as any).id,
       email: (user as any).email,
       roles: userRoles,
       permissions: permissions,
+      organizations: organizations,
       name: user.name,
       phone: (user as any).phone,
       location: (user as any).location,
@@ -480,18 +161,261 @@ const refreshPermissions = async (
   });
 };
 
-// Route definitions with middleware and proper typing
-router.post('/login', 
-  authLimiter, 
-  sanitizeAll, 
-  asyncHandler(login)
-);
+/**
+ * POST /api/auth/sync-user
+ * Called after Clerk login to create or link local user record
+ */
+const syncUser = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse<any>>
+): Promise<void> => {
+  try {
+    const user = req.user as any;
 
-router.post('/register', 
-  registrationLimiter, 
-  sanitizeAll, 
-  asyncHandler(register)
-);
+    if (!user) {
+      throw new AuthenticationError('User not authenticated');
+    }
+
+    // Extract Clerk ID - could be in user.id, user.userId, or user.sub (from Clerk JWT)
+    const clerkId = user.sub || user.userId || user.id;
+    const email = user.email || user.email_addresses?.[0]?.email_address;
+    const name = user.name || user.firstName || user.username;
+
+    if (!clerkId || !email) {
+      throw new AuthenticationError('Invalid user data from Clerk');
+    }
+
+    // Check if user exists by clerk_id
+    let dbUser = await db('users').where('clerk_id', clerkId).first();
+
+    // If user doesn't exist, create from Clerk data
+    if (!dbUser) {
+      console.log(`Creating new user for Clerk ID: ${clerkId}`);
+
+      const trx = await db.transaction();
+
+      try {
+        // Create user record
+        const userData: any = {
+          clerk_id: clerkId,
+          email: email,
+          name: name || email.split('@')[0],
+          // password_hash not needed for Clerk users
+        };
+
+        const [newUser] = await trx('users').insert(userData).returning('*');
+        dbUser = newUser;
+
+        // Assign default role (e.g., 'member' or 'referee')
+        const defaultRole = await trx('roles')
+          .where('code', 'member')
+          .orWhere('name', 'Member')
+          .first();
+
+        if (defaultRole) {
+          await trx('user_roles').insert({
+            user_id: (dbUser as any).id,
+            role_id: defaultRole.id
+          });
+        }
+
+        // Add to default organization
+        const defaultOrg = await trx('organizations')
+          .where('slug', 'default')
+          .first();
+
+        if (defaultOrg) {
+          await trx('user_organizations').insert({
+            user_id: (dbUser as any).id,
+            organization_id: defaultOrg.id,
+            is_primary: true,
+            role: 'member',
+            status: 'active'
+          });
+        }
+
+        // Create audit log
+        await createAuditLog({
+          event_type: AUDIT_EVENTS.AUTH_REGISTER,
+          user_id: (dbUser as any).id,
+          user_email: email,
+          ip_address: req.headers['x-forwarded-for'] as string || req.ip,
+          user_agent: req.headers['user-agent'],
+          success: true,
+          additional_data: { clerk_id: clerkId, source: 'clerk_sync' }
+        });
+
+        await trx.commit();
+        console.log(`User created successfully: ${(dbUser as any).id}`);
+      } catch (error) {
+        await trx.rollback();
+        throw error;
+      }
+    }
+
+    // Fetch user's roles
+    const roleRecords = await db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where('user_roles.user_id', (dbUser as any).id)
+      .where('user_roles.is_active', true)
+      .where('roles.is_active', true)
+      .select('roles.name', 'roles.code', 'roles.id');
+
+    const userRoles = roleRecords.map((r: any) => r.code || r.name);
+
+    // Fetch user's organizations
+    const organizations = await db('user_organizations')
+      .join('organizations', 'user_organizations.organization_id', 'organizations.id')
+      .where('user_organizations.user_id', (dbUser as any).id)
+      .where('user_organizations.status', 'active')
+      .select(
+        'organizations.id',
+        'organizations.name',
+        'organizations.slug',
+        'organizations.logo_url',
+        'user_organizations.role as org_role',
+        'user_organizations.is_primary'
+      )
+      .orderBy('user_organizations.is_primary', 'desc');
+
+    // Get user permissions
+    let permissions: string[] = [];
+    try {
+      permissions = await getUserPermissions((dbUser as any).id);
+    } catch (error) {
+      console.warn('Failed to get user permissions during sync:', (error as Error).message);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: (dbUser as any).id,
+          clerk_id: (dbUser as any).clerk_id,
+          email: (dbUser as any).email,
+          name: (dbUser as any).name,
+          roles: userRoles,
+          permissions: permissions,
+          organizations: organizations
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in syncUser:', error);
+    throw error;
+  }
+};
+
+/**
+ * GET /api/auth/organizations
+ * Get user's organizations for switcher
+ */
+const getOrganizations = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse<any[]>>
+): Promise<void> => {
+  try {
+    const user = req.user as any;
+
+    if (!user || !user.id) {
+      throw new AuthenticationError('User not authenticated');
+    }
+
+    const organizations = await db('user_organizations')
+      .join('organizations', 'user_organizations.organization_id', 'organizations.id')
+      .where('user_organizations.user_id', user.id)
+      .where('user_organizations.status', 'active')
+      .select(
+        'organizations.id',
+        'organizations.name',
+        'organizations.slug',
+        'organizations.logo_url',
+        'organizations.description',
+        'user_organizations.role as org_role',
+        'user_organizations.is_primary',
+        'user_organizations.joined_at'
+      )
+      .orderBy('user_organizations.is_primary', 'desc');
+
+    res.json({
+      success: true,
+      data: organizations
+    });
+  } catch (error) {
+    console.error('Error in getOrganizations:', error);
+    throw error;
+  }
+};
+
+/**
+ * POST /api/auth/switch-organization
+ * Validate user can access organization and return org details
+ */
+const switchOrganization = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse<any>>
+): Promise<void> => {
+  try {
+    const user = req.user as any;
+    const { organizationId } = req.body;
+
+    if (!user || !user.id) {
+      throw new AuthenticationError('User not authenticated');
+    }
+
+    if (!organizationId) {
+      throw new ValidationError('Organization ID is required');
+    }
+
+    // Validate user has access to this organization
+    const userOrg = await db('user_organizations')
+      .join('organizations', 'user_organizations.organization_id', 'organizations.id')
+      .where('user_organizations.user_id', user.id)
+      .where('user_organizations.organization_id', organizationId)
+      .where('user_organizations.status', 'active')
+      .select(
+        'organizations.id',
+        'organizations.name',
+        'organizations.slug',
+        'organizations.logo_url',
+        'organizations.description',
+        'organizations.settings',
+        'user_organizations.role as org_role',
+        'user_organizations.is_primary'
+      )
+      .first();
+
+    if (!userOrg) {
+      throw new ValidationError('You do not have access to this organization');
+    }
+
+    // Log the organization switch
+    await createAuditLog({
+      event_type: 'ORGANIZATION_SWITCH',
+      user_id: user.id,
+      user_email: user.email,
+      ip_address: req.headers['x-forwarded-for'] as string || req.ip,
+      user_agent: req.headers['user-agent'],
+      success: true,
+      additional_data: {
+        organization_id: organizationId,
+        organization_name: userOrg.name
+      }
+    });
+
+    res.json({
+      success: true,
+      data: userOrg,
+      message: `Switched to ${userOrg.name}`
+    });
+  } catch (error) {
+    console.error('Error in switchOrganization:', error);
+    throw error;
+  }
+};
+
+// Route definitions with middleware and proper typing
+// REMOVED: Login and register routes (Clerk handles these)
 
 router.get('/me', 
   authenticateToken, 
@@ -501,6 +425,22 @@ router.get('/me',
 router.post('/refresh-permissions',
   authenticateToken,
   asyncHandler(refreshPermissions)
+);
+
+router.post('/sync-user',
+  authenticateClerkTokenOnly,
+  asyncHandler(syncUser)
+);
+
+router.get('/organizations',
+  authenticateToken,
+  asyncHandler(getOrganizations)
+);
+
+router.post('/switch-organization',
+  authenticateToken,
+  sanitizeAll,
+  asyncHandler(switchOrganization)
 );
 
 /**
