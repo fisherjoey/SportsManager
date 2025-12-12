@@ -1,18 +1,23 @@
 'use client'
 
-import { Calendar, Clock, DollarSign, MapPin, User, CheckCircle, CalendarClock, Trophy } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, Clock, DollarSign, MapPin, User, CheckCircle, CalendarClock, Trophy, ChevronDown } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageLayout } from '@/components/ui/page-layout'
 import { PageHeader } from '@/components/ui/page-header'
+import { StatsGrid } from '@/components/ui/stats-grid'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { mockGames, Team } from '@/lib/mock-data'
 import { useAuth } from '@/components/auth-provider'
 import { formatTeamName } from '@/lib/team-utils'
 
 export function RefereeDashboardOverview() {
   const { user } = useAuth()
+  const [myGamesOpen, setMyGamesOpen] = useState(true)
+  const [availableGamesOpen, setAvailableGamesOpen] = useState(true)
 
   const handleQuickNavigation = (view: string) => {
     // This would normally navigate to the specific view
@@ -35,34 +40,56 @@ export function RefereeDashboardOverview() {
     })
     .reduce((total, game) => total + game.payRate, 0)
 
+  const gamesThisMonth = myAssignments.filter((game) => {
+    const gameDate = new Date(game.date)
+    const now = new Date()
+    return gameDate.getMonth() === now.getMonth() && gameDate.getFullYear() === now.getFullYear()
+  }).length
+
   const stats = [
     {
       title: 'Upcoming Games',
       value: upcomingAssignments.length,
       icon: Calendar,
-      color: 'text-blue-600'
+      color: 'info',
+      subtitle: 'Games assigned to you',
+      change: {
+        value: 12,
+        trend: 'positive' as const
+      }
     },
     {
       title: 'This Week Earnings',
       value: `$${thisWeekEarnings}`,
       icon: DollarSign,
-      color: 'text-green-600'
+      color: 'success',
+      subtitle: 'Projected earnings',
+      change: {
+        value: 15,
+        trend: 'positive' as const
+      }
     },
     {
       title: 'Available Games',
       value: availableGames.length,
       icon: Clock,
-      color: 'text-orange-600'
+      color: 'warning',
+      subtitle: 'Games you can pick up',
+      change: {
+        value: -5,
+        trend: 'negative' as const
+      }
     },
     {
       title: 'Games This Month',
-      value: myAssignments.filter((game) => {
-        const gameDate = new Date(game.date)
-        const now = new Date()
-        return gameDate.getMonth() === now.getMonth() && gameDate.getFullYear() === now.getFullYear()
-      }).length,
-      icon: MapPin,
-      color: 'text-purple-600'
+      value: gamesThisMonth,
+      icon: Trophy,
+      color: 'primary',
+      subtitle: 'Monthly assignments',
+      change: {
+        value: 8,
+        trend: 'positive' as const
+      }
     }
   ]
 
@@ -74,30 +101,32 @@ export function RefereeDashboardOverview() {
         description="Here's what's happening with your assignments"
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Stats Grid with staggered animations */}
+      <div className="animate-slide-up">
+        <StatsGrid items={stats} columns={4} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>My Upcoming Games</CardTitle>
-            <CardDescription>Your next assigned games</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {upcomingAssignments.map((game) => (
-                <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg">
+        <Card variant="interactive" className="animate-slide-up [animation-delay:100ms]">
+          <Collapsible open={myGamesOpen} onOpenChange={setMyGamesOpen}>
+            <CardHeader>
+              <CollapsibleTrigger className="flex items-center justify-between w-full md:cursor-default">
+                <div>
+                  <CardTitle className="text-left">My Upcoming Games</CardTitle>
+                  <CardDescription className="text-left">Your next assigned games</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform md:hidden ${myGamesOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingAssignments.map((game, index) => (
+                    <div
+                      key={game.id}
+                      className="flex items-center justify-between p-3 border rounded-lg animate-fade-in hover:shadow-md transition-shadow cursor-pointer"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                   <div>
                     <p className="font-medium">
                       {formatTeamName(game.homeTeam)} vs {formatTeamName(game.awayTeam)}
@@ -116,19 +145,39 @@ export function RefereeDashboardOverview() {
               {upcomingAssignments.length === 0 && (
                 <p className="text-center text-muted-foreground py-4">No upcoming assignments</p>
               )}
-            </div>
-          </CardContent>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Games</CardTitle>
-            <CardDescription>Games you can pick up</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {availableGames.map((game) => (
-                <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg border-green-200">
+        <Card variant="interactive" className="animate-slide-up [animation-delay:200ms]">
+          <Collapsible open={availableGamesOpen} onOpenChange={setAvailableGamesOpen}>
+            <CardHeader>
+              <CollapsibleTrigger className="flex items-center justify-between w-full md:cursor-default">
+                <div>
+                  <CardTitle className="text-left flex items-center gap-2">
+                    Available Games
+                    {availableGames.length > 0 && (
+                      <Badge variant="success" dot dotColor="success" pulse>
+                        {availableGames.length}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-left">Games you can pick up</CardDescription>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform md:hidden ${availableGamesOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
+                <div className="space-y-4">
+                  {availableGames.map((game, index) => (
+                    <div
+                      key={game.id}
+                      className="flex items-center justify-between p-3 border rounded-lg border-green-200 animate-fade-in hover:shadow-md transition-shadow cursor-pointer"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                   <div>
                     <p className="font-medium">
                       {formatTeamName(game.homeTeam)} vs {formatTeamName(game.awayTeam)}
@@ -152,8 +201,10 @@ export function RefereeDashboardOverview() {
               {availableGames.length === 0 && (
                 <p className="text-center text-muted-foreground py-4">No available games</p>
               )}
-            </div>
-          </CardContent>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </div>
     </PageLayout>

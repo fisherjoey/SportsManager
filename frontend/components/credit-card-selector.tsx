@@ -532,7 +532,7 @@ export function CreditCardSelector({
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                          <div className="p-2 rounded-lg bg-gradient-to-r from-primary via-primary to-[hsl(var(--primary-gradient-to))] text-white theme-transition">
                             <CreditCard className="h-5 w-5" />
                           </div>
                           <div>

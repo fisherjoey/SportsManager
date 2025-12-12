@@ -11,13 +11,15 @@ import {
   Mail,
   DollarSign,
   ParkingMeterIcon as Parking,
-  Eye
+  Eye,
+  LayoutGrid,
+  LayoutList
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Input, InputWithIcon } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
@@ -54,6 +56,8 @@ export function TeamsLocationsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [teamColumnVisibility, setTeamColumnVisibility] = useState<Record<string, boolean>>({})
   const [locationColumnVisibility, setLocationColumnVisibility] = useState<Record<string, boolean>>({})
+  const [teamsViewMode, setTeamsViewMode] = useState<'table' | 'grid'>('table')
+  const [locationsViewMode, setLocationsViewMode] = useState<'table' | 'grid'>('table')
   // const { showToast } = useNotifications()
 
   // Mobile detection and responsive column visibility
@@ -620,7 +624,7 @@ export function TeamsLocationsPage() {
   // Mobile card components
   const TeamCard: React.FC<{ team: any }> = ({ team }) => {
     const teamColors = team.colors || { primary: '#3b82f6', secondary: '#e2e8f0' }
-    
+
     const formatPhoneNumber = (phone: string) => {
       if (!phone) return null
       // Format phone number as (XXX) XXX-XXXX if 10 digits
@@ -630,9 +634,9 @@ export function TeamsLocationsPage() {
       }
       return phone
     }
-    
+
     return (
-      <Card className="p-4">
+      <Card variant="interactive" className="p-4 transition-all duration-200" onClick={() => setSelectedTeam(team.id)}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-3">
             <div className="w-5 h-5 rounded-full" style={{ backgroundColor: teamColors.primary }} />
@@ -706,7 +710,7 @@ export function TeamsLocationsPage() {
         </div>
         
         <div className="flex justify-end mt-3">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTeam(team.id)}>
+          <Button variant="ghost" size="sm">
             <Eye className="h-4 w-4 mr-1" />
             View Details
           </Button>
@@ -717,7 +721,7 @@ export function TeamsLocationsPage() {
 
   const LocationCard: React.FC<{ location: any }> = ({ location }) => {
     return (
-      <Card className="p-4">
+      <Card variant="interactive" className="p-4 transition-all duration-200" onClick={() => setSelectedLocation(location.id)}>
         <div className="mb-3">
           <VenueInfoSummary
             name={location.name}
@@ -782,7 +786,7 @@ export function TeamsLocationsPage() {
         </div>
 
         <div className="flex justify-end mt-3">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLocation(location.id)}>
+          <Button variant="ghost" size="sm">
             <Eye className="h-4 w-4 mr-1" />
             View Details
           </Button>
@@ -815,18 +819,30 @@ export function TeamsLocationsPage() {
       )}
 
       <Tabs defaultValue="teams" className="space-y-6">
-        <TabsList className="inline-flex">
-          <TabsTrigger value="teams">Teams</TabsTrigger>
-          <TabsTrigger value="locations">Locations</TabsTrigger>
+        <TabsList variant="underline" className="w-full justify-start">
+          <TabsTrigger value="teams" variant="underline" className="gap-2">
+            <Users className="h-4 w-4" />
+            Teams
+            <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs">
+              {teams.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="locations" variant="underline" className="gap-2">
+            <Building className="h-4 w-4" />
+            Locations
+            <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs">
+              {locations.length}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="teams" className="space-y-6">
+        <TabsContent value="teams" className="space-y-6 animate-in fade-in-50 duration-200">
           <StatsGrid stats={teamStats} />
 
           {/* Teams Management */}
-          <Card>
+          <Card variant="elevated">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <CardTitle>Teams Directory</CardTitle>
                   <CardDescription>Manage team information and contacts</CardDescription>
@@ -836,47 +852,81 @@ export function TeamsLocationsPage() {
                   Add Team
                 </Button>
               </div>
+
+              {/* Search and View Toggle */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1">
+                  <InputWithIcon
+                    leftIcon={<Search className="h-4 w-4" />}
+                    placeholder="Search teams by name, organization, location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1 border rounded-lg p-1">
+                  <Button
+                    variant={teamsViewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setTeamsViewMode('table')}
+                    className="gap-2"
+                  >
+                    <LayoutList className="h-4 w-4" />
+                    Table
+                  </Button>
+                  <Button
+                    variant={teamsViewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setTeamsViewMode('grid')}
+                    className="gap-2"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    Grid
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Teams Table/Cards */}
-              {isMobile ? (
-                <div className="space-y-4">
+              {teamsViewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in-50 duration-200">
                   {filteredTeams.map((team) => (
                     <TeamCard key={team.id} team={team} />
                   ))}
                   {filteredTeams.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
                       No teams found matching your criteria.
                     </div>
                   )}
                 </div>
               ) : (
-                <FilterableTable
-                  data={filteredTeams}
-                  columns={teamColumns}
-                  emptyMessage="No teams found matching your criteria."
-                  loading={loading}
-                  mobileCardType="team"
-                  enableViewToggle={true}
-                  enableCSV={true}
-                  onDataImport={handleImportTeams}
-                  csvFilename="teams-export"
-                  initialColumnVisibility={teamColumnVisibility}
-                  maxVisibleColumns="auto"
-                  columnWidthEstimate={180}
-                />
+                <div className="animate-in fade-in-50 duration-200">
+                  <FilterableTable
+                    data={filteredTeams}
+                    columns={teamColumns}
+                    emptyMessage="No teams found matching your criteria."
+                    loading={loading}
+                    mobileCardType="team"
+                    enableViewToggle={false}
+                    enableCSV={true}
+                    onDataImport={handleImportTeams}
+                    csvFilename="teams-export"
+                    initialColumnVisibility={teamColumnVisibility}
+                    maxVisibleColumns="auto"
+                    columnWidthEstimate={180}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="locations" className="space-y-6">
+        <TabsContent value="locations" className="space-y-6 animate-in fade-in-50 duration-200">
           <StatsGrid stats={locationStats} />
 
           {/* Locations Management */}
-          <Card>
+          <Card variant="elevated">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <CardTitle>Venues Directory</CardTitle>
                   <CardDescription>Manage facility information and availability</CardDescription>
@@ -886,35 +936,69 @@ export function TeamsLocationsPage() {
                   Add Location
                 </Button>
               </div>
+
+              {/* Search and View Toggle */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1">
+                  <InputWithIcon
+                    leftIcon={<Search className="h-4 w-4" />}
+                    placeholder="Search locations by name, city, address..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1 border rounded-lg p-1">
+                  <Button
+                    variant={locationsViewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationsViewMode('table')}
+                    className="gap-2"
+                  >
+                    <LayoutList className="h-4 w-4" />
+                    Table
+                  </Button>
+                  <Button
+                    variant={locationsViewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setLocationsViewMode('grid')}
+                    className="gap-2"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    Grid
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Locations Table/Cards */}
-              {isMobile ? (
-                <div className="space-y-4">
+              {locationsViewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in-50 duration-200">
                   {filteredLocations.map((location) => (
                     <LocationCard key={location.id} location={location} />
                   ))}
                   {filteredLocations.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
                       No locations found matching your criteria.
                     </div>
                   )}
                 </div>
               ) : (
-                <FilterableTable
-                  data={filteredLocations}
-                  columns={locationColumns}
-                  emptyMessage="No locations found matching your criteria."
-                  loading={loading}
-                  mobileCardType="location"
-                  enableViewToggle={true}
-                  enableCSV={true}
-                  onDataImport={handleImportLocations}
-                  csvFilename="locations-export"
-                  initialColumnVisibility={locationColumnVisibility}
-                  maxVisibleColumns="auto"
-                  columnWidthEstimate={200}
-                />
+                <div className="animate-in fade-in-50 duration-200">
+                  <FilterableTable
+                    data={filteredLocations}
+                    columns={locationColumns}
+                    emptyMessage="No locations found matching your criteria."
+                    loading={loading}
+                    mobileCardType="location"
+                    enableViewToggle={false}
+                    enableCSV={true}
+                    onDataImport={handleImportLocations}
+                    csvFilename="locations-export"
+                    initialColumnVisibility={locationColumnVisibility}
+                    maxVisibleColumns="auto"
+                    columnWidthEstimate={200}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

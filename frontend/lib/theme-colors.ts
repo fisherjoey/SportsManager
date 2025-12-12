@@ -1,15 +1,16 @@
 /**
  * Theme-aware color utilities for SportsManager
  * Provides consistent color usage across the application
+ * Updated with new vibrant blue primary (hsl(220, 100%, 50%))
  */
 
 // Chart colors that adapt to light/dark mode
 export const chartColors = {
-  primary: 'hsl(var(--chart-1))',
-  success: 'hsl(var(--chart-2))',
-  warning: 'hsl(var(--chart-3))',
-  destructive: 'hsl(var(--chart-4))',
-  info: 'hsl(var(--chart-5))'
+  primary: 'hsl(var(--chart-1))', // Vibrant Blue
+  success: 'hsl(var(--chart-2))', // Cyan
+  warning: 'hsl(var(--chart-3))', // Purple
+  destructive: 'hsl(var(--chart-4))', // Sky Blue
+  info: 'hsl(var(--chart-5))' // Light Sky
 }
 
 // Chart color arrays for data visualization
@@ -266,6 +267,16 @@ export function getGradient(from: 'primary' | 'success' | 'warning' | 'info', to
   return `bg-gradient-to-r from-${from}/10 to-${toColor}/5 dark:from-${from}/20 dark:to-${toColor}/10`
 }
 
+// Primary gradient using new design tokens
+export function getPrimaryGradient() {
+  return 'bg-gradient-to-r from-[hsl(var(--primary-gradient-from))] to-[hsl(var(--primary-gradient-to))]'
+}
+
+// Primary gradient with opacity
+export function getPrimaryGradientWithOpacity(opacity: number = 0.1) {
+  return `bg-gradient-to-r from-[hsl(var(--primary-gradient-from)/${opacity})] to-[hsl(var(--primary-gradient-to)/${opacity})]`
+}
+
 export default {
   chartColors,
   chartColorArray,
@@ -274,5 +285,7 @@ export default {
   getLevelColorClass,
   hexToHSL,
   getCSSVariableValue,
-  getGradient
+  getGradient,
+  getPrimaryGradient,
+  getPrimaryGradientWithOpacity
 }

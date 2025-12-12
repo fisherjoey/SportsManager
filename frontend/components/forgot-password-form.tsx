@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/30 dark:from-background dark:via-primary/10 dark:to-accent/20 p-4 theme-transition">
         <Card className="w-full max-w-md animate-in fade-in-50 slide-in-from-bottom-5">
           <CardHeader className="text-center space-y-2">
             <div className="flex justify-center mb-4">
@@ -78,7 +78,7 @@ export function ForgotPasswordForm() {
                 src="/sportsync-icon.svg"
                 alt="SyncedSport Logo"
                 fill
-                className="object-contain"
+                className="object-contain logo"
                 priority
               />
             </div>

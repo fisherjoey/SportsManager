@@ -1,20 +1,45 @@
 import * as React from 'react'
+import { type VariantProps, cva } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      'rounded-lg border bg-card text-card-foreground shadow-sm',
-      className
-    )}
-    {...props}
-  />
-))
+const cardVariants = cva(
+  'rounded-xl border bg-card text-card-foreground transition-all duration-200',
+  {
+    variants: {
+      variant: {
+        default: 'shadow-sm',
+        elevated: 'shadow-md hover:shadow-lg',
+        interactive: 'shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer',
+        gradient: 'border-0 bg-gradient-to-br from-card via-card to-muted/50 shadow-md',
+        outline: 'shadow-none border-2',
+      },
+      padding: {
+        none: '',
+        sm: 'p-4',
+        default: 'p-6',
+        lg: 'p-8',
+      }
+    },
+    defaultVariants: {
+      variant: 'default',
+    }
+  }
+)
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, padding, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(cardVariants({ variant, padding }), className)}
+      {...props}
+    />
+  )
+)
 Card.displayName = 'Card'
 
 const CardHeader = React.forwardRef<
@@ -23,7 +48,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col space-y-1.5 p-6', className)}
+    className={cn('flex flex-col space-y-1.5 p-6 pb-4', className)}
     {...props}
   />
 ))
@@ -76,4 +101,23 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = 'CardFooter'
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+const CardWithGradientBorder = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      'rounded-xl p-[2px] bg-gradient-to-br from-primary/20 via-primary/10 to-transparent',
+      className
+    )}
+    {...props}
+  >
+    <div className="rounded-xl bg-card h-full w-full p-6">
+      {children}
+    </div>
+  </div>
+))
+CardWithGradientBorder.displayName = 'CardWithGradientBorder'
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, CardWithGradientBorder }

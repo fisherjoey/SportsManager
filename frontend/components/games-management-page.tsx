@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload, FileUp } from 'lucide-react'
+import { Search, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2, Eye, Download, Upload, FileUp, X, CheckSquare, Square } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Input, InputWithIcon } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FilterableTable, type ColumnDef } from '@/components/ui/filterable-table'
 import { type Game } from '@/lib/types/games'
@@ -41,9 +42,155 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 
 interface GamesManagementPageProps {
   initialDateFilter?: string
+}
+
+type QuickFilter = 'all' | 'today' | 'thisWeek' | 'unassigned'
+
+// Mobile Game Card Component
+interface GameCardProps {
+  game: Game
+  onEdit?: () => void
+  onDelete?: () => void
+  onView?: () => void
+  selectionMode?: boolean
+  selected?: boolean
+  onToggleSelect?: () => void
+}
+
+function GameCard({ game, onEdit, onDelete, onView, selectionMode, selected, onToggleSelect }: GameCardProps) {
+  const homeTeamName = typeof game.homeTeam === 'object'
+    ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
+    : game.homeTeam
+  const awayTeamName = typeof game.awayTeam === 'object'
+    ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
+    : game.awayTeam
+
+  const assignedCount = game.assignedReferees?.length || game.assignments?.length || 0
+  const requiredCount = game.refsNeeded || 0
+  const statusInfo = getAssignmentStatus(assignedCount, requiredCount)
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { variant: 'success' as const, dot: true, dotColor: 'success' as const, pulse: false }
+      case 'assigned':
+        return { variant: 'info' as const, dot: true, dotColor: 'default' as const, pulse: false }
+      case 'unassigned':
+        return { variant: 'warning' as const, dot: true, dotColor: 'warning' as const, pulse: true }
+      case 'cancelled':
+        return { variant: 'destructive' as const, dot: false, dotColor: 'destructive' as const, pulse: false }
+      case 'up-for-grabs':
+        return { variant: 'warning' as const, dot: true, dotColor: 'warning' as const, pulse: true }
+      default:
+        return { variant: 'secondary' as const, dot: false, dotColor: 'default' as const, pulse: false }
+    }
+  }
+
+  const statusConfig = getStatusConfig(game.status)
+
+  return (
+    <Card
+      variant="interactive"
+      className={cn(
+        'relative overflow-hidden transition-all duration-200',
+        selected && 'ring-2 ring-primary shadow-md'
+      )}
+    >
+      {selectionMode && (
+        <div className="absolute top-4 left-4 z-10">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggleSelect}
+            aria-label={`Select game ${game.id}`}
+          />
+        </div>
+      )}
+      <CardContent className={cn('p-4', selectionMode && 'pl-12')}>
+        <div className="space-y-3">
+          {/* Teams and Status */}
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-base leading-tight">
+                {homeTeamName} vs {awayTeamName}
+              </h3>
+              <Badge
+                variant={statusConfig.variant}
+                dot={statusConfig.dot}
+                dotColor={statusConfig.dotColor}
+                pulse={statusConfig.pulse}
+                size="sm"
+                className="shrink-0"
+              >
+                {game.status === 'up-for-grabs' ? 'Up for Grabs' :
+                  game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">{game.division}</p>
+          </div>
+
+          {/* Date, Time, Location */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{new Date(game.date).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{game.time || game.startTime}</span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <span className="line-clamp-1">{game.location}</span>
+          </div>
+
+          {/* Level and Referees */}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+            <Badge variant={game.level === 'Elite' ? 'default' : 'secondary'} size="sm">
+              {game.level}
+            </Badge>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {getRefCountDisplay(assignedCount, requiredCount)}
+              </span>
+              <Badge variant={statusInfo.variant} size="sm">
+                {statusInfo.label}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Actions */}
+          {!selectionMode && (
+            <div className="flex gap-2 pt-2">
+              {onView && (
+                <Button variant="outline" size="sm" className="flex-1" onClick={onView}>
+                  <Eye className="h-4 w-4 mr-1" />
+                  View
+                </Button>
+              )}
+              {onEdit && (
+                <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="destructive" size="sm" onClick={onDelete}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 // Create Game Dialog Component
@@ -446,6 +593,11 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
   const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(null)
   const [selectedMenteeName, setSelectedMenteeName] = useState<string>('')
   const [mentees, setMentees] = useState<any[]>([])
+  // Bulk selection state
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false)
+  const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(new Set())
+  // Quick filter state
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
   const { toast } = useToast()
   const { isAuthenticated } = useAuth()
   const { hasPermission, hasAnyPermission } = usePermissions()
@@ -531,11 +683,79 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
     }
   }, [initialDateFilter])
 
+  // Helper functions for bulk selection
+  const toggleBulkSelection = () => {
+    setBulkSelectionMode(!bulkSelectionMode)
+    if (bulkSelectionMode) {
+      setSelectedGameIds(new Set())
+    }
+  }
+
+  const toggleGameSelection = (gameId: string) => {
+    const newSelection = new Set(selectedGameIds)
+    if (newSelection.has(gameId)) {
+      newSelection.delete(gameId)
+    } else {
+      newSelection.add(gameId)
+    }
+    setSelectedGameIds(newSelection)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedGameIds.size === filteredGames.length) {
+      setSelectedGameIds(new Set())
+    } else {
+      setSelectedGameIds(new Set(filteredGames.map(g => g.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedGameIds.size === 0) return
+
+    try {
+      const promises = Array.from(selectedGameIds).map(id => apiClient.deleteGame(id))
+      await Promise.all(promises)
+
+      setGames(games.filter(g => !selectedGameIds.has(g.id)))
+      setSelectedGameIds(new Set())
+      setBulkSelectionMode(false)
+
+      toast({
+        title: 'Games deleted',
+        description: `Successfully deleted ${selectedGameIds.size} game(s).`
+      })
+    } catch (error) {
+      console.error('Failed to delete games:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete some games. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Helper function to get date range for quick filters
+  const getQuickFilterDate = (filter: QuickFilter): { start?: Date; end?: Date } | null => {
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    switch (filter) {
+      case 'today':
+        return { start: now, end: new Date(now.getTime() + 24 * 60 * 60 * 1000) }
+      case 'thisWeek': {
+        const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+        return { start: now, end: weekEnd }
+      }
+      default:
+        return null
+    }
+  }
+
   const filteredGames = games.filter((game) => {
-    const homeTeamName = typeof game.homeTeam === 'object' 
+    const homeTeamName = typeof game.homeTeam === 'object'
       ? `${game.homeTeam.organization} ${game.homeTeam.ageGroup} ${game.homeTeam.gender}`
       : game.homeTeam
-    const awayTeamName = typeof game.awayTeam === 'object' 
+    const awayTeamName = typeof game.awayTeam === 'object'
       ? `${game.awayTeam.organization} ${game.awayTeam.ageGroup} ${game.awayTeam.gender}`
       : game.awayTeam
 
@@ -547,7 +767,21 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
     const matchesStatus = selectedStatus === 'all' || game.status === selectedStatus
     const matchesDate = selectedDate === 'all' || game.date === selectedDate
 
-    return matchesSearch && matchesLevel && matchesStatus && matchesDate
+    // Quick filter logic
+    let matchesQuickFilter = true
+    if (quickFilter !== 'all') {
+      if (quickFilter === 'unassigned') {
+        matchesQuickFilter = game.status === 'unassigned'
+      } else {
+        const dateRange = getQuickFilterDate(quickFilter)
+        if (dateRange) {
+          const gameDate = new Date(game.date)
+          matchesQuickFilter = gameDate >= dateRange.start! && gameDate < dateRange.end!
+        }
+      }
+    }
+
+    return matchesSearch && matchesLevel && matchesStatus && matchesDate && matchesQuickFilter
   })
 
   const handleDeleteGame = async () => {
@@ -613,6 +847,25 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
 
   // Column definitions for the games table
   const columns: ColumnDef<Game>[] = [
+    // Conditionally add selection column when in bulk mode
+    ...(bulkSelectionMode ? [{
+      id: 'select',
+      title: (
+        <Checkbox
+          checked={selectedGameIds.size === filteredGames.length && filteredGames.length > 0}
+          onCheckedChange={toggleSelectAll}
+          aria-label="Select all games"
+        />
+      ),
+      filterType: 'none' as const,
+      accessor: (game: Game) => (
+        <Checkbox
+          checked={selectedGameIds.has(game.id)}
+          onCheckedChange={() => toggleGameSelection(game.id)}
+          aria-label={`Select game ${game.id}`}
+        />
+      )
+    }] : []),
     {
       id: 'game',
       title: 'Game',
@@ -735,20 +988,38 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
         { value: 'completed', label: 'Completed' },
         { value: 'cancelled', label: 'Cancelled' }
       ],
-      accessor: (game) => (
-        <Badge
-          variant={
-            game.status === 'completed' ? 'success' :
-              game.status === 'assigned' ? 'default' :
-                game.status === 'unassigned' ? 'secondary' :
-                  game.status === 'cancelled' ? 'destructive' :
-                    'secondary'
+      accessor: (game) => {
+        const getStatusConfig = (status: string) => {
+          switch (status) {
+            case 'completed':
+              return { variant: 'success' as const, dot: true, dotColor: 'success' as const, pulse: false }
+            case 'assigned':
+              return { variant: 'info' as const, dot: true, dotColor: 'default' as const, pulse: false }
+            case 'unassigned':
+              return { variant: 'warning' as const, dot: true, dotColor: 'warning' as const, pulse: true }
+            case 'cancelled':
+              return { variant: 'destructive' as const, dot: false, dotColor: 'destructive' as const, pulse: false }
+            case 'up-for-grabs':
+              return { variant: 'warning' as const, dot: true, dotColor: 'warning' as const, pulse: true }
+            default:
+              return { variant: 'secondary' as const, dot: false, dotColor: 'default' as const, pulse: false }
           }
-        >
-          {game.status === 'up-for-grabs' ? 'Up for Grabs' :
-            game.status.charAt(0).toUpperCase() + game.status.slice(1)}
-        </Badge>
-      )
+        }
+
+        const config = getStatusConfig(game.status)
+        return (
+          <Badge
+            variant={config.variant}
+            dot={config.dot}
+            dotColor={config.dotColor}
+            pulse={config.pulse}
+            className="animate-in fade-in duration-200"
+          >
+            {game.status === 'up-for-grabs' ? 'Up for Grabs' :
+              game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+          </Badge>
+        )
+      }
     },
     {
       id: 'actions',
@@ -857,17 +1128,134 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            {selectedMenteeId ? 'Mentorship Controls' : 'Game Directory'}
-          </CardTitle>
-          <CardDescription>
-            {selectedMenteeId 
-              ? 'Select a different mentee or switch back to all games view'
-              : 'Search and filter games across all divisions and levels'
-            }
-          </CardDescription>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle>
+                {selectedMenteeId ? 'Mentorship Controls' : 'Game Directory'}
+              </CardTitle>
+              <CardDescription>
+                {selectedMenteeId
+                  ? 'Select a different mentee or switch back to all games view'
+                  : 'Search and filter games across all divisions and levels'
+                }
+              </CardDescription>
+            </div>
+            {!selectedMenteeId && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={bulkSelectionMode ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={toggleBulkSelection}
+                >
+                  {bulkSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  <span className="ml-2">{bulkSelectionMode ? 'Exit Bulk Mode' : 'Bulk Select'}</span>
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
+          {/* Quick Filter Chips */}
+          {!selectedMenteeId && (
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={quickFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('all')}
+                  className={cn(
+                    'transition-all duration-200',
+                    quickFilter === 'all' && 'shadow-md'
+                  )}
+                >
+                  All Games
+                </Button>
+                <Button
+                  variant={quickFilter === 'today' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('today')}
+                  className={cn(
+                    'transition-all duration-200',
+                    quickFilter === 'today' && 'shadow-md'
+                  )}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Today
+                </Button>
+                <Button
+                  variant={quickFilter === 'thisWeek' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('thisWeek')}
+                  className={cn(
+                    'transition-all duration-200',
+                    quickFilter === 'thisWeek' && 'shadow-md'
+                  )}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  This Week
+                </Button>
+                <Button
+                  variant={quickFilter === 'unassigned' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('unassigned')}
+                  className={cn(
+                    'transition-all duration-200',
+                    quickFilter === 'unassigned' && 'shadow-md'
+                  )}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Unassigned
+                </Button>
+                {quickFilter !== 'all' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuickFilter('all')}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Action Bar */}
+          {bulkSelectionMode && selectedGameIds.size > 0 && (
+            <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in slide-in-from-top duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="text-sm">
+                    {selectedGameIds.size} selected
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedGameIds.size === filteredGames.length ? 'All games selected' : `${filteredGames.length - selectedGameIds.size} remaining`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSelectAll}
+                  >
+                    {selectedGameIds.size === filteredGames.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                  {hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
 
 
           {/* Regular Games Table - only show when not viewing mentee games */}
@@ -881,31 +1269,70 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
                   </div>
                 </div>
               ) : (
-                <FilterableTable
-                  data={filteredGames}
-                  columns={columns}
-                  emptyMessage="No games found matching your criteria."
-                  enableViewToggle={true}
-                  enableCSV={true}
-                  csvFilename="games-export.csv"
-                  mobileCardType="game"
-                  maxVisibleColumns="auto"
-                  columnWidthEstimate={180}
-                  customOptionsContent={
-                    isMentor && (
-                      <div className="px-2 py-1.5">
-                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          Mentorship View
-                        </label>
-                        <MenteeSelector
-                          selectedMenteeId={selectedMenteeId}
-                          onMenteeChange={handleMenteeChange}
-                          placeholder="Select a mentee..."
-                        />
+                <>
+                  {/* Desktop Table View - hidden on mobile */}
+                  <div className="hidden md:block">
+                    <FilterableTable
+                      data={filteredGames}
+                      columns={columns}
+                      emptyMessage="No games found matching your criteria."
+                      enableViewToggle={true}
+                      enableCSV={true}
+                      csvFilename="games-export.csv"
+                      mobileCardType="game"
+                      maxVisibleColumns="auto"
+                      columnWidthEstimate={180}
+                      customOptionsContent={
+                        isMentor && (
+                          <div className="px-2 py-1.5">
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                              Mentorship View
+                            </label>
+                            <MenteeSelector
+                              selectedMenteeId={selectedMenteeId}
+                              onMenteeChange={handleMenteeChange}
+                              placeholder="Select a mentee..."
+                            />
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+
+                  {/* Mobile Card View - shown only on mobile */}
+                  <div className="md:hidden space-y-4">
+                    {filteredGames.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No games found matching your criteria.</p>
                       </div>
-                    )
-                  }
-                />
+                    ) : (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        {filteredGames.map((game) => (
+                          <GameCard
+                            key={game.id}
+                            game={game}
+                            selectionMode={bulkSelectionMode}
+                            selected={selectedGameIds.has(game.id)}
+                            onToggleSelect={() => toggleGameSelection(game.id)}
+                            onView={() => {
+                              toast({
+                                title: 'View Game',
+                                description: 'Game details view coming soon'
+                              })
+                            }}
+                            onEdit={() => {
+                              toast({
+                                title: 'Edit Game',
+                                description: 'Game editing coming soon'
+                              })
+                            }}
+                            onDelete={hasPermission(CERBOS_PERMISSIONS.GAMES.DELETE) ? () => openDeleteDialog(game) : undefined}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </>
           )}

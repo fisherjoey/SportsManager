@@ -89,6 +89,7 @@ export function UserFilters({ filters, onFiltersChange }: UserFiltersProps) {
           size="icon"
           onClick={handleClearFilters}
           title="Clear filters"
+          aria-label="Clear filters"
         >
           <X className="h-4 w-4" />
         </Button>

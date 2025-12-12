@@ -25,63 +25,51 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, children, className, showIcon = false }: StatusBadgeProps) {
   const statusConfig = {
     completed: {
-      variant: 'default' as const,
-      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
+      variant: 'success' as const,
       icon: CheckCircle
     },
     pending: {
-      variant: 'secondary' as const,
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30',
+      variant: 'warning' as const,
       icon: Clock
     },
     failed: {
       variant: 'destructive' as const,
-      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30',
       icon: XCircle
     },
     in_progress: {
-      variant: 'default' as const,
-      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30',
+      variant: 'info' as const,
       icon: Clock
     },
     cancelled: {
       variant: 'secondary' as const,
-      className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted',
       icon: XCircle
     },
     available: {
-      variant: 'default' as const,
-      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
+      variant: 'success' as const,
       icon: CheckCircle
     },
     unavailable: {
       variant: 'secondary' as const,
-      className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted',
       icon: XCircle
     },
     assigned: {
-      variant: 'default' as const,
-      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
+      variant: 'success' as const,
       icon: UserCheck
     },
     unassigned: {
       variant: 'destructive' as const,
-      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30',
       icon: AlertCircle
     },
     full: {
-      variant: 'default' as const,
-      className: 'bg-success/10 text-success border-success/20 hover:bg-success/15 dark:bg-success/20 dark:text-success dark:border-success/30',
+      variant: 'success' as const,
       icon: CheckCircle
     },
     partial: {
-      variant: 'secondary' as const,
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30',
+      variant: 'warning' as const,
       icon: UserCheck
     },
     up_for_grabs: {
-      variant: 'outline' as const,
-      className: 'border-warning/50 text-warning hover:bg-warning/10 dark:border-warning/50 dark:text-warning dark:hover:bg-warning/20',
+      variant: 'warning' as const,
       icon: AlertCircle
     }
   }
@@ -90,9 +78,9 @@ export function StatusBadge({ status, children, className, showIcon = false }: S
   const Icon = config.icon
 
   return (
-    <Badge 
+    <Badge
       variant={config.variant}
-      className={cn(config.className, className)}
+      className={className}
     >
       {showIcon && <Icon className="mr-1 h-3 w-3" />}
       {children || status.replace('_', ' ')}
@@ -112,53 +100,53 @@ export function LevelBadge({ level, children, className, showIcon = false }: Lev
   const levelConfig = {
     // Legacy game levels
     'Recreational': {
-      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
+      variant: 'default' as const
     },
     'Competitive': {
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
+      variant: 'warning' as const
     },
     'Elite': {
-      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30'
+      variant: 'destructive' as const
     },
     // New referee levels
     'Rookie': {
-      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
+      variant: 'default' as const
     },
     'Junior': {
-      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
+      variant: 'info' as const
     },
     'Senior': {
-      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
+      variant: 'secondary' as const
     },
     // Legacy referee levels
     'Learning': {
-      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
+      variant: 'default' as const
     },
     'Learning+': {
-      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
+      variant: 'info' as const
     },
     'Growing': {
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
+      variant: 'warning' as const
     },
     'Growing+': {
-      className: 'bg-warning/20 text-warning border-warning/30 hover:bg-warning/25 dark:bg-warning/30 dark:text-warning dark:border-warning/40'
+      variant: 'warning' as const
     },
     'Teaching': {
-      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
+      variant: 'secondary' as const
     },
     'Expert': {
-      className: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/15 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/30'
+      variant: 'destructive' as const
     }
   }
 
   const config = levelConfig[level as keyof typeof levelConfig] || {
-    className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted'
+    variant: 'outline' as const
   }
 
   return (
-    <Badge 
-      variant="outline"
-      className={cn(config.className, className)}
+    <Badge
+      variant={config.variant}
+      className={className}
     >
       {showIcon && <Trophy className="mr-1 h-3 w-3" />}
       {children || level}
@@ -272,27 +260,27 @@ interface GameTypeBadgeProps {
 export function GameTypeBadge({ type, className }: GameTypeBadgeProps) {
   const typeConfig = {
     'Community': {
-      className: 'bg-info/10 text-info border-info/20 hover:bg-info/15 dark:bg-info/20 dark:text-info dark:border-info/30'
+      variant: 'info' as const
     },
     'Club': {
-      className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:border-primary/30'
+      variant: 'default' as const
     },
     'Tournament': {
-      className: 'bg-accent text-accent-foreground border-accent hover:bg-accent/80 dark:bg-accent dark:text-accent-foreground dark:border-accent'
+      variant: 'secondary' as const
     },
     'Private Tournament': {
-      className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/15 dark:bg-warning/20 dark:text-warning dark:border-warning/30'
+      variant: 'warning' as const
     }
   }
 
   const config = typeConfig[type as keyof typeof typeConfig] || {
-    className: 'bg-muted text-muted-foreground border-muted hover:bg-muted/80 dark:bg-muted dark:text-muted-foreground dark:border-muted'
+    variant: 'outline' as const
   }
 
   return (
-    <Badge 
-      variant="outline"
-      className={cn(config.className, className)}
+    <Badge
+      variant={config.variant}
+      className={className}
     >
       {type}
     </Badge>

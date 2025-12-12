@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Users, AlertCircle, Plus, Home, Sparkles, TrendingUp, MapPin, DollarSign, Target, Trophy, Star, Activity } from 'lucide-react'
+import { Calendar, Clock, Users, AlertCircle, Plus, Home, Sparkles, TrendingUp, MapPin, DollarSign, Target, Trophy, Star, Activity, ChevronDown } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,7 @@ import { StatsGrid } from '@/components/ui/stats-grid'
 import { LoadingSpinner, CardLoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState, NoGamesEmptyState } from '@/components/ui/empty-state'
 import { StatusBadge, LevelBadge, GameTypeBadge, AssignmentStatusBadge, CountBadge } from '@/components/ui/specialized-badges'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { apiClient, type Assignment, type Referee } from '@/lib/api'
 import { formatTeamName, formatGameMatchup } from '@/lib/team-utils'
 import { AnnouncementBoard } from '@/components/announcement-board'
@@ -196,6 +197,8 @@ export function DashboardOverview() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [upcomingGamesOpen, setUpcomingGamesOpen] = useState(true)
+  const [needsAttentionOpen, setNeedsAttentionOpen] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -329,34 +332,62 @@ export function DashboardOverview() {
     return gameDate >= now && gameDate <= weekFromNow
   })
 
+  // Calculate trend data for stats
+  const lastWeekGames = games.filter((game) => {
+    const gameDate = new Date(game.date)
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return gameDate >= twoWeeksAgo && gameDate < weekAgo
+  })
+
+  const thisWeekChange = lastWeekGames.length > 0
+    ? ((thisWeekGames.length - lastWeekGames.length) / lastWeekGames.length) * 100
+    : 0
+
   const stats = [
     {
       title: 'Total Games This Week',
       value: thisWeekGames.length,
       icon: Calendar,
-      color: 'text-blue-600',
-      description: 'Games scheduled this week'
+      color: 'info',
+      subtitle: 'Games scheduled this week',
+      change: {
+        value: Math.round(thisWeekChange),
+        trend: thisWeekChange > 0 ? 'positive' : thisWeekChange < 0 ? 'negative' : 'neutral'
+      }
     },
     {
       title: 'Unassigned Games',
       value: unassignedGames.length,
       icon: AlertCircle,
-      color: 'text-red-600',
-      description: 'Games needing referees'
+      color: 'destructive',
+      subtitle: 'Games needing referees',
+      change: {
+        value: unassignedGames.length > 0 ? -10 : 0,
+        trend: unassignedGames.length > 0 ? 'negative' : 'positive'
+      }
     },
     {
       title: 'Up for Grabs',
       value: upForGrabsGames.length,
       icon: Clock,
-      color: 'text-orange-600',
-      description: 'Available for pickup'
+      color: 'warning',
+      subtitle: 'Available for pickup',
+      change: {
+        value: 5,
+        trend: 'neutral' as const
+      }
     },
     {
       title: 'Active Referees',
       value: referees.filter(r => r.isAvailable).length,
       icon: Users,
-      color: 'text-green-600',
-      description: 'Available for assignment'
+      color: 'success',
+      subtitle: 'Available for assignment',
+      change: {
+        value: 8,
+        trend: 'positive' as const
+      }
     }
   ]
 
@@ -369,7 +400,7 @@ export function DashboardOverview() {
     const isPositiveTrend = trendChange >= 0
     
     return (
-      <Card>
+      <Card variant="interactive" className="animate-slide-up">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Target className="h-5 w-5 mr-2 text-blue-600" />
@@ -455,8 +486,10 @@ export function DashboardOverview() {
         </Button>
       </PageHeader>
 
-      {/* Stats Grid */}
-      <StatsGrid stats={stats} />
+      {/* Stats Grid with staggered animations */}
+      <div className="animate-slide-up">
+        <StatsGrid items={stats} columns={4} />
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -468,27 +501,36 @@ export function DashboardOverview() {
         )}
         
         {/* Upcoming Games Card */}
-        <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-2'}>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-green-600" />
-              Upcoming Games
-            </CardTitle>
-            <CardDescription>Next {upcomingGames.length} scheduled games with assigned referees</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Card variant="interactive" className={refereePerformance ? 'lg:col-span-1 animate-slide-up [animation-delay:100ms]' : 'lg:col-span-2 animate-slide-up [animation-delay:100ms]'}>
+          <Collapsible open={upcomingGamesOpen} onOpenChange={setUpcomingGamesOpen}>
+            <CardHeader>
+              <CollapsibleTrigger className="flex items-center justify-between w-full md:cursor-default">
+                <div className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-green-600" />
+                  <CardTitle>Upcoming Games</CardTitle>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform md:hidden ${upcomingGamesOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CardDescription>Next {upcomingGames.length} scheduled games with assigned referees</CardDescription>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
             {upcomingGames.length === 0 ? (
               <NoGamesEmptyState />
             ) : (
               <div className="space-y-4">
-                {upcomingGames.map((game) => {
+                {upcomingGames.map((game, index) => {
                   const homeTeam = getTeamHierarchy(game.homeTeam)
                   const awayTeam = getTeamHierarchy(game.awayTeam)
                   const location = getLocationDisplay(game.location)
                   const wage = calculateWageDisplay(game.payRate, game.wageMultiplier, game.wageMultiplierReason)
-                  
+
                   return (
-                    <div key={game.id} className="p-4 border rounded-lg space-y-3">
+                    <div
+                      key={game.id}
+                      className="p-4 border rounded-lg space-y-3 animate-fade-in hover:shadow-md transition-shadow cursor-pointer"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                       {/* Game Header */}
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -550,19 +592,33 @@ export function DashboardOverview() {
                 })}
               </div>
             )}
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Needs Attention Card */}
-        <Card className={refereePerformance ? 'lg:col-span-1' : 'lg:col-span-1'}>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
-              Needs Attention
-            </CardTitle>
-            <CardDescription>Games requiring immediate referee assignment</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Card variant="interactive" className={refereePerformance ? 'lg:col-span-1 animate-slide-up [animation-delay:200ms]' : 'lg:col-span-1 animate-slide-up [animation-delay:200ms]'}>
+          <Collapsible open={needsAttentionOpen} onOpenChange={setNeedsAttentionOpen}>
+            <CardHeader>
+              <CollapsibleTrigger className="flex items-center justify-between w-full md:cursor-default">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
+                  <CardTitle>Needs Attention</CardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  {unassignedGames.length > 0 && (
+                    <Badge variant="destructive" dot dotColor="destructive" pulse>
+                      {unassignedGames.length}
+                    </Badge>
+                  )}
+                  <ChevronDown className={`h-5 w-5 transition-transform md:hidden ${needsAttentionOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CardDescription>Games requiring immediate referee assignment</CardDescription>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
             {unassignedGames.length === 0 ? (
               <EmptyState
                 icon={Trophy}
@@ -618,7 +674,9 @@ export function DashboardOverview() {
                 )}
               </div>
             )}
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </div>
 

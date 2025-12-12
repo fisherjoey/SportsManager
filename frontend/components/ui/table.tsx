@@ -1,27 +1,67 @@
 import * as React from 'react'
+import { type VariantProps, cva } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn('w-full caption-bottom text-sm', className)}
-      {...props}
-    />
-  </div>
-))
+const tableVariants = cva('w-full caption-bottom text-sm', {
+  variants: {
+    striped: {
+      true: '[&_tbody_tr:nth-child(even)]:bg-muted/30',
+      false: ''
+    },
+    hoverable: {
+      true: '[&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/50',
+      false: ''
+    }
+  },
+  defaultVariants: {
+    striped: false,
+    hoverable: false
+  }
+})
+
+const tableHeaderVariants = cva('[&_tr]:border-b', {
+  variants: {
+    sticky: {
+      true: 'sticky top-0 z-10 backdrop-blur-sm bg-background/80',
+      false: ''
+    }
+  },
+  defaultVariants: {
+    sticky: false
+  }
+})
+
+export interface TableProps
+  extends React.HTMLAttributes<HTMLTableElement>,
+    VariantProps<typeof tableVariants> {}
+
+export interface TableHeaderProps
+  extends React.HTMLAttributes<HTMLTableSectionElement>,
+    VariantProps<typeof tableHeaderVariants> {}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, striped, hoverable, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={cn(tableVariants({ striped, hoverable }), className)}
+        {...props}
+      />
+    </div>
+  )
+)
 Table.displayName = 'Table'
 
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
-))
+const TableHeader = React.forwardRef<HTMLTableSectionElement, TableHeaderProps>(
+  ({ className, sticky, ...props }, ref) => (
+    <thead
+      ref={ref}
+      className={cn(tableHeaderVariants({ sticky }), className)}
+      {...props}
+    />
+  )
+)
 TableHeader.displayName = 'TableHeader'
 
 const TableBody = React.forwardRef<
@@ -58,7 +98,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+      'border-b transition-colors duration-150 hover:bg-muted/50 data-[state=selected]:bg-muted',
       className
     )}
     {...props}

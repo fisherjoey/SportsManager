@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animation Utilities Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Test prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Custom animations */
+    @keyframes fade-in {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes slide-up {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scale-in {
+      0% { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    @keyframes bounce-subtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+
+    .animate-fade-in { animation: fade-in 0.2s ease-out; }
+    .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    .animate-scale-in { animation: scale-in 0.2s ease-out; }
+    .animate-shimmer {
+      animation: shimmer 2s infinite linear;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+    }
+    .animate-pulse-subtle { animation: pulse-subtle 2s ease-in-out infinite; }
+    .animate-bounce-subtle { animation: bounce-subtle 0.5s ease-in-out; }
+
+    .transition-smooth { transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); }
+    .transition-spring { transition: transform, opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    .hover-lift { transition: transform 200ms; }
+    .hover-lift:hover { transform: translateY(-2px); }
+
+    .hover-glow { transition: box-shadow 200ms; }
+    .hover-glow:hover { box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.5); }
+  </style>
+</head>
+<body class="bg-gray-50 p-8">
+  <div class="max-w-4xl mx-auto space-y-8">
+    <h1 class="text-4xl font-bold text-gray-900 mb-8">Animation Utilities Test</h1>
+
+    <!-- Fade Animations -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Fade Animations</h2>
+      <div class="space-y-4">
+        <div class="animate-fade-in bg-blue-100 p-4 rounded">
+          Fade In Animation
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide Animations -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Slide Animations</h2>
+      <div class="space-y-4">
+        <div class="animate-slide-up bg-green-100 p-4 rounded">
+          Slide Up Animation
+        </div>
+      </div>
+    </section>
+
+    <!-- Scale Animations -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Scale Animations</h2>
+      <div class="space-y-4">
+        <div class="animate-scale-in bg-purple-100 p-4 rounded">
+          Scale In Animation
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading Animations -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Loading Animations</h2>
+      <div class="space-y-4">
+        <div class="animate-shimmer h-20 rounded">
+          Shimmer Effect (Loading State)
+        </div>
+        <div class="animate-pulse-subtle bg-yellow-100 p-4 rounded">
+          Subtle Pulse Animation
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Animations -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Interactive Animations (Hover)</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="hover-lift bg-pink-100 p-4 rounded cursor-pointer">
+          Hover Lift Effect
+        </div>
+        <div class="hover-glow bg-indigo-100 p-4 rounded cursor-pointer">
+          Hover Glow Effect
+        </div>
+      </div>
+    </section>
+
+    <!-- Transition Utilities -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Transition Utilities</h2>
+      <div class="space-y-4">
+        <div class="transition-smooth bg-orange-100 p-4 rounded hover:bg-orange-200 cursor-pointer">
+          Smooth Transition (hover me)
+        </div>
+        <div class="transition-spring bg-teal-100 p-4 rounded hover:scale-105 cursor-pointer">
+          Spring Transition (hover me)
+        </div>
+      </div>
+    </section>
+
+    <!-- Performance Check -->
+    <section class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-2xl font-semibold mb-4">Performance Check</h2>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="animate-fade-in bg-blue-50 p-2 rounded h-20"></div>
+        <div class="animate-slide-up bg-green-50 p-2 rounded h-20"></div>
+        <div class="animate-scale-in bg-purple-50 p-2 rounded h-20"></div>
+        <div class="animate-fade-in bg-blue-50 p-2 rounded h-20"></div>
+        <div class="animate-slide-up bg-green-50 p-2 rounded h-20"></div>
+        <div class="animate-scale-in bg-purple-50 p-2 rounded h-20"></div>
+        <div class="animate-fade-in bg-blue-50 p-2 rounded h-20"></div>
+        <div class="animate-slide-up bg-green-50 p-2 rounded h-20"></div>
+        <div class="animate-scale-in bg-purple-50 p-2 rounded h-20"></div>
+      </div>
+      <p class="mt-4 text-sm text-gray-600">
+        Multiple animated elements to test performance. All animations should maintain 60fps.
+      </p>
+    </section>
+
+    <!-- Accessibility Note -->
+    <section class="bg-amber-50 border border-amber-200 p-6 rounded-lg">
+      <h2 class="text-xl font-semibold mb-2 text-amber-900">Accessibility Note</h2>
+      <p class="text-amber-800">
+        All animations respect the <code class="bg-amber-100 px-1 rounded">prefers-reduced-motion</code>
+        media query. Users who have enabled reduced motion in their system settings will see instant
+        transitions instead of animations.
+      </p>
+      <p class="mt-2 text-sm text-amber-700">
+        To test: Enable "Reduce motion" in your system accessibility settings and reload this page.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

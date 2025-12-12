@@ -474,6 +474,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <button
                 className="group-data-[collapsible=icon]:hidden p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-100"
                 title="Sidebar settings"
+                aria-label="Sidebar settings"
               >
                 <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
               </button>
@@ -554,6 +555,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                           e.stopPropagation()
                           toggleSection(section.section)
                         }}
+                        aria-label={isCollapsed ? `Expand ${section.section} section` : `Collapse ${section.section} section`}
+                        aria-expanded={!isCollapsed}
                       >
                         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </button>
@@ -564,7 +567,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                       <SidebarMenu className="space-y-0">
                         {section.items.map((item) => (
                           <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton 
+                            <SidebarMenuButton
                               onMouseEnter={(e) => {
                                 hoveredItemRef.current = e.currentTarget
                               }}
@@ -589,12 +592,20 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                                   lastClickTime.current = now
                                 }
                                 setActiveView(item.url)
-                              }} 
+                              }}
                               isActive={activeView === item.url}
                               tooltip={state === 'collapsed' ? `${item.title}${interactionMode === 'click' ? ' (Double-click to pin)' : ''}` : item.title}
-                              className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
+                              className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold rounded-md transition-all duration-200 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8 group/item"
                             >
-                              <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground group-data-[collapsible=icon]:mr-0" />
+                              {/* Active indicator - animated left border pill */}
+                              {activeView === item.url && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary animate-in slide-in-from-left-2 duration-300" />
+                              )}
+                              <item.icon className={`flex-shrink-0 mr-3 transition-all duration-200 group-data-[collapsible=icon]:mr-0 group-hover/item:scale-110 ${
+                                activeView === item.url
+                                  ? 'h-5 w-5 text-primary'
+                                  : 'h-4 w-4 text-muted-foreground'
+                              }`} />
                               <span className="truncate text-left group-data-[collapsible=icon]:hidden">{item.title}</span>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
@@ -613,7 +624,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <SidebarMenu className="space-y-0">
                 {filterNavigationItems(refereeItems).map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => {
                         // In click mode when collapsed, expand sidebar on icon click
                         if (state === 'collapsed' && interactionMode === 'click') {
@@ -635,12 +646,20 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                           lastClickTime.current = now
                         }
                         setActiveView(item.url)
-                      }} 
+                      }}
                       isActive={activeView === item.url}
                       tooltip={state === 'collapsed' ? `${item.title}${interactionMode === 'click' ? ' (Double-click to pin)' : ''}` : item.title}
-                      className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation"
+                      className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold rounded-md transition-all duration-200 justify-start touch-manipulation group/item"
                     >
-                      <item.icon className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground" />
+                      {/* Active indicator - animated left border pill */}
+                      {activeView === item.url && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary animate-in slide-in-from-left-2 duration-300" />
+                      )}
+                      <item.icon className={`flex-shrink-0 mr-3 transition-all duration-200 group-hover/item:scale-110 ${
+                        activeView === item.url
+                          ? 'h-5 w-5 text-primary'
+                          : 'h-4 w-4 text-muted-foreground'
+                      }`} />
                       <span className="truncate text-left">{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -654,41 +673,57 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onMouseEnter={(e) => {
                     hoveredItemRef.current = e.currentTarget
                   }}
-                  onClick={() => setActiveView('profile')} 
+                  onClick={() => setActiveView('profile')}
                   isActive={activeView === 'profile'}
                   tooltip="Profile"
-                  className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
+                  className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold rounded-md transition-all duration-200 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8 group/item"
                 >
-                  <User className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground group-data-[collapsible=icon]:mr-0" />
+                  {/* Active indicator - animated left border pill */}
+                  {activeView === 'profile' && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary animate-in slide-in-from-left-2 duration-300" />
+                  )}
+                  <User className={`flex-shrink-0 mr-3 transition-all duration-200 group-data-[collapsible=icon]:mr-0 group-hover/item:scale-110 ${
+                    activeView === 'profile'
+                      ? 'h-5 w-5 text-primary'
+                      : 'h-4 w-4 text-muted-foreground'
+                  }`} />
                   <span className="truncate text-left group-data-[collapsible=icon]:hidden">Profile</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {(user?.roles?.includes('Super Admin') || user?.roles?.includes('admin') || user?.role === 'admin') && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    onClick={() => setActiveView('organization-settings')} 
+                  <SidebarMenuButton
+                    onClick={() => setActiveView('organization-settings')}
                     isActive={activeView === 'organization-settings'}
                     tooltip="Organization Settings"
-                    className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
+                    className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold rounded-md transition-all duration-200 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8 group/item"
                   >
-                    <Settings className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground group-data-[active=true]:text-accent-foreground group-data-[collapsible=icon]:mr-0" />
+                    {/* Active indicator - animated left border pill */}
+                    {activeView === 'organization-settings' && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary animate-in slide-in-from-left-2 duration-300" />
+                    )}
+                    <Settings className={`flex-shrink-0 mr-3 transition-all duration-200 group-data-[collapsible=icon]:mr-0 group-hover/item:scale-110 ${
+                      activeView === 'organization-settings'
+                        ? 'h-5 w-5 text-primary'
+                        : 'h-4 w-4 text-muted-foreground'
+                    }`} />
                     <span className="truncate text-left group-data-[collapsible=icon]:hidden">Organization Settings</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onMouseEnter={handleItemMouseMove}
                   onMouseMove={handleItemMouseMove}
                   onClick={logout}
                   tooltip="Sign Out"
-                  className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-bold data-[active=true]:border-primary data-[active=true]:border-l-2 rounded-none transition-colors duration-100 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8"
+                  className="relative h-10 md:h-8 px-3 text-[15px] md:text-[14px] font-normal text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive rounded-md transition-all duration-200 justify-start touch-manipulation group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8 group/item"
                 >
-                  <LogOut className="h-4 w-4 mr-3 flex-shrink-0 text-destructive/70 group-data-[collapsible=icon]:mr-0" />
+                  <LogOut className="h-4 w-4 mr-3 flex-shrink-0 text-destructive/70 transition-all duration-200 group-data-[collapsible=icon]:mr-0 group-hover/item:scale-110" />
                   <span className="truncate text-left group-data-[collapsible=icon]:hidden">Sign Out</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

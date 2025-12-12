@@ -323,6 +323,7 @@ export function NotificationList() {
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => handleDeleteNotification(notification.id, e)}
                         disabled={deletingId === notification.id}
+                        aria-label="Delete notification"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

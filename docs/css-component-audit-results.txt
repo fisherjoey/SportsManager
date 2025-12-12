@@ -1,0 +1,331 @@
+================================================================================
+SPORTSMANAGER FRONTEND CSS & COMPONENT AUDIT RESULTS
+================================================================================
+Generated: December 11, 2025
+Audited by: 17 parallel agents
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+TOTAL FILES AUDITED: ~67 files across 17 categories
+TOTAL ISSUES FOUND: ~250+ instances of non-standard CSS/components
+
+ISSUES BY TYPE:
+- Hardcoded colors: ~200+ instances
+- Missing imports (cn, getStatusColorClass): ~30 files
+- Card-like divs not using Card component: ~20 instances
+- Manual tables not using FilterableTable: 1 major instance (UserTable.tsx)
+- Duplicate components needing consolidation: 3 (GameTypeBadge)
+
+================================================================================
+HIGH PRIORITY FIXES (7 FILES)
+================================================================================
+
+1. DynamicRolePageAccessManager.tsx
+   Location: /frontend/components/admin/rbac/
+   Issues: 5 card-like divs, hardcoded green/yellow colors
+   Fixes needed:
+   - Add imports: cn, getStatusColorClass, Card components
+   - Replace 4 card-like divs with <Card><CardContent>
+   - Replace border-green-500/50, bg-green-50/50 with getStatusColorClass('success')
+   - Replace border-yellow-500/50, bg-yellow-50/50 with getStatusColorClass('warning')
+
+2. RolePageAccessManager.tsx
+   Location: /frontend/components/admin/rbac/
+   Issues: Same as DynamicRolePageAccessManager
+   Fixes needed: Same pattern - 4 card divs, hardcoded colors
+
+3. CerbosRoleEditor.tsx
+   Location: /frontend/components/admin/rbac/
+   Issues: 6 instances of hardcoded colors
+   Fixes needed:
+   - Add Card import, cn, getStatusColorClass
+   - Replace <div className="border rounded-lg"> with <Card>
+   - Replace hardcoded orange/green Alert colors with getStatusColorClass
+
+4. UnifiedRoleEditor.tsx
+   Location: /frontend/components/admin/rbac/
+   Issues: 6 instances of hardcoded colors
+   Fixes needed:
+   - Replace bg-muted divs with <Card>
+   - Replace bg-blue-50/border-blue-200 with getStatusColorClass('info')
+   - Replace bg-green-50/text-green colors with getStatusColorClass('success')
+
+5. ai-assignments-enterprise.tsx
+   Location: /frontend/components/
+   Issues: 6 card-like divs with hardcoded colors
+   Fixes needed:
+   - Replace blue info boxes with <Card> + getStatusColorClass('info')
+   - Replace yellow warning boxes with <Card> + getStatusColorClass('warning')
+   - Replace metric cards with <Card><CardContent>
+
+6. UserTable.tsx (MAJOR REFACTOR)
+   Location: /frontend/components/admin/users/
+   Issues: Manual table implementation instead of FilterableTable
+   Fixes needed:
+   - Remove manual <Table> construction (158 lines)
+   - Remove manual pagination
+   - Implement FilterableTable with proper column definitions
+   - Add filterType: 'search', 'multiselect' to columns
+   - Enable: enableViewToggle, enableCSV, maxVisibleColumns="auto"
+
+7. GameMobileCard.tsx & game-management.tsx
+   Location: /frontend/components/data-table/ and /frontend/components/
+   Issues: Duplicate GameTypeBadge components, hardcoded purple/indigo/blue colors
+   Fixes needed:
+   - Remove duplicate GameTypeBadge from both files
+   - Update specialized-badges.tsx GameTypeBadge with correct colors
+   - Import GameTypeBadge from specialized-badges.tsx
+   - Update dark mode color variants
+
+================================================================================
+MEDIUM PRIORITY FIXES BY CATEGORY
+================================================================================
+
+ADMIN PAGES (1 file needs fixes)
+--------------------------------
+/frontend/app/admin/notifications/broadcast/page.tsx
+- 7 hardcoded color instances (green, amber)
+- Add imports: cn, getStatusColorClass
+- Replace text-green-* with getStatusColorClass('success')
+- Replace text-amber-*, bg-amber-* with getStatusColorClass('warning')
+
+Other admin pages: COMPLIANT (mostly redirect-only pages)
+
+DASHBOARD COMPONENTS (3 files need fixes)
+-----------------------------------------
+/frontend/components/dashboard-overview.tsx
+- 15+ hardcoded color instances
+- text-blue-600, text-red-600, text-green-600, text-orange-600
+- Hardcoded chart line colors (#10B981, #F59E0B, etc.)
+- Card-like divs for game cards
+
+/frontend/components/referee-dashboard-overview.tsx
+- 6+ hardcoded color instances
+- Stats config with hardcoded text colors
+
+/frontend/components/assignor-dashboard-overview.tsx
+- Minor issues (uses acceptable CSS variables)
+
+Container dashboards: COMPLIANT (routing only)
+
+FINANCIAL PAGES (6 files need fixes)
+------------------------------------
+/frontend/app/financial-dashboard/page.tsx
+- 8 hardcoded color instances
+- COLORS array with hex values
+- Chart colors need theme variables
+
+/frontend/components/financial-dashboard.tsx
+- 4 issues (colors + card usage)
+- Random color generation
+
+/frontend/components/budget-tracker.tsx
+- 5 issues (extensive color hardcoding)
+
+/frontend/components/expense-list-enhanced.tsx
+- 3 issues (badge colors + inline styles)
+
+/frontend/components/expense-form.tsx
+- 4 issues (urgency colors + inline styles)
+
+/frontend/components/expense-approval-dashboard.tsx
+- 4 issues (button/badge/card colors)
+
+expense-list.tsx: COMPLIANT
+
+GAMES & ASSIGNMENTS (7 files need fixes)
+----------------------------------------
+/frontend/components/game-assignment-board.tsx - HIGH (50+ hardcoded colors)
+/frontend/components/ai-assignments-simple.tsx - HIGH (extensive, no cn() usage)
+/frontend/components/my-assignments.tsx - MEDIUM
+/frontend/components/ai-assignments-page.tsx - MEDIUM
+/frontend/components/game-management.tsx - MEDIUM (stats + GameTypeBadge)
+/frontend/components/games-management-page.tsx - LOW (just stats/badge colors)
+/frontend/components/available-games.tsx - LOW (just stats colors)
+
+games/page.tsx: COMPLIANT
+
+USER MANAGEMENT (3 files need fixes)
+------------------------------------
+/frontend/components/employee-management.tsx - 9 hardcoded colors
+/frontend/components/referee-management.tsx - 15 hardcoded colors
+/frontend/components/admin/users/UserManagementDashboard.tsx - 10 hardcoded colors
+
+All use Card/Table correctly, just need color standardization
+
+RESOURCES & CONTENT (3 files need fixes)
+----------------------------------------
+/frontend/components/document-repository.tsx - 18 issues (colors + missing function)
+/frontend/components/resources/CategoryManagerDashboard.tsx - 15 issues
+/frontend/components/resource-centre-new.tsx - 2 issues
+
+page.tsx, resource-centre.tsx, ResourceManager.tsx: COMPLIANT
+
+RBAC COMPONENTS (3 files need fixes)
+------------------------------------
+/frontend/components/admin/rbac/PermissionConfigurationDashboard.tsx - 5 issues
+/frontend/components/admin/rbac/UserRoleManager.tsx - 3 issues
+/frontend/components/admin/access-control/UnifiedAccessControlDashboard.tsx - 4 issues
+
+RoleManagementDashboard, PermissionManagementDashboard, RoleCard: COMPLIANT
+
+COMMUNICATION (3 files need fixes)
+----------------------------------
+/frontend/components/communications-management.tsx - 7 issues (priority colors)
+/frontend/components/emergency-broadcast.tsx - 10 issues (red colors)
+/frontend/components/announcement-board.tsx - 8 issues (icon colors)
+
+All use Card correctly
+
+SETTINGS (2 files need fixes)
+-----------------------------
+/frontend/components/security-audit.tsx - 6 types of issues
+/frontend/components/workflow-management.tsx - 5 types of issues
+
+system-settings.tsx, organization-settings.tsx, profile-settings.tsx: COMPLIANT
+
+================================================================================
+COMMON PATTERNS TO APPLY
+================================================================================
+
+IMPORTS TO ADD:
+---------------
+import { cn } from '@/lib/utils'
+import { getStatusColorClass } from '@/lib/theme-colors'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+COLOR REPLACEMENTS:
+-------------------
+text-green-600/500 -> getStatusColorClass('success', 'text')
+text-red-600/500 -> getStatusColorClass('error', 'text')
+text-yellow-600/500 -> getStatusColorClass('warning', 'text')
+text-blue-600/500 -> getStatusColorClass('info', 'text')
+text-orange-600/500 -> getStatusColorClass('warning', 'text')
+text-purple-600/500 -> getStatusColorClass('info', 'text')
+text-gray-600/500 -> 'text-muted-foreground'
+
+bg-green-50/100 -> getStatusColorClass('success', 'bg')
+bg-red-50/100 -> getStatusColorClass('error', 'bg')
+bg-yellow-50/100 -> getStatusColorClass('warning', 'bg')
+bg-blue-50/100 -> getStatusColorClass('info', 'bg')
+
+border-green-200/500 -> getStatusColorClass('success', 'border')
+border-red-200/500 -> getStatusColorClass('error', 'border')
+border-yellow-200/500 -> getStatusColorClass('warning', 'border')
+border-blue-200/500 -> getStatusColorClass('info', 'border')
+
+CHART COLORS:
+-------------
+Replace hex values (#10B981, #F59E0B, #EF4444, #8884d8) with:
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))'
+]
+
+DIV TO CARD REPLACEMENTS:
+-------------------------
+// BEFORE:
+<div className="rounded-lg border p-4">
+
+// AFTER:
+<Card><CardContent className="pt-4">
+
+// BEFORE (colored):
+<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+
+// AFTER:
+<Card className={cn(getStatusColorClass('info', 'bg'), getStatusColorClass('info', 'border'))}>
+  <CardContent className="pt-4">
+
+CLASS MERGING:
+--------------
+// BEFORE:
+className={`base-class ${condition ? 'conditional-class' : ''}`}
+
+// AFTER:
+className={cn('base-class', condition && 'conditional-class')}
+
+================================================================================
+FILES ALREADY COMPLIANT
+================================================================================
+
+- All page.tsx wrapper files (routing only)
+- /frontend/components/expense-list.tsx
+- /frontend/components/resource-centre.tsx
+- /frontend/components/resource-centre/ResourceManager.tsx
+- /frontend/components/admin/rbac/RoleManagementDashboard.tsx
+- /frontend/components/admin/rbac/PermissionManagementDashboard.tsx
+- /frontend/components/admin/rbac/RoleCard.tsx
+- /frontend/components/system-settings.tsx
+- /frontend/components/organization-settings.tsx
+- /frontend/components/profile-settings.tsx
+- /frontend/components/viewer-dashboard-overview.tsx
+- Container dashboards (unified, admin, assignor, referee, viewer, etc.)
+
+================================================================================
+EXECUTION PRIORITY
+================================================================================
+
+PHASE 1 - HIGH PRIORITY (7 files):
+1. DynamicRolePageAccessManager.tsx
+2. RolePageAccessManager.tsx
+3. CerbosRoleEditor.tsx
+4. UnifiedRoleEditor.tsx
+5. ai-assignments-enterprise.tsx
+6. UserTable.tsx (major refactor)
+7. GameMobileCard.tsx + game-management.tsx + specialized-badges.tsx
+
+PHASE 2 - GAME/ASSIGNMENT FILES (7 files):
+8. game-assignment-board.tsx (50+ fixes)
+9. ai-assignments-simple.tsx
+10. my-assignments.tsx
+11. ai-assignments-page.tsx
+
+PHASE 3 - FINANCIAL FILES (5 files):
+12. financial-dashboard/page.tsx
+13. financial-dashboard.tsx
+14. budget-tracker.tsx
+15. expense-form.tsx
+16. expense-approval-dashboard.tsx
+
+PHASE 4 - DASHBOARD FILES (2 files):
+17. dashboard-overview.tsx
+18. referee-dashboard-overview.tsx
+
+PHASE 5 - USER/RESOURCE MANAGEMENT (6 files):
+19. employee-management.tsx
+20. referee-management.tsx
+21. UserManagementDashboard.tsx
+22. document-repository.tsx
+23. CategoryManagerDashboard.tsx
+
+PHASE 6 - RBAC/COMMUNICATION/SETTINGS (8 files):
+24. PermissionConfigurationDashboard.tsx
+25. UserRoleManager.tsx
+26. UnifiedAccessControlDashboard.tsx
+27. communications-management.tsx
+28. emergency-broadcast.tsx
+29. announcement-board.tsx
+30. security-audit.tsx
+31. workflow-management.tsx
+
+================================================================================
+REFERENCE FILES (DO NOT MODIFY)
+================================================================================
+
+Standard Card: /frontend/components/ui/card.tsx
+FilterableTable: /frontend/components/ui/filterable-table.tsx
+DataTable: /frontend/components/data-table/DataTable.tsx
+Theme Colors: /frontend/lib/theme-colors.ts
+Utils (cn): /frontend/lib/utils.ts
+Global CSS: /frontend/app/globals.css
+Specialized Badges: /frontend/components/ui/specialized-badges.tsx
+
+================================================================================
+END OF AUDIT REPORT
+================================================================================
