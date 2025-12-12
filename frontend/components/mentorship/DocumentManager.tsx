@@ -265,7 +265,7 @@ export function DocumentManager({
     const colors = {
       evaluation: 'bg-red-100 text-red-800',
       training: 'bg-blue-100 text-blue-800',
-      certification: 'bg-green-100 text-green-800',
+      certification: 'bg-emerald-100 text-emerald-800',
       feedback: 'bg-yellow-100 text-yellow-800',
       other: 'bg-gray-100 text-gray-800'
     }

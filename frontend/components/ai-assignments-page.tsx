@@ -365,7 +365,7 @@ export default function AIAssignmentsPage() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Assigned</Label>
-                      <div className="font-medium text-green-600">{result.assignmentsCreated}</div>
+                      <div className="font-medium text-emerald-600">{result.assignmentsCreated}</div>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Conflicts</Label>
@@ -1233,7 +1233,7 @@ function ResultDetails({ result }: { result: AIAssignmentResult }) {
               {detail.notes && (
                 <div className="space-y-2 mt-4">
                   <Label className="text-sm">Assignment Notes</Label>
-                  <div className="p-2 bg-green-50 text-green-700 rounded text-sm">
+                  <div className="p-2 bg-emerald-50 text-emerald-700 rounded text-sm">
                     {detail.notes}
                   </div>
                 </div>

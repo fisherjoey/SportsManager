@@ -221,7 +221,7 @@ export function GameManagement() {
       title: 'Assigned',
       value: filteredGames.filter((g) => g.status === 'assigned').length,
       icon: Users,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: 'This Week',

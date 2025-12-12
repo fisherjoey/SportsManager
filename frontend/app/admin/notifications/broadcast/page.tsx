@@ -283,9 +283,9 @@ function BroadcastNotificationPageContent() {
 
       {/* Success Message */}
       {lastSentResult && (
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
+        <Alert className="bg-emerald-50 border-emerald-200">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <AlertDescription className="text-emerald-800">
             Last broadcast successfully sent to {lastSentResult.createdCount} of {lastSentResult.recipientCount} users
           </AlertDescription>
         </Alert>

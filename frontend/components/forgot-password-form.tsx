@@ -36,8 +36,8 @@ export function ForgotPasswordForm() {
         <Card className="w-full max-w-md animate-in fade-in-50 slide-in-from-bottom-5">
           <CardHeader className="text-center space-y-2">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-green-400" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">Check your email</CardTitle>

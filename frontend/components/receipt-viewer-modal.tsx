@@ -233,7 +233,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
   const getStatusBadge = (status: string) => {
     switch (status) {
     case 'processed':
-      return <Badge variant="default" className="bg-green-500">Processed</Badge>
+      return <Badge variant="default" variant="success">Processed</Badge>
     case 'processing':
       return <Badge variant="secondary">Processing</Badge>
     case 'manual_review':
@@ -400,7 +400,7 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Total Amount</span>
                       </div>
-                      <p className="font-bold text-lg text-green-600">
+                      <p className="font-bold text-lg text-emerald-600">
                         {formatCurrency(receipt.extractedData.amount)}
                       </p>
                     </div>
@@ -425,18 +425,18 @@ export function ReceiptViewerModal({ receiptId, receipt: passedReceipt, open, on
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {reimbursementData?.reimbursement_user_email ? (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">
+                        <Check className="h-4 w-4 text-emerald-600" />
+                        <span className="text-sm font-medium text-emerald-800">
                           Assigned for Reimbursement
                         </span>
                       </div>
-                      <p className="text-sm text-green-700">
+                      <p className="text-sm text-emerald-700">
                         User: {reimbursementData.reimbursement_user_email}
                       </p>
                       {reimbursementData.reimbursement_notes && (
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-emerald-600 mt-1">
                           Notes: {reimbursementData.reimbursement_notes}
                         </p>
                       )}

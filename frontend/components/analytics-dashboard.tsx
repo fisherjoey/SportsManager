@@ -580,7 +580,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{formatCurrency(item.predictedSpend)}</p>
-                        <p className={`text-sm ${item.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        <p className={`text-sm ${item.variance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           {item.variance > 0 ? '+' : ''}{item.variance.toFixed(1)}%
                         </p>
                       </div>

@@ -66,7 +66,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
     case 'Competitive':
       return 'bg-blue-600'
     case 'Recreational':
-      return 'bg-green-600'
+      return 'bg-emerald-600'
     default:
       return 'bg-gray-600'
     }
@@ -191,7 +191,7 @@ export function AssignChunkDialog({ open, onOpenChange, chunk, availableReferees
                           {/* Availability Status */}
                           <div className="mt-2 flex items-center space-x-2">
                             {isAvailable ? (
-                              <Badge className="bg-green-600">Available</Badge>
+                              <Badge variant="success">Available</Badge>
                             ) : (
                               <Badge variant="destructive">Not Available</Badge>
                             )}

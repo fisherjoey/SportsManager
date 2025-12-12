@@ -359,7 +359,7 @@ export function LeagueCreation() {
       title: 'Total Teams',
       value: leagues.reduce((sum, league) => sum + (league.team_count || 0), 0),
       icon: Users,
-      color: 'text-green-600', 
+      color: 'text-emerald-600', 
       description: 'Teams across all leagues'
     },
     {
@@ -389,7 +389,7 @@ export function LeagueCreation() {
           <Sparkles className="h-3 w-3 mr-1" />
           Bulk Operations
         </Badge>
-        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => setShowBulkLeagueDialog(true)}>
+        <Button size="lg" className="" onClick={() => setShowBulkLeagueDialog(true)}>
           <Plus className="h-5 w-5 mr-2" />
           Create Leagues
         </Button>

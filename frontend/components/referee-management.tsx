@@ -244,7 +244,7 @@ export function RefereeManagement() {
       title: 'Active This Week',
       value: Array.isArray(referees) ? Math.floor(referees.length * 0.7) : 0,
       icon: Calendar,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: 'Available Now',
@@ -316,7 +316,7 @@ export function RefereeManagement() {
           'badge-referee-head': 'bg-red-100 text-red-800 border-red-200',
           'badge-referee-senior': 'bg-purple-100 text-purple-800 border-purple-200',
           'badge-referee-junior': 'bg-blue-100 text-blue-800 border-blue-200',
-          'badge-referee-rookie': 'bg-green-100 text-green-800 border-green-200',
+          'badge-referee-rookie': 'bg-emerald-100 text-emerald-800 border-emerald-200',
           'badge-referee-coach': 'bg-indigo-100 text-indigo-800 border-indigo-200',
           'badge-referee-base': 'bg-gray-100 text-gray-800 border-gray-200',
           'badge-default': 'bg-secondary text-secondary-foreground'
@@ -407,7 +407,7 @@ export function RefereeManagement() {
         const roleColors = {
           'Senior Referee': 'bg-purple-100 text-purple-800',
           'Junior Referee': 'bg-blue-100 text-blue-800', 
-          'Rookie Referee': 'bg-green-100 text-green-800',
+          'Rookie Referee': 'bg-emerald-100 text-emerald-800',
           'Evaluator': 'bg-emerald-100 text-emerald-800', 
           'Mentor': 'bg-indigo-100 text-indigo-800',
           'Regional Lead': 'bg-orange-100 text-orange-800',

@@ -175,7 +175,7 @@ export function RefereeDashboardOverview() {
                   {availableGames.map((game, index) => (
                     <div
                       key={game.id}
-                      className="flex items-center justify-between p-3 border rounded-lg border-green-200 animate-fade-in hover:shadow-md transition-shadow cursor-pointer"
+                      className="flex items-center justify-between p-3 border rounded-lg border-emerald-200 animate-fade-in hover:shadow-md transition-shadow cursor-pointer"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                   <div>
@@ -188,7 +188,7 @@ export function RefereeDashboardOverview() {
                     <p className="text-sm text-muted-foreground">{game.location}</p>
                   </div>
                   <div className="text-right">
-                    <Badge variant="outline" className="text-green-600 border-green-600">
+                    <Badge variant="outline" className="text-emerald-600 border-green-600">
                       Available
                     </Badge>
                     <p className="text-sm font-medium mt-1">${game.payRate}</p>

@@ -530,7 +530,7 @@ function BudgetTrackerInner() {
     if (utilization >= 75) {
       return { color: 'secondary', icon: Clock, text: 'On Track', bgColor: 'bg-blue-50 border-blue-200' }
     }
-    return { color: 'default', icon: CheckCircle, text: 'Under Budget', bgColor: 'bg-green-50 border-green-200' }
+    return { color: 'default', icon: CheckCircle, text: 'Under Budget', bgColor: 'bg-emerald-50 border-emerald-200' }
   }
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
@@ -1094,7 +1094,7 @@ function BudgetTrackerInner() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Remaining</p>
-                        <p className="text-xl font-bold text-green-600">
+                        <p className="text-xl font-bold text-emerald-600">
                           {formatCurrency(budget.remaining_amount || (budget.allocated_amount - (budget.spent_amount || 0)))}
                         </p>
                       </div>
@@ -1234,7 +1234,7 @@ function BudgetTrackerInner() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-emerald-600">
                     {budgets.filter(b => (b.utilization_rate || 0) < 75).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Budgets Under 75%</p>

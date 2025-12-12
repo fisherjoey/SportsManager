@@ -420,7 +420,7 @@ export function CreditCardSelector({
     if (utilization >= 90) return 'bg-red-500'
     if (utilization >= 75) return 'bg-orange-500'
     if (utilization >= 50) return 'bg-yellow-500'
-    return 'bg-green-500'
+    return 'bg-emerald-500'
   }
 
   const formatCurrency = (amount: number) => {
@@ -567,7 +567,7 @@ export function CreditCardSelector({
                       <div className="flex flex-col items-end gap-2">
                         {getStatusBadge(card.status)}
                         {isSelected && (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-5 w-5 text-emerald-600" />
                         )}
                       </div>
                     </div>
@@ -590,7 +590,7 @@ export function CreditCardSelector({
                           <p className={`font-semibold ${
                             expectedAmount > 0 && card.remainingLimit < expectedAmount 
                               ? 'text-red-600' 
-                              : 'text-green-600'
+                              : 'text-emerald-600'
                           }`}>
                             {formatCurrency(card.remainingLimit)}
                           </p>

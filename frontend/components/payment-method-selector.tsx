@@ -208,7 +208,7 @@ export function PaymentMethodSelector({
     if (utilization >= 90) return 'bg-red-500'
     if (utilization >= 75) return 'bg-orange-500'
     if (utilization >= 50) return 'bg-yellow-500'
-    return 'bg-green-500'
+    return 'bg-emerald-500'
   }
 
   const getSuggestionMethod = (methodId: string) => {
@@ -298,7 +298,7 @@ export function PaymentMethodSelector({
                           </Badge>
                         )}
                         {selectedMethod?.id === method.id && (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-5 w-5 text-emerald-600" />
                         )}
                       </div>
                     </div>
@@ -347,7 +347,7 @@ export function PaymentMethodSelector({
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <CheckCircle className="h-3 w-3 text-emerald-600" />
                           Auto-approved
                         </div>
                       )}
@@ -412,7 +412,7 @@ export function PaymentMethodSelector({
                       </div>
                       
                       {selectedMethod?.id === method.id && (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
                       )}
                     </div>
                   </CardHeader>
@@ -451,7 +451,7 @@ export function PaymentMethodSelector({
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <CheckCircle className="h-3 w-3 text-emerald-600" />
                           Auto-approved
                         </div>
                       )}

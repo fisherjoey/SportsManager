@@ -428,9 +428,9 @@ export function ExpenseListEnhanced({
       draft: { variant: 'outline', icon: Edit3, text: 'Draft', color: 'text-gray-600' },
       submitted: { variant: 'secondary', icon: Clock, text: 'Submitted', color: 'text-blue-600' },
       pending: { variant: 'secondary', icon: Clock, text: 'Pending', color: 'text-orange-600' },
-      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: 'text-green-600' },
+      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: 'text-emerald-600' },
       rejected: { variant: 'destructive', icon: AlertTriangle, text: 'Rejected', color: 'text-red-600' },
-      paid: { variant: 'default', icon: CheckCircle, text: 'Paid', color: 'text-green-600' }
+      paid: { variant: 'default', icon: CheckCircle, text: 'Paid', color: 'text-emerald-600' }
     }
 
     const config = variants[expense.status as keyof typeof variants] || variants.draft
@@ -448,7 +448,7 @@ export function ExpenseListEnhanced({
     const variants = {
       person_reimbursement: { icon: User, text: 'Reimbursement', color: 'bg-blue-100 text-blue-700' },
       purchase_order: { icon: FileText, text: 'Purchase Order', color: 'bg-purple-100 text-purple-700' },
-      credit_card: { icon: CreditCard, text: 'Credit Card', color: 'bg-green-100 text-green-700' },
+      credit_card: { icon: CreditCard, text: 'Credit Card', color: 'bg-emerald-100 text-emerald-700' },
       direct_vendor: { icon: Building, text: 'Direct Vendor', color: 'bg-orange-100 text-orange-700' }
     }
 

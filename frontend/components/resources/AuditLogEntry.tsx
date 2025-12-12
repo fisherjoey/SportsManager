@@ -66,12 +66,12 @@ export function AuditLogEntry({
       <div className="space-y-3">
         {Object.keys(added).length > 0 && (
           <div>
-            <h5 className="text-xs font-medium text-green-700 mb-2 flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            <h5 className="text-xs font-medium text-emerald-700 mb-2 flex items-center gap-1">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
               Added Fields
             </h5>
-            <div className="bg-green-50 border border-green-200 rounded-md p-3">
-              <pre className="text-xs text-green-800 whitespace-pre-wrap">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3">
+              <pre className="text-xs text-emerald-800 whitespace-pre-wrap">
                 {JSON.stringify(added, null, 2)}
               </pre>
             </div>
@@ -115,9 +115,9 @@ export function AuditLogEntry({
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-green-600 font-medium mb-1">New Value</div>
-                      <div className="bg-green-50 border border-green-200 rounded p-2">
-                        <pre className="text-xs text-green-800 whitespace-pre-wrap">
+                      <div className="text-xs text-emerald-600 font-medium mb-1">New Value</div>
+                      <div className="bg-emerald-50 border border-emerald-200 rounded p-2">
+                        <pre className="text-xs text-emerald-800 whitespace-pre-wrap">
                           {typeof changes.new === 'object' 
                             ? JSON.stringify(changes.new, null, 2)
                             : String(changes.new)
@@ -311,9 +311,9 @@ export function AuditLogEntry({
                       
                       {entry.new_values && (
                         <div>
-                          <h4 className="text-sm font-medium mb-2 text-green-700">New Values</h4>
-                          <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                            <pre className="text-xs text-green-800 whitespace-pre-wrap overflow-auto">
+                          <h4 className="text-sm font-medium mb-2 text-emerald-700">New Values</h4>
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3">
+                            <pre className="text-xs text-emerald-800 whitespace-pre-wrap overflow-auto">
                               {JSON.stringify(entry.new_values, null, 2)}
                             </pre>
                           </div>
@@ -359,7 +359,7 @@ export function AuditLogEntryCompact({
       {/* Status Indicator */}
       <div className="flex-shrink-0">
         {entry.success ? (
-          <CheckCircle className="w-4 h-4 text-green-600" />
+          <CheckCircle className="w-4 h-4 text-emerald-600" />
         ) : (
           <AlertCircle className="w-4 h-4 text-red-600" />
         )}

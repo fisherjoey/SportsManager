@@ -170,7 +170,7 @@ export function MenteesList({
           rookie: 'bg-gray-100 text-gray-800',
           junior: 'bg-blue-100 text-blue-800',
           developing: 'bg-yellow-100 text-yellow-800',
-          advanced: 'bg-green-100 text-green-800'
+          advanced: 'bg-emerald-100 text-emerald-800'
         }
         
         return (

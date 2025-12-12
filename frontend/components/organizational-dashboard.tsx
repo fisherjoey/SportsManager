@@ -100,7 +100,7 @@ export function OrganizationalDashboard({ className }: OrganizationalDashboardPr
 
   const getComplianceStatusBadge = (status: string) => {
     const variants = {
-      compliant: { variant: 'default', icon: CheckCircle, text: 'Compliant', color: 'text-green-600' },
+      compliant: { variant: 'default', icon: CheckCircle, text: 'Compliant', color: 'text-emerald-600' },
       warning: { variant: 'secondary', icon: AlertTriangle, text: 'Warning', color: 'text-yellow-600' },
       critical: { variant: 'destructive', icon: AlertTriangle, text: 'Critical', color: 'text-red-600' }
     }

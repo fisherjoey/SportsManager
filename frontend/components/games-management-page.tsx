@@ -828,7 +828,7 @@ export function GamesManagementPage({ initialDateFilter }: GamesManagementPagePr
       title: 'Assigned',
       value: filteredGames.filter((g) => g.status === 'assigned').length,
       icon: Users,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: selectedDate !== 'all' ? 'Up for Grabs' : 'This Week',

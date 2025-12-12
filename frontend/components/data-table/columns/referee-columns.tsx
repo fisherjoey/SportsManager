@@ -113,7 +113,7 @@ export const createRefereeColumns = (actions?: RefereeColumnActions): ColumnDef<
     cell: ({ row }) => {
       const level = row.getValue('level') as string
       const levelColors = {
-        'Rookie': 'bg-green-100 text-green-800 border-green-200',
+        'Rookie': 'bg-emerald-100 text-emerald-800 border-emerald-200',
         'Junior': 'bg-blue-100 text-blue-800 border-blue-200', 
         'Senior': 'bg-purple-100 text-purple-800 border-purple-200'
       }

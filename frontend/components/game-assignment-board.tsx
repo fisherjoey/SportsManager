@@ -1435,7 +1435,7 @@ export function GameAssignmentBoard() {
                           <Button
                             size="sm"
                             onClick={() => acceptAISuggestion(suggestion)}
-                            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                            className=""
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Accept
@@ -1464,7 +1464,7 @@ export function GameAssignmentBoard() {
                             <div className="text-xs text-muted-foreground">Proximity</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            <div className="text-2xl font-bold text-emerald-600 dark:text-green-400">
                               {Math.round(suggestion.factors.availability * 100)}%
                             </div>
                             <div className="text-xs text-muted-foreground">Availability</div>
@@ -1538,7 +1538,7 @@ export function GameAssignmentBoard() {
                         <Button
                           size="sm"
                           onClick={() => repeatHistoricPattern(pattern)}
-                          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                          className=""
                         >
                           <Repeat className="h-4 w-4 mr-1" />
                           Apply Pattern

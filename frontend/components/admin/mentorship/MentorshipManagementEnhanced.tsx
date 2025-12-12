@@ -512,7 +512,7 @@ export function MentorshipManagementEnhanced() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+                <div className="text-2xl font-bold text-emerald-600">{stats.active}</div>
                 <p className="text-xs text-muted-foreground">Active</p>
               </CardContent>
             </Card>

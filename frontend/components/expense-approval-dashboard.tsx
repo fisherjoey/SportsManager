@@ -253,7 +253,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
             <>
               <Button 
                 onClick={handleBulkApprove}
-                className="bg-green-600 hover:bg-green-700"
+                className=""
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Approve {selectedExpenses.length}
@@ -406,7 +406,7 @@ export function ExpenseApprovalDashboard({ className }: ExpenseApprovalDashboard
                     
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className=""
                       onClick={async () => {
                         try {
                           await apiClient.approveExpense(expense.id, {

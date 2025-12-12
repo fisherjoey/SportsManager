@@ -135,7 +135,7 @@ export function PermissionSelector({
   const getCategoryColor = (category: string) => {
     const colorMap: { [key: string]: string } = {
       'games': 'bg-blue-500',
-      'assignments': 'bg-green-500',
+      'assignments': 'bg-emerald-500',
       'referees': 'bg-purple-500',
       'financial': 'bg-yellow-500',
       'admin': 'bg-red-500',

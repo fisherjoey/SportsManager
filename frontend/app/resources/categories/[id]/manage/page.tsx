@@ -281,7 +281,7 @@ function ActivityFeed({ categoryId }: { categoryId: string }) {
   const getActivityIcon = (type: string) => {
     switch (type) {
     case 'upload':
-      return <FileText className="h-4 w-4 text-green-600" />
+      return <FileText className="h-4 w-4 text-emerald-600" />
     case 'download':
       return <Activity className="h-4 w-4 text-blue-600" />
     case 'permission_change':
@@ -383,7 +383,7 @@ export default function CategoryManagePage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
     case 'active':
-      return <CheckCircle className="h-4 w-4 text-green-600" />
+      return <CheckCircle className="h-4 w-4 text-emerald-600" />
     case 'inactive':
       return <AlertCircle className="h-4 w-4 text-yellow-600" />
     case 'archived':

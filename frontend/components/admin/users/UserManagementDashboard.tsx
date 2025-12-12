@@ -338,7 +338,7 @@ export function UserManagementDashboard() {
                 </div>
               )}
               {user.certifications && user.certifications.length > 0 && (
-                <div className="text-xs text-green-600">
+                <div className="text-xs text-emerald-600">
                   {user.certifications.slice(0, 2).join(', ')}
                   {user.certifications.length > 2 && ` +${user.certifications.length - 2}`}
                 </div>
@@ -392,7 +392,7 @@ export function UserManagementDashboard() {
           const availabilityStatus = user.availability_status || 'active'
           const accountStatus = user.is_active !== false ? 'active' : 'inactive'
           const statusColors = {
-            'active': 'bg-green-100 text-green-800 border-green-200',
+            'active': 'bg-emerald-100 text-emerald-800 border-emerald-200',
             'inactive': 'bg-red-100 text-red-800 border-red-200',
             'on_break': 'bg-yellow-100 text-yellow-800 border-yellow-200'
           }

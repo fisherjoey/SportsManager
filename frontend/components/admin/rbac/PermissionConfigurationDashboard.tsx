@@ -195,7 +195,7 @@ export function PermissionConfigurationDashboard() {
 
   const getRiskBadgeColor = (level: string) => {
     switch (level) {
-    case 'low': return 'bg-green-100 text-green-800'
+    case 'low': return 'bg-emerald-100 text-emerald-800'
     case 'medium': return 'bg-yellow-100 text-yellow-800'
     case 'high': return 'bg-orange-100 text-orange-800'
     case 'critical': return 'bg-red-100 text-red-800'
@@ -360,7 +360,7 @@ export function PermissionConfigurationDashboard() {
                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full ${
-                                  level === 'low' ? 'bg-green-500' :
+                                  level === 'low' ? 'bg-emerald-500' :
                                     level === 'medium' ? 'bg-yellow-500' :
                                       level === 'high' ? 'bg-orange-500' :
                                         'bg-red-500'

@@ -54,7 +54,7 @@ export function LocationDetailsDialog({ open, onOpenChange, location }: Location
             </div>
             {location.parkingSpaces && (
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <Parking className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                <Parking className="h-5 w-5 mx-auto mb-1 text-emerald-600" />
                 <p className="text-lg font-semibold">{location.parkingSpaces}</p>
                 <p className="text-xs text-muted-foreground">Parking</p>
               </div>
@@ -136,7 +136,7 @@ export function LocationDetailsDialog({ open, onOpenChange, location }: Location
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {location.accessibilityFeatures.map((feature, idx) => (
-                    <Badge key={idx} variant="outline" className="text-green-600 border-green-600">
+                    <Badge key={idx} variant="outline" className="text-emerald-600 border-green-600">
                       {feature}
                     </Badge>
                   ))}

@@ -417,7 +417,7 @@ export function DashboardOverview() {
                 <div className="text-xs text-muted-foreground">Total Assignments</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{refereePerformance.completionRate.toFixed(1)}%</div>
+                <div className="text-2xl font-bold text-emerald-600">{refereePerformance.completionRate.toFixed(1)}%</div>
                 <div className="text-xs text-muted-foreground">Completion Rate</div>
               </div>
               <div className="text-center">
@@ -438,11 +438,11 @@ export function DashboardOverview() {
             {/* Performance Trend */}
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center">
-                <TrendingUp className={`h-4 w-4 mr-2 ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`} />
+                <TrendingUp className={`h-4 w-4 mr-2 ${isPositiveTrend ? 'text-emerald-600' : 'text-red-600'}`} />
                 <span className="text-sm font-medium">Weekly Trend</span>
               </div>
               <div className="text-right">
-                <span className={`text-sm font-medium ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-sm font-medium ${isPositiveTrend ? 'text-emerald-600' : 'text-red-600'}`}>
                   {isPositiveTrend ? '+' : ''}{trendChange} assignments
                 </span>
                 <div className="text-xs text-muted-foreground">vs last week</div>
@@ -506,7 +506,7 @@ export function DashboardOverview() {
             <CardHeader>
               <CollapsibleTrigger className="flex items-center justify-between w-full md:cursor-default">
                 <div className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-green-600" />
+                  <Calendar className="h-5 w-5 mr-2 text-emerald-600" />
                   <CardTitle>Upcoming Games</CardTitle>
                 </div>
                 <ChevronDown className={`h-5 w-5 transition-transform md:hidden ${upcomingGamesOpen ? 'rotate-180' : ''}`} />
@@ -657,7 +657,7 @@ export function DashboardOverview() {
                           label="refs" 
                           variant="destructive" 
                         />
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Button size="sm" className="">
                           <Plus className="h-3 w-3 mr-1" />
                           Assign
                         </Button>

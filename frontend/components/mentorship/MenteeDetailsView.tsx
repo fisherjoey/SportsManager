@@ -239,8 +239,8 @@ export function MenteeDetailsView({
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-50">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-full bg-emerald-50">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <div className="text-lg font-semibold">
@@ -531,7 +531,7 @@ function ProfileTab({ mentee, editing, onEdit, onSave, onCancel }: {
                   <ul className="space-y-1">
                     {mentee.mentee_profile.strengths.map((strength, index) => (
                       <li key={index} className="text-sm flex items-center gap-2">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <CheckCircle className="h-3 w-3 text-emerald-600" />
                         {strength}
                       </li>
                     ))}

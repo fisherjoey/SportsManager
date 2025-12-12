@@ -157,7 +157,7 @@ export default function MentorshipPage() {
       case 'developing':
         return 'bg-yellow-100 text-yellow-800'
       case 'advanced':
-        return 'bg-green-100 text-green-800'
+        return 'bg-emerald-100 text-emerald-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -166,7 +166,7 @@ export default function MentorshipPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200'
       case 'completed':
         return 'bg-blue-100 text-blue-800 border-blue-200'
       case 'paused':
@@ -514,7 +514,7 @@ export default function MentorshipPage() {
                       <label className="text-sm font-medium">Strengths</label>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {menteeProfile.profile.strengths.map((strength, index) => (
-                          <Badge key={index} variant="outline" className="bg-green-50 text-green-700">
+                          <Badge key={index} variant="outline" className="bg-emerald-50 text-emerald-700">
                             {strength}
                           </Badge>
                         ))}

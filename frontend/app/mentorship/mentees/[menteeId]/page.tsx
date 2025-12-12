@@ -416,7 +416,7 @@ export default function MenteeDetailPage({ params }: PageProps) {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
                   <div className="text-2xl font-bold">{profile.stats.completedGames}</div>
                   <p className="text-xs text-muted-foreground">Completed</p>
                 </div>
@@ -535,7 +535,7 @@ export default function MenteeDetailPage({ params }: PageProps) {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    <TrendingUp className="h-5 w-5 text-emerald-600" />
                     Strengths
                   </CardTitle>
                 </CardHeader>

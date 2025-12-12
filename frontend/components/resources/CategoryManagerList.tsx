@@ -186,7 +186,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
     case 'manager':
       return <Shield className="h-4 w-4 text-blue-600" />
     case 'contributor':
-      return <User className="h-4 w-4 text-green-600" />
+      return <User className="h-4 w-4 text-emerald-600" />
     default:
       return <User className="h-4 w-4 text-gray-600" />
     }
@@ -199,7 +199,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
     case 'manager':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
     case 'contributor':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-green-200'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
@@ -208,7 +208,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
   const getStatusIcon = (status: string) => {
     switch (status) {
     case 'active':
-      return <CheckCircle className="h-4 w-4 text-green-600" />
+      return <CheckCircle className="h-4 w-4 text-emerald-600" />
     case 'inactive':
       return <XCircle className="h-4 w-4 text-red-600" />
     case 'pending':
@@ -221,7 +221,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
   const getStatusColor = (status: string) => {
     switch (status) {
     case 'active':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-green-200'
     case 'inactive':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
     case 'pending':
@@ -368,7 +368,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
                       <SelectContent>
                         <SelectItem value="contributor">
                           <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-green-600" />
+                            <User className="h-4 w-4 text-emerald-600" />
                             <div>
                               <div className="font-medium">Contributor</div>
                               <div className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS.contributor}</div>
@@ -598,7 +598,7 @@ export function CategoryManagerList({ categoryId, categoryName, className, canMa
                 <SelectContent>
                   <SelectItem value="contributor">
                     <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-green-600" />
+                      <User className="h-4 w-4 text-emerald-600" />
                       <div>
                         <div className="font-medium">Contributor</div>
                         <div className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS.contributor}</div>

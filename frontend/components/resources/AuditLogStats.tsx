@@ -105,7 +105,7 @@ export function AuditLogStatsComponent({
         value: `${successRate}%`,
         description: `${stats.total_entries - Math.round(stats.total_entries * stats.error_rate)} successful actions`,
         icon: CheckCircle,
-        color: successRate > 90 ? 'text-green-600' : successRate > 70 ? 'text-yellow-600' : 'text-red-600',
+        color: successRate > 90 ? 'text-emerald-600' : successRate > 70 ? 'text-yellow-600' : 'text-red-600',
         badge: successRate > 95 ? 'Excellent' : successRate > 85 ? 'Good' : successRate > 70 ? 'Fair' : 'Poor'
       },
       {
@@ -113,7 +113,7 @@ export function AuditLogStatsComponent({
         value: `${errorRate}%`,
         description: `${Math.round(stats.total_entries * stats.error_rate)} failed actions`,
         icon: AlertTriangle,
-        color: errorRate < 5 ? 'text-green-600' : errorRate < 15 ? 'text-yellow-600' : 'text-red-600',
+        color: errorRate < 5 ? 'text-emerald-600' : errorRate < 15 ? 'text-yellow-600' : 'text-red-600',
         badge: errorRate < 2 ? 'Low' : errorRate < 10 ? 'Medium' : 'High'
       },
       {
@@ -121,7 +121,7 @@ export function AuditLogStatsComponent({
         value: trend ? `${trend.change > 0 ? '+' : ''}${trend.change}` : 'N/A',
         description: trend ? `${trend.percentChange}% vs previous hour` : 'No trend data',
         icon: trend?.isIncreasing ? TrendingUp : TrendingDown,
-        color: trend?.isIncreasing ? 'text-green-600' : 'text-red-600'
+        color: trend?.isIncreasing ? 'text-emerald-600' : 'text-red-600'
       }
     ]
 

@@ -302,7 +302,7 @@ export function TournamentGenerator() {
       title: 'Tournament Formats',
       value: tournamentFormats.length,
       icon: Settings,
-      color: 'text-green-600',
+      color: 'text-emerald-600',
       description: 'Format options available'
     },
     {
@@ -328,11 +328,7 @@ export function TournamentGenerator() {
         title="Tournament Generator"
         description="Create competitive tournaments with automated scheduling and multiple formats"
       >
-        <Badge variant="outline" className="text-blue-600 border-blue-600">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Smart Scheduling
-        </Badge>
-        <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => setShowTournamentDialog(true)}>
+        <Button size="lg" onClick={() => setShowTournamentDialog(true)}>
           <Trophy className="h-5 w-5 mr-2" />
           Create Tournament
         </Button>
@@ -511,7 +507,7 @@ export function TournamentGenerator() {
                             </div>
                             <p className="text-sm text-muted-foreground mb-2">{format.description}</p>
                             <div className="flex items-center gap-4 text-xs">
-                              <Badge variant="outline" className="text-green-700 bg-green-50">
+                              <Badge variant="outline" className="text-emerald-600 bg-emerald-500/10">
                                 {format.pros[0]}
                               </Badge>
                               <span className="text-muted-foreground">{format.suitable_for}</span>
@@ -778,7 +774,7 @@ export function TournamentGenerator() {
                         </div>
                         
                         <div className="space-y-1">
-                          <div className="text-xs text-green-700">
+                          <div className="text-xs text-emerald-600">
                             ✓ {format.pros.slice(0, 2).join(', ')}
                           </div>
                           <div className="text-xs text-red-700">
@@ -820,7 +816,7 @@ export function TournamentGenerator() {
                       <div className="text-xs text-muted-foreground">Total Games</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-green-600">{generatedTournament.teams.length}</div>
+                      <div className="text-2xl font-bold text-emerald-600">{generatedTournament.teams.length}</div>
                       <div className="text-xs text-muted-foreground">Teams</div>
                     </div>
                     <div>
@@ -880,7 +876,7 @@ export function TournamentGenerator() {
             </Button>
             <Button 
               onClick={() => setShowCreateGamesDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
+              
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Create Games

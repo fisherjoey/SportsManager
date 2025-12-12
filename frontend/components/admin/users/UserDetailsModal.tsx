@@ -402,7 +402,7 @@ export function UserDetailsModal({ user, open, onClose, onEdit }: UserDetailsMod
                   
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Wage per Game</p>
-                    <p className="text-lg font-semibold text-green-600">
+                    <p className="text-lg font-semibold text-emerald-600">
                       ${user.referee_profile.wage_amount?.toFixed(2) || '0.00'}
                     </p>
                   </div>

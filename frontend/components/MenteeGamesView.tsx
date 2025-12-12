@@ -123,7 +123,7 @@ export function MenteeGamesView({
         title: 'Completed',
         value: completedGames.length,
         icon: Award,
-        color: 'text-green-600'
+        color: 'text-emerald-600'
       },
       {
         title: 'Upcoming',
@@ -234,7 +234,7 @@ export function MenteeGamesView({
       accessor: (game) => (
         <div>
           {game.calculated_wage ? (
-            <p className="font-medium text-green-600">
+            <p className="font-medium text-emerald-600">
               ${parseFloat(game.calculated_wage.toString()).toFixed(2)}
             </p>
           ) : (

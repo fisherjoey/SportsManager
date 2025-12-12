@@ -236,14 +236,14 @@ export default function AIAssignmentDemo() {
                     
                     <div className="space-y-2">
                       {gameSuggestions.map((suggestion, index) => (
-                        <div key={index} className="bg-green-50 border border-green-200 rounded p-3">
+                        <div key={index} className="bg-emerald-50 border border-emerald-200 rounded p-3">
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <p className="font-medium text-green-900">{suggestion.refereeName}</p>
-                              <p className="text-sm text-green-700">{suggestion.reasoning}</p>
+                              <p className="text-sm text-emerald-700">{suggestion.reasoning}</p>
                             </div>
                             <div className="text-right">
-                              <Badge className="bg-green-600">
+                              <Badge variant="success">
                                 {Math.round(suggestion.confidence * 100)}% confidence
                               </Badge>
                             </div>
@@ -262,7 +262,7 @@ export default function AIAssignmentDemo() {
               </Button>
               <Button 
                 onClick={applySuggestions}
-                className="bg-green-600 hover:bg-green-700"
+                className=""
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Apply All Suggestions
@@ -288,8 +288,8 @@ export default function AIAssignmentDemo() {
                 </div>
                 <p className="text-sm text-gray-600">📍 {referee.location}</p>
                 <div className="flex items-center mt-2">
-                  <CheckCircle2 className="h-3 w-3 text-green-600 mr-1" />
-                  <span className="text-sm text-green-600">Available</span>
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600 mr-1" />
+                  <span className="text-sm text-emerald-600">Available</span>
                 </div>
               </div>
             ))}

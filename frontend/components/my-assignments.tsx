@@ -114,7 +114,7 @@ export function MyAssignments() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -184,7 +184,7 @@ export function MyAssignments() {
                         <Badge 
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
                           className={
-                            assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
+                            assignment.status === 'accepted' ? 'text-emerald-600 border-green-600' :
                               assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
                                 'text-red-600 border-red-600'
                           }
@@ -206,7 +206,7 @@ export function MyAssignments() {
                         <div className="text-right">
                           <Badge variant="secondary" className="mb-1">{assignment.game?.level}</Badge>
                           <div className="flex items-center justify-end">
-                            <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                            <DollarSign className="h-4 w-4 mr-1 text-emerald-600" />
                             <span className="font-medium">
                               {assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate}
                             </span>
@@ -231,7 +231,7 @@ export function MyAssignments() {
                             size="mobile"
                             variant="outline"
                             onClick={() => handleAcceptDecline(assignment.id, 'accept')}
-                            className="flex-1 text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100"
+                            className="flex-1 text-emerald-600 border-green-600 hover:bg-emerald-50 active:bg-emerald-100"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Accept Assignment
@@ -248,7 +248,7 @@ export function MyAssignments() {
                         </div>
                       )}
                       {assignment.status === 'accepted' && (
-                        <div className="text-center text-green-600 font-medium pt-2">
+                        <div className="text-center text-emerald-600 font-medium pt-2">
                           ✓ Assignment Confirmed
                         </div>
                       )}
@@ -308,7 +308,7 @@ export function MyAssignments() {
                       <TableCell>
                         <div className="flex flex-col">
                           <div className="flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                            <DollarSign className="h-4 w-4 mr-1 text-emerald-600" />
                             {assignment.calculatedWage || assignment.game?.finalWage || assignment.game?.payRate}
                           </div>
                           {assignment.game?.wageMultiplier && assignment.game?.wageMultiplier !== 1.0 && (
@@ -325,7 +325,7 @@ export function MyAssignments() {
                         <Badge 
                           variant={assignment.status === 'accepted' ? 'default' : assignment.status === 'pending' ? 'outline' : 'destructive'}
                           className={
-                            assignment.status === 'accepted' ? 'text-green-600 border-green-600' :
+                            assignment.status === 'accepted' ? 'text-emerald-600 border-green-600' :
                               assignment.status === 'pending' ? 'text-blue-600 border-blue-600' :
                                 'text-red-600 border-red-600'
                           }
@@ -342,7 +342,7 @@ export function MyAssignments() {
                               size="mobileSm"
                               variant="outline"
                               onClick={() => handleAcceptDecline(assignment.id, 'accept')}
-                              className="text-green-600 border-green-600 hover:bg-green-50 active:bg-green-100 min-w-[44px] touch-manipulation"
+                              className="text-emerald-600 border-green-600 hover:bg-emerald-50 active:bg-emerald-100 min-w-[44px] touch-manipulation"
                             >
                               <CheckCircle className="h-4 w-4 md:mr-1" />
                               <span className="hidden md:inline">Accept</span>
@@ -359,7 +359,7 @@ export function MyAssignments() {
                           </div>
                         )}
                         {assignment.status === 'accepted' && (
-                          <span className="text-sm text-green-600">Confirmed</span>
+                          <span className="text-sm text-emerald-600">Confirmed</span>
                         )}
                         {assignment.status === 'declined' && (
                           <span className="text-sm text-red-600">Declined</span>
@@ -407,7 +407,7 @@ export function MyAssignments() {
                         </p>
                       )}
                     </div>
-                    <Badge variant="outline" className="text-green-600 border-green-600 mt-1">
+                    <Badge variant="outline" className="text-emerald-600 border-green-600 mt-1">
                       Completed
                     </Badge>
                   </div>

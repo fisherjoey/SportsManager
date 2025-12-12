@@ -567,7 +567,7 @@ export function AIAssignmentsEnterprise() {
                     onClick={handleBulkAssignment}
                     disabled={isGenerating}
                     size="lg"
-                    className="bg-green-600 hover:bg-green-700"
+                    className=""
                   >
                     {isGenerating ? (
                       <>
@@ -906,7 +906,7 @@ export function AIAssignmentsEnterprise() {
                             <Button
                               size="sm"
                               onClick={() => handleApplyIndividualAssignment(assignment.gameId)}
-                              className="bg-green-600 hover:bg-green-700"
+                              className=""
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Apply

@@ -370,7 +370,7 @@ export function UserRoleManager({ role, open, onClose, onSuccess }: UserRoleMana
                           </Badge>
                         )}
                         {selectedUsers.has(user.id) && currentRoleUsers.has(user.id) && (
-                          <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400">
+                          <Badge variant="outline" className="text-xs text-emerald-600 dark:text-green-400">
                             ✓ Has role
                           </Badge>
                         )}

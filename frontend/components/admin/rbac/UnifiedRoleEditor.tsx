@@ -563,13 +563,13 @@ export function UnifiedRoleEditor({ role, open, onClose, onSuccess }: UnifiedRol
                                 return (
                                   <div
                                     key={page.id}
-                                    className={`flex items-center space-x-2 p-2 rounded-md ${hasAccess ? 'bg-green-50 dark:bg-green-950' : 'bg-gray-50 dark:bg-gray-900 opacity-60'}`}
+                                    className={`flex items-center space-x-2 p-2 rounded-md ${hasAccess ? 'bg-emerald-50 dark:bg-emerald-950' : 'bg-gray-50 dark:bg-gray-900 opacity-60'}`}
                                   >
-                                    <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                    <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                                     <div className="flex-1">
                                       <span className="text-sm">{page.label}</span>
                                       {hasAccess && grantingPerms.length > 0 && (
-                                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                                        <span className="ml-2 text-xs text-emerald-600 dark:text-green-400">
                                           via {grantingPerms[0]}{grantingPerms.length > 1 ? ` +${grantingPerms.length - 1} more` : ''}
                                         </span>
                                       )}

@@ -373,7 +373,7 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
       ]
       
       const levelColors = {
-        'Recreational': 'bg-green-100 text-green-800 border-green-200',
+        'Recreational': 'bg-emerald-100 text-emerald-800 border-emerald-200',
         'Competitive': 'bg-yellow-100 text-yellow-800 border-yellow-200', 
         'Elite': 'bg-red-100 text-red-800 border-red-200'
       }
@@ -516,7 +516,7 @@ export const createGameColumns = (actions?: GameColumnActions): ColumnDef<Game>[
         if (div.includes('Division 1')) return 'bg-red-100 text-red-800'
         if (div.includes('Division 2')) return 'bg-orange-100 text-orange-800'
         if (div.includes('Club')) return 'bg-blue-100 text-blue-800'
-        if (div.includes('REC')) return 'bg-green-100 text-green-800'
+        if (div.includes('REC')) return 'bg-emerald-100 text-emerald-800'
         return 'bg-gray-100 text-gray-800'
       }
       

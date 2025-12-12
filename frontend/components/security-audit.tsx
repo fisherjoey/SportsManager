@@ -176,7 +176,7 @@ export function SecurityAudit() {
     case 'medium':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
     case 'low':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-green-400'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
     }
@@ -357,7 +357,7 @@ export function SecurityAudit() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-green-500" />
                     <div>
@@ -365,7 +365,7 @@ export function SecurityAudit() {
                       <p className="text-sm text-muted-foreground">All systems operational</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-green-400">
                     Secure
                   </Badge>
                 </div>

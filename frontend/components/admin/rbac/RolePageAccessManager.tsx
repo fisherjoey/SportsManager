@@ -430,7 +430,7 @@ export function RolePageAccessManager() {
                           <div 
                             key={page.path}
                             className={`rounded-lg border p-4 ${
-                              pageAccess[page.path] ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''
+                              pageAccess[page.path] ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20' : ''
                             }`}
                           >
                             <div className="flex items-start justify-between">
@@ -457,7 +457,7 @@ export function RolePageAccessManager() {
                               </div>
                               <div className="ml-2">
                                 {pageAccess[page.path] ? (
-                                  <Eye className="h-4 w-4 text-green-600" />
+                                  <Eye className="h-4 w-4 text-emerald-600" />
                                 ) : (
                                   <EyeOff className="h-4 w-4 text-muted-foreground" />
                                 )}

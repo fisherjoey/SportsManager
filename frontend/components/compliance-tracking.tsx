@@ -142,7 +142,7 @@ export function ComplianceTracking() {
     const variants = {
       pending: { variant: 'secondary', icon: Clock, text: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
       in_progress: { variant: 'default', icon: Clock, text: 'In Progress', color: 'bg-blue-100 text-blue-800' },
-      completed: { variant: 'default', icon: CheckCircle, text: 'Completed', color: 'bg-green-100 text-green-800' },
+      completed: { variant: 'default', icon: CheckCircle, text: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
       overdue: { variant: 'destructive', icon: AlertTriangle, text: 'Overdue', color: 'bg-red-100 text-red-800' },
       cancelled: { variant: 'outline', icon: Clock, text: 'Cancelled', color: 'bg-gray-100 text-gray-800' }
     }
@@ -160,7 +160,7 @@ export function ComplianceTracking() {
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
-      low: { variant: 'outline', icon: CheckCircle, text: 'Low', color: 'bg-green-100 text-green-800' },
+      low: { variant: 'outline', icon: CheckCircle, text: 'Low', color: 'bg-emerald-100 text-emerald-800' },
       medium: { variant: 'secondary', icon: AlertTriangle, text: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
       high: { variant: 'destructive', icon: AlertTriangle, text: 'High', color: 'bg-red-100 text-red-800' },
       critical: { variant: 'destructive', icon: AlertTriangle, text: 'Critical', color: 'bg-red-100 text-red-800' }
@@ -750,7 +750,7 @@ export function ComplianceTracking() {
                     </div>
 
                     {risk.current_controls && (
-                      <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                      <div className="mt-3 p-3 bg-emerald-50 rounded-lg">
                         <p className="text-sm font-medium mb-1">Current Controls</p>
                         <p className="text-sm text-muted-foreground">{risk.current_controls}</p>
                       </div>

@@ -292,7 +292,7 @@ export function TeamsLocationsPage() {
       title: 'Active Teams',
       value: teams.length, // All teams from backend are considered active for now
       icon: Users,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: 'Organizations',
@@ -319,7 +319,7 @@ export function TeamsLocationsPage() {
       title: 'Active Venues',
       value: locations.filter((l) => l.is_active !== false).length,
       icon: Building,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: 'Total Capacity',

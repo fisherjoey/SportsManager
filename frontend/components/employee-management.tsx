@@ -284,7 +284,7 @@ export function EmployeeManagement() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: { variant: 'default', text: 'Active', color: 'bg-green-100 text-green-800' },
+      active: { variant: 'default', text: 'Active', color: 'bg-emerald-100 text-emerald-800' },
       inactive: { variant: 'secondary', text: 'Inactive', color: 'bg-gray-100 text-gray-800' },
       terminated: { variant: 'destructive', text: 'Terminated', color: 'bg-red-100 text-red-800' },
       on_leave: { variant: 'secondary', text: 'On Leave', color: 'bg-yellow-100 text-yellow-800' },
@@ -311,7 +311,7 @@ export function EmployeeManagement() {
     
     const percentage = (completed / total) * 100
     let variant: 'default' | 'secondary' | 'destructive' = 'default'
-    let color = 'bg-green-100 text-green-800'
+    let color = 'bg-emerald-100 text-emerald-800'
     
     if (percentage < 50) {
       variant = 'destructive'
@@ -544,7 +544,7 @@ export function EmployeeManagement() {
                     <p className="text-sm font-medium text-muted-foreground">Active Employees</p>
                     <p className="text-2xl font-bold">{stats.activeEmployees}</p>
                   </div>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
                 </div>
               </CardContent>
             </Card>
@@ -873,7 +873,7 @@ export function EmployeeManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <div className="text-center mb-4">
-                          <div className="text-3xl font-bold text-green-600">
+                          <div className="text-3xl font-bold text-emerald-600">
                             {selectedEmployee.completed_trainings || 0}
                           </div>
                           <p className="text-sm text-muted-foreground">Completed Trainings</p>

@@ -813,7 +813,7 @@ export function AvailabilityCalendar({
                                 ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-400 ring-opacity-50' : ''}
                                 ${!isSelectionMode && isSelected ? 'bg-blue-200 hover:bg-blue-300' : ''}
                                 ${!isSelected && hasWindow ? (
-                              isAvailable ? 'bg-green-100 hover:bg-green-200' :
+                              isAvailable ? 'bg-emerald-100 hover:bg-emerald-200' :
                                 isUnavailable ? 'bg-red-100 hover:bg-red-200' :
                                   'bg-yellow-100 hover:bg-yellow-200'
                             ) : !isSelected ? 'hover:bg-blue-50' : ''}
@@ -831,7 +831,7 @@ export function AvailabilityCalendar({
                               {hasWindow && !isSelected && (
                                 <div className="flex items-center justify-center h-full">
                                   {isAvailable ? (
-                                    <Check className="h-3 w-3 text-green-600" />
+                                    <Check className="h-3 w-3 text-emerald-600" />
                                   ) : (
                                     <X className="h-3 w-3 text-red-600" />
                                   )}
@@ -891,7 +891,7 @@ export function AvailabilityCalendar({
                                   ${isSelectionMode && isSelected ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400 ring-opacity-50' : ''}
                                   ${!isSelectionMode && isSelected ? 'bg-blue-200 border-blue-400' : ''}
                                   ${!isSelected && hasWindow ? (
-                                isAvailable ? 'bg-green-100 border-green-300 active:bg-green-200' :
+                                isAvailable ? 'bg-emerald-100 border-emerald-300 active:bg-emerald-200' :
                                   isUnavailable ? 'bg-red-100 border-red-300 active:bg-red-200' :
                                     'bg-yellow-100 border-yellow-300 active:bg-yellow-200'
                               ) : !isSelected ? 'bg-background border-border hover:bg-muted/50 active:bg-muted' : ''}
@@ -929,7 +929,7 @@ export function AvailabilityCalendar({
                                 {hasWindow && !isSelected && (
                                   <div className="flex items-center justify-center">
                                     {isAvailable ? (
-                                      <Check className="h-4 w-4 text-green-600" />
+                                      <Check className="h-4 w-4 text-emerald-600" />
                                     ) : (
                                       <X className="h-4 w-4 text-red-600" />
                                     )}
@@ -968,7 +968,7 @@ export function AvailabilityCalendar({
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:flex md:items-center md:justify-center gap-4 md:gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border rounded"></div>
+              <div className="w-4 h-4 bg-emerald-100 border rounded"></div>
               <span>Available</span>
             </div>
             <div className="flex items-center gap-2">
@@ -1094,7 +1094,7 @@ export function AvailabilityCalendar({
               <Button
                 size="mobileSm"
                 variant="default"
-                className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white touch-manipulation"
+                className="touch-manipulation"
                 onClick={() => applyAvailabilityToSelected(true)}
               >
                 <Check className="h-4 w-4 mr-1" />

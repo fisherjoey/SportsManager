@@ -42,7 +42,7 @@ export function VenueCostDisplay({
         <div className="flex items-center gap-3 text-sm flex-wrap">
           {hasHourlyRate && (
             <div className="flex items-center gap-1">
-              <DollarSign className="h-3.5 w-3.5 text-green-600 shrink-0" />
+              <DollarSign className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="font-medium">${formatPrice(hourlyRate)}</span>
               <span className="text-muted-foreground">/hr</span>
             </div>
@@ -71,7 +71,7 @@ export function VenueCostDisplay({
     <div className={cn('space-y-1.5', className)}>
       {hasHourlyRate && (
         <div className="flex items-center gap-1.5 text-sm">
-          <DollarSign className="h-3.5 w-3.5 text-green-600 shrink-0" />
+          <DollarSign className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
           <span className="font-medium">${formatPrice(hourlyRate)}</span>
           <span className="text-muted-foreground">/hr</span>
         </div>

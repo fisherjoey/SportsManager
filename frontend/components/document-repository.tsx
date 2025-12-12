@@ -258,7 +258,7 @@ export function DocumentRepository() {
     const variants = {
       draft: { variant: 'outline', icon: Edit3, text: 'Draft', color: 'text-gray-600' },
       review: { variant: 'secondary', icon: Clock, text: 'Under Review', color: 'text-yellow-600' },
-      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: 'text-green-600' },
+      approved: { variant: 'default', icon: CheckCircle, text: 'Approved', color: 'text-emerald-600' },
       archived: { variant: 'secondary', icon: Archive, text: 'Archived', color: 'text-gray-600' }
     }
 
@@ -276,7 +276,7 @@ export function DocumentRepository() {
   const getConfidentialityBadge = (confidentiality: string) => {
     const variants = {
       public: { variant: 'outline', text: 'Public', color: 'text-blue-600' },
-      internal: { variant: 'secondary', text: 'Internal', color: 'text-green-600' },
+      internal: { variant: 'secondary', text: 'Internal', color: 'text-emerald-600' },
       confidential: { variant: 'secondary', text: 'Confidential', color: 'text-orange-600' },
       restricted: { variant: 'destructive', text: 'Restricted', color: 'text-red-600' }
     }

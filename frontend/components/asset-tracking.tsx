@@ -274,7 +274,7 @@ export function AssetTracking() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      available: { variant: 'default', icon: CheckCircle, text: 'Available', color: 'bg-green-100 text-green-800' },
+      available: { variant: 'default', icon: CheckCircle, text: 'Available', color: 'bg-emerald-100 text-emerald-800' },
       assigned: { variant: 'secondary', icon: User, text: 'Assigned', color: 'bg-blue-100 text-blue-800' },
       maintenance: { variant: 'secondary', icon: Wrench, text: 'Maintenance', color: 'bg-yellow-100 text-yellow-800' },
       retired: { variant: 'outline', icon: Package, text: 'Retired', color: 'bg-gray-100 text-gray-800' },
@@ -294,7 +294,7 @@ export function AssetTracking() {
 
   const getConditionBadge = (condition: string) => {
     const variants = {
-      excellent: { variant: 'default', text: 'Excellent', color: 'bg-green-100 text-green-800' },
+      excellent: { variant: 'default', text: 'Excellent', color: 'bg-emerald-100 text-emerald-800' },
       good: { variant: 'secondary', text: 'Good', color: 'bg-blue-100 text-blue-800' },
       fair: { variant: 'secondary', text: 'Fair', color: 'bg-yellow-100 text-yellow-800' },
       poor: { variant: 'destructive', text: 'Poor', color: 'bg-red-100 text-red-800' }
@@ -666,8 +666,8 @@ export function AssetTracking() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
                   <p className="font-medium">Available</p>

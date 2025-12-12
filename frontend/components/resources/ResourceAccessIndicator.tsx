@@ -28,8 +28,8 @@ interface ResourceAccessIndicatorProps {
 const accessLevelConfig = {
   public: {
     icon: Globe,
-    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    iconColor: 'text-green-600 dark:text-green-400',
+    color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-green-200',
+    iconColor: 'text-emerald-600 dark:text-green-400',
     label: 'Public',
     description: 'Available to everyone'
   },

@@ -403,8 +403,8 @@ export function ExpenseFormIntegrated({ onExpenseCreated, className }: ExpenseFo
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="flex items-center gap-4 p-4 border rounded-lg bg-emerald-50">
+                <CheckCircle className="h-8 w-8 text-emerald-600" />
                 <div className="flex-1">
                   <p className="font-medium">{receiptData.filename}</p>
                   <p className="text-sm text-muted-foreground">

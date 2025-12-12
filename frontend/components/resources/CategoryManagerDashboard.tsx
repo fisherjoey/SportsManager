@@ -207,7 +207,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
     case 'manager':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
     case 'contributor':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-green-200'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
@@ -216,7 +216,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
   const getActivityIcon = (type: string) => {
     switch (type) {
     case 'upload':
-      return <FileText className="h-4 w-4 text-green-600" />
+      return <FileText className="h-4 w-4 text-emerald-600" />
     case 'download':
       return <Download className="h-4 w-4 text-blue-600" />
     case 'permission_change':
@@ -275,7 +275,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalResources}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className="mr-1 h-3 w-3 text-emerald-600" />
               +12% from last month
             </div>
           </CardContent>
@@ -289,7 +289,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDownloads.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className="mr-1 h-3 w-3 text-emerald-600" />
               +8% from last month
             </div>
           </CardContent>
@@ -303,7 +303,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
+              <TrendingUp className="mr-1 h-3 w-3 text-emerald-600" />
               +15% from last month
             </div>
           </CardContent>
@@ -317,7 +317,7 @@ export function CategoryManagerDashboard({ categoryId, categoryName, className }
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeManagers}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <CheckCircle className="mr-1 h-3 w-3 text-green-600" />
+              <CheckCircle className="mr-1 h-3 w-3 text-emerald-600" />
               All active
             </div>
           </CardContent>

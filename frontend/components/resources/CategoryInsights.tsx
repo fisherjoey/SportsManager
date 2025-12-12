@@ -213,7 +213,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
 
   const getTrendIcon = (change: number) => {
     if (change > 0) {
-      return <TrendingUp className="h-4 w-4 text-green-600" />
+      return <TrendingUp className="h-4 w-4 text-emerald-600" />
     } else if (change < 0) {
       return <TrendingDown className="h-4 w-4 text-red-600" />
     }
@@ -221,7 +221,7 @@ export function CategoryInsights({ categoryId, categoryName, className }: Catego
   }
 
   const getTrendColor = (change: number) => {
-    if (change > 0) return 'text-green-600'
+    if (change > 0) return 'text-emerald-600'
     if (change < 0) return 'text-red-600'
     return 'text-muted-foreground'
   }

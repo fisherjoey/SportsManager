@@ -708,7 +708,7 @@ export default function AIAssignmentsSimple() {
               return (
                 <div key={referee.id} className={cn(
                   'p-3 border rounded-lg',
-                  referee.available ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  referee.available ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'
                 )}>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-sm">{referee.name}</h4>
@@ -814,7 +814,7 @@ export default function AIAssignmentsSimple() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {chunk.suggestions ? (
-                        <Badge className="bg-green-600">
+                        <Badge variant="success">
                           <Brain className="h-3 w-3 mr-1" />
                           AI Suggestions Ready
                         </Badge>
@@ -891,7 +891,7 @@ export default function AIAssignmentsSimple() {
                             'p-3 border rounded',
                             suggestion.conflicts && suggestion.conflicts.length > 0
                               ? 'bg-yellow-50 border-yellow-200'
-                              : 'bg-green-50 border-green-200'
+                              : 'bg-emerald-50 border-emerald-200'
                           )}>
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -912,7 +912,7 @@ export default function AIAssignmentsSimple() {
                                 <Badge className={
                                   suggestion.conflicts && suggestion.conflicts.length > 0
                                     ? 'bg-yellow-600'
-                                    : 'bg-green-600'
+                                    : 'bg-emerald-600'
                                 }>
                                   {Math.round(suggestion.confidence * 100)}% confidence
                                 </Badge>
@@ -945,7 +945,7 @@ export default function AIAssignmentsSimple() {
                 </Button>
                 <Button 
                   onClick={() => applyAISuggestions(selectedChunk)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className=""
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Apply All Suggestions

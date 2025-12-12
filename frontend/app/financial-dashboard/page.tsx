@@ -283,7 +283,7 @@ function FinancialDashboardPageContent() {
             <CardTitle className="text-sm font-medium text-gray-600">Net Income</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${dashboardData.summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${dashboardData.summary.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {formatCurrency(dashboardData.summary.netIncome)}
             </div>
             <p className="text-xs text-gray-600 mt-1">
@@ -578,7 +578,7 @@ function FinancialDashboardPageContent() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        <span className={transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}>
+                        <span className={transaction.type === 'expense' ? 'text-red-600' : 'text-emerald-600'}>
                           {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
                         </span>
                       </TableCell>

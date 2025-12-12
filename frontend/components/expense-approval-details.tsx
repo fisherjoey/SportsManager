@@ -422,7 +422,7 @@ export function ExpenseApprovalDetails({ expense, onApproved, onRejected }: Expe
             <Button
               onClick={handleApprove}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700"
+              className=""
             >
               {loading ? <LoadingSpinner className="h-4 w-4 mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
               Approve

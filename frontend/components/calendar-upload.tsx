@@ -433,8 +433,8 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
             </Alert>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-emerald-600 dark:text-green-400">
                   {uploadResult.imported}
                 </p>
                 <p className="text-sm text-muted-foreground">Imported</p>
@@ -462,13 +462,13 @@ const CalendarUpload: React.FC<CalendarUploadProps> = ({
                       key={index}
                       className={`text-xs p-2 rounded flex items-center gap-2 ${
                         game.status === 'imported'
-                          ? 'bg-green-50 dark:bg-green-900/20'
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20'
                           : game.status === 'skipped'
                             ? 'bg-yellow-50 dark:bg-yellow-900/20'
                             : 'bg-red-50 dark:bg-red-900/20'
                       }`}
                     >
-                      {game.status === 'imported' && <CheckCircle className="h-3 w-3 text-green-600" />}
+                      {game.status === 'imported' && <CheckCircle className="h-3 w-3 text-emerald-600" />}
                       {game.status === 'skipped' && <AlertCircle className="h-3 w-3 text-yellow-600" />}
                       {game.status === 'failed' && <X className="h-3 w-3 text-red-600" />}
                       <span className="flex-1">

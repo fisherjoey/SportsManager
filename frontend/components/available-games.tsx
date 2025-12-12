@@ -147,7 +147,7 @@ export function AvailableGames() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Potential Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -259,7 +259,7 @@ export function AvailableGames() {
                     <TableCell>
                       <div className="flex flex-col">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                          <DollarSign className="h-4 w-4 mr-1 text-emerald-600" />
                           {game.finalWage || game.payRate}
                         </div>
                         {game.wageMultiplier && game.wageMultiplier !== 1.0 && (
@@ -279,7 +279,7 @@ export function AvailableGames() {
                       <Button
                         size="sm"
                         onClick={() => handleAcceptGame(game.id)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className=""
                       >
                         <CheckCircle className="h-4 w-4 mr-1" />
                         Accept

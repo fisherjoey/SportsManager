@@ -141,7 +141,7 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
   const getStatusChangeDisplay = (statusChange: { from: string; to: string }) => {
     const getStatusColor = (status: string) => {
       switch (status.toLowerCase()) {
-      case 'confirmed': return 'text-green-600'
+      case 'confirmed': return 'text-emerald-600'
       case 'pending': return 'text-yellow-600'
       case 'declined': return 'text-red-600'
       case 'cancelled': return 'text-gray-600'
@@ -177,7 +177,7 @@ export function AssignmentComments({ assignmentId, gameTitle, compact = false }:
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className={`text-xs ${
                     comment.user_role === 'admin' ? 'bg-blue-100 text-blue-600' :
-                      comment.user_role === 'referee' ? 'bg-green-100 text-green-600' :
+                      comment.user_role === 'referee' ? 'bg-emerald-100 text-emerald-600' :
                         'bg-gray-100 text-gray-600'
                   }`}>
                     {comment.user_role === 'system' ? 'SY' : getUserInitials(comment.user_name)}

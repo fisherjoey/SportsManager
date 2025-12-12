@@ -474,7 +474,7 @@ export function ReceiptUpload() {
   const getStatusBadge = (receipt: ReceiptData) => {
     switch (receipt.status) {
     case 'completed':
-      return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Complete</Badge>
+      return <Badge variant="default" variant="success"><CheckCircle className="w-3 h-3 mr-1" />Complete</Badge>
     case 'processing':
       return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Processing</Badge>
     case 'manual_review':

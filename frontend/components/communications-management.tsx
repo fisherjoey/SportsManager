@@ -250,7 +250,7 @@ export function CommunicationsManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-    case 'published': return 'bg-green-100 text-green-800'
+    case 'published': return 'bg-emerald-100 text-emerald-800'
     case 'draft': return 'bg-yellow-100 text-yellow-800'
     case 'scheduled': return 'bg-blue-100 text-blue-800'
     case 'archived': return 'bg-gray-100 text-gray-800'
@@ -280,7 +280,7 @@ export function CommunicationsManagement() {
       title: 'Published',
       value: communications.filter(c => c.status === 'published').length,
       icon: Send,
-      color: 'text-green-600'
+      color: 'text-emerald-600'
     },
     {
       title: 'Drafts',
@@ -507,7 +507,7 @@ export function CommunicationsManagement() {
                             variant="outline"
                             size="sm"
                             onClick={() => handlePublishCommunication(communication.id)}
-                            className="text-green-600 hover:text-green-700"
+                            className="text-emerald-600 hover:text-emerald-700"
                             title="Publish communication"
                           >
                             <Send className="w-4 h-4" />

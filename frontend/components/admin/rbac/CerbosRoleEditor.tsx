@@ -377,10 +377,10 @@ export function CerbosRoleEditor({ role, open, onClose, onSuccess }: CerbosRoleE
                 </p>
               </div>
 
-              <Alert className="border-green-500 bg-green-50">
-                <Shield className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">Cerbos Policy Configuration</AlertTitle>
-                <AlertDescription className="text-green-700">
+              <Alert className="border-emerald-500 bg-emerald-50">
+                <Shield className="h-4 w-4 text-emerald-600" />
+                <AlertTitle className="text-emerald-800">Cerbos Policy Configuration</AlertTitle>
+                <AlertDescription className="text-emerald-700">
                   This will create or update the actual permission policy in Cerbos.
                   These permissions determine what actions users with this role can perform.
                 </AlertDescription>
